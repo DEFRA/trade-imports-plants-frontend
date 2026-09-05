@@ -4,34 +4,51 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=DEFRA_trade-imports-plants-frontend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DEFRA_trade-imports-plants-frontend)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=DEFRA_trade-imports-plants-frontend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=DEFRA_trade-imports-plants-frontend)
 
-Core delivery platform Node.js Frontend Template.
+The frontend for the high-risk plants import notification journey. It runs on
+the same obligation and journey platform as the live-animals frontend: a
+journey-agnostic engine under `src/server/app/`, with all journey content in
+the `high-risk-plants` set beneath it. That set is currently empty — the
+journey's requirements have not been agreed yet.
+
+- [Platform documentation](src/server/app/docs/README.md)
+- [High-risk-plants set and journey documentation](src/server/app/sets/high-risk-plants/docs/README.md)
+
+Run the set's unit suite from the repo root: `npm run test:high-risk-plants`.
+
+## Current state
+
+The platform is complete. **The high-risk-plants set is empty** — no
+obligations, no journey pages, no flow sections and no task rows. With no routes
+registered the service answers `/health`, the auth and sign-out routes, and the
+static assets; a 404 on `/` is the expected zero-page state, not a failed boot.
+
+The set documentation records what the first page increment has to bring with
+it, including the currently inert journey entry guard. Read
+[Adding the first obligation](src/server/app/sets/high-risk-plants/docs/README.md#adding-the-first-obligation-is-a-three-part-change)
+before writing any of it.
+
+Deployed end-to-end tests for this service live in the shared tests repository
+`trade-imports-animals-tests`, as a fourth Playwright project alongside `e2e`,
+`admin` and `ins`. See
+[Cross-repo test ownership](src/server/app/docs/test-ownership.md).
 
 - [Requirements](#requirements)
-  - [Node.js](#nodejs)
-- [Server-side Caching](#server-side-caching)
+- [Server-side caching](#server-side-caching)
 - [Redis](#redis)
-- [Local Development](#local-development)
-  - [Setup](#setup)
-  - [Development](#development)
-  - [Production](#production)
-  - [Npm scripts](#npm-scripts)
-  - [Update dependencies](#update-dependencies)
-  - [Formatting](#formatting)
-    - [Windows prettier issue](#windows-prettier-issue)
+- [Proxy](#proxy)
+- [Local development](#local-development)
+- [Auth](#authentication-trade-imports-defra-id-stub)
 - [Docker](#docker)
-  - [Development image](#development-image)
-  - [Production image](#production-image)
-  - [Docker Compose](#docker-compose)
-  - [Dependabot](#dependabot)
-  - [SonarCloud](#sonarcloud)
+- [Lighthouse](#lighthouse)
+- [SonarCloud](#sonarcloud)
 - [Licence](#licence)
-  - [About the licence](#about-the-licence)
 
 ## Requirements
 
 ### Node.js
 
-Please install Node Version Manager [nvm](https://github.com/creationix/nvm)
+Node 24 or later, and npm 11.6.2 — the version pinned by `packageManager` in
+`package.json`. An ambient npm older than that rejects the lockfile.
 
 To use the correct version of Node.js for this application, via nvm:
 
@@ -40,38 +57,46 @@ cd trade-imports-plants-frontend
 nvm use
 ```
 
-## Server-side Caching
+## Server-side caching
 
-We use Catbox for server-side caching. By default the service will use CatboxRedis when deployed and CatboxMemory for
-local development.
-You can override the default behaviour by setting the `SESSION_CACHE_ENGINE` environment variable to either `redis` or
-`memory`.
+We use Catbox for server-side caching. By default the service uses CatboxRedis
+when deployed and CatboxMemory for local development. Override with
+`SESSION_CACHE_ENGINE`, set to either `redis` or `memory`.
 
-Please note: CatboxMemory (`memory`) is _not_ suitable for production use! The cache will not be shared between each
-instance of the service and it will not persist between restarts.
+CatboxMemory (`memory`) is _not_ suitable for production use: the cache is not
+shared between instances of the service and does not survive a restart.
 
 ## Redis
 
-Redis is an in-memory key-value store. Every instance of a service has access to the same Redis key-value store similar
-to how services might have a database (or MongoDB). All frontend services are given access to a namespaced prefixed that
-matches the service name. e.g. `my-service` will have access to everything in Redis that is prefixed with `my-service`.
-
-If your service does not require a session cache to be shared between instances or if you don't require Redis, you can
-disable setting `SESSION_CACHE_ENGINE=false` or changing the default value in `src/config/index.js`.
+Redis is an in-memory key-value store. Every instance of a service has access to
+the same Redis key-value store, similar to how services might have a database.
+All frontend services are given a namespaced prefix that matches the service
+name, so `my-service` has access to everything in Redis prefixed with
+`my-service`.
 
 ## Proxy
 
-We are using forward-proxy which is set up by default. Services are automatically configured with the proxy environment variables when deployed.
+We use forward-proxy, which is set up by default. To make use of it,
+`import { fetch } from 'undici'`: because of the
+`setGlobalDispatcher(new ProxyAgent(proxyUrl))` call, requests use the
+ProxyAgent dispatcher.
 
-Node.js 24 uses these variables to route outbound HTTP(S) requests through the proxy:
+If you are not using Wreck, Axios, Undici or a similar HTTP client that uses
+`Request`, provide the proxy dispatcher yourself:
 
-NODE_USE_ENV_PROXY=1
-HTTPS_PROXY=...
-NO_PROXY=...
+```javascript
+import { ProxyAgent } from 'undici'
 
-No additional proxy configuration is required in the service.
+return await fetch(url, {
+  dispatcher: new ProxyAgent({
+    uri: proxyUrl,
+    keepAliveTimeout: 10,
+    keepAliveMaxTimeout: 10
+  })
+})
+```
 
-## Local Development
+## Local development
 
 ### Setup
 
@@ -81,25 +106,19 @@ Install application dependencies:
 npm install
 ```
 
-### Git hooks
-
-Install git hooks (optional)
-
-```bash
-npm run git:hooks
-```
-
 ### Development
 
-To run the application in `development` mode run:
+To run the application in `development` mode:
 
 ```bash
 npm run dev
 ```
 
+It serves on port 3003.
+
 ### Production
 
-To mimic the application running in `production` mode locally run:
+To mimic the application running in `production` mode locally:
 
 ```bash
 npm start
@@ -107,41 +126,59 @@ npm start
 
 ### Npm scripts
 
-All available Npm scripts can be seen in [package.json](./package.json)
-To view them in your command line run:
+All available npm scripts are in [package.json](./package.json). To list them:
 
 ```bash
 npm run
 ```
 
-### Update dependencies
-
-To update dependencies use [npm-check-updates](https://github.com/raineorshine/npm-check-updates):
-
-> The following script is a good start. Check out all the options on
-> the [npm-check-updates](https://github.com/raineorshine/npm-check-updates)
+The ones you will use most:
 
 ```bash
-ncu --interactive --format group
+npm run test:high-risk-plants   # the set's own Vitest suite, no coverage
+npm test                        # the full Vitest suite with coverage
+PORT=3053 npm run test:fit:features
+npm run test:fit:journeys
+npm run lint                    # JS, stylesheet and dependency-cruiser
+npm run format
 ```
 
-### Formatting
+`npm run lint:arch` runs Dependency Cruiser over `src/server/app` and enforces
+the L1–L4 layer rules in `.dependency-cruiser.cjs`. Production code cannot use
+test exemptions.
 
-#### Windows prettier issue
+## AUTHENTICATION (trade-imports-defra-id-stub)
 
-If you are having issues with formatting of line breaks on Windows update your global git config by running:
+For local cross-service development the recommended path is the workspace docker
+stack at <https://github.com/DEFRA/trade-imports-workspace> — it stands the stub
+up alongside the frontend with the right env wiring; no `/etc/hosts` edits
+required.
 
-```bash
-git config --global core.autocrlf false
+If running this service standalone against the stub on `localhost:3007`, create
+an env file:
+
 ```
+DEFRA_ID_OIDC_CONFIGURATION_URL=http://localhost:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration
+DEFRA_ID_CLIENT_ID=8c5e0bd-8223-4908-a5aa-c9c1d7cddaac
+DEFRA_ID_CLIENT_SECRET=test_value
+DEFRA_ID_SERVICE_ID=aeaa0a80-15f3-48b2-8bd7-0e02874b3d32
+DEFRA_ID_POLICY=b2c_1a_cui_cpdev_signupsigninsfi
+```
+
+Alternatively set `STUB_MODE=true`, which serves stub data and signs its own
+session instead of doing the Defra ID OIDC exchange. Auth is still enforced —
+only the external round-trip is bypassed — and the switch is refused in
+production. The Playwright suite sets it for its own web server, so
+`npm run test:fit` needs no other service running.
 
 ## Docker
 
 ### Development image
 
 > [!TIP]
-> For Apple Silicon users, you may need to add `--platform linux/amd64` to the `docker run` command to ensure
-> compatibility fEx: `docker build --platform=linux/arm64 --no-cache --tag trade-imports-plants-frontend`
+> For Apple Silicon users, you may need to add `--platform linux/amd64` to the
+> `docker run` command to ensure compatibility, for example
+> `docker build --platform=linux/arm64 --no-cache --tag trade-imports-plants-frontend`
 
 Build:
 
@@ -152,7 +189,7 @@ docker build --target development --no-cache --tag trade-imports-plants-frontend
 Run:
 
 ```bash
-docker run -p 3000:3000 trade-imports-plants-frontend:development
+docker run -p 3003:3003 trade-imports-plants-frontend:development
 ```
 
 ### Production image
@@ -166,46 +203,50 @@ docker build --no-cache --tag trade-imports-plants-frontend .
 Run:
 
 ```bash
-docker run -p 3000:3000 trade-imports-plants-frontend
+docker run -p 3003:3003 trade-imports-plants-frontend
 ```
 
-### Docker Compose
+### Local stack
 
-A local environment with:
-
-- Floci (replacing Localstack) for AWS services (S3, SQS)
-- Redis
-- MongoDB
-- This service.
-- A commented out backend example.
+The full local environment (MongoDB, Floci, Redis, the stubs, and every
+trade-imports service including this one) is the workspace stack in
+[DEFRA/trade-imports-workspace](https://github.com/DEFRA/trade-imports-workspace):
 
 ```bash
-docker compose up --build -d
+# from the workspace root
+./scripts/stack/run-stack.sh              # full stack from published images
+./scripts/stack/run-stack.sh -d           # built from local source under repos/
+./scripts/stack/run-stack.sh -e frontend  # everything except this service (run it via npm run dev)
 ```
 
-### Dependabot
+A cross-repo change must use the **same branch name** in every repository it
+touches: the stack probes each repository for a branch-tagged image and falls
+back to `:latest` per service, so a mismatched name silently picks up someone
+else's image.
 
-We have added an example dependabot configuration file to the repository. You can enable it by renaming
-the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github/dependabot.yml`
+## Lighthouse
 
-### SonarCloud
+`npm run lighthouse` seeds its audit targets from the app's own registered
+routes, then runs Lighthouse CI against them.
 
-Instructions for setting up SonarCloud can be found in [sonar-project.properties](./sonar-project.properties).
+It does not work yet. Two scripts were not carried across from the animals
+frontend, and the set has no pages to audit in any case. The
+[Lighthouse guide](src/server/app/sets/high-risk-plants/docs/lighthouse.md)
+names the missing modules, the score floors and the contribution steps.
+
+## SonarCloud
+
+Instructions for setting up SonarCloud are in
+[sonar-project.properties](./sonar-project.properties).
 
 ## Licence
 
-THIS INFORMATION IS LICENSED UNDER THE CONDITIONS OF THE OPEN GOVERNMENT LICENCE found at:
+THIS INFORMATION IS LICENSED UNDER THE CONDITIONS OF THE OPEN GOVERNMENT LICENCE
+found at:
 
 <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3>
 
-The following attribution statement MUST be cited in your products and applications when using this information.
+The following attribution statement MUST be cited in your products and
+applications when using this information.
 
 > Contains public sector information licensed under the Open Government license v3
-
-### About the licence
-
-The Open Government Licence (OGL) was developed by the Controller of Her Majesty's Stationery Office (HMSO) to enable
-information providers in the public sector to license the use and re-use of their information under a common open
-licence.
-
-It is designed to encourage use and re-use of information freely and flexibly, with only a few conditions.

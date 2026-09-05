@@ -1,0 +1,446 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  compose,
+  dateParts,
+  dateText,
+  dateTextInRange,
+  integerInRange,
+  maxText,
+  oneOf,
+  postcode,
+  requiredExactDigits,
+  requiredIntegerInRange,
+  requiredMaxText,
+  requiredOneOf,
+  requiredText,
+  ukPhone,
+  validate,
+  vehicleReg
+} from './index.js'
+import { validatorDefaults } from '../../shared/copy.en.js'
+import {
+  CATEGORY_ONE,
+  CATEGORY_TWO,
+  SELECTOR_ALPHA,
+  SELECTOR_BRAVO
+} from '../../../../../test/fixtures/index.js'
+
+const run = (schema, payload) => validate(schema, payload)
+
+const FULL_NAME_REQUIRED_MESSAGE = 'Enter your full name'
+const REGISTRATION_REQUIRED_MESSAGE = 'Enter a registration number'
+const REGISTRATION_LENGTH_MESSAGE =
+  'Registration number must be exactly 9 digits'
+const SELECTOR_REQUIRED_MESSAGE = 'Select an option'
+const FLIP_FIELD_REQUIRED_MESSAGE = 'Enter the code'
+const FLIP_FIELD_MAX_LENGTH_MESSAGE = 'Code must be 5 characters or less'
+const COUNT_REQUIRED_MESSAGE = 'Enter the number of items'
+const COUNT_WHOLE_NUMBER_MESSAGE = 'Enter a whole number greater than 0'
+
+describe('#requiredText — the sole save-blocking primitive', () => {
+  const schema = requiredText('fullName', FULL_NAME_REQUIRED_MESSAGE)
+
+  it('Should pass a non-blank value', () => {
+    expect(run(schema, { fullName: 'Alex Driver' }).errors).toBeNull()
+  })
+
+  it('Should block a missing value with the given message on the field', () => {
+    expect(run(schema, {}).errors).toEqual({
+      fullName: FULL_NAME_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should block a whitespace-only value (trimmed to empty)', () => {
+    expect(run(schema, { fullName: '   ' }).errors).toEqual({
+      fullName: FULL_NAME_REQUIRED_MESSAGE
+    })
+  })
+})
+
+describe('#requiredExactDigits — save-blocking fixed-length digit string', () => {
+  const schema = requiredExactDigits('registrationNumber', 9, {
+    required: REGISTRATION_REQUIRED_MESSAGE,
+    length: REGISTRATION_LENGTH_MESSAGE,
+    digitsOnly: 'Registration number must only contain numbers'
+  })
+
+  it('Should pass a value of exactly the digit count', () => {
+    expect(run(schema, { registrationNumber: '123456789' }).errors).toBeNull()
+  })
+
+  it('Should block blank and missing values with the required message', () => {
+    expect(run(schema, { registrationNumber: '' }).errors).toEqual({
+      registrationNumber: REGISTRATION_REQUIRED_MESSAGE
+    })
+    expect(run(schema, {}).errors).toEqual({
+      registrationNumber: REGISTRATION_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should reject too-short and too-long values with the length message', () => {
+    expect(run(schema, { registrationNumber: '12345678' }).errors).toEqual({
+      registrationNumber: REGISTRATION_LENGTH_MESSAGE
+    })
+    expect(run(schema, { registrationNumber: '1234567890' }).errors).toEqual({
+      registrationNumber: REGISTRATION_LENGTH_MESSAGE
+    })
+  })
+
+  it('Should reject non-digit characters with the digits-only message', () => {
+    expect(run(schema, { registrationNumber: '12345678a' }).errors).toEqual({
+      registrationNumber: 'Registration number must only contain numbers'
+    })
+  })
+})
+
+describe('optional validators save blank (the mandate split)', () => {
+  it.each([
+    ['postcode', postcode('postcode')],
+    ['registration', vehicleReg('registration')],
+    ['phone', ukPhone('phone')],
+    ['year', integerInRange('year', { min: 1900, max: 2100 })],
+    ['country', oneOf('country', ['england', 'wales'])],
+    ['description', maxText('description', 200)]
+  ])('Should pass %s when blank', (field, schema) => {
+    expect(run(schema, { [field]: '' }).errors).toBeNull()
+  })
+
+  it('Should pass when the field is absent entirely', () => {
+    expect(run(postcode('postcode'), {}).errors).toBeNull()
+  })
+})
+
+describe('postcode / vehicleReg — format', () => {
+  it('Should accept a valid postcode and reject a malformed one', () => {
+    expect(
+      run(postcode('postcode'), { postcode: 'SW1A 1AA' }).errors
+    ).toBeNull()
+    expect(run(postcode('postcode'), { postcode: 'NOPE' }).errors).toEqual({
+      postcode: 'Enter a valid postcode'
+    })
+  })
+
+  it('Should accept a valid registration and reject a malformed one', () => {
+    expect(
+      run(vehicleReg('registration'), { registration: 'AB12 CDE' }).errors
+    ).toBeNull()
+    expect(
+      run(vehicleReg('registration'), { registration: '1' }).errors
+    ).toEqual({ registration: 'Enter a valid registration number' })
+  })
+})
+
+describe('#ukPhone — allow-list + digit count', () => {
+  it('Should accept a real UK number', () => {
+    expect(run(ukPhone('phone'), { phone: '07700 900123' }).errors).toBeNull()
+  })
+
+  it('Should reject letters and too-few-digit numbers', () => {
+    expect(run(ukPhone('phone'), { phone: 'call me' }).errors).toHaveProperty(
+      'phone'
+    )
+    expect(run(ukPhone('phone'), { phone: '12345' }).errors).toHaveProperty(
+      'phone'
+    )
+  })
+})
+
+describe('#oneOf — value domain', () => {
+  const schema = oneOf('itemCategory', [CATEGORY_ONE, CATEGORY_TWO])
+
+  it('Should accept a value in the domain', () => {
+    expect(run(schema, { itemCategory: CATEGORY_ONE }).errors).toBeNull()
+  })
+
+  it('Should reject a value outside the domain', () => {
+    expect(run(schema, { itemCategory: 'categoryUnlisted' }).errors).toEqual({
+      itemCategory: 'Select a valid option'
+    })
+  })
+})
+
+describe('#requiredOneOf — save-blocking value domain', () => {
+  const schema = requiredOneOf(
+    'itemSelector',
+    [SELECTOR_ALPHA, SELECTOR_BRAVO],
+    SELECTOR_REQUIRED_MESSAGE
+  )
+
+  it('Should accept a value in the domain', () => {
+    expect(run(schema, { itemSelector: SELECTOR_ALPHA }).errors).toBeNull()
+  })
+
+  it('Should block blank and missing values — unlike composing requiredText with oneOf', () => {
+    expect(run(schema, { itemSelector: '' }).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+    expect(run(schema, {}).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should reject a value outside the domain', () => {
+    expect(run(schema, { itemSelector: 'gold-plated' }).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+  })
+})
+
+describe('#integerInRange — bounds', () => {
+  const schema = integerInRange('year', { min: 1900, max: 2100 })
+
+  it('Should accept an in-range whole number', () => {
+    expect(run(schema, { year: '2018' }).errors).toBeNull()
+  })
+
+  it('Should reject out-of-range and non-numeric input', () => {
+    expect(run(schema, { year: '1850' }).errors).toHaveProperty('year')
+    expect(run(schema, { year: 'twenty' }).errors).toHaveProperty('year')
+  })
+})
+
+describe('#requiredIntegerInRange — save-blocking whole number in a range', () => {
+  const schema = requiredIntegerInRange('itemCount', {
+    min: 1,
+    messages: {
+      required: COUNT_REQUIRED_MESSAGE,
+      invalid: COUNT_WHOLE_NUMBER_MESSAGE
+    }
+  })
+
+  it('Should accept an in-range whole number', () => {
+    expect(run(schema, { itemCount: '25' }).errors).toBeNull()
+  })
+
+  it('Should block blank, whitespace-only and missing values with the required message', () => {
+    expect(run(schema, { itemCount: '' }).errors).toEqual({
+      itemCount: COUNT_REQUIRED_MESSAGE
+    })
+    expect(run(schema, { itemCount: '   ' }).errors).toEqual({
+      itemCount: COUNT_REQUIRED_MESSAGE
+    })
+    expect(run(schema, {}).errors).toEqual({
+      itemCount: COUNT_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should reject non-numeric and out-of-range values with the invalid message', () => {
+    expect(run(schema, { itemCount: 'ten' }).errors).toEqual({
+      itemCount: COUNT_WHOLE_NUMBER_MESSAGE
+    })
+    expect(run(schema, { itemCount: '0' }).errors).toEqual({
+      itemCount: COUNT_WHOLE_NUMBER_MESSAGE
+    })
+  })
+
+  it('Should fall back to the shared defaults when no invalid message is given', () => {
+    const withoutInvalidMessage = requiredIntegerInRange('itemCount', {
+      min: 1,
+      max: 10,
+      messages: { required: COUNT_REQUIRED_MESSAGE }
+    })
+    expect(run(withoutInvalidMessage, { itemCount: 'ten' }).errors).toEqual({
+      itemCount: validatorDefaults.wholeNumber
+    })
+    expect(run(withoutInvalidMessage, { itemCount: '11' }).errors).toEqual({
+      itemCount: validatorDefaults.numberBetween(1, 10)
+    })
+  })
+})
+
+describe('#maxText — length cap', () => {
+  const schema = maxText('description', 10)
+
+  it('Should accept text within the cap', () => {
+    expect(run(schema, { description: 'short' }).errors).toBeNull()
+  })
+
+  it('Should reject text over the cap', () => {
+    expect(
+      run(schema, { description: 'far too long to allow' }).errors
+    ).toHaveProperty('description')
+  })
+})
+
+describe('#requiredMaxText — save-blocking text with a length cap', () => {
+  const schema = requiredMaxText('statusFlipField', 5, {
+    required: FLIP_FIELD_REQUIRED_MESSAGE,
+    maxLength: FLIP_FIELD_MAX_LENGTH_MESSAGE
+  })
+
+  it('Should accept text within the cap', () => {
+    expect(run(schema, { statusFlipField: 'FR-75' }).errors).toBeNull()
+  })
+
+  it('Should block blank, whitespace-only and missing values', () => {
+    expect(run(schema, { statusFlipField: '' }).errors).toEqual({
+      statusFlipField: FLIP_FIELD_REQUIRED_MESSAGE
+    })
+    expect(run(schema, { statusFlipField: '   ' }).errors).toEqual({
+      statusFlipField: FLIP_FIELD_REQUIRED_MESSAGE
+    })
+    expect(run(schema, {}).errors).toEqual({
+      statusFlipField: FLIP_FIELD_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should reject text over the cap with the length message', () => {
+    expect(run(schema, { statusFlipField: 'ABCDEF' }).errors).toEqual({
+      statusFlipField: FLIP_FIELD_MAX_LENGTH_MESSAGE
+    })
+  })
+
+  it('Should fall back to the shared length message when none is given', () => {
+    const withoutLengthMessage = requiredMaxText('statusFlipField', 5, {
+      required: FLIP_FIELD_REQUIRED_MESSAGE
+    })
+
+    expect(
+      run(withoutLengthMessage, { statusFlipField: 'ABCDEF' }).errors
+    ).toEqual({
+      statusFlipField: validatorDefaults.maxLength(5)
+    })
+  })
+})
+
+describe('#dateParts — day/month/year triple, anchored on the day box', () => {
+  const schema = dateParts('dateOfBirth')
+
+  it('Should pass when all three parts are blank (optional)', () => {
+    expect(
+      run(schema, {
+        'dateOfBirth-day': '',
+        'dateOfBirth-month': '',
+        'dateOfBirth-year': ''
+      }).errors
+    ).toBeNull()
+  })
+
+  it('Should pass a real date', () => {
+    expect(
+      run(schema, {
+        'dateOfBirth-day': '27',
+        'dateOfBirth-month': '3',
+        'dateOfBirth-year': '1985'
+      }).errors
+    ).toBeNull()
+  })
+
+  it('Should fail a partial date, anchored on the day part', () => {
+    expect(
+      run(schema, {
+        'dateOfBirth-day': '27',
+        'dateOfBirth-month': '',
+        'dateOfBirth-year': ''
+      }).errors
+    ).toEqual({ 'dateOfBirth-day': 'Enter a valid date' })
+  })
+
+  it('Should fail an unreal date (31 February)', () => {
+    expect(
+      run(schema, {
+        'dateOfBirth-day': '31',
+        'dateOfBirth-month': '2',
+        'dateOfBirth-year': '2000'
+      }).errors
+    ).toHaveProperty('dateOfBirth-day')
+  })
+})
+
+describe('#dateText — optional dd/mm/yyyy input', () => {
+  const schema = dateText('dateOfBirth')
+
+  it('Should pass a blank value and real dates with one- or two-digit parts', () => {
+    expect(run(schema, { dateOfBirth: '' }).errors).toBeNull()
+    expect(run(schema, { dateOfBirth: '7/3/1985' }).errors).toBeNull()
+    expect(run(schema, { dateOfBirth: '27/03/1985' }).errors).toBeNull()
+  })
+
+  it.each(['27/3', '31/2/2000', '2000-03-27', 'not a date'])(
+    'Should reject %s on the single input',
+    (value) => {
+      expect(run(schema, { dateOfBirth: value }).errors).toEqual({
+        dateOfBirth: 'Enter a valid date'
+      })
+    }
+  )
+})
+
+describe('#dateTextInRange — inclusive bounds on a dd/mm/yyyy input', () => {
+  const INVALID_MESSAGE = 'Enter a real arrival date'
+  const RANGE_MESSAGE = 'Arrival date must be between 1/3/2026 and 30/9/2026'
+  const schema = dateTextInRange('arrivalDateAtPort', {
+    min: new Date(Date.UTC(2026, 2, 1)),
+    max: new Date(Date.UTC(2026, 8, 30)),
+    invalidMessage: INVALID_MESSAGE,
+    rangeMessage: RANGE_MESSAGE
+  })
+
+  it('Should pass a blank value, leaving the field optional', () => {
+    expect(run(schema, { arrivalDateAtPort: '' }).errors).toBeNull()
+  })
+
+  it.each(['1/3/2026', '01/03/2026', '30/9/2026', '15/6/2026'])(
+    'Should accept %s, inside or on the bounds',
+    (value) => {
+      expect(run(schema, { arrivalDateAtPort: value }).errors).toBeNull()
+    }
+  )
+
+  it.each(['28/2/2026', '1/10/2026', '1/1/1900'])(
+    'Should reject %s as out of range',
+    (value) => {
+      expect(run(schema, { arrivalDateAtPort: value }).errors).toEqual({
+        arrivalDateAtPort: RANGE_MESSAGE
+      })
+    }
+  )
+
+  it.each(['31/2/2026', '27/3', '2026-03-27', 'not a date'])(
+    'Should reject %s as not a real date, not as out of range',
+    (value) => {
+      expect(run(schema, { arrivalDateAtPort: value }).errors).toEqual({
+        arrivalDateAtPort: INVALID_MESSAGE
+      })
+    }
+  )
+
+  it('Should fall back to the invalid message when no range message is given', () => {
+    const withoutRangeMessage = dateTextInRange('arrivalDateAtPort', {
+      min: new Date(Date.UTC(2026, 2, 1)),
+      max: new Date(Date.UTC(2026, 8, 30)),
+      invalidMessage: INVALID_MESSAGE
+    })
+
+    expect(
+      run(withoutRangeMessage, { arrivalDateAtPort: '1/1/1900' }).errors
+    ).toEqual({ arrivalDateAtPort: INVALID_MESSAGE })
+  })
+})
+
+describe('#compose + the Joi → GDS mapping', () => {
+  const schema = compose(
+    requiredText('fullName', FULL_NAME_REQUIRED_MESSAGE),
+    postcode('postcode')
+  )
+
+  it('Should let unknown keys (e.g. the CSRF crumb) pass through', () => {
+    expect(
+      run(schema, { fullName: 'Alex', postcode: 'SW1A 1AA', crumb: 'tok' })
+        .errors
+    ).toBeNull()
+  })
+
+  it('Should collect one message per failing field (abortEarly: false)', () => {
+    const { errors } = run(schema, { fullName: '', postcode: 'NOPE' })
+    expect(errors).toEqual({
+      fullName: FULL_NAME_REQUIRED_MESSAGE,
+      postcode: 'Enter a valid postcode'
+    })
+  })
+
+  it('Should return null errors when everything is valid', () => {
+    expect(run(schema, { fullName: 'Alex', postcode: '' }).errors).toBeNull()
+  })
+})
