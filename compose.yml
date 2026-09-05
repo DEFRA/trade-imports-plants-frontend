@@ -41,7 +41,7 @@ services:
   your-frontend:
     build: ./
     ports:
-      - '3000:3000'
+      - '3003:3003'
     links:
       - 'floci:floci'
       - 'redis:redis'
@@ -53,7 +53,7 @@ services:
     env_file:
       - 'compose/aws.env'
     environment:
-      PORT: 3000
+      PORT: 3003
       NODE_ENV: production
       REDIS_HOST: redis
       LOG_FORMAT: pino-pretty
