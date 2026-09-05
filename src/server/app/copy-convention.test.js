@@ -1,12 +1,31 @@
+import { readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { leaves, isCopyLeaf } from './shared/copy-leaves.js'
 import { copy as sharedCopy, validatorDefaults } from './shared/copy.en.js'
 
-// The per-feature half of this convention — every feature owning a copy/
-// folder with copy.en.js, copy.cy.js and copy.test.js, and no copy files at
-// a feature root — lands back here with the first high-risk-plants feature.
-// The set has none, so only the shared chrome is checkable today.
+const FEATURES_DIR = fileURLToPath(
+  new URL('./sets/high-risk-plants/journeys/linear/features', import.meta.url)
+)
+
+const featureDirs = readdirSync(FEATURES_DIR, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+
+describe('copy convention — the per-feature half', () => {
+  // The set owns no features, so the per-feature checks cannot run. Left as a
+  // comment they would stay absent silently: the suite would go green with the
+  // first feature, asserting nothing about it. This fails instead.
+  it('Should be restored once the set owns a feature', () => {
+    expect(
+      featureDirs,
+      'the set now owns features — restore the per-feature copy-convention ' +
+        'checks (a copy/ folder with copy.en.js, copy.cy.js and copy.test.js ' +
+        'per feature, and no copy files at a feature root)'
+    ).toEqual([])
+  })
+})
 
 describe('copy convention — shared chrome', () => {
   it('Should carry the chrome namespaces in the shared module', () => {

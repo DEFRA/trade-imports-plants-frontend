@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { leaves, isCopyLeaf } from './shared/copy-leaves.js'
@@ -11,10 +13,26 @@ import {
   validatorDefaults as validatorDefaultsCy
 } from './shared/copy.cy.js'
 
-// The per-feature scan — one pair per feature copy/ folder, plus the
-// journey's section-caption pair — lands back here with the first
-// high-risk-plants feature. The set has none, so the shared chrome and the
-// validator defaults are the only pairs today.
+const FEATURES_DIR = fileURLToPath(
+  new URL('./sets/high-risk-plants/journeys/linear/features', import.meta.url)
+)
+
+const featureDirs = readdirSync(FEATURES_DIR, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+
+describe('copy parity — the per-feature scan', () => {
+  // The set owns no features, so only the shared chrome and validator defaults
+  // are paired today. This fails the moment a feature exists, so the per-feature
+  // scan is restored with the first increment rather than silently skipped.
+  it('Should be restored once the set owns a feature', () => {
+    expect(
+      featureDirs,
+      'the set now owns features — restore the per-feature copy-parity scan ' +
+        '(one en/cy pair per feature copy/ folder, plus the section-caption pair)'
+    ).toEqual([])
+  })
+})
 
 // String leaves that may legitimately be byte-identical across en and cy
 // (proper nouns, codes, reference formats). Keyed `${module}:${path}` —
