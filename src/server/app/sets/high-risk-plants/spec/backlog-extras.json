@@ -206,30 +206,6 @@
       }
     },
     {
-      "key": "restore-copy-convention-tripwire",
-      "type": "restore",
-      "repo": null,
-      "title": "Restore the per-feature copy-convention checks (first feature disarms the tripwire)",
-      "detail": "copy-convention.test.js asserts readdirSync(features) is [] and fails the moment the dashboard feature folder exists. Rewrite its per-feature half: walk every feature dir, require copy/copy.en.js, copy/copy.cy.js and copy/copy.test.js, forbid copy files at a feature root, check every leaf with isCopyLeaf (strings or function leaves only in validatorDefaults). Keep the chrome-namespace and footer-label pins. Evidence: skeleton tripwire-copy-convention (copy-convention.test.js:8-27); behaviour copy-tripwires-restore.",
-      "milestone": null,
-      "gate": null,
-      "anchor": {
-        "after": "page:dashboard"
-      }
-    },
-    {
-      "key": "restore-copy-parity-tripwire",
-      "type": "restore",
-      "repo": null,
-      "title": "Restore the per-feature en/cy copy-parity pairs (second armed tripwire)",
-      "detail": "copy-parity.test.js asserts the features folder is empty and demands 'one en/cy pair per feature copy/ folder, plus the section-caption pair'; modulePairs lists only shared and shared.validatorDefaults and IDENTICAL_ALLOWLIST is empty. Extend modulePairs to every feature's copy/ pair (derive from the features folder so a new feature cannot be forgotten), keep leaf paths / kinds / function arities identical across en and cy, and register any byte-identical string under '<module>:<leafPath>' with a justification (codes, GB, reference formats, proper nouns). Evidence: skeleton tripwire-copy-parity (copy-parity.test.js:16-51), copy-parity-allowlist-key.",
-      "milestone": null,
-      "gate": null,
-      "anchor": {
-        "after": "key:restore-copy-convention-tripwire"
-      }
-    },
-    {
       "key": "wire-section-captions",
       "type": "restore",
       "repo": null,
@@ -238,7 +214,7 @@
       "milestone": null,
       "gate": null,
       "anchor": {
-        "after": "key:restore-copy-parity-tripwire"
+        "after": "page:dashboard"
       }
     },
     {
@@ -574,13 +550,13 @@
       "milestone": null,
       "gate": null,
       "anchor": {
-        "after": "key:restore-copy-parity-tripwire"
+        "after": "page:dashboard"
       }
     },
     {
       "key": "dashboard-date-submitted-real-list",
       "type": "fix",
-      "repo": null,
+      "repo": "both",
       "title": "Carry submittedAt on the notifications list so Date submitted renders in real mode",
       "detail": "GET /notifications returns NotificationPageResponse<NotificationView> and NotificationView (plants-backend .../notification/NotificationView.java:31-35) exposes only referenceNumber, concurrencyToken, status and created, so the frontend real list marshal (services/persistence/records/real/marshal/list-item.js:32) hardcodes submittedAt: null and every dashboard card shows an empty Date submitted in real mode; MI metric 6 cannot be read from the list. Backend: add LocalDateTime submittedAt to NotificationView (interface getter and Data field) so the list projection loads it — null unless the record has been submitted — with a controller test asserting a SUBMITTED item carries it. Frontend: map submittedAt: notification.submittedAt ?? null in list-item.js the way real/marshal/document.js:11 does for a single record (null unless status is SUBMITTED); real.requests.test.js list case asserts submittedAt for a SUBMITTED item; the dashboard fit spec asserts the Date submitted row. Animals has the same hole (animals list-item.js:32) — declared duplication, not shared; fix it there separately if wanted. Two repos: repos/trade-imports-plants-backend then repos/trade-imports-plants-frontend, same branch name in both (repo left null). Evidence: behaviour mi-metrics-eight; dateOfNotification displayedOn; dashboard-listing (Date created | Date submitted).",
       "milestone": null,
