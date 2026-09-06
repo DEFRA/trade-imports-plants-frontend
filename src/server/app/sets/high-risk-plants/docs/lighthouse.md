@@ -4,23 +4,28 @@ Lighthouse CI audits the frontend's own pages. The source of truth is
 [`lighthouserc.cjs`](../../../../../../lighthouserc.cjs) at the repository root,
 plus the scripts under `scripts/lighthouse/`.
 
-## The run is not usable yet
+## There is nothing to audit yet
 
-`scripts/lighthouse/run-audit.js` and `scripts/lighthouse/seed-audit-targets.js`
-both import two modules that were not carried across from the animals frontend:
+Both modules the run imports now exist, so `npm run lighthouse` no longer fails
+at import:
 
-- `scripts/lighthouse/audit-targets.js` (and its `audit-targets.test.js`), which
-  exports `auditUrls`, `reportNames` and `TARGETS_FILE`
-- `scripts/lighthouse/seed-notification.js`, which exports `SEED_SHAPES`,
-  `createNotification`, `fillNotification` and `submitNotification`
+- `scripts/lighthouse/audit-targets.js` (with `audit-targets.test.js`) derives
+  the URL list from the app's own registered routes and holds the `SKIPPED`,
+  `FILLED_BY` and `QUERY` reasons. All three are empty.
+- `scripts/lighthouse/seed-notification.js` holds one `SEED_SHAPES` entry per
+  blueprint use case — ware potatoes, ware potatoes notified late, seed
+  potatoes, plants for planting, and wood — and fills a notification by walking
+  the journey's own pages. Every shape's step list is empty.
 
-`npm run lighthouse` therefore fails at import. Both modules have to be written
-against the plants journey before the audit can run — `seed-notification.js`
-especially, because its `SEED_SHAPES` describe how to fill a plants
-notification, which is journey content and cannot be copied.
+The set registers no journey pages yet, so the derived URL list is empty and
+there is nothing to audit until the first page lands. Each page increment adds
+its own step to the seed shapes whose use case reaches that page, and its own
+entry in `SKIPPED`, `FILLED_BY` or `QUERY` where the page needs one.
 
-Even once they exist, the URL list is derived from pages this set does not yet
-have, so there is nothing to audit until the first journey page lands.
+The five shapes are held in `seed-notification.js` for now. They move to
+`journeys/linear/flow/fixtures/happy-path.json` once that fixture lands, so the
+Lighthouse seed, the flow fixture and the tests-repo journey specs share one set
+of use cases.
 
 ## What the run does, once it works
 
@@ -74,9 +79,13 @@ The URL list is derived, not hand-maintained, so a new page joins the audit by
 being a registered route the seeding step can reach. For a page that should be
 audited:
 
-1. Make sure a seed shape fills enough of the notification for the page's
-   prerequisites to pass.
-2. Give the page a stable report name in `audit-targets.js`.
+1. Add a step to every seed shape that has to fill enough of the notification
+   for the page's prerequisites to pass.
+2. Check the page's stable report name. `reportName` derives it from the route;
+   `reportNames` refuses two routes that would claim the same name. A page
+   audited on a shape other than the default needs a `FILLED_BY` entry naming
+   that shape; a page that should not be audited at all needs a `SKIPPED` entry
+   with a reason.
 3. Make sure the auth script can reach it after sign-in.
 4. Run Lighthouse and open that page's HTML report.
 5. Check all three asserted categories.
@@ -112,8 +121,8 @@ uploads the report for 14 days, publishes it to GitHub Pages and passes the
 result, report URL and flagged findings to the workspace status action.
 
 Plants needs the same workflow before a Lighthouse result can appear on a pull
-request here. Until then Lighthouse is a local-only check, and only once the two
-missing scripts above exist.
+request here. Until this repository has its own `lighthouse.yml`, Lighthouse is
+a local-only check.
 
 When a Lighthouse change fails in CI, use the uploaded report for that branch.
 Reproduce it against the same route and stack before changing code or limits.
