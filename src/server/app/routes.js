@@ -37,6 +37,7 @@ import { registerJourneyCookie } from './engine/journey.js'
 import { isStubMode } from '../common/services/mode.js'
 import * as countries from './services/countries/index.js'
 import * as ports from './services/ports/index.js'
+import { primeWithRetry } from './services/prime-with-retry.js'
 
 export const highRiskPlants = {
   plugin: {
@@ -64,8 +65,8 @@ export const highRiskPlants = {
         return target ? h.redirect(target).takeover() : h.continue
       })
       if (!isStubMode()) {
-        await countries.prime()
-        await ports.prime()
+        await primeWithRetry('countries', countries.prime, server.logger)
+        await primeWithRetry('ports', ports.prime, server.logger)
       }
       server.route(allRoutes)
     }
