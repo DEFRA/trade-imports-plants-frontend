@@ -229,10 +229,11 @@ else's image.
 `npm run lighthouse` seeds its audit targets from the app's own registered
 routes, then runs Lighthouse CI against them.
 
-It does not work yet. Two scripts were not carried across from the animals
-frontend, and the set has no pages to audit in any case. The
+The set registers no journey pages yet, so the derived URL list is empty and
+there is nothing to audit until the first page lands. The
 [Lighthouse guide](src/server/app/sets/high-risk-plants/docs/lighthouse.md)
-names the missing modules, the score floors and the contribution steps.
+covers what each page increment adds, the score floors and the contribution
+steps.
 
 ## SonarCloud
 
