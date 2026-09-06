@@ -580,7 +580,7 @@
     {
       "key": "dashboard-date-submitted-real-list",
       "type": "fix",
-      "repo": null,
+      "repo": "both",
       "title": "Carry submittedAt on the notifications list so Date submitted renders in real mode",
       "detail": "GET /notifications returns NotificationPageResponse<NotificationView> and NotificationView (plants-backend .../notification/NotificationView.java:31-35) exposes only referenceNumber, concurrencyToken, status and created, so the frontend real list marshal (services/persistence/records/real/marshal/list-item.js:32) hardcodes submittedAt: null and every dashboard card shows an empty Date submitted in real mode; MI metric 6 cannot be read from the list. Backend: add LocalDateTime submittedAt to NotificationView (interface getter and Data field) so the list projection loads it — null unless the record has been submitted — with a controller test asserting a SUBMITTED item carries it. Frontend: map submittedAt: notification.submittedAt ?? null in list-item.js the way real/marshal/document.js:11 does for a single record (null unless status is SUBMITTED); real.requests.test.js list case asserts submittedAt for a SUBMITTED item; the dashboard fit spec asserts the Date submitted row. Animals has the same hole (animals list-item.js:32) — declared duplication, not shared; fix it there separately if wanted. Two repos: repos/trade-imports-plants-backend then repos/trade-imports-plants-frontend, same branch name in both (repo left null). Evidence: behaviour mi-metrics-eight; dateOfNotification displayedOn; dashboard-listing (Date created | Date submitted).",
       "milestone": null,
