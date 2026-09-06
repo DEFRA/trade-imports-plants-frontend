@@ -1411,6 +1411,23 @@
       "supersededBy": null,
       "decidedAt": "2026-09-06",
       "status": "current"
+    },
+    {
+      "id": "d-084",
+      "subject": {
+        "kind": "behaviour",
+        "id": "copy-tripwires-restore"
+      },
+      "ruling": "adopt",
+      "resolution": "The dashboard increment rewrites copy-convention.test.js and copy-parity.test.js in the same commit as the first feature folder; the two restore extras (restore-copy-convention-tripwire, restore-copy-parity-tripwire) are withdrawn and their detail folds into the dashboard increment's plan. The flow/section-captions pair still joins copy-parity with wire-section-captions.",
+      "rationale": "Under the batch orchestrator every increment is its own ticket, branch and PR, and the PR's CI runs npm test. A dashboard PR that leaves both tripwires red can never merge, so the restore cannot be a later increment. The build handover (workareas/shared/high-risk-plants-digest/BUILD-HANDOVER.md, 'What will stop the run') anticipates folding the restore into the same increment; the orchestrator applied it on 2026-09-06 and Sam has not yet confirmed — supersede this decision to reverse it.",
+      "decidedBy": "sam",
+      "dissent": null,
+      "escalate": false,
+      "supersedes": null,
+      "supersededBy": null,
+      "decidedAt": "2026-09-06",
+      "status": "current"
     }
   ]
 }

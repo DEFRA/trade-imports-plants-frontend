@@ -206,30 +206,6 @@
       }
     },
     {
-      "key": "restore-copy-convention-tripwire",
-      "type": "restore",
-      "repo": null,
-      "title": "Restore the per-feature copy-convention checks (first feature disarms the tripwire)",
-      "detail": "copy-convention.test.js asserts readdirSync(features) is [] and fails the moment the dashboard feature folder exists. Rewrite its per-feature half: walk every feature dir, require copy/copy.en.js, copy/copy.cy.js and copy/copy.test.js, forbid copy files at a feature root, check every leaf with isCopyLeaf (strings or function leaves only in validatorDefaults). Keep the chrome-namespace and footer-label pins. Evidence: skeleton tripwire-copy-convention (copy-convention.test.js:8-27); behaviour copy-tripwires-restore.",
-      "milestone": null,
-      "gate": null,
-      "anchor": {
-        "after": "page:dashboard"
-      }
-    },
-    {
-      "key": "restore-copy-parity-tripwire",
-      "type": "restore",
-      "repo": null,
-      "title": "Restore the per-feature en/cy copy-parity pairs (second armed tripwire)",
-      "detail": "copy-parity.test.js asserts the features folder is empty and demands 'one en/cy pair per feature copy/ folder, plus the section-caption pair'; modulePairs lists only shared and shared.validatorDefaults and IDENTICAL_ALLOWLIST is empty. Extend modulePairs to every feature's copy/ pair (derive from the features folder so a new feature cannot be forgotten), keep leaf paths / kinds / function arities identical across en and cy, and register any byte-identical string under '<module>:<leafPath>' with a justification (codes, GB, reference formats, proper nouns). Evidence: skeleton tripwire-copy-parity (copy-parity.test.js:16-51), copy-parity-allowlist-key.",
-      "milestone": null,
-      "gate": null,
-      "anchor": {
-        "after": "key:restore-copy-convention-tripwire"
-      }
-    },
-    {
       "key": "wire-section-captions",
       "type": "restore",
       "repo": null,
@@ -238,7 +214,7 @@
       "milestone": null,
       "gate": null,
       "anchor": {
-        "after": "key:restore-copy-parity-tripwire"
+        "after": "page:dashboard"
       }
     },
     {
@@ -574,7 +550,7 @@
       "milestone": null,
       "gate": null,
       "anchor": {
-        "after": "key:restore-copy-parity-tripwire"
+        "after": "page:dashboard"
       }
     },
     {
