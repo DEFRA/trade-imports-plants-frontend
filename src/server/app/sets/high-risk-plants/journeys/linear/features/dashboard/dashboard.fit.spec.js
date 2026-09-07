@@ -30,6 +30,12 @@ const buttonActionFor = (page, action, reference) =>
     name: `${action} ${copy.actionHidden(reference)}`
   })
 
+const cardRowValue = (page, key) =>
+  page
+    .locator('.govuk-summary-list__row')
+    .filter({ has: page.getByText(key, { exact: true }) })
+    .locator('.govuk-summary-list__value')
+
 const expectNoSeriousOrCriticalViolations = async (page, subject) => {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa'])
@@ -156,6 +162,20 @@ test.describe('dashboard feature — notification cards', () => {
         name: `${copy.actions.resume} ${copy.actionHidden(reference)} (${reference})`
       })
     ).toHaveCount(0)
+  })
+
+  test('renders a dated Date created row and an empty Date submitted row on a draft', async ({
+    page
+  }) => {
+    const reference = await startNotification(page)
+
+    await page.goto(`/?referenceNumber=${reference}`)
+
+    await expect(
+      page.getByRole('heading', { name: reference, exact: true })
+    ).toBeVisible()
+    await expect(cardRowValue(page, copy.table.created)).not.toHaveText('')
+    await expect(cardRowValue(page, copy.table.submitted)).toHaveText('')
   })
 
   test('offers no Copy as new action', async ({ page }) => {
