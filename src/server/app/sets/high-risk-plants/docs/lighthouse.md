@@ -113,16 +113,19 @@ SEO findings are not included in that file.
 
 ## CI ownership
 
-There is no `.github/workflows/lighthouse.yml` in this repository. The animals
-frontend runs Lighthouse after a successful branch image publish, or by manual
-dispatch: it checks out the workspace, starts the stack for the chosen branch,
-installs the frontend, runs `npm run lighthouse`, always tears the stack down,
-uploads the report for 14 days, publishes it to GitHub Pages and passes the
-result, report URL and flagged findings to the workspace status action.
+This repository has its own `.github/workflows/lighthouse.yml`. It runs after a
+successful branch image publish, or by manual dispatch: it checks out the
+workspace, starts the stack for the chosen branch, installs the frontend, runs
+`npm run lighthouse`, always tears the stack down, uploads the report for 14
+days, publishes it to GitHub Pages and passes the result, report URL and
+flagged findings to the workspace status action.
 
-Plants needs the same workflow before a Lighthouse result can appear on a pull
-request here. Until this repository has its own `lighthouse.yml`, Lighthouse is
-a local-only check.
+The set registers no routes yet, so `lighthouse:targets` writes no URLs,
+`lighthouserc.cjs` fails with `lists no URLs` and the Lighthouse check is red
+on every pull request with an empty report. That is expected until the first
+journey page lands. It is not a reason to lower a floor, stub a URL list or
+gate the workflow behind manual dispatch.
 
-When a Lighthouse change fails in CI, use the uploaded report for that branch.
-Reproduce it against the same route and stack before changing code or limits.
+Once pages are registered, when a Lighthouse change fails in CI, use the
+uploaded report for that branch. Reproduce it against the same route and
+stack before changing code or limits.
