@@ -15,13 +15,19 @@ at import:
 - `scripts/lighthouse/seed-notification.js` holds one `SEED_SHAPES` entry per
   blueprint use case — ware potatoes, ware potatoes notified late, seed
   potatoes, plants for planting, and wood — and fills a notification by walking
-  the journey's own pages. Every shape's step list is empty.
+  the journey's own pages. Every shape answers `commodity-type` with the type
+  its use case is for.
 
 The dashboard at `/` is the first audited route, so the derived URL list is no
 longer empty. Each further page increment adds its own URL, its own step to the
 seed shapes whose use case reaches that page, and its own entry in `SKIPPED`,
-`FILLED_BY` or `QUERY` where the page needs one. The seed shapes' step lists are
-still empty because no journey page collects anything yet.
+`FILLED_BY` or `QUERY` where the page needs one.
+
+A seed step is not only there to reach the pages below it. The re-fetch below
+runs in a session that never created the notification, so the entry guard
+(`journeys/linear/flow/entry-guard.js`) admits it only on a committed user
+answer. A shape with no step would bounce every guarded URL, the hub included,
+to `commodity-type`.
 
 The five shapes are held in `seed-notification.js` for now. They move to
 `journeys/linear/flow/fixtures/happy-path.json` once that fixture lands, so the

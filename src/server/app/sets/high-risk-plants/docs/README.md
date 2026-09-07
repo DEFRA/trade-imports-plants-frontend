@@ -107,17 +107,17 @@ Build bindings with `feature`, `scalar` and `grouped` from
 
 ## Gates on the first journey-page increment
 
-**The entry guard is inert and must be restored.**
-`flow/entry-guard.js` returns `null` for every request. That is correct
-while there is nowhere to deep-link into, and a real hole the moment a
-journey page exists: without it anyone holding a journey URL reaches a
-mid-journey page directly and bypasses the opening run. Restore the
-shape below, against this journey's entry page — a
-`guardedJourneyPath` filter (skip anything outside `/notifications/<id>/`,
-skip the create path, skip the `amend`/`cancel-amend`/`copy`/`delete`
-action slugs, skip the entry page and its sub-paths), with
-`openingRunStarted` and `hasCommittedNotificationAnswers` as the two
-let-throughs.
+**The entry guard is restored — gate closed.**
+`flow/entry-guard.js` is live, against this journey's entry page
+`commodity-type`. Its `guardedJourneyPath` filter skips anything outside
+`/notifications/<id>/`, the create path, the
+`amend`/`cancel-amend`/`copy`/`delete` action slugs, and the entry page
+and its sub-paths. Every other journey path — the hub included — is
+admitted only by one of two let-throughs: `openingRunStarted` for that
+journey in this session, or `hasCommittedNotificationAnswers`. Anything
+else is redirected to `commodity-type`, so a journey URL alone no longer
+reaches a mid-journey page or bypasses the opening run. See
+[Journey flow and gates](journey-flow-and-gates.md).
 
 **`configureAnswersForRead` is not wired.** `bridge/answers-read.js`
 defaults to identity, which is correct with no party obligations.

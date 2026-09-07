@@ -72,24 +72,28 @@ The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey
 entry page is an ordinary page otherwise, with no opening-run special case.
 
-[`entry-guard.js`](../journeys/linear/flow/entry-guard.js) is **inert**:
+[`entry-guard.js`](../journeys/linear/flow/entry-guard.js) is **live**, keyed to
+the entry page `commodity-type`, whose identity it imports from
+[`features/commodity-type/page.js`](../journeys/linear/features/commodity-type/page.js).
+`routes.js` calls `entryGuardTarget` from `server.ext('onPreHandler')` and
+redirects on any target it returns. The guard:
 
-```js
-export const entryGuardTarget = async () => null
-```
-
-That is correct while there is nowhere to deep-link into, and it becomes a real
-hole the moment a journey page exists. Restoring it is a gate on the first page
-increment. The guard must:
-
-- ignore anything outside `/notifications/<id>/`
-- ignore the create path
-- ignore the `amend`, `cancel-amend`, `copy` and `delete` action slugs
-- ignore the entry page and its sub-paths, so there is no redirect loop
-- admit a request when the opening run has begun for that journey in this
-  session, or when the journey carries committed user answers
-- send anything else — a deep link to an id this session never created and that
+- ignores anything outside `/notifications/<id>/`
+- ignores the create path
+- ignores the `amend`, `cancel-amend`, `copy` and `delete` action slugs — `copy`
+  has no route yet, and the exemption is deliberately ahead of it
+- ignores the entry page and its sub-paths, so there is no redirect loop
+- admits a request when the opening run has begun for that journey in this
+  session (`openingRunStarted`, true for both `RUN_ACTIVE` and `RUN_COMPLETE`),
+  or when the journey carries committed user answers
+  (`hasCommittedNotificationAnswers`)
+- sends anything else — a deep link to an id this session never created and that
   holds no answers — to the entry page
+
+`hasCommittedNotificationAnswers` counts only answers that resolve to a manifest
+obligation and are not `SYSTEM_POPULATED`, so a journey holding nothing but a
+flow-only key reads as fresh. The commodity-type controller imports the same
+predicate to choose its Back link.
 
 A journey the guard bounces to the entry page does not resume the opening run
 when it saves that page: `kit.nextTarget` finds `inOpeningRun` false, so

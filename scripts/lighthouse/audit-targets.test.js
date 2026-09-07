@@ -12,8 +12,14 @@ import {
   SKIPPED
 } from './audit-targets.js'
 import { journeyIdIn, SEED_SHAPES } from './seed-notification.js'
+import { commodityTypes } from '../../src/server/app/sets/high-risk-plants/services/commodities/index.js'
 
 const ORIGIN = 'http://localhost:3003'
+
+const COMMODITY_TYPE_STEP = (commodityType) => ({
+  slug: 'commodity-type',
+  fields: { commodityType }
+})
 
 const USE_CASES = [
   'warePotatoes',
@@ -286,8 +292,25 @@ describe('#SEED_SHAPES', () => {
     expect(Object.keys(SEED_SHAPES)).toEqual(USE_CASES)
   })
 
-  it('Should seed every shape with no journey steps', () => {
-    expect(Object.values(SEED_SHAPES).flatMap(({ steps }) => steps)).toEqual([])
+  it('Should seed every shape through the commodity type its use case is for', () => {
+    expect(
+      Object.fromEntries(
+        Object.entries(SEED_SHAPES).map(([shape, { steps }]) => [shape, steps])
+      )
+    ).toEqual({
+      warePotatoes: [COMMODITY_TYPE_STEP('potatoes')],
+      warePotatoesLate: [COMMODITY_TYPE_STEP('potatoes')],
+      seedPotatoes: [COMMODITY_TYPE_STEP('potatoes')],
+      plantsForPlanting: [COMMODITY_TYPE_STEP('plants-for-planting')],
+      woodWithoutBark: [COMMODITY_TYPE_STEP('wood-and-cut-trees')]
+    })
+  })
+
+  it('Should seed only commodity types the journey offers', () => {
+    const seeded = Object.values(SEED_SHAPES).flatMap(({ steps }) =>
+      steps.map(({ fields }) => fields.commodityType)
+    )
+    expect(seeded.every((type) => commodityTypes().includes(type))).toBe(true)
   })
 })
 

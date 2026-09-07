@@ -274,3 +274,35 @@ test.describe('commodity-type feature', () => {
     )
   })
 })
+
+test.describe('commodity-type as the journey entry page', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+    await startAtCommodityType(page)
+  })
+
+  test('bounces a deep link from a session that never created the notification, and saving lands on the overview', async ({
+    browser,
+    page
+  }) => {
+    const notificationHubPath = hubPathOf(page)
+    const deepLinkContext = await browser.newContext({
+      baseURL: new URL(page.url()).origin
+    })
+
+    try {
+      const deepLinkPage = await deepLinkContext.newPage()
+      await signIn(deepLinkPage)
+      await deepLinkPage.goto(notificationHubPath)
+
+      await expect(deepLinkPage).toHaveURL(PAGE_URL)
+
+      await radioFor(deepLinkPage, 'potatoes').check()
+      await saveAndContinue(deepLinkPage).click()
+
+      await expect(deepLinkPage).toHaveURL(notificationHubPath)
+    } finally {
+      await deepLinkContext.close()
+    }
+  })
+})
