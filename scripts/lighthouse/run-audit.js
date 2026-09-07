@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import {
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   renameSync,
@@ -64,8 +65,27 @@ const clearPreviousReports = () => {
  * journey id and so changes every run. Renaming to the route's own name — and
  * rewriting the manifest the publish steps read — keeps one report per page
  * however many times the audit runs. */
+const targets = () => {
+  if (!existsSync(TARGETS_FILE)) {
+    throw new Error(
+      'No Lighthouse targets found — run `npm run lighthouse` so the setup ' +
+        'step can derive the URL list'
+    )
+  }
+  return JSON.parse(readFileSync(TARGETS_FILE, 'utf8'))
+}
+
+/** LHCI refuses to run without a URL, and the setup step writes an empty list
+ * while the set registers no pages. An empty manifest says the same thing LHCI
+ * would have said — this run produced no page reports — and gives the report
+ * index and the flagged-audits step the file they read. */
+const writeEmptyManifest = () => {
+  mkdirSync(REPORT_DIR, { recursive: true })
+  writeFileSync(MANIFEST, `${JSON.stringify([], null, 2)}\n`)
+}
+
 const useStableReportNames = () => {
-  const { reports = {} } = JSON.parse(readFileSync(TARGETS_FILE, 'utf8'))
+  const { reports = {} } = targets()
   const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'))
   for (const entry of manifest) {
     const name = stableNameOf(reports, entry.url)
@@ -76,6 +96,15 @@ const useStableReportNames = () => {
 }
 
 clearPreviousReports()
+
+const { urls = [] } = targets()
+
+if (urls.length === 0) {
+  writeEmptyManifest()
+  process.stdout.write('Lighthouse audited no pages — no URLs to audit\n')
+  process.exit(0)
+}
+
 const status = runLighthouse()
 if (existsSync(MANIFEST)) {
   useStableReportNames()

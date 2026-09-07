@@ -69,15 +69,20 @@ const journeyIdFor = (journeyIds, path) => {
   return journeyId
 }
 
-export const auditPaths = (journeyIds, routes = allRoutes) => {
+/** The route paths this run will audit, still carrying `{journeyId}` because no
+ * notification has been seeded yet. Empty while the set registers no pages,
+ * which is how the setup step knows there is nothing to seed and nothing to
+ * audit. */
+export const auditableRoutePaths = (routes = allRoutes) => {
   assertTargetsAreCurrent(routes)
-  return getPathsOf(routes)
-    .filter((path) => !SKIPPED.has(path))
-    .map(
-      (path) =>
-        `${path.replace(JOURNEY_PARAM, journeyIdFor(journeyIds, path))}${QUERY.get(path) ?? ''}`
-    )
+  return getPathsOf(routes).filter((path) => !SKIPPED.has(path))
 }
+
+export const auditPaths = (journeyIds, routes = allRoutes) =>
+  auditableRoutePaths(routes).map(
+    (path) =>
+      `${path.replace(JOURNEY_PARAM, journeyIdFor(journeyIds, path))}${QUERY.get(path) ?? ''}`
+  )
 
 export const auditUrls = (origin, journeyIds, routes = allRoutes) =>
   auditPaths(journeyIds, routes).map((path) => new URL(path, origin).toString())

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   assertTargetsAreCurrent,
+  auditableRoutePaths,
   auditPaths,
   auditUrls,
   FILLED_BY,
@@ -139,6 +140,20 @@ describe('#auditPaths', () => {
     expect(() => withFilledBy(() => auditPaths(unseeded, ROUTES))).toThrow(
       /audits .* on the "woodWithoutBark" notification, which the setup step did not seed/
     )
+  })
+})
+
+describe('#auditableRoutePaths', () => {
+  it('Should name every GET route the skip list does not name, journey id unsubstituted', () => {
+    const paths = withSkipped(() => auditableRoutePaths(ROUTES))
+
+    expect(paths).toHaveLength(GET_PATHS.length - SKIPPED_PATH_COUNT)
+    expect(paths).toContain(TREATMENTS_PATH)
+    expect(paths).not.toContain(SKIPPED_PATH)
+  })
+
+  it('Should name nothing until the set registers its first page, so the setup step seeds nothing', () => {
+    expect(auditableRoutePaths()).toEqual([])
   })
 })
 
