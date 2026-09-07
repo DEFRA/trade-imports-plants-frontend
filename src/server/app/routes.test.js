@@ -34,7 +34,10 @@ describe('high-risk-plants plugin registration', () => {
   })
 
   it('Should inject the flow readiness roll-up into the bridge seam', () => {
-    expect(makeScope({}).readyForCheckYourAnswers).toBe(true)
+    expect(makeScope({}).readyForCheckYourAnswers).toBe(false)
+    expect(
+      makeScope({ commodityType: 'potatoes' }).readyForCheckYourAnswers
+    ).toBe(true)
   })
 
   it('Should name the set-owned session cookies', () => {

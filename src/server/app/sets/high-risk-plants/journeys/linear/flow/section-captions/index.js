@@ -2,6 +2,7 @@ import { copyFor } from '../../../../../../shared/copy.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { dashboardPage } from '../../features/dashboard/page.js'
+import { commodityTypePage } from '../../features/commodity-type/page.js'
 
 const copy = copyFor({ en, cy })
 
@@ -13,12 +14,10 @@ const copy = copyFor({ en, cy })
  * where the page sits in the journey, not of the page's own copy. One entry
  * per section, listing its pages — never a string per page.
  *
- * Only the dashboard exists so far. The journey spec names four more sections
- * for pages still to be built, and each page increment files its own page
- * here as it lands:
+ * Pages still to be built, filed here by their own increment as each lands —
+ * into the existing section entry where one exists:
  *
- * - `aboutTheConsignment` — commodity-type, commodities, commodity-details,
- *   origin
+ * - `aboutTheConsignment` — commodities, commodity-details, origin
  * - `arrival` — arrival-status, arrival-details
  * - `destination` — place-of-destination
  * - `consignmentParties` — consignor-select, identification-numbers
@@ -28,7 +27,10 @@ const copy = copyFor({ en, cy })
  * their heading. The unit test beside this file lists those pages explicitly,
  * so a new page cannot arrive without a decision either way.
  */
-export const captionSections = [{ id: 'dashboard', pages: [dashboardPage] }]
+export const captionSections = [
+  { id: 'dashboard', pages: [dashboardPage] },
+  { id: 'aboutTheConsignment', pages: [commodityTypePage] }
+]
 
 const sectionIdByPageId = new Map(
   captionSections.flatMap((section) =>

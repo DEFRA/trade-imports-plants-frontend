@@ -4,13 +4,14 @@ The linear journey owns its topology in
 [`src/server/app/sets/high-risk-plants/journeys/linear/flow/`](../journeys/linear/flow/).
 The platform consumes that policy through `configureJourneyFlow()`.
 
-Every one of those exports is empty today. The platform algorithms run, over
-nothing.
+Those exports hold the start and commodity sections, the `commodities` task row
+and the opening run's single step — everything the journey has landed so far.
 
 ## Flow sections
 
-[`flow.js`](../journeys/linear/flow/flow.js) exports `sections`, currently `[]`.
-A flow section is a navigation sequence:
+[`flow.js`](../journeys/linear/flow/flow.js) exports `sections`, today holding
+`start` (the dashboard) and `commodity` (the commodity-type page). A flow
+section is a navigation sequence:
 
 ```js
 {
@@ -38,9 +39,10 @@ obligation fulfilment.
 
 ## Task rows
 
-[`task-rows.js`](../journeys/linear/flow/task-rows.js) exports `taskRows`,
-currently `[]`. A task row is a hub item and a submit-readiness unit; it is not
-a flow section. Do not call the hub entry a section in code.
+[`task-rows.js`](../journeys/linear/flow/task-rows.js) exports `taskRows`, today
+holding the single `commodities` row the commodity section landed. A task row is
+a hub item and a submit-readiness unit; it is not a flow section. Do not call the
+hub entry a section in code.
 
 ```js
 { id: '<task-row-id>', pages: [firstPage, secondPage] }
@@ -56,15 +58,15 @@ therefore blocks Check and submit until it is complete, so prove both the
 blocked and the complete state.
 
 The hub feature's controller places task-row ids under visible headings and
-supplies their presentation order. Neither the hub feature nor its `GROUPS`
-array exists yet.
+supplies their presentation order. The hub feature and its `GROUPS` array both
+landed with the hub increment.
 
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` is `[]`, so `nextRunTarget` returns `null` for any step id it is
-given, and a journey that somehow began an opening run would fall straight
-through to the hub.
+`RUN_STEPS` holds one step, commodity-type: the opening run opens there and,
+with no later step, `nextRunTarget` falls through to the hub, whose GET marks the
+run complete. An unknown step id still returns `null`.
 
 The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey

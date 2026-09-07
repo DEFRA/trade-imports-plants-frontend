@@ -34,7 +34,14 @@ describe('#copy', () => {
     expect(Object.keys(copy.groups)).toEqual(GROUPS.map((group) => group.id))
   })
 
-  it('Should leave the task-row copy empty until a section lands its row', () => {
-    expect(copy.rows).toEqual({})
+  it('Should title the commodities row in both locales', () => {
+    expect(copy.rows.commodities).toEqual({ title: 'What are you importing?' })
+    expect(cy.rows.commodities).toEqual({
+      title: 'Beth ydych chi’n ei fewnforio?'
+    })
+  })
+
+  it('Should hold only the rows the journey has landed', () => {
+    expect(Object.keys(copy.rows)).toEqual(['commodities'])
   })
 })

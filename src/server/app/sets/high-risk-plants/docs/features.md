@@ -5,12 +5,13 @@ The linear journey keeps pages under
 a vertical slice of page identity, controllers, copy, templates, bindings and
 tests.
 
-That folder holds only its two barrels today —
-[`index.js`](../journeys/linear/features/index.js) exporting empty
-`dispatchPages` and `allRoutes`, and
-[`evaluation.js`](../journeys/linear/features/evaluation.js) exporting a frozen
-empty `featureEvaluationBindings`. Every rule below applies to the first feature
-written into it.
+That folder holds `dashboard/`, `hub/`, `delete-notification/` and
+`commodity-type/`, plus its two barrels:
+[`index.js`](../journeys/linear/features/index.js), whose `dispatchPages` holds
+commodity-type's `meta` and whose `allRoutes` spreads all four features' routes,
+and [`evaluation.js`](../journeys/linear/features/evaluation.js), whose frozen
+`featureEvaluationBindings` holds the commodity-type bundle. Every rule below
+applies to each feature written into it.
 
 ## Page identity
 

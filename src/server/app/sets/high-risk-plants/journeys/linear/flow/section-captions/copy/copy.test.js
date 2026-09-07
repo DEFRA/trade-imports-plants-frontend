@@ -15,10 +15,16 @@ describe('section-caption copy modules', () => {
   })
 
   it('Should name the sections the journey spec names', () => {
-    expect(en.sections).toEqual({ dashboard: 'Dashboard' })
+    expect(en.sections).toEqual({
+      dashboard: 'Dashboard',
+      aboutTheConsignment: 'About the consignment'
+    })
   })
 
   it('Should carry the spec Welsh for every section it names', () => {
-    expect(cy.sections).toEqual({ dashboard: 'Dangosfwrdd' })
+    expect(cy.sections).toEqual({
+      dashboard: 'Dangosfwrdd',
+      aboutTheConsignment: 'Am y llwyth'
+    })
   })
 })

@@ -29,11 +29,11 @@ const copy = copyFor({ en, cy })
 
 /**
  * The numbered task-list groups, in the order the hub renders them, each
- * naming the task rows it holds. Every group lands empty: a task row arrives
- * with the section that owns it, and a group with no rows is not rendered.
+ * naming the task rows it holds. A task row arrives with the section that owns
+ * it, and a group with no rows is not rendered.
  */
 export const GROUPS = [
-  { id: 'about-the-consignment', rows: [] },
+  { id: 'about-the-consignment', rows: ['commodities'] },
   { id: 'arrival-and-destination', rows: [] },
   { id: 'consignment-parties', rows: [] },
   { id: 'check-and-submit', rows: [] }
@@ -72,7 +72,10 @@ const buildReviewItem = (
   journeyId
 ) => {
   const section = reviewSection()
-  const base = { title: { text: title }, hint: { text: hint } }
+  const base = {
+    title: { text: title },
+    ...(hint ? { hint: { text: hint } } : {})
+  }
   if (!sectionGatePasses(section, scope)) {
     return { ...base, status: CANNOT_START_STATUS }
   }
@@ -111,7 +114,10 @@ const buildRowItem = (id, answers, scope, evaluation, journeyId) => {
   if (isHiddenRow(row, status)) {
     return null
   }
-  const base = { title: { text: title }, hint: { text: hint } }
+  const base = {
+    title: { text: title },
+    ...(hint ? { hint: { text: hint } } : {})
+  }
   return rowGatePasses(row, scope)
     ? openRowItem(base, row, scope, status, journeyId)
     : blockedRowItem(base)

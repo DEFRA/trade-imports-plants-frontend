@@ -20,8 +20,11 @@ const cardLink = (page, action, reference) =>
 const startNotification = async (page) => {
   await page.goto('/')
   await page.getByRole('button', { name: dashboardCopy.startButton }).click()
+  await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+  const reference = journeyIdFromPage(page)
+  await page.goto(`/notifications/${reference}`)
   await expect(page).toHaveURL(HUB_URL)
-  return journeyIdFromPage(page)
+  return reference
 }
 
 const openDeleteConfirmation = async (page) => {

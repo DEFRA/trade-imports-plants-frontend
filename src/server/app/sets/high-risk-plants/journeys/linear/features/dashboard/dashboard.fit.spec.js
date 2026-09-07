@@ -16,7 +16,7 @@ const journeyIdFromPage = (page) =>
 const startNotification = async (page) => {
   await page.goto('/')
   await page.getByRole('button', { name: copy.startButton }).click()
-  await expect(page).toHaveURL(/\/notifications\/[^/]+$/)
+  await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
   const reference = journeyIdFromPage(page)
   await page.goto('/')
   return reference
@@ -97,12 +97,14 @@ test.describe('dashboard feature — initial render', () => {
     await expect(page.getByLabel(copy.sort.label)).toHaveValue(DEFAULT_SORT)
   })
 
-  test('starts a notification and lands on its overview', async ({ page }) => {
+  test('starts a notification and lands on its first question', async ({
+    page
+  }) => {
     await page.goto('/')
 
     await page.getByRole('button', { name: copy.startButton }).click()
 
-    await expect(page).toHaveURL(/\/notifications\/[^/]+$/)
+    await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
   })
 })
 
