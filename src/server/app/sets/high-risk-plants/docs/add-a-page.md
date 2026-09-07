@@ -36,10 +36,11 @@ Read them before registering anything:
 - [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js)
 - [`journeys/linear/flow/task-rows.js`](../journeys/linear/flow/task-rows.js)
 
-The first page in the set also has to close the gates listed in the
-[set README](README.md#gates-on-the-first-journey-page-increment) — most
-importantly the inert entry guard, which must be restored in the same increment
-as the first journey page.
+A page increment may also close one of the gates listed in the
+[set README](README.md#gates-on-the-first-journey-page-increment). The entry
+guard was the first of them: it is restored, against `commodity-type`, in the
+increment immediately after the one that landed that page — the guard needs the
+entry page's identity, so it follows rather than shares the increment.
 
 ## 1. Define the page identity and files
 
