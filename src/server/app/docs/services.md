@@ -21,12 +21,16 @@ Platform services are:
 - [`countries`](../services/countries/index.js)
 - [`ports`](../services/ports/index.js)
 - [`address-book`](../services/address-book/index.js)
-- [`transport-reference`](../services/transport-reference/index.js)
-- [`commercial-transporters`](../services/commercial-transporters/index.js)
-- [`import-reason-purpose`](../services/import-reason-purpose/index.js)
 
 Countries and ports expose `prime()` operations. `routes.js` primes them when the
 application runs in real mode, before Hapi routes are registered.
+
+The reason-for-import/purpose service and the transport and transporter services
+were removed because the high-risk-plants journey asks no such question:
+behaviour `import-reason-purpose-service-unused` records that no plants source
+asks a reason-for-import or purpose, and behaviour
+`customs-no-sps-hold-or-matching` records that the journey collects no transport
+or port-of-exit details. Do not restore them without a behaviour that needs them.
 
 There is no document-upload service. The plants alpha persists obligations and
 fulfilments only: no uploads, no outbox, no event publishing and no PIMS routing.

@@ -26,13 +26,16 @@ documented in [Platform services](../../../docs/services.md):
 - countries
 - ports
 - address book
-- transport reference data
-- commercial transporters
-- import-reason purposes
 
-Each of these is generic. Several currently return empty or stubbed data,
-because the values they would serve are journey requirements that have not been
-agreed yet.
+Each of these is generic. Countries and ports are primed from the reference-data
+service when the application runs in real mode, and serve stub data otherwise.
+
+The reason-for-import/purpose service and the transport and transporter services
+were removed because this journey asks no such question: behaviour
+`import-reason-purpose-service-unused` records that no plants source asks a
+reason-for-import or purpose, and behaviour `customs-no-sps-hold-or-matching`
+records that the journey collects no transport or port-of-exit details. Do not
+restore them without a behaviour that needs them.
 
 ## Out of scope
 
