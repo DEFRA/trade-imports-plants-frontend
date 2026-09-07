@@ -23,17 +23,17 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// The set registers only the dashboard and the overview hub today, so every
-// assertion about a collecting page runs against a synthetic route table.
-// Keying the seeded ids off
-// SEED_SHAPES also proves the interface between the two modules: FILLED_BY
-// names a shape, and the shape has to be one the setup step seeds.
+// No page collects an answer yet, so every assertion about a collecting page
+// runs against a synthetic route table. Keying the seeded ids off SEED_SHAPES
+// also proves the interface between the two modules: FILLED_BY names a shape,
+// and the shape has to be one the setup step seeds.
 const journeyIds = Object.fromEntries(
   Object.keys(SEED_SHAPES).map((shape, index) => [shape, `PHN-26-000${index}`])
 )
 
 const DASHBOARD_PATH = '/'
 const HUB_PATH = '/notifications/{journeyId}'
+const DELETE_PATH = '/notifications/{journeyId}/delete'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
@@ -146,10 +146,11 @@ describe('#auditPaths', () => {
     )
   })
 
-  it('Should audit the dashboard and the overview hub the set registers today', () => {
+  it('Should audit the dashboard, the overview hub and the delete confirmation the set registers today', () => {
     expect(auditPaths(journeyIds)).toEqual([
       DASHBOARD_PATH,
-      `/notifications/${journeyIds.warePotatoes}`
+      `/notifications/${journeyIds.warePotatoes}`,
+      `/notifications/${journeyIds.warePotatoes}/delete`
     ])
   })
 })
@@ -163,8 +164,12 @@ describe('#auditableRoutePaths', () => {
     expect(paths).not.toContain(SKIPPED_PATH)
   })
 
-  it('Should name the two GET routes the set registers today', () => {
-    expect(auditableRoutePaths()).toEqual([DASHBOARD_PATH, HUB_PATH])
+  it('Should name the three GET routes the set registers today', () => {
+    expect(auditableRoutePaths()).toEqual([
+      DASHBOARD_PATH,
+      HUB_PATH,
+      DELETE_PATH
+    ])
   })
 })
 
