@@ -13,6 +13,8 @@ import {
   copy as sharedCy,
   validatorDefaults as validatorDefaultsCy
 } from './shared/copy.cy.js'
+import { copy as sectionCaptionsEn } from './sets/high-risk-plants/journeys/linear/flow/section-captions/copy/copy.en.js'
+import { copy as sectionCaptionsCy } from './sets/high-risk-plants/journeys/linear/flow/section-captions/copy/copy.cy.js'
 
 const FEATURES_DIR = fileURLToPath(
   new URL('./sets/high-risk-plants/journeys/linear/features', import.meta.url)
@@ -54,6 +56,13 @@ const modulePairs = async () => {
       name: 'shared.validatorDefaults',
       en: validatorDefaultsEn,
       cy: validatorDefaultsCy
+    },
+    // Journey chrome rather than a feature, so the scan above cannot find it:
+    // the section captions live beside the journey's flow data.
+    {
+      name: 'flow.section-captions',
+      en: sectionCaptionsEn,
+      cy: sectionCaptionsCy
     }
   ]
 }

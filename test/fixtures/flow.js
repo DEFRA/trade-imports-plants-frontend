@@ -64,6 +64,38 @@ export const sections = [
   { id: 'flowOnly', pages: [flowOnlyPage] }
 ]
 
+/**
+ * The fixture's own section captions, in the shape a journey's
+ * `flow/section-captions/` module exports: one entry per captioned section
+ * listing its pages, never a string per page.
+ *
+ * Synthetic like the rest of this directory — the set under
+ * `src/server/app/sets/` owns the real map and nothing here imports it, so
+ * the engine suite stays journey-neutral. `itemsPage` is deliberately left
+ * out so an uncaptioned page is covered too.
+ */
+export const CAPTIONS = { scalars: 'Scalars', itemDetail: 'Item detail' }
+
+const captionSections = [
+  { id: 'scalars', pages: [scalarsPage] },
+  { id: 'itemDetail', pages: [itemDetailPage] }
+]
+
+const captionByPageId = new Map(
+  captionSections.flatMap((section) =>
+    section.pages.map((page) => [page.id, CAPTIONS[section.id]])
+  )
+)
+
+/**
+ * The caption a fixture page renders above its heading.
+ *
+ * @param {string} [pageId] - the page identity's `id`.
+ * @returns {string|undefined} the section name, or undefined for a page the
+ * fixture leaves uncaptioned.
+ */
+export const sectionCaptionOf = (pageId) => captionByPageId.get(pageId)
+
 export const taskRows = [
   { id: 'scalars', pages: [scalarsPage] },
   {

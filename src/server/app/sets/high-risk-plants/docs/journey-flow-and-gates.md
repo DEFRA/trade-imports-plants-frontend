@@ -98,8 +98,10 @@ session sequences through `RUN_STEPS`.
 ## Registration wiring
 
 [`src/server/app/routes.js`](../../../routes.js) imports `sections`, `taskRows`,
-`rowStatus`, `nextRunTarget`, `FLOW_ONLY_KEYS` and `entryGuardTarget`, then
-passes them to
+`rowStatus`, `nextRunTarget`, `FLOW_ONLY_KEYS`, `entryGuardTarget` and
+`sectionCaptionOf` (from
+[`flow/section-captions/index.js`](../journeys/linear/flow/section-captions/index.js)),
+then passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js), along with the
 journey's `LAYOUT` from [`config.js`](../journeys/linear/config.js).
 
@@ -109,15 +111,19 @@ still needs controller and binding registration in the journey barrels.
 
 ## Section captions
 
-`sectionCaption` is **not** passed to `configureJourneyFlow()` today, and
-`flow/section-captions/` does not exist. `flow/journey-flow.js` reads the key
-with `?.`, so every page currently renders no caption. That is a valid state,
-not a bug.
+[`flow/section-captions/index.js`](../journeys/linear/flow/section-captions/index.js)
+owns the map, with its own `copy.en.js`/`copy.cy.js` pair beside it, and
+`sectionCaption` is passed in the `configureJourneyFlow` call in **both**
+[`routes.js`](../../../routes.js) and the test fixture at
+`test/fixtures/index.js`. The fixture keeps a synthetic map of its own so the
+engine suite stays journey-neutral; it never imports this set.
 
-When the first captioned page lands, add
-`flow/section-captions/index.js` with its own `copy.en.js`/`copy.cy.js` pair and
-pass `sectionCaption` in the `configureJourneyFlow` call in **both**
-`routes.js` and the test fixture at `test/fixtures/index.js`.
+`captionSections` is data — an array of `{ id, pages }` importing page
+identities from the features — and `sectionCaptionOf(pageId)` resolves the
+section's name from the copy pair. Never a string chosen page by page. The
+dashboard is the only section so far; the module's doc comment names the four
+the journey spec still expects, so a page increment knows where to file
+itself.
 
 `kit.base()` resolves the name for the page identity a controller passes it and
 puts it in the view as `caption`. The page template imports the macro with

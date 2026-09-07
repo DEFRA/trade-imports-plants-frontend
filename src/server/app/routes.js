@@ -18,6 +18,7 @@ import {
   rowStatus,
   taskRows
 } from './sets/high-risk-plants/journeys/linear/flow/task-rows.js'
+import { sectionCaptionOf } from './sets/high-risk-plants/journeys/linear/flow/section-captions/index.js'
 import { nextRunTarget } from './sets/high-risk-plants/journeys/linear/flow/run.js'
 import { entryGuardTarget } from './sets/high-risk-plants/journeys/linear/flow/entry-guard.js'
 import {
@@ -53,6 +54,7 @@ export const highRiskPlants = {
         nextRunTarget,
         flowOnlyKeys: FLOW_ONLY_KEYS,
         entryGuardTarget,
+        sectionCaption: sectionCaptionOf,
         layout: LAYOUT
       })
       configureReadyForCheckYourAnswers(readyForCheckYourAnswers)
