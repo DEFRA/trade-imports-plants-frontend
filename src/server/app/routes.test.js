@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeAll, afterAll } from 'vitest'
 
 import { createServer } from '../server.js'
 import { statusCodes } from '../common/constants/status-codes.js'
+import { makeScope } from './engine/index.js'
 import { isDispatchBuilt } from './flow/dispatch.js'
 import { allRoutes } from './sets/high-risk-plants/journeys/linear/features/index.js'
 import { mockOidcConfig } from '../common/test-helpers/mock-oidc-config.js'
@@ -28,6 +29,10 @@ describe('high-risk-plants plugin registration', () => {
 
   it('Should pass every boot guard and build the dispatch index', () => {
     expect(isDispatchBuilt()).toBe(true)
+  })
+
+  it('Should inject the flow readiness roll-up into the bridge seam', () => {
+    expect(makeScope({}).readyForCheckYourAnswers).toBe(true)
   })
 
   it('Should name the set-owned session cookies', () => {

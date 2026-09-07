@@ -24,7 +24,7 @@ import { fulfilmentIndexToPath } from './fulfilments/index.js'
 import { pathKey } from '../lib/path.js'
 import { isAnswered } from '../lib/answered.js'
 import { computeReadyForCheckYourAnswers } from './readiness-config.js'
-import { journeyFlowOnlyKeys } from '../flow/journey-flow.js'
+import { flowOnlyKeys } from './flow-only-keys.js'
 
 // `anyInstanceAnswered` — look up the obligation named `id` and walk the
 // answers tree over its ancestor-group chain, testing each positional instance
@@ -128,15 +128,15 @@ export const rawInScope = (evaluation) => projectInScope(evaluation.obligations)
 // Flow-only obligations the notification model does not carry: the submit-time
 // declaration step. The evaluator omits them, so without this layer their
 // owning pages would be unreachable. They are unconditional top-level
-// obligations (bare-id pathKeys). Declared in bridge/obligation-source.js so
-// the answer-key recognition surface and this projection share one list.
+// obligations (bare-id pathKeys). Held in bridge/flow-only-keys.js so the
+// answer-key recognition surface and this projection share one list.
 
 // Project the flow-only obligations onto the FULL scope. They are unconditional
 // top-level obligations (no `activatedBy`, no collection ancestor), always in
 // scope regardless of answers. An additive layer only; the raw evaluator scope
 // (`rawInScope`) is untouched.
 const projectFlowOnlyScope = (inScope) => {
-  for (const id of journeyFlowOnlyKeys()) {
+  for (const id of flowOnlyKeys()) {
     inScope.add(id)
   }
 }
@@ -146,10 +146,11 @@ const projectFlowOnlyScope = (inScope) => {
  * consume.
  *
  * `readyForCheckYourAnswers` comes from the readiness seam
- * (`flow/section-status.js`'s `readyForCheckYourAnswers` by default, reached
- * through `bridge/readiness-config.js`), which rolls up the task rows via
- * `rowStatus` / `statusOf` — so passing the projected `inScope` yields readiness
- * without this module importing `read.js`.
+ * (`bridge/readiness-config.js`), which `routes.js` injects at boot with
+ * `flow/section-status.js`'s `readyForCheckYourAnswers` — the roll-up over the
+ * task rows via `rowStatus` / `statusOf`. Passing the projected `inScope` yields
+ * readiness without this module importing `read.js` or reaching up into flow.
+ * Unconfigured, the seam is fail-closed.
  *
  * The FULL scope also carries the flow-only obligations the notification model
  * does not model (declaration — `projectFlowOnlyScope`), so their owning pages

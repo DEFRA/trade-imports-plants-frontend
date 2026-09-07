@@ -3,6 +3,8 @@ import {
   configureJourneyFlow,
   journeyEntryGuardTarget
 } from './flow/journey-flow.js'
+import { readyForCheckYourAnswers } from './flow/section-status.js'
+import { configureReadyForCheckYourAnswers } from './bridge/readiness-config.js'
 import {
   allRoutes,
   dispatchPages
@@ -53,6 +55,7 @@ export const highRiskPlants = {
         entryGuardTarget,
         layout: LAYOUT
       })
+      configureReadyForCheckYourAnswers(readyForCheckYourAnswers)
       assertObligationPurity()
       assertFulfilmentBindingCoverage()
       buildDispatch(dispatchPages)

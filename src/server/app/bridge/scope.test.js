@@ -1,8 +1,11 @@
 import { beforeAll, describe, it, expect } from 'vitest'
 import { configureReadyForCheckYourAnswers, makeScope } from '../engine/read.js'
+import { rawInScope } from './scope.js'
+import { evaluateAnswers } from './evaluation.js'
 import {
   BRANCH_A,
   BRANCH_C,
+  FLOW_ONLY_KEY,
   MODE_BRAVO,
   MODE_CHARLIE,
   SELECTOR_ALPHA,
@@ -140,5 +143,11 @@ describe('scope bridge — per-gate scoping', () => {
     const scope = makeScope(resolveToggle({ itemCollection: [] }))
     expect(scope.has('itemCollection')).toBe(true)
     expect(scope.has(FIRST_ENTRY_SELECTOR)).toBe(false)
+  })
+
+  it('Should layer the flow-only keys onto the full scope and not the raw evaluator scope', () => {
+    const answers = resolveToggle({})
+    expect(makeScope(answers).has(FLOW_ONLY_KEY)).toBe(true)
+    expect(rawInScope(evaluateAnswers(answers)).has(FLOW_ONLY_KEY)).toBe(false)
   })
 })
