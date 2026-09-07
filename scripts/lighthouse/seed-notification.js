@@ -3,6 +3,7 @@ import {
   dashboardPath,
   pagePath
 } from '../../src/server/app/shared/paths.js'
+import { commodityTypePage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/page.js'
 
 const HTTP_FOUND = 302
 const HTTP_OK = 200
@@ -11,34 +12,42 @@ const DECLARATION_SLUG = 'declaration'
 const CONFIRMATION_SLUG = 'confirmation'
 const DECLARATION_VALUE = 'confirmed'
 
+/** The commodity type each use case is for. The step is what gives a seeded
+ * notification a committed user answer, which is what admits it past the entry
+ * guard when the audit re-fetches its URLs in a session that never walked the
+ * journey. */
+const commodityTypeStep = (commodityType) => ({
+  slug: commodityTypePage.slug,
+  fields: { commodityType }
+})
+
 /** The notification shapes the audit needs, keyed by the name the URL list
  * refers to them by. One shape per blueprint use case, so every conditional
- * page has a notification that answers it. Every step list is empty while no
- * journey page collects an answer: each page increment adds its own step to the
- * shapes whose use case reaches that page. */
+ * page has a notification that answers it. Each page increment adds its own
+ * step to the shapes whose use case reaches that page. */
 export const SEED_SHAPES = {
   warePotatoes: {
     useCase: 'Ware potatoes from Spain or Poland, notified before arrival',
-    steps: []
+    steps: [commodityTypeStep('potatoes')]
   },
   warePotatoesLate: {
     useCase: 'Ware potatoes from Spain or Portugal, notified after arrival',
-    steps: []
+    steps: [commodityTypeStep('potatoes')]
   },
   seedPotatoes: {
     useCase:
       'Seed potatoes from any EU country, so an origin outside the four ware countries',
-    steps: []
+    steps: [commodityTypeStep('potatoes')]
   },
   plantsForPlanting: {
     useCase:
       'Spruce (Picea) from any EU country, with genus, species and EPPO code',
-    steps: []
+    steps: [commodityTypeStep('plants-for-planting')]
   },
   woodWithoutBark: {
     useCase:
       'Conifer wood from Italy, France, Portugal or Spain, with phytosanitary treatments',
-    steps: []
+    steps: [commodityTypeStep('wood-and-cut-trees')]
   }
 }
 
