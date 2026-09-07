@@ -149,13 +149,14 @@ build the view name below its `high-risk-plants/journeys/linear` prefix. Do not
 prefix the shared layout: `LAYOUT` is `shared/layout.njk` and resolves from the
 other Nunjucks root.
 
-Section captions are not wired in this journey yet — `sectionCaption` is not
-passed to `configureJourneyFlow()`, so `caption` is undefined and no caption
-renders. When the caption map exists (see
-[journey-flow-and-gates.md](journey-flow-and-gates.md#section-captions)), import
-it with `{% from "shared/section-caption.njk" import sectionCaption %}` and call
-`{{ sectionCaption(caption) }}` immediately above the page heading, passing the
-caption size that matches the heading, with nothing between the two.
+Section captions are wired (see
+[journey-flow-and-gates.md](journey-flow-and-gates.md#section-captions)), so
+`caption` holds the section name for any page the caption map claims. Import
+the macro with `{% from "shared/section-caption.njk" import sectionCaption %}`
+and call `{{ sectionCaption(caption) }}` immediately above the page heading,
+passing the caption size that matches the heading, with nothing between the
+two. The macro renders nothing for a page the map leaves bare, so the call is
+safe either way.
 
 Run `npm run test:high-risk-plants`. Fix local copy tests,
 [`copy-convention.test.js`](../../../copy-convention.test.js) and
@@ -192,9 +193,10 @@ it in an existing task row when those pages form one user task. Add a task row
 only when the page needs its own entry on the hub. A task row is the hub entry;
 a flow section is the navigation sequence.
 
-Once `flow/section-captions/` exists, decide the page's caption there: add it to
-the section it belongs to, or to the bare list in that folder's test. The test
-should fail until you do one or the other.
+Decide the page's caption in
+[`journeys/linear/flow/section-captions/`](../journeys/linear/flow/section-captions/index.js):
+add it to the section it belongs to, or to the `BARE` list in that folder's
+test. The coverage test fails until you do one or the other.
 
 If you add a task row, also:
 

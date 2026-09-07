@@ -72,17 +72,6 @@ test.describe('dashboard feature — initial render', () => {
     ).toBeVisible()
   })
 
-  test('renders no section caption while the journey wires none', async ({
-    page
-  }) => {
-    await page.goto('/')
-
-    await expect(
-      page.getByRole('heading', { name: copy.title, level: 1 })
-    ).toBeVisible()
-    await expect(page.locator('.govuk-caption-xl')).toHaveCount(0)
-  })
-
   test('omits the guidance sentence while no guidance URL is supplied', async ({
     page
   }) => {

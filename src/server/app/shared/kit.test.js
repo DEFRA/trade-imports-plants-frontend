@@ -1,6 +1,27 @@
 import { describe, expect, it } from 'vitest'
 
-import { dateField } from './kit.js'
+import {
+  CAPTIONS,
+  itemDetailPage,
+  itemsPage
+} from '../../../../test/fixtures/index.js'
+import { base, dateField } from './kit.js'
+
+describe('#base — the section caption the installed journey names', () => {
+  it('Should carry the caption of a page the journey captions', () => {
+    expect(base('any title', { page: itemDetailPage }).caption).toBe(
+      CAPTIONS.itemDetail
+    )
+  })
+
+  it('Should leave the caption undefined for a page the journey leaves bare', () => {
+    expect(base('any title', { page: itemsPage }).caption).toBeUndefined()
+  })
+
+  it('Should leave the caption undefined when no page identity is supplied', () => {
+    expect(base('any title').caption).toBeUndefined()
+  })
+})
 
 describe('#dateField — MoJ date-picker view model', () => {
   it('Should carry supplied bounds through verbatim so the macro emits the restriction attributes', () => {

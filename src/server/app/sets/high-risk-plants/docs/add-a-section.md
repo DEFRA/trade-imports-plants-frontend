@@ -245,7 +245,7 @@ flow section or task row does not add a config entry.
 
 [`src/server/app/routes.js`](../../../routes.js) already imports the journey's
 `sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `FLOW_ONLY_KEYS`,
-`entryGuardTarget` and `LAYOUT`. It passes them to
+`entryGuardTarget`, `sectionCaptionOf` and `LAYOUT`. It passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js). Because it injects the
 whole exported arrays, adding a section or task row to the existing modules needs
 no new L1 import or configure call.
@@ -260,9 +260,8 @@ Registration work for the feature group is therefore limited to:
 
 Change `journeys/linear/config.js` or the `configureJourneyFlow()` call only when
 the journey's template identity, cookie identity or injected policy surface
-itself changes — for example when `sectionCaption` is first supplied, which
-needs the same new argument in both `routes.js` and the test fixture at
-`test/fixtures/index.js`.
+itself changes. `sectionCaption` was supplied that way, and needed the same new
+argument in both `routes.js` and the test fixture at `test/fixtures/index.js`.
 
 ## 7. Add check-answers output
 

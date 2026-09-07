@@ -32,15 +32,17 @@ import {
   LAYOUT,
   nextRunTarget,
   rowStatus,
+  sectionCaptionOf,
   sections,
   taskRows
 } from './flow.js'
 
 export * from './obligations.js'
 export * from './values.js'
-export { dispatchPages } from './pages.js'
+export { dispatchPages, itemDetailPage, itemsPage } from './pages.js'
 export { featureEvaluationBindings } from './bindings.js'
 export {
+  CAPTIONS,
   entryGuardTarget,
   FLOW_ONLY_KEY,
   FLOW_ONLY_KEYS,
@@ -48,6 +50,7 @@ export {
   nextRunTarget,
   rowParts,
   rowStatus,
+  sectionCaptionOf,
   sections,
   taskRowById,
   taskRows
@@ -102,6 +105,7 @@ export const installFixture = () => {
     nextRunTarget,
     flowOnlyKeys: FLOW_ONLY_KEYS,
     entryGuardTarget,
+    sectionCaption: sectionCaptionOf,
     layout: LAYOUT
   })
 }

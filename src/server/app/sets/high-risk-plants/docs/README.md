@@ -59,19 +59,20 @@ collide; `npm run test:fit:ci` does this for you.
 
 ## What the set exports, and what consumes it
 
-| File                                     | Exports                                       | Consumed by                                                 |
-| ---------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| `obligations/index.js`                   | `obligations`, `groups`                       | `configureObligationSet`                                    |
-| `journeys/linear/config.js`              | `TEMPLATES`, `LAYOUT`, `SESSION_COOKIE_NAMES` | `configureJourneyFlow`, `configureSession`, set controllers |
-| `journeys/linear/features/index.js`      | `dispatchPages`, `allRoutes`                  | `buildDispatch`, `server.route`                             |
-| `journeys/linear/features/evaluation.js` | `featureEvaluationBindings`                   | `configureFulfilmentRegistry`                               |
-| `journeys/linear/flow/flow.js`           | `FLOW_ONLY_KEYS`, `sections`                  | `configureJourneyFlow`                                      |
-| `journeys/linear/flow/task-rows.js`      | `taskRows`, `rowStatus`                       | `configureJourneyFlow`                                      |
-| `journeys/linear/flow/run.js`            | `nextRunTarget`                               | `configureJourneyFlow`                                      |
-| `journeys/linear/flow/entry-guard.js`    | `entryGuardTarget`                            | `server.ext('onPreHandler')`                                |
+| File                                             | Exports                                       | Consumed by                                                 |
+| ------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------- |
+| `obligations/index.js`                           | `obligations`, `groups`                       | `configureObligationSet`                                    |
+| `journeys/linear/config.js`                      | `TEMPLATES`, `LAYOUT`, `SESSION_COOKIE_NAMES` | `configureJourneyFlow`, `configureSession`, set controllers |
+| `journeys/linear/features/index.js`              | `dispatchPages`, `allRoutes`                  | `buildDispatch`, `server.route`                             |
+| `journeys/linear/features/evaluation.js`         | `featureEvaluationBindings`                   | `configureFulfilmentRegistry`                               |
+| `journeys/linear/flow/flow.js`                   | `FLOW_ONLY_KEYS`, `sections`                  | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/task-rows.js`              | `taskRows`, `rowStatus`                       | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/section-captions/index.js` | `captionSections`, `sectionCaptionOf`         | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/run.js`                    | `nextRunTarget`                               | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/entry-guard.js`            | `entryGuardTarget`                            | `server.ext('onPreHandler')`                                |
 
 [`src/server/app/routes.js`](../../../routes.js) is the composition seam that
-wires all eight. The unit suite installs a synthetic journey-neutral fixture
+wires all nine. The unit suite installs a synthetic journey-neutral fixture
 from `test/fixtures/` instead — the engine must not depend on the set.
 
 ## The served surface today
@@ -124,12 +125,13 @@ Reinstate a set-owned sanitiser when the addresses feature lands, so
 answers referencing a deleted address-book record drop out of
 fulfilment and evaluation.
 
-**`sectionCaption` is not wired.** `flow/journey-flow.js` reads it with
-`?.`, so an absent key renders no caption. Add
-`flow/section-captions/index.js` with its `copy.en.js`/`copy.cy.js` pair
-when the first captioned page lands, and pass `sectionCaption` in the
+**`sectionCaption` is wired — gate closed.**
+`flow/section-captions/index.js` holds the caption map with its
+`copy.en.js`/`copy.cy.js` pair, and `sectionCaption` is passed in the
 `configureJourneyFlow` call in both `routes.js` and
-`test/fixtures/index.js`.
+`test/fixtures/index.js` (the fixture with a synthetic map of its own).
+The dashboard is the only captioned section so far; each page increment
+files its own page there or lists it as bare.
 
 **`FLOW_ONLY_KEYS` is empty.** Add `declaration` with the declaration
 page, not before — a flow-only key widens the recognised answer-key
