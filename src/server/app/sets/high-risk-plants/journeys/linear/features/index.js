@@ -1,7 +1,8 @@
 import * as dashboard from './dashboard/controller.js'
+import * as hub from './hub/controller.js'
 
-// The dashboard exports no meta: it collects nothing, is never gated and is
-// never a task row, so it stays out of the dispatch index.
+// Neither the dashboard nor the hub exports meta: they collect nothing, are
+// never gated and are never a task row, so they stay out of the dispatch index.
 export const dispatchPages = []
 
-export const allRoutes = [...dashboard.routes]
+export const allRoutes = [...dashboard.routes, ...hub.routes]
