@@ -129,10 +129,6 @@ existing case for this controller in `src/server/app/contract.test.js`: add the
 field to the valid payload and seed any answer that puts it in scope. The test
 expects a valid POST to commit exactly the committable names in `meta.collects`.
 
-That file does not exist right now — it was removed along with the animals
-controller cases it was made of. Recreate it with the case for this controller
-rather than skipping the step.
-
 The contract cases are a manual list. A new field on a listed controller often
 makes its case fail. A controller that is not listed is not detected
 automatically, so add a case rather than relying on a red test.

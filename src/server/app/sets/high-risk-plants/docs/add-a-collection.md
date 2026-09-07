@@ -357,9 +357,7 @@ Two guards protect collection writes. Do not remove them.
 ## 7. Extend the contract test
 
 `src/server/app/contract.test.js` pins that each page commits exactly what it
-declares. That file does not exist right now — it was removed along with the
-animals controller cases it was made of, so recreate it. Add a case shaped like
-the matching layout:
+declares. Add a case shaped like the matching layout:
 
 1. Assert the loop page's declaration — for the single-page loop,
    `documents.meta.collects` equals `['documents']`; for the batch split, the

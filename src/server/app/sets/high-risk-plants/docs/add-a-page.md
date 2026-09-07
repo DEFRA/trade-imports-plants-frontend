@@ -9,25 +9,26 @@ are relative to
 
 ## Read these files first
 
-> **EXEMPLAR PLACEHOLDER — no plants feature exists yet.**
->
-> This section normally lists the smallest complete page to copy. The
-> high-risk-plants set owns no features. Do not follow the animals paths; they
-> do not exist in this repository.
->
-> **The minimal exemplar this recipe needs** is one collecting field, one
-> obligation, one template, both copy bundles and one feature spec. No feature
-> is named here on purpose: the journey's requirements are not agreed, so
-> naming a candidate would be inventing them.
->
-> When one is built, replace this block with links to its `page.js`,
-> `controller.js`, `template.njk`, `evaluation.js`, `copy/copy.en.js`,
-> `copy/copy.cy.js`, `copy/copy.test.js`, `controller.test.js`, its fit spec
-> and its obligation section — and delete this note.
->
-> **A second exemplar is needed for per-rule validation and the initial-render
-> plus error-state accessibility tests**: that should be
-> established by the first feature spec that covers a validated field.
+`commodity-type` is the smallest complete page in this set: one collecting
+field, one obligation, one template, both copy bundles and one feature spec.
+Copy its shape. It is also the worked example for a validated field — the
+`commodityType` obligation is required, and its fit spec establishes the
+initial-render plus error-state accessibility pattern.
+
+- [`journeys/linear/features/commodity-type/page.js`](../journeys/linear/features/commodity-type/page.js)
+- [`journeys/linear/features/commodity-type/controller.js`](../journeys/linear/features/commodity-type/controller.js)
+- [`journeys/linear/features/commodity-type/template.njk`](../journeys/linear/features/commodity-type/template.njk)
+- [`journeys/linear/features/commodity-type/evaluation.js`](../journeys/linear/features/commodity-type/evaluation.js)
+- [`journeys/linear/features/commodity-type/copy/copy.en.js`](../journeys/linear/features/commodity-type/copy/copy.en.js)
+- [`journeys/linear/features/commodity-type/copy/copy.cy.js`](../journeys/linear/features/commodity-type/copy/copy.cy.js)
+- [`journeys/linear/features/commodity-type/copy/copy.test.js`](../journeys/linear/features/commodity-type/copy/copy.test.js)
+- [`journeys/linear/features/commodity-type/controller.test.js`](../journeys/linear/features/commodity-type/controller.test.js)
+- [`journeys/linear/features/commodity-type/commodity-type.fit.spec.js`](../journeys/linear/features/commodity-type/commodity-type.fit.spec.js)
+- [`obligations/sections/commodity.js`](../obligations/sections/commodity.js)
+
+These pages take the same shape as the animals set's, but they never import
+from it. Read the files above, not the animals paths; the animals paths do not
+exist in this repository.
 
 The three registration modules the page has to reach do already exist, empty.
 Read them before registering anything:
@@ -287,9 +288,7 @@ Add the controller's valid POST to `src/server/app/contract.test.js`. Supply a
 valid payload and any seed that brings conditional obligations into scope. The
 case must commit exactly the committable names in `meta.collects`.
 
-That file does not exist right now — it was removed along with the animals
-controller cases it was made of. The first collecting controller in this set
-recreates it.
+That table already holds the `commodity-type` case; add yours beside it.
 
 This contract table is manual. A new controller that is absent from the table
 does not make the test fail, so add the case even when the suite is green.
@@ -340,8 +339,9 @@ Build axe with `AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa'])`. Fail if
 any result has `impact` equal to `serious` or `critical`. Only filter a known
 component false positive when the same component and condition apply.
 
-> **EXEMPLAR PLACEHOLDER** — cite
-> the first feature spec that covers a validated field, once it exists.
+[`journeys/linear/features/commodity-type/commodity-type.fit.spec.js`](../journeys/linear/features/commodity-type/commodity-type.fit.spec.js)
+establishes that pattern for a validated field: one axe check on the initial
+render and one on the error state left by continuing with nothing chosen.
 
 ## 10. Run every check
 

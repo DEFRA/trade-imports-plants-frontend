@@ -101,8 +101,9 @@ set should gain the same pair with its first obligations:
 - `obligations/whitelists.test.js` — any commodity allow-list checked against
   the set-owned reference service, so the two cannot drift
 
-Neither file exists yet. Write `coverage.test.js` with the first obligation and
-`whitelists.test.js` with the first allow-list.
+[`obligations/coverage.test.js`](../obligations/coverage.test.js) exists and
+covers the manifest as it stands. `whitelists.test.js` does not exist yet:
+write it with the first allow-list.
 
 The generic model contract is in the
 [platform obligation-model guide](../../../docs/obligation-model.md).

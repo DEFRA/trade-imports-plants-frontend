@@ -12,6 +12,7 @@ under `src/server/app/sets/high-risk-plants/`.
 Important composition and convention checks include:
 
 - [`src/server/app/routes.test.js`](../routes.test.js)
+- [`src/server/app/contract.test.js`](../contract.test.js)
 - [`src/server/app/copy-convention.test.js`](../copy-convention.test.js)
 - [`src/server/app/copy-parity.test.js`](../copy-parity.test.js)
 - [`src/server/app/indexed.test.js`](../indexed.test.js)
@@ -19,13 +20,12 @@ Important composition and convention checks include:
 - [`src/server/app/obligation-purity.test.js`](../obligation-purity.test.js)
 - [`src/server/app/one-load-per-request.test.js`](../one-load-per-request.test.js)
 
-One more belongs in that list and is **missing**: `src/server/app/contract.test.js`
-was removed along with the animals controller cases it was made of. It is the
-table that pins each collecting controller to committing exactly the obligations
-its `meta.collects` declares, so the first collecting controller has to recreate
-it with its own case. The recipes under
-[the set docs](../sets/high-risk-plants/docs/README.md#recipes) each name the
-case they need.
+The contract test is the table that pins each collecting controller to
+committing exactly the obligations its `meta.collects` declares. That table is
+manual: a controller absent from it does not make the test fail, so every new
+collecting page adds its own case even when the suite is green. The recipes
+under [the set docs](../sets/high-risk-plants/docs/README.md#recipes) each name
+the case they need.
 
 Tests may compose a real set with platform code. Production imports remain subject
 to the layer rules.
