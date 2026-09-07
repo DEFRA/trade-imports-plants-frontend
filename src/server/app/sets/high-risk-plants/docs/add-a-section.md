@@ -174,9 +174,6 @@ Add one valid POST case per collecting controller to
 `src/server/app/contract.test.js`. Each case supplies a valid payload and any
 scope seed, and must commit exactly its `meta.collects`.
 
-That file does not exist right now — it was removed along with the animals
-controller cases it was made of. Recreate it with this group's cases.
-
 The contract cases are manually listed. A missing new controller does not make
 the test fail. Treat adding each case as required work.
 Run `npm test` to exercise the L1 contract table.

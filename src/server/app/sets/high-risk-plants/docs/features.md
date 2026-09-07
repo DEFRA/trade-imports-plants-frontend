@@ -36,11 +36,9 @@ A controller normally owns:
 Controllers use the platform engine, validation and shared-kit APIs. They do not
 call the evaluator or the service persistence adapters directly.
 
-> **EXEMPLAR PLACEHOLDER — no plants feature exists yet.**
-> The smallest complete collecting page should become
-> the first collecting controller in this set. Once one is built,
-> replace this block with a link to it and cite it from
-> [add-a-page.md](add-a-page.md) as the minimal example.
+[`journeys/linear/features/commodity-type/controller.js`](../journeys/linear/features/commodity-type/controller.js)
+is the first collecting controller in this set and the smallest complete one.
+[add-a-page.md](add-a-page.md) cites it as the minimal example.
 
 ## Copy and templates
 

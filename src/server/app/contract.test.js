@@ -1,0 +1,84 @@
+/**
+ * The controller <-> model commit contract.
+ *
+ * One case per collecting controller: a valid POST must commit exactly the
+ * committable names the controller declares in `meta.collects`, and nothing
+ * else. The table is manual — a controller absent from it does not fail the
+ * suite — so every new collecting page adds its case here.
+ *
+ * The Vitest global setup installs the journey-neutral fixture set, because
+ * the engine and the L2 model are journey-agnostic. This file is the
+ * exception: it drives real controllers, so it installs the high-risk-plants
+ * set for the duration and puts the fixture back afterwards. Read through the
+ * configured seam before that install and every name would resolve to nothing,
+ * leaving the table comparing an empty set with an empty set.
+ */
+
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+
+import { installFixture } from '../../../test/fixtures/index.js'
+import {
+  obligationByName,
+  walkObligations
+} from './bridge/obligation-source.js'
+import { configureRecords } from './engine/persistence/records.js'
+import { configureSession } from './engine/persistence/session.js'
+import { store } from './engine/store.js'
+import { driveHandler, postHandlerOf } from './engine/test-support.js'
+import { isAnswered } from './lib/answered.js'
+import { records as recordsStub } from './services/persistence/records/stub/index.js'
+import { session as sessionStub } from './services/persistence/session/stub.js'
+import { installHighRiskPlantsJourney } from './sets/high-risk-plants/journeys/linear/test-support.js'
+import * as commodityType from './sets/high-risk-plants/journeys/linear/features/commodity-type/controller.js'
+
+// Every manifest read is deferred: at module load the configured set is still
+// the fixture, and the plants set only arrives in `beforeAll`.
+const manifestNames = () =>
+  [...walkObligations()].map((node) => node.obligation.name)
+
+const committedIds = ({ before, after }) =>
+  manifestNames().filter(
+    (name) => isAnswered(after[name]) && !isAnswered(before[name])
+  )
+
+/**
+ * The declared names that must be committed, with an unresolved name failing
+ * the case rather than being dropped from the expectation. A filter would let
+ * a typo or a name this set never declared pass silently as "committed
+ * nothing, expected nothing".
+ */
+const committableCollects = (collects) => {
+  expect(collects.filter((name) => !obligationByName(name))).toEqual([])
+  return collects
+}
+
+const cases = [
+  {
+    id: 'commodity-type',
+    collects: commodityType.meta.collects,
+    handler: postHandlerOf(commodityType),
+    payload: { commodityType: 'potatoes' }
+  }
+]
+
+describe('controller <-> model commit contract', () => {
+  beforeAll(() => {
+    installHighRiskPlantsJourney()
+    configureRecords(recordsStub)
+    configureSession(sessionStub)
+  })
+  afterAll(() => installFixture())
+  beforeEach(() => store.clear())
+
+  it.each(cases)(
+    'Should commit exactly the committable collects for $id',
+    async ({ collects, handler, payload, seed }) => {
+      const committable = committableCollects(collects)
+      expect(committable.length).toBeGreaterThan(0)
+
+      const result = await driveHandler(handler, { payload, seed })
+
+      expect(new Set(committedIds(result))).toEqual(new Set(committable))
+    }
+  )
+})
