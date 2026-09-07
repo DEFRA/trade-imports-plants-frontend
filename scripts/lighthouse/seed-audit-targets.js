@@ -79,11 +79,10 @@ const write = (payload) => {
   writeFileSync(TARGETS_FILE, `${JSON.stringify(payload, null, 2)}\n`)
 }
 
-/** Seeding exists only to give the audited URLs a notification to point at, and
- * the app registers no journey routes until the first page increment lands — so
- * there is no notification to create and, indeed, no POST route to create one
- * with. Write an empty target list and leave the audit to skip, rather than
- * fail the build on a journey the set does not have yet. */
+/** Seeding exists only to give the audited URLs a notification to point at. The
+ * app now registers the dashboard and the POST route that creates a
+ * notification, so a shape can be seeded and walked as far as the journey pages
+ * that exist. */
 const seedAndWriteTargets = async () => {
   await ensureAddressBookHasAnAddress()
   const journeyIds = await seedNotifications(await signedInCookies())
