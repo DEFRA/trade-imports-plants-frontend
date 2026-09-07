@@ -23,10 +23,10 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// The set registers no routes yet, so every assertion runs against a synthetic
-// route table. Keying the seeded ids off SEED_SHAPES also proves the interface
-// between the two modules: FILLED_BY names a shape, and the shape has to be one
-// the setup step seeds.
+// The set registers only the dashboard today, so every assertion about a
+// journey page runs against a synthetic route table. Keying the seeded ids off
+// SEED_SHAPES also proves the interface between the two modules: FILLED_BY
+// names a shape, and the shape has to be one the setup step seeds.
 const journeyIds = Object.fromEntries(
   Object.keys(SEED_SHAPES).map((shape, index) => [shape, `PHN-26-000${index}`])
 )
@@ -45,6 +45,7 @@ const GET_PATHS = ROUTES.filter(({ method }) => method === 'GET').map(
   ({ path }) => path
 )
 
+const DASHBOARD_PATH = '/'
 const SKIPPED_PATH = '/notifications/{journeyId}/uploads/status'
 const TREATMENTS_PATH = '/notifications/{journeyId}/treatments'
 const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
@@ -141,6 +142,10 @@ describe('#auditPaths', () => {
       /audits .* on the "woodWithoutBark" notification, which the setup step did not seed/
     )
   })
+
+  it('Should audit the dashboard, which needs no seeded notification', () => {
+    expect(auditPaths({})).toEqual([DASHBOARD_PATH])
+  })
 })
 
 describe('#auditableRoutePaths', () => {
@@ -152,18 +157,14 @@ describe('#auditableRoutePaths', () => {
     expect(paths).not.toContain(SKIPPED_PATH)
   })
 
-  it('Should name nothing until the set registers its first page, so the setup step seeds nothing', () => {
-    expect(auditableRoutePaths()).toEqual([])
+  it('Should name the dashboard, the one GET route the set registers today', () => {
+    expect(auditableRoutePaths()).toEqual([DASHBOARD_PATH])
   })
 })
 
 describe('#assertTargetsAreCurrent', () => {
   it('Should pass against a route table the three lists do not contradict', () => {
     expect(() => assertTargetsAreCurrent(ROUTES)).not.toThrow()
-  })
-
-  it('Should audit nothing until the set registers its first page', () => {
-    expect(auditPaths(journeyIds)).toEqual([])
   })
 
   it('Should reject a skip list naming a route the app no longer serves', () => {
@@ -270,7 +271,7 @@ describe('#SEED_SHAPES', () => {
     expect(Object.keys(SEED_SHAPES)).toEqual(USE_CASES)
   })
 
-  it('Should answer nothing while the set registers no pages', () => {
+  it('Should seed no journey steps while the dashboard is the only page', () => {
     expect(Object.values(SEED_SHAPES).flatMap(({ steps }) => steps)).toEqual([])
   })
 })

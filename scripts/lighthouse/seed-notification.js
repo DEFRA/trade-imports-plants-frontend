@@ -13,9 +13,9 @@ const DECLARATION_VALUE = 'confirmed'
 
 /** The notification shapes the audit needs, keyed by the name the URL list
  * refers to them by. One shape per blueprint use case, so every conditional
- * page has a notification that answers it. Every step list is empty while the
- * set registers no pages: each page increment adds its own step to the shapes
- * whose use case reaches that page. */
+ * page has a notification that answers it. Every step list is empty while no
+ * journey page collects an answer: each page increment adds its own step to the
+ * shapes whose use case reaches that page. */
 export const SEED_SHAPES = {
   warePotatoes: {
     useCase: 'Ware potatoes from Spain or Poland, notified before arrival',

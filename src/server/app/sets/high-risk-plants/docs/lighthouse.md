@@ -4,7 +4,7 @@ Lighthouse CI audits the frontend's own pages. The source of truth is
 [`lighthouserc.cjs`](../../../../../../lighthouserc.cjs) at the repository root,
 plus the scripts under `scripts/lighthouse/`.
 
-## There is nothing to audit yet
+## What the run audits today
 
 Both modules the run imports now exist, so `npm run lighthouse` no longer fails
 at import:
@@ -17,10 +17,11 @@ at import:
   potatoes, plants for planting, and wood — and fills a notification by walking
   the journey's own pages. Every shape's step list is empty.
 
-The set registers no journey pages yet, so the derived URL list is empty and
-there is nothing to audit until the first page lands. Each page increment adds
-its own step to the seed shapes whose use case reaches that page, and its own
-entry in `SKIPPED`, `FILLED_BY` or `QUERY` where the page needs one.
+The dashboard at `/` is the first audited route, so the derived URL list is no
+longer empty. Each further page increment adds its own URL, its own step to the
+seed shapes whose use case reaches that page, and its own entry in `SKIPPED`,
+`FILLED_BY` or `QUERY` where the page needs one. The seed shapes' step lists are
+still empty because no journey page collects anything yet.
 
 The five shapes are held in `seed-notification.js` for now. They move to
 `journeys/linear/flow/fixtures/happy-path.json` once that fixture lands, so the
@@ -120,11 +121,11 @@ workspace, starts the stack for the chosen branch, installs the frontend, runs
 days, publishes it to GitHub Pages and passes the result, report URL and
 flagged findings to the workspace status action.
 
-The set registers no routes yet, so `lighthouse:targets` writes no URLs,
-`lighthouserc.cjs` fails with `lists no URLs` and the Lighthouse check is red
-on every pull request with an empty report. That is expected until the first
-journey page lands. It is not a reason to lower a floor, stub a URL list or
-gate the workflow behind manual dispatch.
+The set registers the dashboard, so `lighthouse:targets` now derives one URL and
+seeds the notifications behind it. The check is expected to pass, and a red
+result is a real failure to investigate from the uploaded report. It is not a
+reason to lower a floor, stub a URL list or gate the workflow behind manual
+dispatch.
 
 Once pages are registered, when a Lighthouse change fails in CI, use the
 uploaded report for that branch. Reproduce it against the same route and

@@ -5,6 +5,8 @@ import { statusCodes } from '../common/constants/status-codes.js'
 import { makeScope } from './engine/index.js'
 import { isDispatchBuilt } from './flow/dispatch.js'
 import { allRoutes } from './sets/high-risk-plants/journeys/linear/features/index.js'
+import { copy as dashboardCopy } from './sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
+import { authenticatedCredentials } from './engine/test-support.js'
 import { mockOidcConfig } from '../common/test-helpers/mock-oidc-config.js'
 
 vi.mock('../../auth/get-oidc-config.js', () => ({
@@ -51,11 +53,16 @@ describe('high-risk-plants plugin registration', () => {
     }
   })
 
-  it('Should serve health while the set promotes no journey route', async () => {
+  it('Should serve health and the dashboard at /', async () => {
     const health = await server.inject({ method: 'GET', url: '/health' })
-    const dashboard = await server.inject({ method: 'GET', url: '/' })
+    const dashboard = await server.inject({
+      method: 'GET',
+      url: '/',
+      auth: { strategy: 'session', credentials: authenticatedCredentials }
+    })
 
     expect(health.statusCode).toBe(statusCodes.ok)
-    expect(dashboard.statusCode).toBe(statusCodes.notFound)
+    expect(dashboard.statusCode).toBe(statusCodes.ok)
+    expect(dashboard.result).toContain(dashboardCopy.startButton)
   })
 })

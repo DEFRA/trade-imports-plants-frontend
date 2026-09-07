@@ -25,7 +25,8 @@ export const SKIPPED = new Map()
 export const FILLED_BY = new Map()
 
 /** Query strings a route needs before it will render rather than redirect.
- * Empty today — the set registers no pages yet. */
+ * Empty while the dashboard is the only audited route, since it renders on its
+ * own, and each page increment adds its own entry where it needs one. */
 export const QUERY = new Map()
 
 const getPathsOf = (routes) =>
@@ -70,19 +71,20 @@ const journeyIdFor = (journeyIds, path) => {
 }
 
 /** The route paths this run will audit, still carrying `{journeyId}` because no
- * notification has been seeded yet. Empty while the set registers no pages,
- * which is how the setup step knows there is nothing to seed and nothing to
- * audit. */
+ * notification has been seeded yet. The dashboard at `/` is the first of them,
+ * and each page increment adds its own. */
 export const auditableRoutePaths = (routes = allRoutes) => {
   assertTargetsAreCurrent(routes)
   return getPathsOf(routes).filter((path) => !SKIPPED.has(path))
 }
 
 export const auditPaths = (journeyIds, routes = allRoutes) =>
-  auditableRoutePaths(routes).map(
-    (path) =>
-      `${path.replace(JOURNEY_PARAM, journeyIdFor(journeyIds, path))}${QUERY.get(path) ?? ''}`
-  )
+  auditableRoutePaths(routes).map((path) => {
+    const resolved = path.includes(JOURNEY_PARAM)
+      ? path.replace(JOURNEY_PARAM, journeyIdFor(journeyIds, path))
+      : path
+    return `${resolved}${QUERY.get(path) ?? ''}`
+  })
 
 export const auditUrls = (origin, journeyIds, routes = allRoutes) =>
   auditPaths(journeyIds, routes).map((path) => new URL(path, origin).toString())

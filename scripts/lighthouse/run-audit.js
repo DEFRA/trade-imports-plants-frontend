@@ -76,9 +76,9 @@ const targets = () => {
 }
 
 /** LHCI refuses to run without a URL, and the setup step writes an empty list
- * while the set registers no pages. An empty manifest says the same thing LHCI
- * would have said — this run produced no page reports — and gives the report
- * index and the flagged-audits step the file they read. */
+ * whenever the route table yields none. An empty manifest says the same thing
+ * LHCI would have said — this run produced no page reports — and gives the
+ * report index and the flagged-audits step the file they read. */
 const writeEmptyManifest = () => {
   mkdirSync(REPORT_DIR, { recursive: true })
   writeFileSync(MANIFEST, `${JSON.stringify([], null, 2)}\n`)
