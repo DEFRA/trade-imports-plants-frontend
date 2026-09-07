@@ -22,10 +22,18 @@ implications into path keys used by controllers. The returned object contains:
 - `inScope`, a `Set` of scalar, group-node and positional leaf paths
 - `has(path)`, an in-scope test
 - `answered(name)`, an answer-presence test across instances
-- `readyForCheckYourAnswers`, calculated through the configured task-row seam
+- `readyForCheckYourAnswers`, read from the injected readiness seam
 
-Journey flow-only keys are added from `configureJourneyFlow()` because they are not
-manifest obligations.
+The readiness seam is
+[`bridge/readiness-config.js`](../bridge/readiness-config.js). `routes.js`
+injects the task-row roll-up from
+[`flow/section-status.js`](../flow/section-status.js) at boot. Unconfigured, the
+seam is fail-closed.
+
+Journey flow-only keys are added because they are not manifest obligations. The
+list is held in [`bridge/flow-only-keys.js`](../bridge/flow-only-keys.js) and
+supplied by `configureJourneyFlow()`, which forwards it there — so the bridge
+reads its own sibling rather than reaching up into flow.
 
 ## Durable purge authority
 

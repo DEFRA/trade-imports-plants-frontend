@@ -17,7 +17,12 @@ At boot, `routes.js`:
 - gives feature bindings to
   [`configureFulfilmentRegistry()`](../bridge/fulfilment-registry.js)
 - gives journey sections, task rows, navigation and layout policy to
-  [`configureJourneyFlow()`](../flow/journey-flow.js)
+  [`configureJourneyFlow()`](../flow/journey-flow.js), which forwards the
+  journey's flow-only keys into
+  [`bridge/flow-only-keys.js`](../bridge/flow-only-keys.js)
+- injects the check-your-answers readiness roll-up from
+  [`flow/section-status.js`](../flow/section-status.js) through
+  [`configureReadyForCheckYourAnswers()`](../bridge/readiness-config.js)
 - builds the obligation-to-page dispatch index with
   [`buildDispatch()`](../flow/dispatch.js)
 - injects records and session adapters through
@@ -87,5 +92,13 @@ Dependency Cruiser scans all of `src/server/app`. Its error-level rules prevent:
 - engine imports from services or higher runtime layers
 - model, bridge and flow imports that cross their allowed boundaries
 - circular dependencies
+
+No violation is baselined. `.dependency-cruiser-known-violations.json` is empty,
+so `npm run lint:arch` is green on the rules themselves. The bridge reaches
+nothing in `flow`: the journey's flow-only keys are held in
+[`bridge/flow-only-keys.js`](../bridge/flow-only-keys.js) and forwarded there by
+`configureJourneyFlow`, and the check-your-answers readiness roll-up reaches
+[`bridge/readiness-config.js`](../bridge/readiness-config.js) by injection from
+`routes.js`. Unconfigured, that seam is fail-closed.
 
 Tests may compose real layers, but production code cannot use test exemptions.

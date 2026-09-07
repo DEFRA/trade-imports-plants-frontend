@@ -49,4 +49,9 @@ code.
 [`src/server/app/routes.js`](../routes.js) is allowed to know which set and journey
 exist. Model, bridge, engine and flow accept their concrete policy through
 `configureObligationSet`, `configureFulfilmentRegistry`, `configureJourneyFlow`,
-`configureRecords` and `configureSession`.
+`configureReadyForCheckYourAnswers`, `configureRecords` and `configureSession`.
+
+Injection is what keeps the bridge from reaching up into flow.
+`configureReadyForCheckYourAnswers` hands it the task-row roll-up from
+`flow/section-status.js`, and `configureJourneyFlow` forwards the journey's
+flow-only keys into `bridge/flow-only-keys.js`.
