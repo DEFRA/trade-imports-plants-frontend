@@ -17,9 +17,11 @@ The application has four layers:
 the high-risk-plants set and linear journey, then supplies them to the platform through
 the `configure*` seams.
 
-The platform below is complete. The high-risk-plants set above it is empty: no
-obligations, no pages, no flow sections and no task rows. Everything these guides
-describe is live code, but it currently runs over nothing. Read the
+The platform below is complete. The high-risk-plants set above it is empty, so
+everything these guides describe is live code that currently runs over nothing;
+the set guide's
+[The served surface today](../sets/high-risk-plants/docs/README.md#the-served-surface-today)
+describes what that leaves the service serving. Read the
 [set guide](../sets/high-risk-plants/docs/README.md) before adding the first
 obligation — three boot guards make the obligation, its page and its binding a
 single indivisible change.

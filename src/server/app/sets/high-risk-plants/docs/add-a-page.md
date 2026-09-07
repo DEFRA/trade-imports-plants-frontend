@@ -67,9 +67,8 @@ flow import the same object. This prevents a module cycle through flow, status
 and the controller.
 
 Create both locale bundles and their test as soon as the template exists.
-[`src/server/app/copy-convention.test.js`](../../../copy-convention.test.js)
-scans feature folders. It fails when a feature with a `.njk` file has no
-complete `copy/` folder.
+[features.md](features.md#copy-and-templates) states what the copy tests
+require.
 
 ## 2. Add the model and binding
 
@@ -135,7 +134,8 @@ POST pair.
 ## 4. Add copy and the Nunjucks view
 
 Put all user-facing text in `copy/copy.en.js` and `copy/copy.cy.js`. Keep both
-bundles the same shape and resolve them with `copyFor({ en, cy })`.
+bundles the same shape and resolve them with `copyFor({ en, cy })` — see
+[features.md](features.md#copy-and-templates).
 
 Extend `shared/layout.njk`, which resolves from the `src/server/app` Nunjucks
 root. Include the shared error summary and save actions. Render fields with
@@ -224,8 +224,8 @@ Canonical persistence is complete once the feature binding is registered. If the
 backend notification shape also has a home for a new field, update the matching
 module under
 [`src/server/app/services/persistence/records/notification-mapper/`](../../../services/persistence/records/notification-mapper/index.js)
-and its
-mapper field to be added creates `notification-mapper.test.js`.
+and its test — the first mapper field to be added creates
+`notification-mapper.test.js`, which does not exist yet.
 There is one mapper here, Mapper A. If there is no backend field home, leave the
 mapper unchanged and assert the omission. Do not invent one.
 

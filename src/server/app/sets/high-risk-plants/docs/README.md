@@ -81,6 +81,10 @@ sign-out routes, and the static assets. There is no `/` — the dashboard
 and the hub are set-owned journey chrome, and neither has been written.
 A 404 on the root is the expected zero-page state, not a failed boot.
 
+This passage is the only description of the served surface. The repo
+README and the platform README link here rather than repeat it. Update
+it here when the first page lands.
+
 ## Adding the first obligation is a three-part change
 
 Three boot guards enforce a joint invariant, so an obligation, the page

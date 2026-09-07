@@ -49,12 +49,12 @@ template extends `shared/layout.njk`. The layout resolves from the
 journey prefix from [`journeys/linear/config.js`](../journeys/linear/config.js):
 `high-risk-plants/journeys/linear`.
 
+A templated feature needs a complete copy folder — `copy/copy.en.js`,
+`copy/copy.cy.js` and `copy/copy.test.js` — and both locales must have the
+same shape. add-a-page.md links here rather than restating them.
 [`src/server/app/copy-convention.test.js`](../../../copy-convention.test.js)
-requires a complete copy folder for a templated feature —
-`copy/copy.en.js`, `copy/copy.cy.js` and `copy/copy.test.js`.
-[`src/server/app/copy-parity.test.js`](../../../copy-parity.test.js) requires
-both locales to have the same shape: the same leaf paths and the same value
-kinds. Adding a key to one locale only fails parity.
+and [`src/server/app/copy-parity.test.js`](../../../copy-parity.test.js) hold
+the enforceable detail. Read them when a copy test fails.
 
 ## Bindings
 
