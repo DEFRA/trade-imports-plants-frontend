@@ -271,7 +271,12 @@ describe('real records adapter — lifecycle and list', () => {
         ),
         { status: 200 }
       ],
-      [JSON.stringify(canonical({ status: 'AMEND' })), { status: 200 }],
+      [
+        JSON.stringify(
+          canonical({ status: 'AMEND', submittedAt: submittedTimestamp })
+        ),
+        { status: 200 }
+      ],
       [
         JSON.stringify(
           canonical({
@@ -380,6 +385,29 @@ describe('real records adapter — lifecycle and list', () => {
       `${notificationsUrl}?page=1&sort=createdAt,asc&referenceNumber=${journeyId}`
     )
     expect(request.method).toBe('GET')
+  })
+
+  it('Should carry the submission timestamp of a submitted list row', async () => {
+    fetchMocker.mockResponse(
+      JSON.stringify({
+        page: 1,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1,
+        content: [
+          canonical({ status: 'SUBMITTED', submittedAt: submittedTimestamp })
+        ]
+      })
+    )
+
+    const listed = await records.list({ page: 1, organisationId: '5900002' })
+
+    expect(listed.rows[0]).toMatchObject({
+      journeyId,
+      status: SUBMITTED,
+      createdAt,
+      submittedAt: submittedTimestamp
+    })
   })
 
   it("Should not send the reader's organisation to the backend", async () => {

@@ -15,6 +15,7 @@ const notificationsUrl = 'http://localhost:8091/notifications'
 const addressBookUrl = 'http://localhost:8089'
 
 const RECORD_CREATED_AT = '2026-07-14T09:00:00'
+const RECORD_SUBMITTED_AT = '2026-07-14T10:00:00'
 const RECORD_ARRIVAL_DATE = '2026-07-20'
 const CONSIGNOR_NAME = 'Consignor Ltd'
 const CONSIGNEE_NAME = 'Consignee Ltd'
@@ -39,11 +40,18 @@ const addressBookRecord = () => ({
   deleted: false
 })
 
+// The backend stamps submittedAt on first submission and leaves it in place
+// through an amendment, so an AMEND row arrives carrying one. Only the list
+// marshal's status gate keeps it off an amending card.
+const submittedAtFor = (status) =>
+  status === 'DRAFT' ? null : RECORD_SUBMITTED_AT
+
 const notification = (referenceNumber, status) => ({
   referenceNumber,
   status,
   concurrencyToken: 0,
   created: RECORD_CREATED_AT,
+  submittedAt: submittedAtFor(status),
   updated: RECORD_CREATED_AT,
   commodity: { name: 'item-one' },
   origin: { countryCode: 'FR' },
@@ -63,7 +71,7 @@ const mockNotification = (referenceNumber, status) => ({
   referenceNumber,
   status,
   created: RECORD_CREATED_AT,
-  submittedAt: status === 'SUBMITTED' ? '2026-07-14T10:00:00' : null,
+  submittedAt: submittedAtFor(status),
   fulfilments: []
 })
 
@@ -147,7 +155,7 @@ describe('real records adapter — paged list', () => {
           journeyId: 'REF-2',
           status: SUBMITTED,
           createdAt: RECORD_CREATED_AT,
-          submittedAt: null,
+          submittedAt: RECORD_SUBMITTED_AT,
           concurrencyToken: 0,
           reference: 'REF-2',
           commodity: { name: 'item-one' },
