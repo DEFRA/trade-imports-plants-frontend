@@ -31,8 +31,8 @@ export const obligationByPath = (templatePath) =>
 export const SYSTEM_POPULATED = new Set()
 
 // Obligations a page must have collected before "Continue" may advance past
-// it. Empty until the journey's obligations are agreed.
-export const ENFORCED_AT_CONTINUE = new Set()
+// it.
+export const ENFORCED_AT_CONTINUE = new Set(['commodityType'])
 
 // Collection admission-control cap: a collection's entry count is
 // capped at the value of a sibling count field in the frame that holds it.

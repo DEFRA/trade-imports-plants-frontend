@@ -2,8 +2,9 @@
 
 ## The set declares no caps yet
 
-The manifest is empty, so no `requires` floor or ceiling is in force. Collection
-caps are declared in two separate places and both are still empty of plant data:
+The manifest declares no collection and no `requires` rule, so no floor or
+ceiling is in force. Collection caps are declared in two separate places and
+both are still empty of plant data:
 
 - a `requires: { minEntries, maxEntries }` rule on the group obligation, which
   decides completeness and defends loaded data
@@ -15,16 +16,20 @@ A journey can use either or both. See
 [Collection cardinality](../../../docs/cardinality.md).
 
 Two generic sets in that same module — `SYSTEM_POPULATED` and
-`ENFORCED_AT_CONTINUE` — are empty until this set declares obligations. Keep
-them in step with the manifest: a name listed there that this set does not
-declare is inert, and one this set declares but does not list gets no
-continue-time enforcement.
+`ENFORCED_AT_CONTINUE` — hold what the set declares. `SYSTEM_POPULATED` is still
+empty; `ENFORCED_AT_CONTINUE` names `commodityType`, the notification's entry
+answer, so every page after the one that collects it waits on it. Keep both in
+step with the manifest: a name listed there that this set does not declare is
+inert, and one this set declares but does not list gets no continue-time
+enforcement.
 
-## No reference data constrains any value
+## One reference list constrains a value
 
-Obligation allow-lists are expected to read from a set-owned reference service.
-This set owns none, so nothing constrains a value at all today. See
-[Services](services.md) for the seam a reference service plugs into.
+Obligation allow-lists read from a set-owned reference service. The set owns one
+so far — `commodityTypes()` in [`services/commodities/`](../services/commodities/index.js),
+which the commodity-type controller turns into both its radio items and its
+membership rule. Nothing else is constrained yet. See [Services](services.md)
+for the seam a reference service plugs into.
 
 ## One backend projection, and no event publishing
 

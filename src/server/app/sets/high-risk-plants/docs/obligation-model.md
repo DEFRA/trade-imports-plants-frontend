@@ -6,19 +6,35 @@ It is expected to import declarations from `obligations/sections/`, export each
 obligation, build the ordered `obligations` array and derive `groups` from
 `within` references.
 
-Today it declares nothing:
+Today it declares one obligation, `commodityType`:
 
 ```js
-export const obligations = []
+import { commodityType } from './sections/commodity.js'
+
+export { commodityType }
+
+export const obligations = [commodityType]
 
 export const groups = obligations.filter((obligation) =>
   obligations.some((other) => other.within === obligation)
 )
 ```
 
-`groups` is derived, not hand-maintained. It stays derived when the array fills.
-There is no `obligations/sections/` folder yet — the first section module
-creates it.
+`groups` is derived, not hand-maintained. It stays derived as the array fills.
+
+The commodity-type page increment created `obligations/sections/`, and
+[`sections/commodity.js`](../obligations/sections/commodity.js) is the smallest
+a section module gets — identity, name and a direct mandate. Obligations that
+carry scope, cardinality or grouping add `applyTo`, `requires` or `within` from
+the platform helpers; see [Obligation shape](#obligation-shape) below:
+
+```js
+export const commodityType = {
+  id: '9f2c4b71-3e58-4a6d-9c02-71d8f5a3e6b4',
+  name: 'commodityType',
+  status: 'mandatory'
+}
+```
 
 ## Sections
 

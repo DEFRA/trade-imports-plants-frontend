@@ -5,8 +5,19 @@ import {
   configureObligationSet,
   obligationSet
 } from '../../../../../model/obligations/manifest.js'
-import { NA, OPTIONAL } from '../../../../../bridge/status/index.js'
+import {
+  FULFILLED,
+  NA,
+  NOT_STARTED,
+  OPTIONAL
+} from '../../../../../bridge/status/index.js'
+import { makeScope } from '../../../../../engine/index.js'
+import { evaluateAnswers } from '../../../../../bridge/evaluation.js'
+import { installHighRiskPlantsJourney } from '../test-support.js'
 import { GROUPS } from '../features/hub/controller.js'
+import { commodityTypePage } from '../features/commodity-type/page.js'
+import { commodityTypes } from '../../../services/commodities/index.js'
+import { dispatchPages } from '../features/index.js'
 import { rowParts, rowStatus, taskRowById, taskRows } from './task-rows.js'
 
 const REVIEW_ROW_ID = 'review'
@@ -21,12 +32,18 @@ const referencePage = {
 
 const scopeOf = (...names) => new Set(names)
 
-describe('#taskRows — the hub landing state', () => {
-  it('Should hold no task row until a section lands one', () => {
-    expect(taskRows).toEqual([])
+describe('#taskRows — the rows the hub can resolve', () => {
+  it('Should hold the commodities row the commodity section landed', () => {
+    expect(taskRows).toEqual([
+      { id: 'commodities', pages: [commodityTypePage] }
+    ])
   })
 
-  it('Should resolve no row id while the journey has no rows', () => {
+  it('Should resolve the commodities row by id', () => {
+    expect(taskRowById('commodities')).toBe(taskRows[0])
+  })
+
+  it('Should resolve no id the journey has not landed', () => {
     expect(taskRowById(REVIEW_ROW_ID)).toBeUndefined()
     expect(taskRowById('about-the-consignment')).toBeUndefined()
   })
@@ -47,9 +64,13 @@ describe('#rowParts and #rowStatus', () => {
 
   beforeAll(() => {
     configureObligationSet(NO_OBLIGATIONS)
-    buildDispatch([originPage, referencePage])
+    buildDispatch([...dispatchPages, originPage, referencePage])
   })
   afterAll(() => configureObligationSet(installedSet))
+
+  it('Should take the landed commodities row parts from the page it holds', () => {
+    expect(rowParts(taskRows[0])).toEqual(['commodityType'])
+  })
 
   it('Should prefer an explicit parts list over the pages the row holds', () => {
     const row = {
@@ -83,5 +104,27 @@ describe('#rowParts and #rowStatus', () => {
     const row = { id: 'origin', pages: [originPage] }
 
     expect(rowStatus(row, {}, scopeOf('origin'), {})).toBe(OPTIONAL)
+  })
+})
+
+describe('#rowStatus — one status per hub task row', () => {
+  beforeAll(() => installHighRiskPlantsJourney())
+
+  const statusIn = (rowId, answers) =>
+    rowStatus(
+      taskRowById(rowId),
+      answers,
+      makeScope(answers).inScope,
+      evaluateAnswers(answers)
+    )
+
+  it('Should hold the commodities row at Not yet started while nothing is answered', () => {
+    expect(statusIn('commodities', {})).toBe(NOT_STARTED)
+  })
+
+  it('Should complete the commodities row once a commodity type is committed', () => {
+    expect(
+      statusIn('commodities', { commodityType: commodityTypes()[0] })
+    ).toBe(FULFILLED)
   })
 })

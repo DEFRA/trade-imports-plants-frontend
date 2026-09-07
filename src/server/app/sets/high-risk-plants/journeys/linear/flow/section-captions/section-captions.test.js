@@ -6,12 +6,15 @@ import { copy as en } from './copy/copy.en.js'
 
 // The page a reader lands on, and the section it should name. One case per
 // page so a mis-filed page names itself in the failure.
-const CAPTIONED = [['dashboard', 'Dashboard']]
+const CAPTIONED = [
+  ['dashboard', 'Dashboard'],
+  ['commodity-type', 'About the consignment']
+]
 
-// Pages that open straight into their heading. Empty while the dashboard is
-// the only page in the journey: the spec rules the overview hub, the contact
-// page, check your answers, declaration and confirmation bare, and each of
-// those page increments adds itself here as it lands.
+// Pages that open straight into their heading. Still empty: the spec rules the
+// overview hub, the contact page, check your answers, declaration and
+// confirmation bare, and each of those page increments adds itself here as it
+// lands.
 const BARE = []
 
 // `flow.js` exports no flat page list — the engine computes one privately in

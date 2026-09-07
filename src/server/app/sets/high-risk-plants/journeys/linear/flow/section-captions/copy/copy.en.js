@@ -9,6 +9,7 @@
  */
 export const copy = {
   sections: {
-    dashboard: 'Dashboard'
+    dashboard: 'Dashboard',
+    aboutTheConsignment: 'About the consignment'
   }
 }

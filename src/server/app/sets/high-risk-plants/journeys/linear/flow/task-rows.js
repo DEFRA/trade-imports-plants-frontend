@@ -1,7 +1,8 @@
 import { statusOf } from '../../../../../bridge/status/index.js'
 import { collectsOf } from '../../../../../flow/dispatch.js'
+import { commodityTypePage } from '../features/commodity-type/page.js'
 
-export const taskRows = []
+export const taskRows = [{ id: 'commodities', pages: [commodityTypePage] }]
 
 export const taskRowById = (id) => taskRows.find((row) => row.id === id)
 

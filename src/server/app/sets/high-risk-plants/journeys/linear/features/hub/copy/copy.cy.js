@@ -18,5 +18,7 @@ export const copy = {
     'consignment-parties': '3. Partïon y llwyth',
     'check-and-submit': '4. Gwirio a chyflwyno'
   },
-  rows: {}
+  rows: {
+    commodities: { title: 'Beth ydych chi’n ei fewnforio?' }
+  }
 }

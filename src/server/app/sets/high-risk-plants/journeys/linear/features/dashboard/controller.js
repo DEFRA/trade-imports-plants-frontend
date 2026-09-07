@@ -2,6 +2,7 @@ import {
   createPath,
   dashboardPath,
   hubPath,
+  pagePath,
   pageRoutePath
 } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
@@ -14,6 +15,7 @@ import {
 import * as kit from '../../../../../../shared/kit.js'
 import { beginOpeningRun } from '../../../../../../flow/run-state.js'
 import { copyFor } from '../../../../../../shared/copy.js'
+import { commodityTypePage } from '../commodity-type/page.js'
 import { dashboardPage } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
@@ -104,7 +106,7 @@ const amendPost = async (request, h) => {
 const createPost = async (request, h) => {
   const journey = await startJourney(request, h)
   await beginOpeningRun(request, h, journey.journeyId)
-  return h.redirect(hubPath(journey.journeyId))
+  return h.redirect(pagePath(journey.journeyId, commodityTypePage.slug))
 }
 
 export const routes = [

@@ -22,6 +22,7 @@ import {
 import { CYA_SLUG, SURFACES } from '../../../../../../shared/kit.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { authenticatedCredentials } from '../../../../../../engine/test-support.js'
+import { commodityTypePage } from '../commodity-type/page.js'
 
 import { routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
@@ -575,14 +576,16 @@ describe('dashboard create POST', () => {
   })
   beforeEach(() => records.clear())
 
-  it('Should start a notification, begin its opening run and land on its hub', async () => {
+  it('Should start a notification, begin its opening run and land on its first question', async () => {
     const h = buildH()
 
     await startPost(buildRequest(), h)
 
     const newJourneyId =
       h.captured.cookies[SESSION_COOKIES.knownJourneys].at(-1)
-    expect(h.captured.redirect).toBe(hubPath(newJourneyId))
+    expect(h.captured.redirect).toBe(
+      pagePath(newJourneyId, commodityTypePage.slug)
+    )
     expect(h.captured.cookies[SESSION_COOKIES.openingRun]).toEqual({
       [newJourneyId]: RUN_ACTIVE
     })

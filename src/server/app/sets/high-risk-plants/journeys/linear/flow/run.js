@@ -1,6 +1,16 @@
-import { hubPath } from '../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../shared/paths.js'
+import { pageGatePasses } from '../../../../../flow/gates.js'
+import { commodityTypePage } from '../features/commodity-type/page.js'
 
-export const RUN_STEPS = []
+const flowPageTarget = (page) => (scope, journeyId) =>
+  pageGatePasses(page, scope) ? pagePath(journeyId, page.slug) : null
+
+/** The opening run's ordered steps — a null target skips the step (see
+ * docs/journey-flow-and-gates.md, "Opening run and entry guard"). The run
+ * opens on commodity-type, the notification's entry question. */
+export const RUN_STEPS = [
+  { id: commodityTypePage.id, target: flowPageTarget(commodityTypePage) }
+]
 
 export const nextRunTarget = (stepId, scope, journeyId) => {
   const index = RUN_STEPS.findIndex((step) => step.id === stepId)

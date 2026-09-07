@@ -24,5 +24,7 @@ export const copy = {
     'consignment-parties': '3. Consignment parties',
     'check-and-submit': '4. Check and submit'
   },
-  rows: {}
+  rows: {
+    commodities: { title: 'What are you importing?' }
+  }
 }

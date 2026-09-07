@@ -23,8 +23,9 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// No page collects an answer yet, so every assertion about a collecting page
-// runs against a synthetic route table. Keying the seeded ids off SEED_SHAPES
+// No registered page needs a skip, a filled-by seed or a query string yet, so
+// every assertion about one runs against a synthetic route table. Keying the
+// seeded ids off SEED_SHAPES
 // also proves the interface between the two modules: FILLED_BY names a shape,
 // and the shape has to be one the setup step seeds.
 const journeyIds = Object.fromEntries(
@@ -34,6 +35,7 @@ const journeyIds = Object.fromEntries(
 const DASHBOARD_PATH = '/'
 const HUB_PATH = '/notifications/{journeyId}'
 const DELETE_PATH = '/notifications/{journeyId}/delete'
+const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
@@ -146,11 +148,12 @@ describe('#auditPaths', () => {
     )
   })
 
-  it('Should audit the dashboard, the overview hub and the delete confirmation the set registers today', () => {
+  it('Should audit every page the set registers today', () => {
     expect(auditPaths(journeyIds)).toEqual([
       DASHBOARD_PATH,
       `/notifications/${journeyIds.warePotatoes}`,
-      `/notifications/${journeyIds.warePotatoes}/delete`
+      `/notifications/${journeyIds.warePotatoes}/delete`,
+      `/notifications/${journeyIds.warePotatoes}/commodity-type`
     ])
   })
 })
@@ -164,11 +167,12 @@ describe('#auditableRoutePaths', () => {
     expect(paths).not.toContain(SKIPPED_PATH)
   })
 
-  it('Should name the three GET routes the set registers today', () => {
+  it('Should name every GET route the set registers today', () => {
     expect(auditableRoutePaths()).toEqual([
       DASHBOARD_PATH,
       HUB_PATH,
-      DELETE_PATH
+      DELETE_PATH,
+      COMMODITY_TYPE_PATH
     ])
   })
 })
@@ -282,7 +286,7 @@ describe('#SEED_SHAPES', () => {
     expect(Object.keys(SEED_SHAPES)).toEqual(USE_CASES)
   })
 
-  it('Should seed no journey steps while no page collects an answer', () => {
+  it('Should seed every shape with no journey steps', () => {
     expect(Object.values(SEED_SHAPES).flatMap(({ steps }) => steps)).toEqual([])
   })
 })

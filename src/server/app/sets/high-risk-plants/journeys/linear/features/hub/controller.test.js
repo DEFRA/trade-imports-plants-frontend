@@ -12,11 +12,14 @@ import { journeyRequest } from '../../../../../../engine/test-support.js'
 import { hubRoutePath } from '../../../../../../shared/paths.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
 import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
+import { installHighRiskPlantsJourney } from '../../test-support.js'
 
 import { GROUPS, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 
 const hubGet = routes.find((route) => route.method === 'GET').handler
+
+const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
 
 const buildH = () => {
   const captured = { cookies: {} }
@@ -39,8 +42,9 @@ const buildH = () => {
   }
 }
 
-const renderHub = async ({ openingRun } = {}) => {
+const renderHub = async ({ openingRun, seed = {} } = {}) => {
   const journey = await store.create()
+  await store.seedAnswers(journey.journeyId, seed)
   const h = buildH()
   const state = openingRun
     ? { [SESSION_COOKIES.openingRun]: { [journey.journeyId]: openingRun } }
@@ -53,6 +57,7 @@ describe('#hubGet', () => {
   beforeAll(() => {
     configureRecords(recordsStub)
     configureSession(sessionStub)
+    installHighRiskPlantsJourney()
   })
   beforeEach(() => store.clear())
 
@@ -103,11 +108,59 @@ describe('#hubGet', () => {
     })
   })
 
-  it('Should render no group while every group is empty of task rows', async () => {
+  it('Should render the about-the-consignment group and its one row', async () => {
+    const { journeyId, h } = await renderHub()
+
+    expect(h.captured.view.context.groups).toEqual([
+      {
+        id: CONSIGNMENT_GROUP_ID,
+        caption: copy.groups[CONSIGNMENT_GROUP_ID],
+        items: [
+          expect.objectContaining({
+            title: { text: copy.rows.commodities.title },
+            href: `/notifications/${journeyId}/commodity-type`,
+            status: {
+              tag: {
+                text: copy.statuses.notYetStarted,
+                classes: 'govuk-tag--blue'
+              }
+            }
+          })
+        ]
+      }
+    ])
+  })
+
+  it('Should give the commodities row no hint — no source writes one', async () => {
     const { h } = await renderHub()
 
-    expect(GROUPS.every((group) => group.rows.length === 0)).toBe(true)
-    expect(h.captured.view.context.groups).toEqual([])
+    const [row] = h.captured.view.context.groups[0].items
+    expect(row).not.toHaveProperty('hint')
+  })
+
+  it('Should complete the commodities row once a commodity type is committed', async () => {
+    const { journeyId, h } = await renderHub({
+      seed: { commodityType: 'potatoes' }
+    })
+
+    const [row] = h.captured.view.context.groups[0].items
+    expect(row.status).toEqual({
+      tag: { text: copy.statuses.completed, classes: 'govuk-tag--green' }
+    })
+    expect(row.href).toBe(`/notifications/${journeyId}/commodity-type`)
+  })
+
+  it('Should render nothing for the three groups that have landed no row', async () => {
+    const { h } = await renderHub()
+
+    expect(
+      GROUPS.filter((group) => group.id !== CONSIGNMENT_GROUP_ID).every(
+        (group) => group.rows.length === 0
+      )
+    ).toBe(true)
+    expect(h.captured.view.context.groups.map((group) => group.id)).toEqual([
+      CONSIGNMENT_GROUP_ID
+    ])
   })
 
   it('Should carry no commodity totals — the animals panel is not copied', async () => {

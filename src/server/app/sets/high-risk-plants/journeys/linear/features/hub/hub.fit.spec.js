@@ -8,6 +8,7 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = /\/notifications\/[^/]+$/
 const JOURNEY_ID_SEGMENT = 2
+const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
 
 const journeyIdFromPage = (page) =>
   new URL(page.url()).pathname.split('/')[JOURNEY_ID_SEGMENT]
@@ -17,11 +18,19 @@ const journeyIdFromPage = (page) =>
 const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
+const taskRow = (page, title) =>
+  page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('link', { name: title }) })
+
 const startNotification = async (page) => {
   await page.goto('/')
   await page.getByRole('button', { name: dashboardCopy.startButton }).click()
+  await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+  const reference = journeyIdFromPage(page)
+  await page.goto(`/notifications/${reference}`)
   await expect(page).toHaveURL(HUB_URL)
-  return journeyIdFromPage(page)
+  return reference
 }
 
 test.describe('overview hub feature', () => {
@@ -65,16 +74,36 @@ test.describe('overview hub feature', () => {
     await expect(page).toHaveURL('/')
   })
 
-  test('renders no task list while the journey has no task rows', async ({
+  test('renders the first group and its commodities row, linked to the page', async ({
     page
   }) => {
-    await startNotification(page)
+    const reference = await startNotification(page)
 
     await expect(
-      page.getByRole('heading', { name: copy.title, level: 1 })
+      page.getByText(copy.groups[CONSIGNMENT_GROUP_ID], { exact: true })
     ).toBeVisible()
-    await expect(page.locator('.govuk-task-list')).toHaveCount(0)
-    for (const caption of Object.values(copy.groups)) {
+    await expect(page.locator('.govuk-task-list')).toHaveCount(1)
+    await expect(
+      page.getByRole('link', { name: copy.rows.commodities.title })
+    ).toHaveAttribute('href', `/notifications/${reference}/commodity-type`)
+    await expect(taskRow(page, copy.rows.commodities.title)).toContainText(
+      copy.statuses.notYetStarted
+    )
+    await expect(
+      taskRow(page, copy.rows.commodities.title).locator(
+        '.govuk-task-list__hint'
+      )
+    ).toHaveCount(0)
+  })
+
+  test('renders no group that has landed no task row', async ({ page }) => {
+    await startNotification(page)
+
+    const emptyGroupCaptions = Object.entries(copy.groups)
+      .filter(([id]) => id !== CONSIGNMENT_GROUP_ID)
+      .map(([, caption]) => caption)
+
+    for (const caption of emptyGroupCaptions) {
       await expect(page.getByText(caption, { exact: true })).toHaveCount(0)
     }
   })
