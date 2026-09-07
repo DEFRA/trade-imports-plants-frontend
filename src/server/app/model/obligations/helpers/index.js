@@ -1,9 +1,9 @@
 /**
  * applyTo helper library — pure functions that build applyTo functions.
  *
- * Part of a prototype exploring "consolidate on applyTo + helpers" as
- * an alternative to the gatedBy DSL. Companion to
- * `obligations-all-applyto.js`.
+ * The helper library the obligation model ships with: a set's gated
+ * obligations build their `applyTo` from these helpers rather than
+ * hand-rolling closures.
  *
  * Design contract:
  *   - Each helper is a pure function returning an

@@ -17,10 +17,9 @@ Run the set's unit suite from the repo root: `npm run test:high-risk-plants`.
 
 ## Current state
 
-The platform is complete. **The high-risk-plants set is empty** — no
-obligations, no journey pages, no flow sections and no task rows. With no routes
-registered the service answers `/health`, the auth and sign-out routes, and the
-static assets; a 404 on `/` is the expected zero-page state, not a failed boot.
+The platform is complete. **The high-risk-plants set is empty.** For what the
+service serves in that state, see
+[The served surface today](src/server/app/sets/high-risk-plants/docs/README.md#the-served-surface-today).
 
 The set documentation records what the first page increment has to bring with
 it, including the currently inert journey entry guard. Read
