@@ -16,6 +16,7 @@
     "dev:debug": "AWS_EMF_ENVIRONMENT=Local run-p frontend:watch server:debug",
     "docker:dev": "npm run dev",
     "fit:start": "NODE_ENV=development node .",
+    "fit:start:workspace": "npm run check:workspace-stack && npm run fit:start",
     "check:workspace-stack": "node scripts/check-workspace-stack.js",
     "test:fit": "npm run build:frontend && DEMO_SLOWMO=0 DEMO_PACE_MS=0 playwright test --pass-with-no-tests",
     "test:fit:journeys": "npm run test:fit -- --project=journeys",

@@ -140,7 +140,15 @@ PORT=3053 npm run test:fit:features
 npm run test:fit:journeys
 npm run lint                    # JS, stylesheet and dependency-cruiser
 npm run format
+npm run fit:start:workspace     # the workspace-backed start, see below
 ```
+
+`npm run fit:start:workspace` is `fit:start` with
+[scripts/check-workspace-stack.js](./scripts/check-workspace-stack.js) chained
+ahead of it, so a run against the workspace stack refuses to start when the
+stack is down instead of failing later with confusing errors. Plain
+`npm run fit:start` — the one the Playwright web server uses — stays
+stub-backed and needs no stack.
 
 `npm run lint:arch` runs Dependency Cruiser over `src/server/app` and enforces
 the L1–L4 layer rules in `.dependency-cruiser.cjs`. Production code cannot use
@@ -207,15 +215,16 @@ docker run -p 3003:3003 trade-imports-plants-frontend
 
 ### Local stack
 
-The full local environment (MongoDB, Floci, Redis, the stubs, and every
-trade-imports service including this one) is the workspace stack in
+This repository carries no compose file of its own. The full local environment
+(MongoDB, Floci, Redis, the stubs, and every trade-imports service including
+this one) is the workspace stack in
 [DEFRA/trade-imports-workspace](https://github.com/DEFRA/trade-imports-workspace):
 
 ```bash
 # from the workspace root
 ./scripts/stack/run-stack.sh              # full stack from published images
 ./scripts/stack/run-stack.sh -d           # built from local source under repos/
-./scripts/stack/run-stack.sh -e frontend  # everything except this service (run it via npm run dev)
+./scripts/stack/run-stack.sh -e plants-frontend  # everything except this service (run it via npm run dev)
 ```
 
 A cross-repo change must use the **same branch name** in every repository it
