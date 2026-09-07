@@ -5,7 +5,12 @@ import process from 'node:process'
 import puppeteer from 'puppeteer'
 
 import signIn from '../../tests/lighthouse/auth-setup.cjs'
-import { auditUrls, reportNames, TARGETS_FILE } from './audit-targets.js'
+import {
+  auditableRoutePaths,
+  auditUrls,
+  reportNames,
+  TARGETS_FILE
+} from './audit-targets.js'
 import { createJourneyClient } from './journey-client.js'
 import { ensureAddressBookHasAnAddress } from './seed-address-book.js'
 import {
@@ -74,15 +79,35 @@ const write = (payload) => {
   writeFileSync(TARGETS_FILE, `${JSON.stringify(payload, null, 2)}\n`)
 }
 
-await ensureAddressBookHasAnAddress()
-const journeyIds = await seedNotifications(await signedInCookies())
-const urls = auditUrls(origin, journeyIds)
-await assertUrlsRenderTheirOwnPage(urls, await signedInCookies())
-write({ origin, journeyIds, urls, reports: reportNames(urls, journeyIds) })
+/** Seeding exists only to give the audited URLs a notification to point at, and
+ * the app registers no journey routes until the first page increment lands — so
+ * there is no notification to create and, indeed, no POST route to create one
+ * with. Write an empty target list and leave the audit to skip, rather than
+ * fail the build on a journey the set does not have yet. */
+const seedAndWriteTargets = async () => {
+  await ensureAddressBookHasAnAddress()
+  const journeyIds = await seedNotifications(await signedInCookies())
+  const urls = auditUrls(origin, journeyIds)
+  await assertUrlsRenderTheirOwnPage(urls, await signedInCookies())
+  write({ origin, journeyIds, urls, reports: reportNames(urls, journeyIds) })
 
-const seeded = Object.entries(journeyIds)
-  .map(([name, journeyId]) => `${name} ${journeyId}`)
-  .join(', ')
-process.stdout.write(
-  `Lighthouse will audit ${urls.length} URLs on ${origin} (${seeded})\n`
-)
+  const seeded = Object.entries(journeyIds)
+    .map(([name, journeyId]) => `${name} ${journeyId}`)
+    .join(', ')
+  process.stdout.write(
+    `Lighthouse will audit ${urls.length} URLs on ${origin} (${seeded})\n`
+  )
+}
+
+const writeNoTargets = () => {
+  write({ origin, journeyIds: {}, urls: [], reports: {} })
+  process.stdout.write(
+    `Lighthouse has no URLs to audit on ${origin} — the set registers no pages yet\n`
+  )
+}
+
+if (auditableRoutePaths().length === 0) {
+  writeNoTargets()
+} else {
+  await seedAndWriteTargets()
+}
