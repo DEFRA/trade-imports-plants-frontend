@@ -205,8 +205,45 @@ If you add a task row, also:
 - update the hub's `copy/copy.test.js`, the hub feature spec and
   `journeys/linear/flow/task-rows.test.js`
 
-> **EXEMPLAR PLACEHOLDER** — `journeys/linear/features/hub/` does not exist, and
-> neither does `flow/task-rows.test.js`. The first task row builds both.
+The hub feature is built, and it is the worked example for those bullets. It
+holds no task row yet, so read it as the consumer of a row rather than as a page
+that adds one.
+
+- [`journeys/linear/features/hub/controller.js`](../journeys/linear/features/hub/controller.js)
+  holds `GROUPS` — the four numbered groups in the order the hub renders them,
+  each with an empty `rows` list. It turns a row id into a task-list item: a row
+  whose gate passes gets its `rowEntry()` link and a status tag, a row whose
+  gate fails gets the "Cannot start yet" status and no link, and a conditional
+  row that is not applicable is dropped. A group with no items is not rendered.
+- [`journeys/linear/features/hub/copy/copy.en.js`](../journeys/linear/features/hub/copy/copy.en.js)
+  and
+  [`journeys/linear/features/hub/copy/copy.cy.js`](../journeys/linear/features/hub/copy/copy.cy.js)
+  hold the four group captions, the five statuses — completed, optional, in
+  progress, not yet started and cannot start yet, whose presentation lives in
+  the controller as three `govuk-tag` classes, plain text for optional and a
+  task-list status class for cannot start yet — and a `rows` map that is still
+  empty. Your row's `title` and `hint` go under `rows` in both.
+- [`journeys/linear/features/hub/copy/copy.test.js`](../journeys/linear/features/hub/copy/copy.test.js)
+  checks the English bundle leaf by leaf, names the four groups in the design
+  order in both locales, holds the controller and the captions to the same set
+  of groups, and pins `rows` empty — that last assertion is the one your row
+  breaks. The Welsh leaves are covered set-wide by
+  [`copy-parity.test.js`](../../../copy-parity.test.js).
+- [`journeys/linear/features/hub/template.njk`](../journeys/linear/features/hub/template.njk)
+  renders each group as a heading and one `govukTaskList`, so a new row needs no
+  template change.
+- [`journeys/linear/features/hub/controller.test.js`](../journeys/linear/features/hub/controller.test.js)
+  and
+  [`journeys/linear/features/hub/hub.fit.spec.js`](../journeys/linear/features/hub/hub.fit.spec.js)
+  both pin the empty landing state — no group rendered and no task list on the
+  page. Extend both with your row.
+- [`journeys/linear/flow/task-rows.test.js`](../journeys/linear/flow/task-rows.test.js)
+  proves that landing state from the flow side — `taskRows` is empty and
+  `taskRowById()` resolves nothing — and that every id a `GROUPS` entry names
+  resolves to a task row or the review row. It covers `rowParts()` and
+  `rowStatus()` over fixture rows: an explicit `parts` list wins over the
+  obligations the row's pages collect, an out-of-scope row is not applicable,
+  and an in-scope row nobody has answered is optional.
 
 `pageGatePasses()` derives the normal gate from `collects` plus earlier
 continue-enforced fields. Add an authored `gate` to the page identity only when
