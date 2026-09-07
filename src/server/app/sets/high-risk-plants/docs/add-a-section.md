@@ -50,8 +50,10 @@ Trace registration through these, which do exist:
 - [`src/server/app/flow/journey-flow.js`](../../../flow/journey-flow.js)
 - [`src/server/app/routes.js`](../../../routes.js)
 
-The hub feature and `flow/task-rows.test.js` do not exist yet. The first task
-row builds both.
+The hub feature and `flow/task-rows.test.js` already exist. The hub lands with
+`GROUPS` carrying its four numbered groups, each with an empty `rows` array, and
+`taskRows` empty, so the first task row adds only its `taskRows` entry, its
+`GROUPS` placement and its rows copy.
 
 ## 1. Define the user task and its data
 

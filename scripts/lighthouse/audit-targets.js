@@ -25,8 +25,8 @@ export const SKIPPED = new Map()
 export const FILLED_BY = new Map()
 
 /** Query strings a route needs before it will render rather than redirect.
- * Empty while the dashboard is the only audited route, since it renders on its
- * own, and each page increment adds its own entry where it needs one. */
+ * Empty until a route needs one, and each page increment adds its own entry
+ * where it needs one. */
 export const QUERY = new Map()
 
 const getPathsOf = (routes) =>
