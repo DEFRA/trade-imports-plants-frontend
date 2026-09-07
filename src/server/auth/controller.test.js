@@ -4,6 +4,7 @@ import { config } from '../../config/config.js'
 import { statusCodes } from '../common/constants/status-codes.js'
 import { mockOidcConfig } from '../common/test-helpers/mock-oidc-config.js'
 import { verifyToken } from '../../auth/verify-token.js'
+import { copy as sharedEn } from '../app/shared/copy.en.js'
 
 vi.mock('../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
@@ -62,7 +63,10 @@ describe('#authController', () => {
     })
 
     expect(statusCode).toBe(statusCodes.ok)
-    expect(payload).toContain('Sorry, we are unable to sign you in')
+    expect(payload).toContain(sharedEn.unauthorised.heading)
+    expect(payload).toContain(
+      `${sharedEn.unauthorised.title} | ${sharedEn.layout.serviceName}`
+    )
     expect(headers['set-cookie'] ?? []).not.toContainEqual(
       expect.stringContaining('sid=')
     )
