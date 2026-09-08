@@ -1,14 +1,15 @@
 # High-risk-plants limits and edges
 
-## The set declares no caps yet
+## The set declares a floor and no ceiling
 
-The manifest declares no collection and no `requires` rule, so no floor or
-ceiling is in force. Collection caps are declared in two separate places and
-both are still empty of plant data:
+`commodityLines` carries `requires: { minEntries: 1 }`, so a notification with
+no commodity line can never be complete. No ceiling is in force anywhere.
+Collection caps are declared in two separate places:
 
 - a `requires: { minEntries, maxEntries }` rule on the group obligation, which
-  decides completeness and defends loaded data
-- the `MAX_ENTRIES_FROM` map in
+  decides completeness and defends loaded data — `commodityLines` sets the
+  floor and no maximum, because no source gives one
+- the `MAX_ENTRIES_FROM` map, still empty of plant data, in
   [`src/server/app/bridge/obligation-source.js`](../../../bridge/obligation-source.js),
   which links a collection name to a sibling count field and caps the write path
 
@@ -23,13 +24,27 @@ step with the manifest: a name listed there that this set does not declare is
 inert, and one this set declares but does not list gets no continue-time
 enforcement.
 
-## One reference list constrains a value
+## The commodity vocabulary constrains three of the eleven answers
 
-Obligation allow-lists read from a set-owned reference service. The set owns one
-so far — `commodityTypes()` in [`services/commodities/`](../services/commodities/index.js),
-which the commodity-type controller turns into both its radio items and its
-membership rule. Nothing else is constrained yet. See [Services](services.md)
-for the seam a reference service plugs into.
+Obligation allow-lists read from a set-owned reference service. The set owns
+one — [`services/commodities/`](../services/commodities/index.js) — and it
+constrains the commodity types, the nine categories and their grouping by
+type, the fifteen genera and the hardwood narrowing, plus which categories
+each per-line field applies on. Only three commodity answers are checked
+against it: `commodityType` in
+[`commodity-type/controller.js`](../journeys/linear/features/commodity-type/controller.js),
+`category` through `categoryRule` in
+[`details.controller.js`](../journeys/linear/features/commodities/details/details.controller.js),
+and `genus` in
+[`line-form.js`](../journeys/linear/features/commodities/line-form.js).
+
+Every other per-line value is free text bounded only by the length caps in
+`line-form.js` — `species`, `commodityCode`, `potatoVariety`,
+`potatoIntendedUse`, `eppoCode`, `sizeOfTree` and `phytosanitaryTreatments`
+all fall through to `textRule`, capped at 58 characters and 400 for
+`phytosanitaryTreatments` — and `quantity` is a whole number of at least one.
+Nothing outside the commodity section is constrained yet. See
+[Services](services.md) for the seam a reference service plugs into.
 
 ## One backend projection, and no event publishing
 
@@ -54,6 +69,15 @@ Grouped fulfilment tokens such as `line0` and `line0.unit1` are positions in one
 canonical snapshot, not durable record identifiers. Every save replaces the
 whole snapshot, so removing an earlier entry can renumber the later ones. Do not
 persist or link to a position as though it were an id.
+
+## Reconciling a commodity type destroys lines
+
+The categories partition by commodity type, so saving a different
+`commodityType` reconciles `commodityLines` down to the lines the new type
+still allows — in practice none, because no category belongs to two types. Any
+page that writes `commodityType` must therefore route to the commodities list
+carrying the `removed` count, so the trader is told what went rather than
+finding an empty consignment.
 
 ## A gate cannot read across sibling frames
 

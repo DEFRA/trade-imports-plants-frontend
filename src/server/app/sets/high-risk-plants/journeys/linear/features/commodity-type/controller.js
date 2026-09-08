@@ -15,6 +15,13 @@ import { copyFor } from '../../../../../../shared/copy.js'
 import * as commodities from '../../../../services/commodities/index.js'
 import { hasCommittedNotificationAnswers } from '../../flow/entry-guard.js'
 import {
+  CATEGORY,
+  GENUS,
+  LINES,
+  POTATO_VARIETY
+} from '../commodities/fields.js'
+import { listHref } from '../commodities/links.js'
+import {
   PLANTS_WOOD_DAYS_AFTER_ARRIVAL,
   POTATO_DAYS_BEFORE_ARRIVAL
 } from '../timing-windows.js'
@@ -61,49 +68,61 @@ const backLinkFor = (journey, answers) =>
     ? hubPath(journey.journeyId)
     : dashboardPath()
 
-const render = (
-  h,
-  journey,
-  values,
-  errors = {},
-  answers = values,
-  recoverableError = false
-) =>
-  h.view(view, {
+const linesOf = (current) =>
+  state.collectionView(current.answers, [LINES], current.evaluation)
+
+// The categories partition by commodity type, so a line survives a change of
+// type only when its category belongs to the type now chosen — in practice,
+// only when the type has not really changed.
+const linesKeptBy = (lines, commodityType) => {
+  const allowed = commodities.categoriesFor(commodityType)
+  return lines
+    .map(({ entry }) => entry)
+    .filter((entry) => allowed.includes(entry[CATEGORY]))
+}
+
+// Lines are reconciled by what identifies one to a trader, not by position: a
+// line they can still see keeps the rest of its answers.
+const keyOf = (entry) =>
+  [entry[CATEGORY], entry[GENUS], entry[POTATO_VARIETY]].join('|')
+
+const render = (h, current, values, options = {}) => {
+  const errors = options.errors ?? {}
+  return h.view(view, {
     ...kit.base(copy.title, {
-      backLink: backLinkFor(journey, answers),
-      journey,
+      backLink: backLinkFor(current.journey, current.answers),
+      journey: current.journey,
       page,
-      recoverableError
+      recoverableError: options.recoverableError ?? false
     }),
     copy,
     values,
     errors,
     errorSummary: kit.errorSummary(errors),
-    typeOptions: typeOptions(values.commodityType)
+    typeOptions: typeOptions(values.commodityType),
+    hasLines: linesOf(current).length > 0
   })
+}
 
 const get = async (request, h) => {
-  const { journey, answers } = await state.get(request, h)
-  return render(
-    h,
-    journey,
-    { commodityType: answers.commodityType ?? '' },
-    {},
-    answers
-  )
+  const current = await state.get(request, h)
+  return render(h, current, {
+    commodityType: current.answers.commodityType ?? ''
+  })
 }
 
 const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { commodityType: payload.commodityType ?? '' }
   const { errors, value } = validate(fields(), payload)
+  const current = await state.get(request, h)
   if (errors) {
-    const { journey, answers } = await state.get(request, h)
-    return render(h, journey, values, errors, answers).code(
-      HTTP_STATUS_BAD_REQUEST
-    )
+    return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)
   }
+
+  const lines = linesOf(current)
+  const kept = linesKeptBy(lines, value.commodityType)
+  const removed = lines.length - kept.length
 
   let committed
   const { failure } = await kit.recoverableSave(
@@ -111,18 +130,24 @@ const post = async (request, h) => {
       committed = await state.commit(request, h, {
         commodityType: value.commodityType
       })
+      if (removed > 0) {
+        await state.reconcileEntriesAt(request, h, [LINES], keyOf, kept)
+      }
     },
-    async () => {
-      const { journey, answers } = await state.get(request, h)
-      return render(h, journey, values, {}, answers, true).code(
+    async () =>
+      render(h, current, values, { recoverableError: true }).code(
         HTTP_STATUS_INTERNAL_SERVER_ERROR
       )
-    }
   )
   if (failure) {
     return failure
   }
 
+  // A change that dropped lines says so on the list page, whichever control
+  // was pressed — the trader has to see what went before they move on.
+  if (removed > 0) {
+    return h.redirect(listHref(request, { removed }))
+  }
   return h.redirect(await kit.nextTarget(request, page, committed.scope))
 }
 

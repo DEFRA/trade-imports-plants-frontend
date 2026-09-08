@@ -12,7 +12,14 @@ import {
   SKIPPED
 } from './audit-targets.js'
 import { journeyIdIn, SEED_SHAPES } from './seed-notification.js'
-import { commodityTypes } from '../../src/server/app/sets/high-risk-plants/services/commodities/index.js'
+import {
+  categoriesFor,
+  commodityTypes,
+  lineFieldsFor
+} from '../../src/server/app/sets/high-risk-plants/services/commodities/index.js'
+import { commodityDetailsPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/page.js'
+
+const COMMODITY_DETAILS_SLUG = commodityDetailsPage.slug
 
 const ORIGIN = 'http://localhost:3003'
 
@@ -42,6 +49,8 @@ const DASHBOARD_PATH = '/'
 const HUB_PATH = '/notifications/{journeyId}'
 const DELETE_PATH = '/notifications/{journeyId}/delete'
 const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
+const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
+const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
@@ -159,7 +168,9 @@ describe('#auditPaths', () => {
       DASHBOARD_PATH,
       `/notifications/${journeyIds.warePotatoes}`,
       `/notifications/${journeyIds.warePotatoes}/delete`,
-      `/notifications/${journeyIds.warePotatoes}/commodity-type`
+      `/notifications/${journeyIds.warePotatoes}/commodity-type`,
+      `/notifications/${journeyIds.warePotatoes}/commodities`,
+      `/notifications/${journeyIds.warePotatoes}/commodities/details`
     ])
   })
 })
@@ -178,7 +189,9 @@ describe('#auditableRoutePaths', () => {
       DASHBOARD_PATH,
       HUB_PATH,
       DELETE_PATH,
-      COMMODITY_TYPE_PATH
+      COMMODITY_TYPE_PATH,
+      COMMODITIES_PATH,
+      COMMODITY_DETAILS_PATH
     ])
   })
 })
@@ -292,25 +305,61 @@ describe('#SEED_SHAPES', () => {
     expect(Object.keys(SEED_SHAPES)).toEqual(USE_CASES)
   })
 
-  it('Should seed every shape through the commodity type its use case is for', () => {
+  it('Should open every shape on the commodity type its use case is for', () => {
     expect(
       Object.fromEntries(
-        Object.entries(SEED_SHAPES).map(([shape, { steps }]) => [shape, steps])
+        Object.entries(SEED_SHAPES).map(([shape, { steps }]) => [
+          shape,
+          steps[0]
+        ])
       )
     ).toEqual({
-      warePotatoes: [COMMODITY_TYPE_STEP('potatoes')],
-      warePotatoesLate: [COMMODITY_TYPE_STEP('potatoes')],
-      seedPotatoes: [COMMODITY_TYPE_STEP('potatoes')],
-      plantsForPlanting: [COMMODITY_TYPE_STEP('plants-for-planting')],
-      woodWithoutBark: [COMMODITY_TYPE_STEP('wood-and-cut-trees')]
+      warePotatoes: COMMODITY_TYPE_STEP('potatoes'),
+      warePotatoesLate: COMMODITY_TYPE_STEP('potatoes'),
+      seedPotatoes: COMMODITY_TYPE_STEP('potatoes'),
+      plantsForPlanting: COMMODITY_TYPE_STEP('plants-for-planting'),
+      woodWithoutBark: COMMODITY_TYPE_STEP('wood-and-cut-trees')
     })
   })
 
   it('Should seed only commodity types the journey offers', () => {
-    const seeded = Object.values(SEED_SHAPES).flatMap(({ steps }) =>
-      steps.map(({ fields }) => fields.commodityType)
-    )
+    const seeded = Object.values(SEED_SHAPES)
+      .flatMap(({ steps }) => steps.map(({ fields }) => fields.commodityType))
+      .filter(Boolean)
+
+    expect(seeded).toHaveLength(Object.keys(SEED_SHAPES).length)
     expect(seeded.every((type) => commodityTypes().includes(type))).toBe(true)
+  })
+
+  it('Should give every shape a commodity line the list page can read back', () => {
+    for (const [shape, { steps }] of Object.entries(SEED_SHAPES)) {
+      const lineSteps = steps.filter(
+        (step) => step.slug === COMMODITY_DETAILS_SLUG
+      )
+
+      expect(lineSteps, shape).toHaveLength(2)
+      expect(lineSteps[0].fields.category, shape).toBeTruthy()
+      expect(lineSteps[1].fields.index, shape).toBe('0')
+      expect(
+        Object.keys(lineSteps[1].fields)
+          .filter((field) => field !== 'index' && field !== 'category')
+          .toSorted(),
+        shape
+      ).toEqual([...lineFieldsFor(lineSteps[1].fields.category)].toSorted())
+    }
+  })
+
+  it('Should seed only categories the shape’s own commodity type allows', () => {
+    for (const [shape, { steps }] of Object.entries(SEED_SHAPES)) {
+      const commodityType = steps[0].fields.commodityType
+      const seededCategories = steps
+        .map(({ fields }) => fields.category)
+        .filter(Boolean)
+
+      for (const category of seededCategories) {
+        expect(categoriesFor(commodityType), shape).toContain(category)
+      }
+    }
   })
 })
 

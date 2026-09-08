@@ -12,7 +12,10 @@ import { journeyRequest } from '../../../../../../engine/test-support.js'
 import { hubRoutePath } from '../../../../../../shared/paths.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
 import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
-import { installHighRiskPlantsJourney } from '../../test-support.js'
+import {
+  COMPLETE_POTATO_CONSIGNMENT,
+  installHighRiskPlantsJourney
+} from '../../test-support.js'
 
 import { GROUPS, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
@@ -138,9 +141,18 @@ describe('#hubGet', () => {
     expect(row).not.toHaveProperty('hint')
   })
 
-  it('Should complete the commodities row once a commodity type is committed', async () => {
+  it('Should hold the commodities row in progress on a type with no line', async () => {
+    const { h } = await renderHub({ seed: { commodityType: 'potatoes' } })
+
+    const [row] = h.captured.view.context.groups[0].items
+    expect(row.status).toEqual({
+      tag: { text: copy.statuses.inProgress, classes: 'govuk-tag--light-blue' }
+    })
+  })
+
+  it('Should complete the commodities row once a line answers every field its category asks for', async () => {
     const { journeyId, h } = await renderHub({
-      seed: { commodityType: 'potatoes' }
+      seed: COMPLETE_POTATO_CONSIGNMENT
     })
 
     const [row] = h.captured.view.context.groups[0].items

@@ -77,6 +77,10 @@ describe('#copy', () => {
     expect(copy.hint).toBe(
       'Select the type of goods this notification is for. Notify potatoes, plants for planting and wood in separate notifications.'
     )
+    expect(copy.linesWarning).toBe(
+      'Changing your answer will remove the commodities you have already added.'
+    )
+    expect(copy.linesWarningIcon).toBe('Warning')
   })
 
   it('Should carry the machine-draft Welsh for every commodity type it offers', () => {
@@ -88,5 +92,9 @@ describe('#copy', () => {
     expect(cy.errors.commodityType).toBe(
       'Dewiswch beth rydych chi’n ei fewnforio'
     )
+    expect(cy.linesWarning).toBe(
+      'Bydd newid eich ateb yn dileu’r nwyddau rydych eisoes wedi’u hychwanegu.'
+    )
+    expect(cy.linesWarningIcon).toBe('Rhybudd')
   })
 })

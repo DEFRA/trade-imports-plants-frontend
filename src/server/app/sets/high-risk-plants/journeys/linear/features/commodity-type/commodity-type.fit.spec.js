@@ -15,6 +15,9 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/commodity-type$/
+// The opening run goes on to the commodities list, and a consignment with no
+// line goes straight on to the entry sub-page.
+const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details$/
 const TYPE_INPUT_SELECTOR = 'input[name="commodityType"]'
 const HUB_PATH_SEGMENTS = 3
 
@@ -76,6 +79,7 @@ test.describe('commodity-type feature', () => {
     await expect(page.getByRole('group', { name: copy.legend })).toContainText(
       copy.hint
     )
+    await expect(page.getByText(copy.linesWarning)).toBeHidden()
   })
 
   test('is also reachable from the overview commodities task row', async ({
@@ -124,7 +128,7 @@ test.describe('commodity-type feature', () => {
     await expect(backLink(page)).toHaveAttribute('href', '/')
   })
 
-  test('saves a choice, lands on the overview and shows it again on return', async ({
+  test('saves a choice, goes on to the commodities and shows it again on return', async ({
     page
   }) => {
     const pageUrl = page.url()
@@ -132,7 +136,7 @@ test.describe('commodity-type feature', () => {
     await radioFor(page, 'plants-for-planting').check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
 
     await page.goto(pageUrl)
     await expect(radioFor(page, 'plants-for-planting')).toBeChecked()
@@ -142,18 +146,15 @@ test.describe('commodity-type feature', () => {
     page
   }) => {
     const pageUrl = page.url()
+    const hubPath = hubPathOf(page)
 
     await radioFor(page, 'potatoes').check()
     await saveAndContinue(page).click()
-    await expect(page).toHaveURL(HUB_URL)
-    const hubUrl = page.url()
+    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
 
     await page.goto(pageUrl)
 
-    await expect(backLink(page)).toHaveAttribute(
-      'href',
-      new URL(hubUrl).pathname
-    )
+    await expect(backLink(page)).toHaveAttribute('href', hubPath)
   })
 
   test('Save and return to overview saves the choice and reaches the overview', async ({
@@ -242,7 +243,7 @@ test.describe('commodity-type feature', () => {
     await radioFor(page, 'potatoes').check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
   })
 
   test('has no serious or critical axe violations on the initial render', async ({
@@ -281,7 +282,7 @@ test.describe('commodity-type as the journey entry page', () => {
     await startAtCommodityType(page)
   })
 
-  test('bounces a deep link from a session that never created the notification, and saving lands on the overview', async ({
+  test('bounces a deep link from a session that never created the notification, and saving carries on through the section', async ({
     browser,
     page
   }) => {
@@ -300,7 +301,7 @@ test.describe('commodity-type as the journey entry page', () => {
       await radioFor(deepLinkPage, 'potatoes').check()
       await saveAndContinue(deepLinkPage).click()
 
-      await expect(deepLinkPage).toHaveURL(notificationHubPath)
+      await expect(deepLinkPage).toHaveURL(COMMODITY_DETAILS_URL)
     } finally {
       await deepLinkContext.close()
     }

@@ -5,6 +5,7 @@ import { statusCodes } from '../common/constants/status-codes.js'
 import { makeScope } from './engine/index.js'
 import { isDispatchBuilt } from './flow/dispatch.js'
 import { allRoutes } from './sets/high-risk-plants/journeys/linear/features/index.js'
+import { COMPLETE_POTATO_CONSIGNMENT } from './sets/high-risk-plants/journeys/linear/test-support.js'
 import { copy as dashboardCopy } from './sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { authenticatedCredentials } from './engine/test-support.js'
 import { mockOidcConfig } from '../common/test-helpers/mock-oidc-config.js'
@@ -36,7 +37,11 @@ describe('high-risk-plants plugin registration', () => {
   it('Should inject the flow readiness roll-up into the bridge seam', () => {
     expect(makeScope({}).readyForCheckYourAnswers).toBe(false)
     expect(
-      makeScope({ commodityType: 'potatoes' }).readyForCheckYourAnswers
+      makeScope({ commodityType: 'potatoes' }).readyForCheckYourAnswers,
+      'a commodity type with no line leaves the task unfinished'
+    ).toBe(false)
+    expect(
+      makeScope(COMPLETE_POTATO_CONSIGNMENT).readyForCheckYourAnswers
     ).toBe(true)
   })
 
