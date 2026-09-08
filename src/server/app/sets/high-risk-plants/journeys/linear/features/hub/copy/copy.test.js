@@ -48,7 +48,14 @@ describe('#copy', () => {
     expect(cy.rows.origin).toEqual({ title: 'O ble mae’r llwyth hwn yn dod?' })
   })
 
+  it('Should title the arrival row in both locales', () => {
+    // The animals string for the same task, and the Welsh the spec gives the
+    // arrival-details page (journey-spec.json pages[arrival-details].titleCy).
+    expect(copy.rows.arrival).toEqual({ title: 'Arrival details' })
+    expect(cy.rows.arrival).toEqual({ title: 'Manylion cyrraedd' })
+  })
+
   it('Should hold only the rows the journey has landed', () => {
-    expect(Object.keys(copy.rows)).toEqual(['commodities', 'origin'])
+    expect(Object.keys(copy.rows)).toEqual(['commodities', 'origin', 'arrival'])
   })
 })

@@ -1,3 +1,4 @@
+import { arrivalStatus } from './sections/arrival.js'
 import {
   category,
   commodityCode,
@@ -15,6 +16,7 @@ import {
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
+  arrivalStatus,
   category,
   commodityCode,
   commodityLine,
@@ -43,7 +45,8 @@ export const obligations = [
   eppoCode,
   sizeOfTree,
   phytosanitaryTreatments,
-  countryOfOrigin
+  countryOfOrigin,
+  arrivalStatus
 ]
 
 export const groups = obligations.filter((obligation) =>

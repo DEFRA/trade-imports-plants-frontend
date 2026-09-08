@@ -3,6 +3,7 @@ import { pageGatePasses } from '../../../../../flow/gates.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import { commoditiesPage } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
+import { arrivalStatusPage } from '../features/arrival-status/page.js'
 
 const flowPageTarget = (page) => (scope, journeyId) =>
   pageGatePasses(page, scope) ? pagePath(journeyId, page.slug) : null
@@ -10,13 +11,15 @@ const flowPageTarget = (page) => (scope, journeyId) =>
 /** The opening run's ordered steps — a null target skips the step (see
  * docs/journey-flow-and-gates.md, "Opening run and entry guard"). The run
  * opens on commodity-type, the notification's entry question, asks for the
- * consignment's commodities and then for where they come from. The entry
- * sub-page is not a step: the list page sends a trader with no lines there and
- * takes them back. */
+ * consignment's commodities, then for where they come from, then whether they
+ * have arrived. The entry sub-page is not a step: the list page sends a trader
+ * with no lines there and takes them back. The arrival-status step is skipped
+ * for potatoes, whose notification is never asked the question. */
 export const RUN_STEPS = [
   { id: commodityTypePage.id, target: flowPageTarget(commodityTypePage) },
   { id: commoditiesPage.id, target: flowPageTarget(commoditiesPage) },
-  { id: originPage.id, target: flowPageTarget(originPage) }
+  { id: originPage.id, target: flowPageTarget(originPage) },
+  { id: arrivalStatusPage.id, target: flowPageTarget(arrivalStatusPage) }
 ]
 
 export const nextRunTarget = (stepId, scope, journeyId) => {

@@ -20,9 +20,13 @@ export const SKIPPED = new Map()
 /** Routes whose answers live on a seeded notification other than the default —
  * either because the page only exists once the notification is submitted, or
  * because the obligation behind it is out of scope on the default shape.
- * Everything else is audited on the default shape. Empty until the set
- * registers its first conditional page. */
-export const FILLED_BY = new Map()
+ * Everything else is audited on the default shape. */
+export const FILLED_BY = new Map([
+  // arrivalStatus is out of scope on the ware-potato default: the question is
+  // asked of plants and wood alone, so the audit reads the page on a plants
+  // notification rather than one that never sees it.
+  ['/notifications/{journeyId}/arrival-status', 'plantsForPlanting']
+])
 
 /** Query strings a route needs before it will render rather than redirect.
  * Empty until a route needs one, and each page increment adds its own entry

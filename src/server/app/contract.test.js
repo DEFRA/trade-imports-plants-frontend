@@ -33,6 +33,7 @@ import * as commodityType from './sets/high-risk-plants/journeys/linear/features
 import * as commodities from './sets/high-risk-plants/journeys/linear/features/commodities/list/list.controller.js'
 import * as commodityDetails from './sets/high-risk-plants/journeys/linear/features/commodities/details/details.controller.js'
 import * as origin from './sets/high-risk-plants/journeys/linear/features/origin/controller.js'
+import * as arrivalStatus from './sets/high-risk-plants/journeys/linear/features/arrival-status/controller.js'
 
 // Every manifest read is deferred: at module load the configured set is still
 // the fixture, and the plants set only arrives in `beforeAll`.
@@ -67,6 +68,15 @@ const cases = [
     collects: origin.meta.collects,
     handler: postHandlerOf(origin),
     payload: { countryOfOrigin: 'FR' }
+  },
+  {
+    id: 'arrival-status',
+    collects: arrivalStatus.meta.collects,
+    handler: postHandlerOf(arrivalStatus),
+    // The question is only in scope for plants and wood, so the seed has to
+    // name one of them before the answer is committable at all.
+    seed: { commodityType: 'plants-for-planting' },
+    payload: { arrivalStatus: 'not-yet-arrived' }
   }
 ]
 

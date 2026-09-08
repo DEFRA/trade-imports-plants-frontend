@@ -207,13 +207,15 @@ If you add a task row, also:
 - update the hub's `copy/copy.test.js`, the hub feature spec and
   `journeys/linear/flow/task-rows.test.js`
 
-The hub feature is built, and it is the worked example for those bullets. It
-holds no task row yet, so read it as the consumer of a row rather than as a page
-that adds one.
+The hub feature is built, and it is the worked example for those bullets. It now
+renders three rows — commodities, origin and arrival — so read it as a worked
+example of a row that already exists rather than as an empty consumer.
 
 - [`journeys/linear/features/hub/controller.js`](../journeys/linear/features/hub/controller.js)
-  holds `GROUPS` — the four numbered groups in the order the hub renders them,
-  each with an empty `rows` list. It turns a row id into a task-list item: a row
+  holds `GROUPS` — the four numbered groups in the order the hub renders them.
+  The first two now name the landed rows (`['commodities', 'origin']` and
+  `['arrival']`); consignment-parties and check-and-submit still hold an empty
+  `rows` list. It turns a row id into a task-list item: a row
   whose gate passes gets its `rowEntry()` link and a status tag, a row whose
   gate fails gets the "Cannot start yet" status and no link, and a conditional
   row that is not applicable is dropped. A group with no items is not rendered.
@@ -223,13 +225,16 @@ that adds one.
   hold the four group captions, the five statuses — completed, optional, in
   progress, not yet started and cannot start yet, whose presentation lives in
   the controller as three `govuk-tag` classes, plain text for optional and a
-  task-list status class for cannot start yet — and a `rows` map that is still
-  empty. Your row's `title` and `hint` go under `rows` in both.
+  task-list status class for cannot start yet — and a `rows` map that now holds
+  the landed rows. Your row's `title` and `hint` join them under `rows` in both
+  locales.
 - [`journeys/linear/features/hub/copy/copy.test.js`](../journeys/linear/features/hub/copy/copy.test.js)
   checks the English bundle leaf by leaf, names the four groups in the design
   order in both locales, holds the controller and the captions to the same set
-  of groups, and pins `rows` empty — that last assertion is the one your row
-  breaks. The Welsh leaves are covered set-wide by
+  of groups, and holds 'Should hold only the rows the journey has landed', which
+  asserts the ordered list of row keys — that is the assertion your row breaks,
+  and each new row also needs its own leaf assertion. The Welsh leaves are
+  covered set-wide by
   [`copy-parity.test.js`](../../../copy-parity.test.js).
 - [`journeys/linear/features/hub/template.njk`](../journeys/linear/features/hub/template.njk)
   renders each group as a heading and one `govukTaskList`, so a new row needs no
@@ -237,11 +242,11 @@ that adds one.
 - [`journeys/linear/features/hub/controller.test.js`](../journeys/linear/features/hub/controller.test.js)
   and
   [`journeys/linear/features/hub/hub.fit.spec.js`](../journeys/linear/features/hub/hub.fit.spec.js)
-  both pin the empty landing state — no group rendered and no task list on the
-  page. Extend both with your row.
+  both pin the rows landed so far, group by group, and must be extended with
+  your row.
 - [`journeys/linear/flow/task-rows.test.js`](../journeys/linear/flow/task-rows.test.js)
-  proves that landing state from the flow side — `taskRows` is empty and
-  `taskRowById()` resolves nothing — and that every id a `GROUPS` entry names
+  proves that state from the flow side — `taskRows` holds the rows landed so far
+  and `taskRowById()` resolves each of them — and that every id a `GROUPS` entry names
   resolves to a task row or the review row. It covers `rowParts()` and
   `rowStatus()` over fixture rows: an explicit `parts` list wins over the
   obligations the row's pages collect, an out-of-scope row is not applicable,
@@ -253,7 +258,9 @@ that rule cannot express the page.
 
 Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
 only when it belongs in the opening run — that is, add it to `RUN_STEPS`, which
-is currently empty. Update its run tests if you do.
+currently holds four steps: commodity-type, commodities, origin and
+arrival-status, the last skipped for potatoes by its derived gate. Update its
+run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 

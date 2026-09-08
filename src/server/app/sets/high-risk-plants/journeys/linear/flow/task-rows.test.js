@@ -25,6 +25,7 @@ import {
   commodityDetailsPage
 } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
+import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { commodityTypes } from '../../../services/commodities/index.js'
 import { dispatchPages } from '../features/index.js'
 import { rowParts, rowStatus, taskRowById, taskRows } from './task-rows.js'
@@ -49,19 +50,21 @@ const stubSecondPage = {
 const scopeOf = (...names) => new Set(names)
 
 describe('#taskRows — the rows the hub can resolve', () => {
-  it('Should hold the rows the commodity and origin sections landed', () => {
+  it('Should hold the rows the commodity, origin and arrival sections landed', () => {
     expect(taskRows).toEqual([
       {
         id: 'commodities',
         pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
       },
-      { id: 'origin', pages: [originPage] }
+      { id: 'origin', pages: [originPage] },
+      { id: 'arrival', pages: [arrivalStatusPage] }
     ])
   })
 
   it('Should resolve each landed row by id', () => {
     expect(taskRowById('commodities')).toBe(taskRows[0])
     expect(taskRowById('origin')).toBe(taskRows[1])
+    expect(taskRowById('arrival')).toBe(taskRows[2])
   })
 
   it('Should resolve no id the journey has not landed', () => {
@@ -182,5 +185,27 @@ describe('#rowStatus — one status per hub task row', () => {
 
   it('Should complete the origin row once a country is named', () => {
     expect(statusIn('origin', { countryOfOrigin: 'FR' })).toBe(FULFILLED)
+  })
+
+  it('Should hold the arrival row at Not yet started on a plants notification', () => {
+    expect(statusIn('arrival', { commodityType: 'plants-for-planting' })).toBe(
+      NOT_STARTED
+    )
+  })
+
+  it('Should complete the arrival row once the arrival status is chosen', () => {
+    expect(
+      statusIn('arrival', {
+        commodityType: 'plants-for-planting',
+        arrivalStatus: 'already-arrived'
+      })
+    ).toBe(FULFILLED)
+  })
+
+  it('Should hold the arrival row not applicable on a potato notification', () => {
+    // Its only page asks a question potatoes are never asked. The row stops
+    // being NA when arrival-details, which every commodity type answers, joins
+    // it.
+    expect(statusIn('arrival', { commodityType: 'potatoes' })).toBe(NA)
   })
 })

@@ -9,6 +9,9 @@ import { copy } from './copy/copy.en.js'
 const HUB_URL = /\/notifications\/[^/]+$/
 const JOURNEY_ID_SEGMENT = 2
 const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
+const ARRIVAL_GROUP_ID = 'arrival-and-destination'
+const RENDERED_GROUP_IDS = [CONSIGNMENT_GROUP_ID, ARRIVAL_GROUP_ID]
+const RENDERED_GROUP_COUNT = RENDERED_GROUP_IDS.length
 
 const journeyIdFromPage = (page) =>
   new URL(page.url()).pathname.split('/')[JOURNEY_ID_SEGMENT]
@@ -22,6 +25,13 @@ const taskRow = (page, title) =>
   page
     .getByRole('listitem')
     .filter({ has: page.getByRole('link', { name: title }) })
+
+// A row the hub has blocked carries no link, so it is found by its title text
+// rather than by the link `taskRow` filters on.
+const taskRowByTitle = (page, title) =>
+  page
+    .getByRole('listitem')
+    .filter({ has: page.getByText(title, { exact: true }) })
 
 const startNotification = async (page) => {
   await page.goto('/')
@@ -82,7 +92,9 @@ test.describe('overview hub feature', () => {
     await expect(
       page.getByText(copy.groups[CONSIGNMENT_GROUP_ID], { exact: true })
     ).toBeVisible()
-    await expect(page.locator('.govuk-task-list')).toHaveCount(1)
+    await expect(page.locator('.govuk-task-list')).toHaveCount(
+      RENDERED_GROUP_COUNT
+    )
     await expect(
       page.getByRole('link', { name: copy.rows.commodities.title })
     ).toHaveAttribute('href', `/notifications/${reference}/commodity-type`)
@@ -101,15 +113,27 @@ test.describe('overview hub feature', () => {
   }) => {
     await startNotification(page)
 
-    const taskList = page.locator('.govuk-task-list')
+    const originRow = taskRowByTitle(page, copy.rows.origin.title)
+    await expect(originRow).toBeVisible()
+    await expect(originRow).toContainText(copy.statuses.cannotStartYet)
     await expect(
-      taskList.getByText(copy.rows.origin.title, { exact: true })
+      originRow.getByRole('link', { name: copy.rows.origin.title })
+    ).toHaveCount(0)
+  })
+
+  test('renders the arrival group and its row, blocked while the entry question is unanswered', async ({
+    page
+  }) => {
+    await startNotification(page)
+
+    await expect(
+      page.getByText(copy.groups[ARRIVAL_GROUP_ID], { exact: true })
     ).toBeVisible()
+    const arrivalRow = taskRowByTitle(page, copy.rows.arrival.title)
+    await expect(arrivalRow).toBeVisible()
+    await expect(arrivalRow).toContainText(copy.statuses.cannotStartYet)
     await expect(
-      taskList.getByText(copy.statuses.cannotStartYet, { exact: true })
-    ).toBeVisible()
-    await expect(
-      taskList.getByRole('link', { name: copy.rows.origin.title })
+      arrivalRow.getByRole('link', { name: copy.rows.arrival.title })
     ).toHaveCount(0)
   })
 
@@ -117,7 +141,7 @@ test.describe('overview hub feature', () => {
     await startNotification(page)
 
     const emptyGroupCaptions = Object.entries(copy.groups)
-      .filter(([id]) => id !== CONSIGNMENT_GROUP_ID)
+      .filter(([id]) => !RENDERED_GROUP_IDS.includes(id))
       .map(([, caption]) => caption)
 
     for (const caption of emptyGroupCaptions) {
