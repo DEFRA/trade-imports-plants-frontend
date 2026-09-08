@@ -74,10 +74,20 @@ call: `min`/`max` as midnight-UTC `Date`s for the validator, and
 `startOfDayInZone`, `startOfUtcDay`, `addUtcDays`, `addUtcMonths` and
 `formatDateText` — rather than by hand.
 
-The high-risk-plants set owns no dated page yet, so it has no such helper. The
-first feature that collects a date owns one, beside that feature and not in
-`lib/validate`: the window policy and the current-date read are journey
-decisions.
+The high-risk-plants set's helper is
+[`arrival-bounds.js`](../sets/high-risk-plants/journeys/linear/features/arrival-details/arrival-bounds.js),
+beside the arrival-details feature and not in `lib/validate`: the window policy
+and the current-date read are journey decisions. It bounds the date only when
+the consignment has already arrived, and returns `max` and `maxText` from one
+Europe/London clock read. A later dated page follows the same rule — its own
+helper beside its own feature.
+
+`dateTextInRange` and `dateText` let a blank value pass, so they never make an
+optional field required. A date the page must have takes
+`requiredDateTextInRange` instead — a single primitive, because composing
+`requiredText` with either of the other two merges their empty-string allowance
+onto the required rule and blank then passes. `requiredTime` is the same
+primitive for a 24-hour time.
 
 Structured values such as addresses are opaque to model completeness: a non-blank
 object is filled. The collecting controller must validate required subfields before

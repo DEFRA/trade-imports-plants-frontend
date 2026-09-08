@@ -1,4 +1,9 @@
-import { arrivalStatus } from './sections/arrival.js'
+import {
+  arrivalDate,
+  arrivalStatus,
+  arrivalTime,
+  proposedPlaceOfLanding
+} from './sections/arrival.js'
 import {
   category,
   commodityCode,
@@ -16,7 +21,9 @@ import {
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
+  arrivalDate,
   arrivalStatus,
+  arrivalTime,
   category,
   commodityCode,
   commodityLine,
@@ -27,6 +34,7 @@ export {
   phytosanitaryTreatments,
   potatoIntendedUse,
   potatoVariety,
+  proposedPlaceOfLanding,
   quantity,
   sizeOfTree,
   species
@@ -46,7 +54,10 @@ export const obligations = [
   sizeOfTree,
   phytosanitaryTreatments,
   countryOfOrigin,
-  arrivalStatus
+  arrivalStatus,
+  arrivalDate,
+  arrivalTime,
+  proposedPlaceOfLanding
 ]
 
 export const groups = obligations.filter((obligation) =>

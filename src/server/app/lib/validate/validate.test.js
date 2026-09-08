@@ -9,11 +9,13 @@ import {
   maxText,
   oneOf,
   postcode,
+  requiredDateTextInRange,
   requiredExactDigits,
   requiredIntegerInRange,
   requiredMaxText,
   requiredOneOf,
   requiredText,
+  requiredTime,
   ukPhone,
   validate,
   vehicleReg
@@ -37,6 +39,7 @@ const FLIP_FIELD_REQUIRED_MESSAGE = 'Enter the code'
 const FLIP_FIELD_MAX_LENGTH_MESSAGE = 'Code must be 5 characters or less'
 const COUNT_REQUIRED_MESSAGE = 'Enter the number of items'
 const COUNT_WHOLE_NUMBER_MESSAGE = 'Enter a whole number greater than 0'
+const NOT_A_DATE = 'not a date'
 
 describe('#requiredText — the sole save-blocking primitive', () => {
   const schema = requiredText('fullName', FULL_NAME_REQUIRED_MESSAGE)
@@ -372,7 +375,7 @@ describe('#dateText — optional dd/mm/yyyy input', () => {
     expect(run(schema, { dateOfBirth: '27/03/1985' }).errors).toBeNull()
   })
 
-  it.each(['27/3', '31/2/2000', '2000-03-27', 'not a date'])(
+  it.each(['27/3', '31/2/2000', '2000-03-27', NOT_A_DATE])(
     'Should reject %s on the single input',
     (value) => {
       expect(run(schema, { dateOfBirth: value }).errors).toEqual({
@@ -412,7 +415,7 @@ describe('#dateTextInRange — inclusive bounds on a dd/mm/yyyy input', () => {
     }
   )
 
-  it.each(['31/2/2026', '27/3', '2026-03-27', 'not a date'])(
+  it.each(['31/2/2026', '27/3', '2026-03-27', NOT_A_DATE])(
     'Should reject %s as not a real date, not as out of range',
     (value) => {
       expect(run(schema, { arrivalDateAtPort: value }).errors).toEqual({
@@ -431,6 +434,132 @@ describe('#dateTextInRange — inclusive bounds on a dd/mm/yyyy input', () => {
     expect(
       run(withoutRangeMessage, { arrivalDateAtPort: '1/1/1900' }).errors
     ).toEqual({ arrivalDateAtPort: INVALID_MESSAGE })
+  })
+})
+
+describe('#requiredDateTextInRange — save-blocking date text in bounds', () => {
+  const ARRIVAL_DATE_REQUIRED_MESSAGE = 'Enter the arrival date'
+  const ARRIVAL_DATE_INVALID_MESSAGE = 'Enter a real arrival date'
+  const ARRIVAL_DATE_RANGE_MESSAGE =
+    'Arrival date must be between 1/3/2026 and 30/9/2026'
+  const MIN = new Date(Date.UTC(2026, 2, 1))
+  const MAX = new Date(Date.UTC(2026, 8, 30))
+  const schema = requiredDateTextInRange('arrivalDate', {
+    min: MIN,
+    max: MAX,
+    messages: {
+      required: ARRIVAL_DATE_REQUIRED_MESSAGE,
+      invalid: ARRIVAL_DATE_INVALID_MESSAGE,
+      range: ARRIVAL_DATE_RANGE_MESSAGE
+    }
+  })
+
+  it('Should block blank, whitespace-only and missing values with the required message', () => {
+    expect(run(schema, { arrivalDate: '' }).errors).toEqual({
+      arrivalDate: ARRIVAL_DATE_REQUIRED_MESSAGE
+    })
+    expect(run(schema, { arrivalDate: '   ' }).errors).toEqual({
+      arrivalDate: ARRIVAL_DATE_REQUIRED_MESSAGE
+    })
+    expect(run(schema, {}).errors).toEqual({
+      arrivalDate: ARRIVAL_DATE_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should pass a date inside the bounds and leave the text untouched', () => {
+    const { errors, value } = run(schema, { arrivalDate: '15/6/2026' })
+    expect(errors).toBeNull()
+    expect(value.arrivalDate).toBe('15/6/2026')
+  })
+
+  it('Should reject a date after the max with the range message', () => {
+    expect(run(schema, { arrivalDate: '1/10/2026' }).errors).toEqual({
+      arrivalDate: ARRIVAL_DATE_RANGE_MESSAGE
+    })
+  })
+
+  it('Should fall back to the invalid message when no range message is given', () => {
+    const withoutRangeMessage = requiredDateTextInRange('arrivalDate', {
+      min: MIN,
+      max: MAX,
+      messages: {
+        required: ARRIVAL_DATE_REQUIRED_MESSAGE,
+        invalid: ARRIVAL_DATE_INVALID_MESSAGE
+      }
+    })
+    expect(
+      run(withoutRangeMessage, { arrivalDate: '1/10/2026' }).errors
+    ).toEqual({ arrivalDate: ARRIVAL_DATE_INVALID_MESSAGE })
+  })
+
+  it('Should fall back to the shared date default when neither message is given', () => {
+    const withoutEitherMessage = requiredDateTextInRange('arrivalDate', {
+      min: MIN,
+      max: MAX,
+      messages: { required: ARRIVAL_DATE_REQUIRED_MESSAGE }
+    })
+    expect(
+      run(withoutEitherMessage, { arrivalDate: '1/10/2026' }).errors
+    ).toEqual({ arrivalDate: validatorDefaults.date })
+  })
+
+  it('Should reject the day before the min and accept the bound itself', () => {
+    expect(run(schema, { arrivalDate: '28/2/2026' }).errors).toEqual({
+      arrivalDate: ARRIVAL_DATE_RANGE_MESSAGE
+    })
+    expect(run(schema, { arrivalDate: '1/3/2026' }).errors).toBeNull()
+  })
+
+  it.each(['31/2/2026', '5-8-2026', '27/3/26', NOT_A_DATE])(
+    'Should reject %s as not a real date',
+    (value) => {
+      expect(run(schema, { arrivalDate: value }).errors).toEqual({
+        arrivalDate: ARRIVAL_DATE_INVALID_MESSAGE
+      })
+    }
+  )
+})
+
+describe('#requiredTime — save-blocking 24-hour time', () => {
+  const ARRIVAL_TIME_REQUIRED_MESSAGE = 'Enter the arrival time'
+  const ARRIVAL_TIME_INVALID_MESSAGE = 'Enter a real arrival time'
+  const schema = requiredTime('arrivalTime', {
+    required: ARRIVAL_TIME_REQUIRED_MESSAGE,
+    invalid: ARRIVAL_TIME_INVALID_MESSAGE
+  })
+
+  it('Should block blank and missing values with the required message', () => {
+    expect(run(schema, { arrivalTime: '' }).errors).toEqual({
+      arrivalTime: ARRIVAL_TIME_REQUIRED_MESSAGE
+    })
+    expect(run(schema, {}).errors).toEqual({
+      arrivalTime: ARRIVAL_TIME_REQUIRED_MESSAGE
+    })
+  })
+
+  it.each(['14:30', '00:00', '23:59'])(
+    'Should accept %s on the 24-hour clock',
+    (value) => {
+      expect(run(schema, { arrivalTime: value }).errors).toBeNull()
+    }
+  )
+
+  it.each(['1430', '9:30', '24:00', '14:60', '2:5'])(
+    'Should reject %s with the invalid message',
+    (value) => {
+      expect(run(schema, { arrivalTime: value }).errors).toEqual({
+        arrivalTime: ARRIVAL_TIME_INVALID_MESSAGE
+      })
+    }
+  )
+
+  it('Should fall back to the shared time default when no invalid message is given', () => {
+    const withoutInvalidMessage = requiredTime('arrivalTime', {
+      required: ARRIVAL_TIME_REQUIRED_MESSAGE
+    })
+    expect(run(withoutInvalidMessage, { arrivalTime: '1430' }).errors).toEqual({
+      arrivalTime: validatorDefaults.time
+    })
   })
 })
 

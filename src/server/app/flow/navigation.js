@@ -22,7 +22,13 @@ export const rowEntry = (row, scope, journeyId) => {
   return page ? pagePath(journeyId, page.slug) : hubPath(journeyId)
 }
 
-export const rowGatePasses = (row, scope) => pageGatePasses(row.pages[0], scope)
+/** Whether the hub can open a task row at all — true when any of its pages is
+ * reachable, which is exactly the question `rowEntry` answers when it picks the
+ * page to link to. Not the first page alone: a row whose opening question is
+ * out of scope for this notification still has to be enterable when a later
+ * page in it is asked of everyone. */
+export const rowGatePasses = (row, scope) =>
+  row.pages.some((page) => pageGatePasses(page, scope))
 
 export const nextInSection = (pageId, scope, journeyId) => {
   const section = sectionOfPage(pageId)

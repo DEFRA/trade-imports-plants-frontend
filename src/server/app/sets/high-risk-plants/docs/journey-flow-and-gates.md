@@ -6,7 +6,7 @@ The platform consumes that policy through `configureJourneyFlow()`.
 
 Those exports hold the start, commodity, commodityDetails, origin and arrival
 sections, the `commodities`, `origin` and `arrival` task rows and the opening
-run's four steps — everything the journey has landed so far.
+run's five steps — everything the journey has landed so far.
 
 ## Flow sections
 
@@ -14,7 +14,7 @@ run's four steps — everything the journey has landed so far.
 `start` (the dashboard), `commodity` (the commodity-type page and the
 commodities list), `commodityDetails` (the collection's entry sub-page),
 `origin` (the country-of-origin page) and `arrival` (the arrival-status
-question). A flow section is a navigation sequence:
+question, then the arrival details). A flow section is a navigation sequence:
 
 ```js
 {
@@ -56,20 +56,21 @@ sub-page — the `origin` row and the `arrival` row. The commodities row spans t
 flow sections. A task row is a hub item and a submit-readiness unit; it is not a
 flow section. Do not call the hub entry a section in code.
 
-The arrival row holds only the arrival-status question so far, and that question
-is out of scope for potatoes, so a potato notification sees the row blocked
-until arrival-details — a page every commodity type answers — joins it. The row
-is deliberately not `conditional`: its content stops being wholly conditional
-with that page.
+The arrival row holds the arrival-status question and the arrival details. The
+question is out of scope for potatoes, so a potato notification opens the row on
+the details page instead — every commodity type owes an arrival date. The row is
+deliberately not `conditional`: no notification finds the whole of it
+inapplicable.
 
 ```js
 { id: '<task-row-id>', pages: [firstPage, secondPage] }
 ```
 
-Array order is journey order here too. The hub links a row to the first of its
-pages whose gate passes, so the entry question has to lead the row; the entry
-sub-page is in the row because its data belongs to this task, not because the
-hub ever links there.
+Array order is journey order here too. The hub opens a row when ANY of its pages
+is reachable and links it to the first of them whose gate passes
+(`rowGatePasses` and `rowEntry`), so the page a notification is asked first has
+to lead the row; the commodity entry sub-page is in its row because its data
+belongs to that task, not because the hub ever links there.
 
 Row status defaults to the union of each page's `collects` — that is what
 `rowParts()` computes, and `rowStatus()` feeds to `statusOf()`. `parts` narrows
@@ -87,15 +88,16 @@ landed with the hub increment.
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds four steps, commodity-type, commodities, origin then
-arrival-status: the opening run opens on the entry question, goes on to the
-consignment's commodities, asks where they come from, asks whether they have
-arrived and, with no later step, `nextRunTarget` falls through to the hub, whose
-GET marks the run complete. An unknown step id still returns `null`. The entry
-sub-page is not a step — the list page sends a trader with no lines there and
-takes them back. The arrival-status step is skipped for potatoes, whose
-notification is never asked the question: its target is `null` while the answer
-is out of scope, and the run falls through to the hub.
+`RUN_STEPS` holds five steps, commodity-type, commodities, origin,
+arrival-status then arrival-details: the opening run opens on the entry
+question, goes on to the consignment's commodities, asks where they come from,
+asks whether they have arrived and then when, and with no later step
+`nextRunTarget` falls through to the hub, whose GET marks the run complete. An
+unknown step id still returns `null`. The entry sub-page is not a step — the
+list page sends a trader with no lines there and takes them back. The
+arrival-status step is skipped for potatoes, whose notification is never asked
+the question: its target is `null` while the answer is out of scope, and the run
+goes straight on to arrival-details, which every commodity type answers.
 
 The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey

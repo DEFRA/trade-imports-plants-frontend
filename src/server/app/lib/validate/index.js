@@ -16,7 +16,9 @@ export {
   requiredIntegerInRange,
   dateParts,
   dateText,
-  dateTextInRange
+  dateTextInRange,
+  requiredDateTextInRange,
+  requiredTime
 } from './validators.js'
 export {
   addUtcDays,

@@ -58,6 +58,7 @@ const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
 const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
+const ARRIVAL_DETAILS_PATH = '/notifications/{journeyId}/arrival-details'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
@@ -183,7 +184,11 @@ describe('#auditPaths', () => {
       `/notifications/${journeyIds.warePotatoes}/commodities`,
       `/notifications/${journeyIds.warePotatoes}/commodities/details`,
       `/notifications/${journeyIds.warePotatoes}/origin`,
-      `/notifications/${journeyIds.plantsForPlanting}/arrival-status`
+      `/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
+      // Audited on the ware-potato default: the date is asked of every
+      // commodity type, and potatoes are the shape that also carries the time
+      // and the place of landing, so the audit reads the fullest page.
+      `/notifications/${journeyIds.warePotatoes}/arrival-details`
     ])
   })
 })
@@ -206,7 +211,8 @@ describe('#auditableRoutePaths', () => {
       COMMODITIES_PATH,
       COMMODITY_DETAILS_PATH,
       ORIGIN_PATH,
-      ARRIVAL_STATUS_PATH
+      ARRIVAL_STATUS_PATH,
+      ARRIVAL_DETAILS_PATH
     ])
   })
 })

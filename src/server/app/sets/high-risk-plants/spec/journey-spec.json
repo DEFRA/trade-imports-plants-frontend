@@ -2119,8 +2119,7 @@
       "wipeOnExit": true,
       "input": {
         "widget": "input",
-        "widthClass": "govuk-input--width-5",
-        "inputmode": "numeric"
+        "widthClass": "govuk-input--width-5"
       },
       "label": "Expected time of arrival",
       "hint": "Use the 24-hour clock. For example, 14:30.",
@@ -2145,7 +2144,7 @@
       "animals": {
         "relation": "plants-only"
       },
-      "notes": "Potatoes only — the SI is explicit and the plants/wood matter is a date (c-002). Stored as HH:MM text beside the date parts; no timezone rule given (Europe/London assumed as animals does for its clock read)."
+      "notes": "Potatoes only — the SI is explicit and the plants/wood matter is a date (c-002). Stored as HH:MM text beside the date parts; no timezone rule given (Europe/London assumed as animals does for its clock read). inputmode numeric was dropped: a numeric keypad cannot type the colon the HH:MM format requires, so the field would be uncompletable on a phone."
     },
     {
       "id": "proposedPlaceOfLanding",
