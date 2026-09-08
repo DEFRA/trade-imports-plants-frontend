@@ -4,16 +4,17 @@ The linear journey owns its topology in
 [`src/server/app/sets/high-risk-plants/journeys/linear/flow/`](../journeys/linear/flow/).
 The platform consumes that policy through `configureJourneyFlow()`.
 
-Those exports hold the start, commodity, commodityDetails and origin sections,
-the `commodities` and `origin` task rows and the opening run's three steps —
-everything the journey has landed so far.
+Those exports hold the start, commodity, commodityDetails, origin and arrival
+sections, the `commodities`, `origin` and `arrival` task rows and the opening
+run's four steps — everything the journey has landed so far.
 
 ## Flow sections
 
 [`flow.js`](../journeys/linear/flow/flow.js) exports `sections`, today holding
 `start` (the dashboard), `commodity` (the commodity-type page and the
-commodities list), `commodityDetails` (the collection's entry sub-page) and
-`origin` (the country-of-origin page). A flow section is a navigation sequence:
+commodities list), `commodityDetails` (the collection's entry sub-page),
+`origin` (the country-of-origin page) and `arrival` (the arrival-status
+question). A flow section is a navigation sequence:
 
 ```js
 {
@@ -51,9 +52,15 @@ obligation fulfilment.
 
 [`task-rows.js`](../journeys/linear/flow/task-rows.js) exports `taskRows`, today
 holding the `commodities` row — the entry question, the list page and the entry
-sub-page — and the `origin` row. The commodities row spans two flow sections. A
-task row is a hub item and a submit-readiness unit; it is not a flow section. Do
-not call the hub entry a section in code.
+sub-page — the `origin` row and the `arrival` row. The commodities row spans two
+flow sections. A task row is a hub item and a submit-readiness unit; it is not a
+flow section. Do not call the hub entry a section in code.
+
+The arrival row holds only the arrival-status question so far, and that question
+is out of scope for potatoes, so a potato notification sees the row blocked
+until arrival-details — a page every commodity type answers — joins it. The row
+is deliberately not `conditional`: its content stops being wholly conditional
+with that page.
 
 ```js
 { id: '<task-row-id>', pages: [firstPage, secondPage] }
@@ -80,12 +87,15 @@ landed with the hub increment.
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds three steps, commodity-type, commodities then origin: the
-opening run opens on the entry question, goes on to the consignment's
-commodities, then asks where they come from and, with no later step,
-`nextRunTarget` falls through to the hub, whose GET marks the run complete. An
-unknown step id still returns `null`. The entry sub-page is not a step — the
-list page sends a trader with no lines there and takes them back.
+`RUN_STEPS` holds four steps, commodity-type, commodities, origin then
+arrival-status: the opening run opens on the entry question, goes on to the
+consignment's commodities, asks where they come from, asks whether they have
+arrived and, with no later step, `nextRunTarget` falls through to the hub, whose
+GET marks the run complete. An unknown step id still returns `null`. The entry
+sub-page is not a step — the list page sends a trader with no lines there and
+takes them back. The arrival-status step is skipped for potatoes, whose
+notification is never asked the question: its target is `null` while the answer
+is out of scope, and the run falls through to the hub.
 
 The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey
@@ -145,10 +155,12 @@ engine suite stays journey-neutral; it never imports this set.
 
 `captionSections` is data — an array of `{ id, pages }` importing page
 identities from the features — and `sectionCaptionOf(pageId)` resolves the
-section's name from the copy pair. Never a string chosen page by page. Two
-caption sections exist so far — the dashboard, and About the consignment over
-the three commodity pages; the module's doc comment names the rest the journey
-spec still expects, so a page increment knows where to file itself.
+section's name from the copy pair. Never a string chosen page by page. Three
+caption sections exist so far — the dashboard; About the consignment over the
+four commodity and origin pages (commodity-type, commodities,
+commodity-details, origin); and Arrival over the arrival-status question; the
+module's doc comment names the rest the journey spec still expects, so a page
+increment knows where to file itself.
 
 `kit.base()` resolves the name for the page identity a controller passes it and
 puts it in the view as `caption`. The page template imports the macro with

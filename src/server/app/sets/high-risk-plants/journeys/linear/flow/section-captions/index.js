@@ -8,6 +8,7 @@ import {
   commodityDetailsPage
 } from '../../features/commodities/page.js'
 import { originPage } from '../../features/origin/page.js'
+import { arrivalStatusPage } from '../../features/arrival-status/page.js'
 
 const copy = copyFor({ en, cy })
 
@@ -22,7 +23,7 @@ const copy = copyFor({ en, cy })
  * Pages still to be built, filed here by their own increment as each lands —
  * into the existing section entry where one exists:
  *
- * - `arrival` — arrival-status, arrival-details
+ * - `arrival` — arrival-details
  * - `destination` — place-of-destination
  * - `consignmentParties` — consignor-select, identification-numbers
  *
@@ -41,7 +42,8 @@ export const captionSections = [
       commodityDetailsPage,
       originPage
     ]
-  }
+  },
+  { id: 'arrival', pages: [arrivalStatusPage] }
 ]
 
 const sectionIdByPageId = new Map(

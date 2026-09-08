@@ -5,8 +5,11 @@ The linear journey keeps pages under
 a vertical slice of page identity, controllers, copy, templates, bindings and
 tests.
 
-That folder holds `dashboard/`, `hub/`, `delete-notification/`,
-`commodity-type/` and `commodities/`, plus its two barrels:
+That folder holds one folder per feature, plus cross-feature constant modules
+such as
+[`timing-windows.js`](../journeys/linear/features/timing-windows.js) — values
+more than one feature reads, written once there rather than repeated per
+feature — and its two barrels:
 [`index.js`](../journeys/linear/features/index.js), whose `dispatchPages` holds
 the `meta` of every flow page and whose `allRoutes` spreads every feature's
 routes, and

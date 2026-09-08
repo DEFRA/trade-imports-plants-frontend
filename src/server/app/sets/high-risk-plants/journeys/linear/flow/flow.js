@@ -5,6 +5,7 @@ import {
   commodityDetailsPage
 } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
+import { arrivalStatusPage } from '../features/arrival-status/page.js'
 
 export const FLOW_ONLY_KEYS = []
 
@@ -23,10 +24,16 @@ export const FLOW_ONLY_KEYS = []
  * enforced at Continue, so every page placed after it needs one; ahead of the
  * entry sub-page it would stop a trader adding a commodity line until they had
  * named a country.
+ *
+ * The arrival section opens on the arrival-status question, whose answer
+ * decides what the rest of the section asks for. Potato notifications never
+ * see it: `arrivalStatus` is out of scope for them, so the derived page gate
+ * fails and both the opening run and the section entry pass it over.
  */
 export const sections = [
   { id: 'start', pages: [dashboardPage] },
   { id: 'commodity', pages: [commodityTypePage, commoditiesPage] },
   { id: 'commodityDetails', pages: [commodityDetailsPage] },
-  { id: 'origin', pages: [originPage] }
+  { id: 'origin', pages: [originPage] },
+  { id: 'arrival', pages: [arrivalStatusPage] }
 ]

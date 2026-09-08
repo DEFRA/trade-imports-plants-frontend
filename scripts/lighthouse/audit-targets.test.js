@@ -15,11 +15,15 @@ import { journeyIdIn, SEED_SHAPES } from './seed-notification.js'
 import {
   categoriesFor,
   commodityTypes,
-  lineFieldsFor
+  lineFieldsFor,
+  originCountriesFor
 } from '../../src/server/app/sets/high-risk-plants/services/commodities/index.js'
 import { commodityDetailsPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/page.js'
+import { originPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/page.js'
+import { originCountries } from '../../src/server/app/services/countries/index.js'
 
 const COMMODITY_DETAILS_SLUG = commodityDetailsPage.slug
+const ORIGIN_SLUG = originPage.slug
 
 const ORIGIN = 'http://localhost:3003'
 
@@ -36,8 +40,9 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// No registered page needs a skip, a filled-by seed or a query string yet, so
-// every assertion about one runs against a synthetic route table. Keying the
+// Only arrival-status needs a filled-by seed, and no registered page needs a
+// skip or a query string yet, so every assertion about one runs against a
+// synthetic route table that carries the real filled-by path too. Keying the
 // seeded ids off SEED_SHAPES
 // also proves the interface between the two modules: FILLED_BY names a shape,
 // and the shape has to be one the setup step seeds.
@@ -52,11 +57,13 @@ const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
 const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
 const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
+const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: ORIGIN_PATH },
+  { method: 'GET', path: ARRIVAL_STATUS_PATH },
   { method: 'GET', path: '/notifications/{journeyId}/treatments' },
   { method: 'GET', path: '/notifications/{journeyId}/late-reason' },
   { method: 'GET', path: '/notifications/{journeyId}/uploads/status' },
@@ -125,6 +132,9 @@ describe('#auditPaths', () => {
       paths.filter((path) => path.includes(journeyIds.warePotatoesLate))
     ).toEqual([`/notifications/${journeyIds.warePotatoesLate}/late-reason`])
     expect(
+      paths.filter((path) => path.includes(journeyIds.plantsForPlanting))
+    ).toEqual([`/notifications/${journeyIds.plantsForPlanting}/arrival-status`])
+    expect(
       paths.filter((path) => path.includes(journeyIds.warePotatoes))
     ).toEqual([
       `/notifications/${journeyIds.warePotatoes}`,
@@ -172,7 +182,8 @@ describe('#auditPaths', () => {
       `/notifications/${journeyIds.warePotatoes}/commodity-type`,
       `/notifications/${journeyIds.warePotatoes}/commodities`,
       `/notifications/${journeyIds.warePotatoes}/commodities/details`,
-      `/notifications/${journeyIds.warePotatoes}/origin`
+      `/notifications/${journeyIds.warePotatoes}/origin`,
+      `/notifications/${journeyIds.plantsForPlanting}/arrival-status`
     ])
   })
 })
@@ -194,7 +205,8 @@ describe('#auditableRoutePaths', () => {
       COMMODITY_TYPE_PATH,
       COMMODITIES_PATH,
       COMMODITY_DETAILS_PATH,
-      ORIGIN_PATH
+      ORIGIN_PATH,
+      ARRIVAL_STATUS_PATH
     ])
   })
 })
@@ -363,6 +375,46 @@ describe('#SEED_SHAPES', () => {
         expect(categoriesFor(commodityType), shape).toContain(category)
       }
     }
+  })
+
+  it('Should seed only origin countries the shape’s own lines allow', () => {
+    // countryOfOrigin is enforced at Continue, so a shape whose use case
+    // reaches a page after origin has to answer it — and the answer has to
+    // survive the narrowing its own categories impose.
+    for (const [shape, { steps }] of Object.entries(SEED_SHAPES)) {
+      for (const step of steps.filter(({ slug }) => slug === ORIGIN_SLUG)) {
+        const categories = steps
+          .map(({ fields }) => fields.category)
+          .filter(Boolean)
+
+        expect(
+          originCountries().map(({ value }) => value),
+          `${shape}: ${step.fields.countryOfOrigin} is not a country the origin page offers`
+        ).toContain(step.fields.countryOfOrigin)
+
+        for (const category of categories) {
+          const allowed = originCountriesFor(category)
+          expect(
+            allowed.length === 0 ||
+              allowed.includes(step.fields.countryOfOrigin),
+            `${shape}: ${step.fields.countryOfOrigin} is outside what ${category} allows`
+          ).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('Should seed an origin on the shape the arrival-status audit reads', () => {
+    const shape = FILLED_BY.get(ARRIVAL_STATUS_PATH)
+
+    expect(
+      SEED_SHAPES,
+      'the arrival-status audit names a shape the seed does not hold'
+    ).toHaveProperty(shape)
+    expect(
+      SEED_SHAPES[shape].steps.some(({ slug }) => slug === ORIGIN_SLUG),
+      'arrival-status sits after origin, so its audited shape needs a country'
+    ).toBe(true)
   })
 })
 

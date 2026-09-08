@@ -17,14 +17,24 @@ import {
   installHighRiskPlantsJourney
 } from '../../test-support.js'
 
+import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
 import { GROUPS, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 
 const hubGet = routes.find((route) => route.method === 'GET').handler
 
 const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
+const ARRIVAL_GROUP_ID = 'arrival-and-destination'
+const RENDERED_GROUP_IDS = [CONSIGNMENT_GROUP_ID, ARRIVAL_GROUP_ID]
 const NOT_STARTED_TAG_CLASS = 'govuk-tag--blue'
+const COMPLETED_TAG_CLASS = 'govuk-tag--green'
+const CANNOT_START_STATUS = {
+  text: copy.statuses.cannotStartYet,
+  classes: 'govuk-task-list__status--cannot-start-yet'
+}
 const POTATOES = 'potatoes'
+const PLANTS_FOR_PLANTING = 'plants-for-planting'
+const FRANCE = 'FR'
 
 const buildH = () => {
   const captured = { cookies: {} }
@@ -133,14 +143,73 @@ describe('#hubGet', () => {
           }),
           expect.objectContaining({
             title: { text: copy.rows.origin.title },
-            status: {
-              text: copy.statuses.cannotStartYet,
-              classes: 'govuk-task-list__status--cannot-start-yet'
-            }
+            status: CANNOT_START_STATUS
+          })
+        ]
+      },
+      {
+        id: ARRIVAL_GROUP_ID,
+        caption: copy.groups[ARRIVAL_GROUP_ID],
+        items: [
+          expect.objectContaining({
+            title: { text: copy.rows.arrival.title },
+            status: CANNOT_START_STATUS
           })
         ]
       }
     ])
+  })
+
+  it('Should block the arrival row for a potato notification', async () => {
+    // The origin is answered, so the block is the scope gate rather than an
+    // unmet prerequisite.
+    const { h } = await renderHub({
+      seed: { commodityType: POTATOES, countryOfOrigin: FRANCE }
+    })
+
+    const [arrivalRow] = h.captured.view.context.groups[1].items
+    expect(arrivalRow).not.toHaveProperty('href')
+    expect(arrivalRow.status).toEqual(CANNOT_START_STATUS)
+  })
+
+  it('Should keep the arrival row blocked until a plants notification names its origin', async () => {
+    const { h } = await renderHub({
+      seed: { commodityType: PLANTS_FOR_PLANTING }
+    })
+
+    const [arrivalRow] = h.captured.view.context.groups[1].items
+    expect(arrivalRow).not.toHaveProperty('href')
+    expect(arrivalRow.status).toEqual(CANNOT_START_STATUS)
+  })
+
+  it('Should open the arrival row once a plants notification names its origin', async () => {
+    const { journeyId, h } = await renderHub({
+      seed: { commodityType: PLANTS_FOR_PLANTING, countryOfOrigin: FRANCE }
+    })
+
+    const [arrivalRow] = h.captured.view.context.groups[1].items
+    expect(arrivalRow.href).toBe(`/notifications/${journeyId}/arrival-status`)
+    expect(arrivalRow.status).toEqual({
+      tag: {
+        text: copy.statuses.notYetStarted,
+        classes: NOT_STARTED_TAG_CLASS
+      }
+    })
+  })
+
+  it('Should complete the arrival row once the arrival status is chosen', async () => {
+    const { h } = await renderHub({
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: FRANCE,
+        arrivalStatus: ALREADY_ARRIVED
+      }
+    })
+
+    const [arrivalRow] = h.captured.view.context.groups[1].items
+    expect(arrivalRow.status).toEqual({
+      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
+    })
   })
 
   it('Should offer no link to origin until the entry question is answered', async () => {
@@ -167,12 +236,12 @@ describe('#hubGet', () => {
 
   it('Should complete the origin row once a country is named', async () => {
     const { h } = await renderHub({
-      seed: { commodityType: POTATOES, countryOfOrigin: 'FR' }
+      seed: { commodityType: POTATOES, countryOfOrigin: FRANCE }
     })
 
     const [, originRow] = h.captured.view.context.groups[0].items
     expect(originRow.status).toEqual({
-      tag: { text: copy.statuses.completed, classes: 'govuk-tag--green' }
+      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
   })
 
@@ -199,22 +268,22 @@ describe('#hubGet', () => {
 
     const [row] = h.captured.view.context.groups[0].items
     expect(row.status).toEqual({
-      tag: { text: copy.statuses.completed, classes: 'govuk-tag--green' }
+      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
     expect(row.href).toBe(`/notifications/${journeyId}/commodity-type`)
   })
 
-  it('Should render nothing for the three groups that have landed no row', async () => {
+  it('Should render nothing for the two groups that have landed no row', async () => {
     const { h } = await renderHub()
 
     expect(
-      GROUPS.filter((group) => group.id !== CONSIGNMENT_GROUP_ID).every(
+      GROUPS.filter((group) => !RENDERED_GROUP_IDS.includes(group.id)).every(
         (group) => group.rows.length === 0
       )
     ).toBe(true)
-    expect(h.captured.view.context.groups.map((group) => group.id)).toEqual([
-      CONSIGNMENT_GROUP_ID
-    ])
+    expect(h.captured.view.context.groups.map((group) => group.id)).toEqual(
+      RENDERED_GROUP_IDS
+    )
   })
 
   it('Should carry no commodity totals — the animals panel is not copied', async () => {

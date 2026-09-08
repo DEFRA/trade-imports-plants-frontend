@@ -4,9 +4,21 @@ import { installHighRiskPlantsJourney } from '../test-support.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import { commoditiesPage } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
+import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { RUN_STEPS, nextRunTarget } from './run.js'
 
 const JOURNEY_ID = 'HRP-0001'
+
+// The whole opening run for a plants or wood notification. A potato
+// notification has the same names minus arrivalStatus, which its commodity
+// type puts out of scope.
+const PLANTS_RUN = [
+  'commodityType',
+  'commodityLines',
+  'countryOfOrigin',
+  'arrivalStatus'
+]
+const POTATO_RUN = PLANTS_RUN.filter((name) => name !== 'arrivalStatus')
 
 const scopeOf = (...names) => ({
   inScope: new Set(names),
@@ -21,11 +33,12 @@ const answering = (...names) => ({
 describe('#RUN_STEPS — the opening run', () => {
   beforeAll(() => installHighRiskPlantsJourney())
 
-  it('Should open on commodity-type, then the commodities list, then origin', () => {
+  it('Should open on commodity-type, then the commodities list, then origin, then arrival status', () => {
     expect(RUN_STEPS.map((step) => step.id)).toEqual([
       commodityTypePage.id,
       commoditiesPage.id,
-      originPage.id
+      originPage.id,
+      arrivalStatusPage.id
     ])
   })
 
@@ -71,6 +84,30 @@ describe('#RUN_STEPS — the opening run', () => {
       )
     ).toBeNull()
   })
+
+  it('Should target the arrival-status page for a plants or wood notification', () => {
+    expect(RUN_STEPS[3].target(answering(...PLANTS_RUN), JOURNEY_ID)).toBe(
+      `/notifications/${JOURNEY_ID}/arrival-status`
+    )
+  })
+
+  it('Should skip the arrival-status page for a potato notification', () => {
+    // arrivalStatus is out of scope for potatoes, so the derived gate fails
+    // and the step is passed over rather than shown and left unanswerable.
+    expect(RUN_STEPS[3].target(answering(...POTATO_RUN), JOURNEY_ID)).toBeNull()
+  })
+
+  it('Should skip the arrival-status page while the origin is unanswered', () => {
+    // arrivalStatus is in scope here, so the null can only come from the
+    // derived countryOfOrigin prerequisite the page inherits by sitting
+    // after origin in flow.js.
+    expect(
+      RUN_STEPS[3].target(
+        answering('commodityType', 'commodityLines', 'arrivalStatus'),
+        JOURNEY_ID
+      )
+    ).toBeNull()
+  })
 })
 
 describe('#nextRunTarget', () => {
@@ -96,13 +133,21 @@ describe('#nextRunTarget', () => {
     ).toBe(`/notifications/${JOURNEY_ID}/origin`)
   })
 
+  it('Should send origin on to arrival status for a plants or wood notification', () => {
+    expect(
+      nextRunTarget(originPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
+    ).toBe(`/notifications/${JOURNEY_ID}/arrival-status`)
+  })
+
+  it('Should send origin straight to the overview for a potato notification', () => {
+    expect(
+      nextRunTarget(originPage.id, answering(...POTATO_RUN), JOURNEY_ID)
+    ).toBe(`/notifications/${JOURNEY_ID}`)
+  })
+
   it("Should fall through to the overview after the run's last step", () => {
     expect(
-      nextRunTarget(
-        originPage.id,
-        answering('commodityType', 'commodityLines', 'countryOfOrigin'),
-        JOURNEY_ID
-      )
+      nextRunTarget(arrivalStatusPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
     ).toBe(`/notifications/${JOURNEY_ID}`)
   })
 

@@ -97,9 +97,14 @@ test.describe('commodity-type feature', () => {
     page
   }) => {
     const group = page.getByRole('group', { name: copy.legend })
-    const renderedValues = await group
-      .locator(TYPE_INPUT_SELECTOR)
-      .evaluateAll((inputs) => inputs.map((input) => input.value))
+    // `evaluateAll` does not auto-wait, so the radios are asserted present
+    // before their values are read — otherwise a slow render reads an empty
+    // list and the order assertion below passes judgement on nothing.
+    const radios = group.locator(TYPE_INPUT_SELECTOR)
+    await expect(radios).toHaveCount(commodityTypes().length)
+    const renderedValues = await radios.evaluateAll((inputs) =>
+      inputs.map((input) => input.value)
+    )
 
     expect(renderedValues).toEqual([...commodityTypes()])
     for (const value of commodityTypes()) {

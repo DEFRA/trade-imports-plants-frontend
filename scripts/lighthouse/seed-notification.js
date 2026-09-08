@@ -5,6 +5,7 @@ import {
 } from '../../src/server/app/shared/paths.js'
 import { commodityTypePage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/page.js'
 import { commodityDetailsPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/page.js'
+import { originPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/page.js'
 
 const HTTP_FOUND = 302
 const HTTP_OK = 200
@@ -33,6 +34,15 @@ const commodityLineSteps = (category, fields) => [
     fields: { index: '0', category, ...fields }
   }
 ]
+
+/** Where the consignment comes from. A prerequisite rather than a page of its
+ * own for the audit: countryOfOrigin is enforced at Continue, so every page
+ * after origin needs one before a trader could be standing on it. The country
+ * has to be one the shape's own categories admit. */
+const originStep = (countryOfOrigin) => ({
+  slug: originPage.slug,
+  fields: { countryOfOrigin }
+})
 
 const POTATO_LINE_FIELDS = {
   potatoVariety: 'Maris Piper',
@@ -78,7 +88,8 @@ export const SEED_SHAPES = {
         commodityCode: '0602 20 20',
         quantity: '40',
         eppoCode: 'PIEAB'
-      })
+      }),
+      originStep('FR')
     ]
   },
   woodWithoutBark: {

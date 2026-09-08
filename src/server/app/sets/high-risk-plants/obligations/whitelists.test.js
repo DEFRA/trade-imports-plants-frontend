@@ -15,11 +15,21 @@
  * gate — a gate cannot read `category`, which lives one frame down on each
  * commodity line — so nothing in the model would notice a category or a
  * country code drifting out of the origin block the countries service primes.
+ *
+ * The arrival-status gate is the one notification-level gate, and it names its
+ * commodity types as literals. A rename on either side would leave it
+ * admitting nothing, so it is held here too.
  */
 
 import { describe, expect, it } from 'vitest'
 
-import { commodityLine, obligations } from './index.js'
+import { obligationMetadata } from '../../../model/obligations/helpers/index.js'
+import {
+  arrivalStatus,
+  commodityLine,
+  commodityType,
+  obligations
+} from './index.js'
 import {
   categories,
   categoriesFor,
@@ -188,5 +198,32 @@ describe('the origin constraints stay inside the service vocabulary', () => {
       TypeError
     )
     expect(() => originConstraints()[0].countries.push('ZZ')).toThrow(TypeError)
+  })
+})
+
+describe('the arrival-status gate stays inside the service vocabulary', () => {
+  const gateValues = () => obligationMetadata(arrivalStatus).values
+
+  it('Should gate on the commodity-type answer', () => {
+    expect(obligationMetadata(arrivalStatus).dependsOn).toEqual([
+      commodityType.id
+    ])
+  })
+
+  it('Should admit only commodity types the service offers', () => {
+    expect(
+      gateValues().filter((value) => !commodityTypes().includes(value)),
+      'the arrival-status gate names a commodity type no notification can hold'
+    ).toEqual([])
+  })
+
+  it('Should admit only plants for planting and wood and cut trees', () => {
+    // Reg 26(2) gives only those two a post-arrival branch, and
+    // journey-spec.json rules this pair, so a commodity type the service
+    // starts offering must be ruled in rather than joining the gate silently.
+    expect([...gateValues()]).toEqual([
+      'plants-for-planting',
+      'wood-and-cut-trees'
+    ])
   })
 })

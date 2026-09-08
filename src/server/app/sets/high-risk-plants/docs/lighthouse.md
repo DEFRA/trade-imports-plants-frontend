@@ -11,7 +11,10 @@ at import:
 
 - `scripts/lighthouse/audit-targets.js` (with `audit-targets.test.js`) derives
   the URL list from the app's own registered routes and holds the `SKIPPED`,
-  `FILLED_BY` and `QUERY` reasons. All three are empty.
+  `FILLED_BY` and `QUERY` reasons. `SKIPPED` and `QUERY` are empty. `FILLED_BY`
+  holds one entry: arrival-status is audited on the `plantsForPlanting` shape,
+  because `arrivalStatus` is out of scope on the ware-potato default, so the
+  audit reads that page on a notification that actually asks the question.
 - `scripts/lighthouse/seed-notification.js` holds one `SEED_SHAPES` entry per
   blueprint use case — ware potatoes, ware potatoes notified late, seed
   potatoes, plants for planting, and wood — and fills a notification by walking
@@ -92,7 +95,10 @@ audited:
    `reportNames` refuses two routes that would claim the same name. A page
    audited on a shape other than the default needs a `FILLED_BY` entry naming
    that shape; a page that should not be audited at all needs a `SKIPPED` entry
-   with a reason.
+   with a reason. A page that sits after `origin` in the flow must be audited on
+   a shape whose `SEED_SHAPES` entry carries an `originStep` with a country that
+   shape's own categories admit, because `countryOfOrigin` is enforced at
+   Continue and the page gate derives from it.
 3. Make sure the auth script can reach it after sign-in.
 4. Run Lighthouse and open that page's HTML report.
 5. Check all three asserted categories.
