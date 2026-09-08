@@ -7,15 +7,23 @@ import {
 } from '../../../../../model/obligations/manifest.js'
 import {
   FULFILLED,
+  IN_PROGRESS,
   NA,
   NOT_STARTED,
   OPTIONAL
 } from '../../../../../bridge/status/index.js'
 import { makeScope } from '../../../../../engine/index.js'
 import { evaluateAnswers } from '../../../../../bridge/evaluation.js'
-import { installHighRiskPlantsJourney } from '../test-support.js'
+import {
+  COMPLETE_POTATO_CONSIGNMENT,
+  installHighRiskPlantsJourney
+} from '../test-support.js'
 import { GROUPS } from '../features/hub/controller.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
+import {
+  commoditiesPage,
+  commodityDetailsPage
+} from '../features/commodities/page.js'
 import { commodityTypes } from '../../../services/commodities/index.js'
 import { dispatchPages } from '../features/index.js'
 import { rowParts, rowStatus, taskRowById, taskRows } from './task-rows.js'
@@ -35,7 +43,10 @@ const scopeOf = (...names) => new Set(names)
 describe('#taskRows — the rows the hub can resolve', () => {
   it('Should hold the commodities row the commodity section landed', () => {
     expect(taskRows).toEqual([
-      { id: 'commodities', pages: [commodityTypePage] }
+      {
+        id: 'commodities',
+        pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
+      }
     ])
   })
 
@@ -68,8 +79,10 @@ describe('#rowParts and #rowStatus', () => {
   })
   afterAll(() => configureObligationSet(installedSet))
 
-  it('Should take the landed commodities row parts from the page it holds', () => {
-    expect(rowParts(taskRows[0])).toEqual(['commodityType'])
+  it('Should take the commodities row parts from the pages it holds', () => {
+    // The entry sub-page collects nothing of its own — the list page owns the
+    // group — so the row is the entry question plus the collection.
+    expect(rowParts(taskRows[0])).toEqual(['commodityType', 'commodityLines'])
   })
 
   it('Should prefer an explicit parts list over the pages the row holds', () => {
@@ -122,9 +135,34 @@ describe('#rowStatus — one status per hub task row', () => {
     expect(statusIn('commodities', {})).toBe(NOT_STARTED)
   })
 
-  it('Should complete the commodities row once a commodity type is committed', () => {
+  it('Should hold the commodities row in progress on a type with no line', () => {
     expect(
       statusIn('commodities', { commodityType: commodityTypes()[0] })
-    ).toBe(FULFILLED)
+    ).toBe(IN_PROGRESS)
+  })
+
+  it('Should complete the commodities row once a line is complete too', () => {
+    expect(statusIn('commodities', COMPLETE_POTATO_CONSIGNMENT)).toBe(FULFILLED)
+  })
+
+  it('Should hold the row in progress while a line is missing a field', () => {
+    expect(
+      statusIn('commodities', {
+        commodityType: 'potatoes',
+        commodityLines: [{ category: 'seed-potatoes' }]
+      })
+    ).toBe(IN_PROGRESS)
+  })
+
+  it('Should hold the row in progress while any one line is incomplete', () => {
+    expect(
+      statusIn('commodities', {
+        commodityType: 'potatoes',
+        commodityLines: [
+          ...COMPLETE_POTATO_CONSIGNMENT.commodityLines,
+          { category: 'seed-potatoes' }
+        ]
+      })
+    ).toBe(IN_PROGRESS)
   })
 })

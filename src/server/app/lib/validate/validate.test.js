@@ -185,6 +185,21 @@ describe('#requiredOneOf — save-blocking value domain', () => {
       itemSelector: SELECTOR_REQUIRED_MESSAGE
     })
   })
+
+  it('Should reject every value when the domain is empty', () => {
+    const noDomain = requiredOneOf(
+      'itemSelector',
+      [],
+      SELECTOR_REQUIRED_MESSAGE
+    )
+
+    expect(run(noDomain, { itemSelector: SELECTOR_ALPHA }).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+    expect(run(noDomain, { itemSelector: '' }).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+  })
 })
 
 describe('#integerInRange — bounds', () => {

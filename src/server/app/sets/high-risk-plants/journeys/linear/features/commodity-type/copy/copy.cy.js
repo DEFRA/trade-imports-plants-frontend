@@ -9,6 +9,9 @@ export const copy = {
   title: 'Beth ydych chi’n ei fewnforio?',
   legend: 'Beth ydych chi’n ei fewnforio?',
   hint: 'Dewiswch y math o nwyddau y mae’r hysbysiad hwn ar eu cyfer. Hysbyswch am datws, planhigion i’w plannu a phren mewn hysbysiadau ar wahân.',
+  linesWarning:
+    'Bydd newid eich ateb yn dileu’r nwyddau rydych eisoes wedi’u hychwanegu.',
+  linesWarningIcon: 'Rhybudd',
   typeLabels: {
     potatoes: 'Tatws (hadyd neu fwyd)',
     'plants-for-planting': 'Planhigion i’w plannu',

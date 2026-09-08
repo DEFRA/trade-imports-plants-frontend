@@ -6,27 +6,25 @@ It is expected to import declarations from `obligations/sections/`, export each
 obligation, build the ordered `obligations` array and derive `groups` from
 `within` references.
 
-Today it declares one obligation, `commodityType`:
+Today it declares the commodity section: the notification-level
+`commodityType`, the `commodityLines` group and the ten fields a line carries.
 
 ```js
-import { commodityType } from './sections/commodity.js'
-
-export { commodityType }
-
-export const obligations = [commodityType]
+export const obligations = [commodityType, commodityLine, category /* … */]
 
 export const groups = obligations.filter((obligation) =>
   obligations.some((other) => other.within === obligation)
 )
 ```
 
-`groups` is derived, not hand-maintained. It stays derived as the array fills.
+`groups` is derived, not hand-maintained. It stays derived as the array fills:
+`commodityLines` is in it because the line fields name it in their `within`,
+never because anything added it.
 
 The commodity-type page increment created `obligations/sections/`, and
+`commodityType` in
 [`sections/commodity.js`](../obligations/sections/commodity.js) is the smallest
-a section module gets — identity, name and a direct mandate. Obligations that
-carry scope, cardinality or grouping add `applyTo`, `requires` or `within` from
-the platform helpers; see [Obligation shape](#obligation-shape) below:
+a declaration gets — identity, name and a direct mandate:
 
 ```js
 export const commodityType = {
@@ -35,6 +33,18 @@ export const commodityType = {
   status: 'mandatory'
 }
 ```
+
+Three arrangements landed in
+[`obligations/sections/commodity.js`](../obligations/sections/commodity.js).
+The group — `commodityLine` — carries a `requires` floor and no status of its
+own. An ungated member — `category` and `quantity` — carries `within` plus a
+direct `status` and deliberately no `applyTo`: `quantity` applies on every
+line whatever its category, and `category` cannot be gated at all because
+every other gate reads it, so a field that applies on every line of the group
+carries no `applyTo`. A gated member — everything `gatedOnCategory` builds —
+adds an `applyTo` from the platform helpers over an allow-list the set-owned
+commodities service supplies, read lazily so the module does no reference-data
+work when it loads. See [Obligation shape](#obligation-shape) below.
 
 ## Sections
 
@@ -102,8 +112,13 @@ set should gain the same pair with its first obligations:
   the set-owned reference service, so the two cannot drift
 
 [`obligations/coverage.test.js`](../obligations/coverage.test.js) exists and
-covers the manifest as it stands. `whitelists.test.js` does not exist yet:
-write it with the first allow-list.
+covers the manifest as it stands. The first allow-lists landed with the
+commodity section, and
+[`obligations/whitelists.test.js`](../obligations/whitelists.test.js) landed
+with them: it holds every per-line obligation's `name` against `lineFields()`,
+every service field against the manifest, and every gate's allow-list against
+`categories()` — so a rename on one side alone, which would put a field in
+scope for no category, fails there.
 
 The generic model contract is in the
 [platform obligation-model guide](../../../docs/obligation-model.md).

@@ -6,9 +6,13 @@ import { copy as en } from './copy/copy.en.js'
 
 // The page a reader lands on, and the section it should name. One case per
 // page so a mis-filed page names itself in the failure.
+const ABOUT_THE_CONSIGNMENT = 'About the consignment'
+
 const CAPTIONED = [
   ['dashboard', 'Dashboard'],
-  ['commodity-type', 'About the consignment']
+  ['commodity-type', ABOUT_THE_CONSIGNMENT],
+  ['commodities', ABOUT_THE_CONSIGNMENT],
+  ['commodity-details', ABOUT_THE_CONSIGNMENT]
 ]
 
 // Pages that open straight into their heading. Still empty: the spec rules the

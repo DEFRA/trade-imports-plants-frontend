@@ -14,6 +14,9 @@ export const copy = {
   title: 'What are you importing?',
   legend: 'What are you importing?',
   hint: 'Select the type of goods this notification is for. Notify potatoes, plants for planting and wood in separate notifications.',
+  linesWarning:
+    'Changing your answer will remove the commodities you have already added.',
+  linesWarningIcon: 'Warning',
   typeLabels: {
     potatoes: 'Potatoes (seed or ware)',
     'plants-for-planting': 'Plants for planting',

@@ -4,14 +4,16 @@ The linear journey owns its topology in
 [`src/server/app/sets/high-risk-plants/journeys/linear/flow/`](../journeys/linear/flow/).
 The platform consumes that policy through `configureJourneyFlow()`.
 
-Those exports hold the start and commodity sections, the `commodities` task row
-and the opening run's single step — everything the journey has landed so far.
+Those exports hold the start, commodity and commodityDetails sections, the
+`commodities` task row and the opening run's two steps — everything the journey
+has landed so far.
 
 ## Flow sections
 
 [`flow.js`](../journeys/linear/flow/flow.js) exports `sections`, today holding
-`start` (the dashboard) and `commodity` (the commodity-type page). A flow
-section is a navigation sequence:
+`start` (the dashboard), `commodity` (the commodity-type page and the
+commodities list) and `commodityDetails` (the collection's entry sub-page). A
+flow section is a navigation sequence:
 
 ```js
 {
@@ -23,6 +25,14 @@ section is a navigation sequence:
 Array order is journey order. It controls `nextInSection()` and, through the
 section's place among the other sections, the strictly-earlier continue
 prerequisites.
+
+A page reached from another page rather than by continuing past one needs a
+section of its own, which is why `commodityDetails` is separate. The
+commodities list page's Continue leaves the commodity section; the entry
+sub-page is opened from the list and sends the trader back to it. Had the two
+shared a section, `nextInSection` would send that Continue into the entry page
+instead. Its own section still gives it the commodity-type prerequisite every
+page after the entry question carries.
 
 Normal page gates are derived from `meta.collects`, in-scope obligations and
 earlier continue prerequisites. Author a section or page `gate` only for policy
@@ -40,13 +50,19 @@ obligation fulfilment.
 ## Task rows
 
 [`task-rows.js`](../journeys/linear/flow/task-rows.js) exports `taskRows`, today
-holding the single `commodities` row the commodity section landed. A task row is
-a hub item and a submit-readiness unit; it is not a flow section. Do not call the
-hub entry a section in code.
+holding the single `commodities` row — the entry question, the list page and
+the entry sub-page. That row spans two flow sections. A task row is a hub item
+and a submit-readiness unit; it is not a flow section. Do not call the hub
+entry a section in code.
 
 ```js
 { id: '<task-row-id>', pages: [firstPage, secondPage] }
 ```
+
+Array order is journey order here too. The hub links a row to the first of its
+pages whose gate passes, so the entry question has to lead the row; the entry
+sub-page is in the row because its data belongs to this task, not because the
+hub ever links there.
 
 Row status defaults to the union of each page's `collects` — that is what
 `rowParts()` computes, and `rowStatus()` feeds to `statusOf()`. `parts` narrows
@@ -64,9 +80,11 @@ landed with the hub increment.
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds one step, commodity-type: the opening run opens there and,
-with no later step, `nextRunTarget` falls through to the hub, whose GET marks the
-run complete. An unknown step id still returns `null`.
+`RUN_STEPS` holds two steps, commodity-type then commodities: the opening run
+opens on the entry question, goes on to the consignment's commodities and, with
+no later step, `nextRunTarget` falls through to the hub, whose GET marks the run
+complete. An unknown step id still returns `null`. The entry sub-page is not a
+step — the list page sends a trader with no lines there and takes them back.
 
 The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey
@@ -126,10 +144,10 @@ engine suite stays journey-neutral; it never imports this set.
 
 `captionSections` is data — an array of `{ id, pages }` importing page
 identities from the features — and `sectionCaptionOf(pageId)` resolves the
-section's name from the copy pair. Never a string chosen page by page. The
-dashboard is the only section so far; the module's doc comment names the four
-the journey spec still expects, so a page increment knows where to file
-itself.
+section's name from the copy pair. Never a string chosen page by page. Two
+caption sections exist so far — the dashboard, and About the consignment over
+the three commodity pages; the module's doc comment names the rest the journey
+spec still expects, so a page increment knows where to file itself.
 
 `kit.base()` resolves the name for the page identity a controller passes it and
 puts it in the view as `caption`. The page template imports the macro with

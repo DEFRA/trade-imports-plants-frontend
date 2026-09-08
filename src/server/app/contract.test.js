@@ -30,6 +30,8 @@ import { records as recordsStub } from './services/persistence/records/stub/inde
 import { session as sessionStub } from './services/persistence/session/stub.js'
 import { installHighRiskPlantsJourney } from './sets/high-risk-plants/journeys/linear/test-support.js'
 import * as commodityType from './sets/high-risk-plants/journeys/linear/features/commodity-type/controller.js'
+import * as commodities from './sets/high-risk-plants/journeys/linear/features/commodities/list/list.controller.js'
+import * as commodityDetails from './sets/high-risk-plants/journeys/linear/features/commodities/details/details.controller.js'
 
 // Every manifest read is deferred: at module load the configured set is still
 // the fixture, and the plants set only arrives in `beforeAll`.
@@ -81,4 +83,23 @@ describe('controller <-> model commit contract', () => {
       expect(new Set(committedIds(result))).toEqual(new Set(committable))
     }
   )
+
+  // The collection splits the declaration from the write: the list page owns
+  // `commodityLines` because it is where the group is read back and where
+  // Continue leaves the loop, and the entry sub-page — collecting nothing of
+  // its own — is what creates a line. So this case drives the sub-page's POST
+  // and holds it to the list page's declaration.
+  it('Should commit the commodity line its entry sub-page creates', async () => {
+    const committable = committableCollects(commodities.meta.collects)
+    expect(committable).toEqual(['commodityLines'])
+    expect(commodityDetails.meta.collects).toEqual([])
+
+    const result = await driveHandler(postHandlerOf(commodityDetails), {
+      seed: { commodityType: 'potatoes' },
+      payload: { category: 'seed-potatoes' }
+    })
+
+    expect(new Set(committedIds(result))).toEqual(new Set(committable))
+    expect(result.after.commodityLines).toEqual([{ category: 'seed-potatoes' }])
+  })
 })

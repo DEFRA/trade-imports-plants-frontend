@@ -19,7 +19,10 @@ import {
   postHandlerOf
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
-import { installHighRiskPlantsJourney } from '../../test-support.js'
+import {
+  COMPLETE_POTATO_CONSIGNMENT,
+  installHighRiskPlantsJourney
+} from '../../test-support.js'
 import { commodityTypes } from '../../../../services/commodities/index.js'
 import * as commodityType from './controller.js'
 
@@ -171,6 +174,18 @@ describe('POST commodity-type — a rejected answer', () => {
       { text: SELECT_WHAT_YOU_ARE_IMPORTING, href: '#commodityType' }
     ])
   })
+
+  it('Should leave the saved lines exactly as they were', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: 'bulbs' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.after.commodityLines).toEqual(
+      COMPLETE_POTATO_CONSIGNMENT.commodityLines
+    )
+  })
 })
 
 describe('POST commodity-type — an accepted answer', () => {
@@ -189,12 +204,14 @@ describe('POST commodity-type — an accepted answer', () => {
     expect(result.after).toEqual({ commodityType: WOOD_AND_CUT_TREES })
   })
 
-  it('Should redirect to the overview, the only step of the run having run', async () => {
+  it('Should redirect to the commodities list, the run’s next step', async () => {
     const result = await driveHandler(post, {
       payload: { commodityType: POTATOES }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: `/notifications/${result.journeyId}/commodities`
+    })
   })
 
   it('Should honour Save and return to overview', async () => {
@@ -204,6 +221,101 @@ describe('POST commodity-type — an accepted answer', () => {
 
     expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
     expect(result.after).toEqual({ commodityType: POTATOES })
+  })
+})
+
+describe('POST commodity-type — changing the type of a consignment with lines', () => {
+  beforeAll(() => {
+    configureRecords(recordsStub)
+    configureSession(sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
+
+  it('Should drop every line whose category the new type does not hold', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: WOOD_AND_CUT_TREES }
+    })
+
+    expect(result.after.commodityType).toBe(WOOD_AND_CUT_TREES)
+    expect(result.after.commodityLines ?? []).toEqual([])
+  })
+
+  it('Should report the count on the commodities list it redirects to', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: PLANTS_FOR_PLANTING }
+    })
+
+    expect(result.response).toEqual({
+      redirect: `/notifications/${result.journeyId}/commodities?removed=1`
+    })
+  })
+
+  it('Should keep every line and redirect as usual when the type is unchanged', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: POTATOES }
+    })
+
+    expect(result.after.commodityLines).toEqual(
+      COMPLETE_POTATO_CONSIGNMENT.commodityLines
+    )
+    expect(result.response).toEqual({
+      redirect: `/notifications/${result.journeyId}/commodities`
+    })
+  })
+
+  it('Should carry a change context through the redirect', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: WOOD_AND_CUT_TREES },
+      query: { change: '1' }
+    })
+
+    expect(result.response).toEqual({
+      redirect: `/notifications/${result.journeyId}/commodities?removed=1&change=1`
+    })
+  })
+
+  // A deliberate deviation from the precedence rule in
+  // spec/journey-spec.json:60, where exit=hub wins over run navigation: a
+  // removal the trader has not seen reported wins over both.
+  it('Should report a removal even when Save and return to overview was pressed', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: WOOD_AND_CUT_TREES, exit: 'hub' }
+    })
+
+    expect(result.response.redirect).toBe(
+      `/notifications/${result.journeyId}/commodities?removed=1`
+    )
+  })
+})
+
+describe('GET commodity-type — a consignment with lines', () => {
+  beforeAll(() => {
+    configureRecords(recordsStub)
+    configureSession(sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
+
+  it('Should warn on the page while the consignment holds lines', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_POTATO_CONSIGNMENT
+    })
+
+    expect(result.view.context.hasLines).toBe(true)
+  })
+
+  it('Should not warn while the consignment holds none', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: POTATOES }
+    })
+
+    expect(result.view.context.hasLines).toBe(false)
   })
 })
 

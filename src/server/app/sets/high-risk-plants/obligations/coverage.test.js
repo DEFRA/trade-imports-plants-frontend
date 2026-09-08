@@ -91,8 +91,9 @@ describe('groups stay derived, never hand-maintained', () => {
   it('Should hold exactly the obligations another obligation is `within`', () => {
     // Identity, not shape: a hand-written copy of a group object would pass a
     // structural comparison and then fail every `within === group` test the
-    // evaluator makes. The list is empty today and this bites the moment the
-    // first group lands.
+    // evaluator makes. The check is live: `commodityLine` is derived from the
+    // `within` reference that category, quantity and the eight gated per-line
+    // fields carry, so a hand-written stand-in for it would fail here.
     const derived = groupsByWithinReference()
     expect(groups).toHaveLength(derived.length)
     for (const [index, group] of derived.entries()) {
@@ -106,8 +107,8 @@ describe('coverage — every gated obligation carries (or derives) dependsOn', (
     // Closures are opaque to the reachability prover, so a gate must declare
     // the ids it reads — explicitly, or derivably through its helper
     // metadata. `obligationMetadata` resolves either; this pins that the
-    // resolution terminates in an array. No obligation carries an `applyTo`
-    // yet, and this bites the moment the first one does.
+    // resolution terminates in an array. It runs against the eight
+    // category-gated per-line fields `gatedOnCategory` builds.
     const missing = obligations
       .filter((obligation) => typeof obligation.applyTo === 'function')
       .filter(

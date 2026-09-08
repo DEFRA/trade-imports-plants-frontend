@@ -5,13 +5,20 @@ The linear journey keeps pages under
 a vertical slice of page identity, controllers, copy, templates, bindings and
 tests.
 
-That folder holds `dashboard/`, `hub/`, `delete-notification/` and
-`commodity-type/`, plus its two barrels:
+That folder holds `dashboard/`, `hub/`, `delete-notification/`,
+`commodity-type/` and `commodities/`, plus its two barrels:
 [`index.js`](../journeys/linear/features/index.js), whose `dispatchPages` holds
-commodity-type's `meta` and whose `allRoutes` spreads all four features' routes,
-and [`evaluation.js`](../journeys/linear/features/evaluation.js), whose frozen
-`featureEvaluationBindings` holds the commodity-type bundle. Every rule below
-applies to each feature written into it.
+the `meta` of every flow page and whose `allRoutes` spreads every feature's
+routes, and
+[`evaluation.js`](../journeys/linear/features/evaluation.js), whose frozen
+`featureEvaluationBindings` holds one bundle per feature that binds a leaf.
+Every rule below applies to each feature written into it.
+
+`commodities/` is the shape a multi-page feature group takes: one `page.js`
+holding both identities, one shared `copy/` pair, one `evaluation.js`, a folder
+per page (`list/`, `details/`) holding that page's controller, template and
+tests, and a `fit/` folder holding both browser specs and the axe helper they
+share.
 
 ## Page identity
 

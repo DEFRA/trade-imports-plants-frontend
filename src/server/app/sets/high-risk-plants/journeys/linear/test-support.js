@@ -25,6 +25,24 @@ import { nextRunTarget } from './flow/run.js'
 import { entryGuardTarget } from './flow/entry-guard.js'
 import { sectionCaptionOf } from './flow/section-captions/index.js'
 
+/**
+ * A notification whose commodity section is complete: a potato consignment
+ * with one line carrying every field its category asks for. Several suites
+ * need "the commodities task is done" and would otherwise each hand-build the
+ * same line and drift from the manifest as fields land.
+ */
+export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
+  commodityType: 'potatoes',
+  commodityLines: [
+    {
+      category: 'seed-potatoes',
+      quantity: '250',
+      potatoVariety: 'Maris Piper',
+      potatoIntendedUse: 'Planting'
+    }
+  ]
+})
+
 export const installHighRiskPlantsJourney = () => {
   configureObligationSet(highRiskPlantsObligationSet)
   configureFulfilmentRegistry(featureEvaluationBindings)

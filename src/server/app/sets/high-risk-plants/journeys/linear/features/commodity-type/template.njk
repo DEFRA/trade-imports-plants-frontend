@@ -1,5 +1,6 @@
 {% extends "shared/layout.njk" %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "shared/save-actions.njk" import saveActions %}
 {% from "shared/section-caption.njk" import sectionCaption %}
 
@@ -10,6 +11,13 @@
   <form method="post" novalidate>
     <input type="hidden" name="crumb" value="{{ crumb }}" />
     <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
+
+    {% if hasLines %}
+      {{ govukWarningText({
+        text: copy.linesWarning,
+        iconFallbackText: copy.linesWarningIcon
+      }) }}
+    {% endif %}
 
     {{ govukRadios({
       name: "commodityType",
