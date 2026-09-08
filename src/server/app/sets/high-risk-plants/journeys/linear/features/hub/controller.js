@@ -33,7 +33,7 @@ const copy = copyFor({ en, cy })
  * it, and a group with no rows is not rendered.
  */
 export const GROUPS = [
-  { id: 'about-the-consignment', rows: ['commodities'] },
+  { id: 'about-the-consignment', rows: ['commodities', 'origin'] },
   { id: 'arrival-and-destination', rows: [] },
   { id: 'consignment-parties', rows: [] },
   { id: 'check-and-submit', rows: [] }

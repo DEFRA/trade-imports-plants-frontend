@@ -19,10 +19,10 @@ A journey can use either or both. See
 Two generic sets in that same module — `SYSTEM_POPULATED` and
 `ENFORCED_AT_CONTINUE` — hold what the set declares. `SYSTEM_POPULATED` is still
 empty; `ENFORCED_AT_CONTINUE` names `commodityType`, the notification's entry
-answer, so every page after the one that collects it waits on it. Keep both in
-step with the manifest: a name listed there that this set does not declare is
-inert, and one this set declares but does not list gets no continue-time
-enforcement.
+answer, and `countryOfOrigin`, so every page after the one that collects each of
+them waits on it. Keep both in step with the manifest: a name listed there that
+this set does not declare is inert, and one this set declares but does not list
+gets no continue-time enforcement.
 
 ## The commodity vocabulary constrains three of the eleven answers
 

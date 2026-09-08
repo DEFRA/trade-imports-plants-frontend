@@ -60,9 +60,9 @@ const typeOptions = (selected) =>
     checked: value === selected
   }))
 
-// The one page in the journey whose back link is told by what has been saved:
-// a notification with nothing committed has no overview worth returning to,
-// so it goes back to the dashboard instead.
+// A page reachable before anything is committed has its back link told by what
+// has been saved: a notification with nothing committed has no overview worth
+// returning to, so it goes back to the dashboard instead.
 const backLinkFor = (journey, answers) =>
   hasCommittedNotificationAnswers(answers)
     ? hubPath(journey.journeyId)

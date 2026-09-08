@@ -23,6 +23,8 @@ import { copy } from './copy/copy.en.js'
 const hubGet = routes.find((route) => route.method === 'GET').handler
 
 const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
+const NOT_STARTED_TAG_CLASS = 'govuk-tag--blue'
+const POTATOES = 'potatoes'
 
 const buildH = () => {
   const captured = { cookies: {} }
@@ -111,7 +113,7 @@ describe('#hubGet', () => {
     })
   })
 
-  it('Should render the about-the-consignment group and its one row', async () => {
+  it('Should render the about-the-consignment group and its two rows', async () => {
     const { journeyId, h } = await renderHub()
 
     expect(h.captured.view.context.groups).toEqual([
@@ -125,13 +127,53 @@ describe('#hubGet', () => {
             status: {
               tag: {
                 text: copy.statuses.notYetStarted,
-                classes: 'govuk-tag--blue'
+                classes: NOT_STARTED_TAG_CLASS
               }
+            }
+          }),
+          expect.objectContaining({
+            title: { text: copy.rows.origin.title },
+            status: {
+              text: copy.statuses.cannotStartYet,
+              classes: 'govuk-task-list__status--cannot-start-yet'
             }
           })
         ]
       }
     ])
+  })
+
+  it('Should offer no link to origin until the entry question is answered', async () => {
+    const { h } = await renderHub()
+
+    const [, originRow] = h.captured.view.context.groups[0].items
+    expect(originRow).not.toHaveProperty('href')
+  })
+
+  it('Should open the origin row once the commodity type is answered', async () => {
+    const { journeyId, h } = await renderHub({
+      seed: { commodityType: POTATOES }
+    })
+
+    const [, originRow] = h.captured.view.context.groups[0].items
+    expect(originRow.href).toBe(`/notifications/${journeyId}/origin`)
+    expect(originRow.status).toEqual({
+      tag: {
+        text: copy.statuses.notYetStarted,
+        classes: NOT_STARTED_TAG_CLASS
+      }
+    })
+  })
+
+  it('Should complete the origin row once a country is named', async () => {
+    const { h } = await renderHub({
+      seed: { commodityType: POTATOES, countryOfOrigin: 'FR' }
+    })
+
+    const [, originRow] = h.captured.view.context.groups[0].items
+    expect(originRow.status).toEqual({
+      tag: { text: copy.statuses.completed, classes: 'govuk-tag--green' }
+    })
   })
 
   it('Should give the commodities row no hint — no source writes one', async () => {
@@ -142,7 +184,7 @@ describe('#hubGet', () => {
   })
 
   it('Should hold the commodities row in progress on a type with no line', async () => {
-    const { h } = await renderHub({ seed: { commodityType: 'potatoes' } })
+    const { h } = await renderHub({ seed: { commodityType: POTATOES } })
 
     const [row] = h.captured.view.context.groups[0].items
     expect(row.status).toEqual({

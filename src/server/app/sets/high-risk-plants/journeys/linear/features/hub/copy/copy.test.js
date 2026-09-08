@@ -41,7 +41,14 @@ describe('#copy', () => {
     })
   })
 
+  it('Should title the origin row in both locales', () => {
+    expect(copy.rows.origin).toEqual({
+      title: 'Where is this consignment coming from?'
+    })
+    expect(cy.rows.origin).toEqual({ title: 'O ble mae’r llwyth hwn yn dod?' })
+  })
+
   it('Should hold only the rows the journey has landed', () => {
-    expect(Object.keys(copy.rows)).toEqual(['commodities'])
+    expect(Object.keys(copy.rows)).toEqual(['commodities', 'origin'])
   })
 })

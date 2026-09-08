@@ -7,6 +7,7 @@ import {
   commoditiesPage,
   commodityDetailsPage
 } from '../../features/commodities/page.js'
+import { originPage } from '../../features/origin/page.js'
 
 const copy = copyFor({ en, cy })
 
@@ -21,7 +22,6 @@ const copy = copyFor({ en, cy })
  * Pages still to be built, filed here by their own increment as each lands —
  * into the existing section entry where one exists:
  *
- * - `aboutTheConsignment` — origin
  * - `arrival` — arrival-status, arrival-details
  * - `destination` — place-of-destination
  * - `consignmentParties` — consignor-select, identification-numbers
@@ -35,7 +35,12 @@ export const captionSections = [
   { id: 'dashboard', pages: [dashboardPage] },
   {
     id: 'aboutTheConsignment',
-    pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
+    pages: [
+      commodityTypePage,
+      commoditiesPage,
+      commodityDetailsPage,
+      originPage
+    ]
   }
 ]
 

@@ -10,6 +10,11 @@
  * step: the manifest's per-line names against the service's field list, every
  * gate's allow-list against the service's categories, and every gate's
  * allow-list against the categories a commodity type actually offers.
+ *
+ * The origin constraints are held here for the same reason. They are not a
+ * gate — a gate cannot read `category`, which lives one frame down on each
+ * commodity line — so nothing in the model would notice a category or a
+ * country code drifting out of the origin block the countries service primes.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -20,11 +25,16 @@ import {
   categoriesFor,
   categoriesRequiring,
   commodityTypes,
-  lineFields
+  lineFields,
+  originConstraints,
+  originCountriesFor
 } from '../services/commodities/index.js'
+import { originCountries } from '../../../services/countries/index.js'
 
 const CATEGORY = 'category'
 const QUANTITY = 'quantity'
+const SEED_POTATOES = 'seed-potatoes'
+const NON_MEMBER_STATES = ['IS', 'LI', 'NO', 'CH']
 
 const perLineObligations = obligations.filter(
   (obligation) => obligation.within === commodityLine
@@ -99,4 +109,84 @@ describe('every gate reaches a category a notification can hold', () => {
       ).toEqual([])
     })
   }
+})
+
+describe('the origin constraints stay inside the service vocabulary', () => {
+  const constrainedCategories = originConstraints().flatMap((constraint) => [
+    ...constraint.categories
+  ])
+
+  it('Should bind only categories the service offers', () => {
+    expect(
+      constrainedCategories.filter(
+        (category) => !categories().includes(category)
+      ),
+      'an origin constraint names a category no line can carry'
+    ).toEqual([])
+  })
+
+  it('Should bind each category at most once', () => {
+    expect(constrainedCategories).toHaveLength(
+      new Set(constrainedCategories).size
+    )
+  })
+
+  it('Should leave seed potatoes unconstrained', () => {
+    // reg 24A(1)(a) scopes them to the whole Common SPS Area, which is every
+    // country the origin block offers.
+    expect(constrainedCategories).not.toContain(SEED_POTATOES)
+    expect(originCountriesFor(SEED_POTATOES)).toEqual([])
+    expect(
+      categories().filter(
+        (category) => !constrainedCategories.includes(category)
+      ),
+      'a category the service offers has no origin constraint'
+    ).toEqual([SEED_POTATOES])
+  })
+
+  it('Should name only countries the origin block primes', () => {
+    const offered = originCountries().map(({ value }) => value)
+    for (const constraint of originConstraints()) {
+      expect(
+        constraint.countries.filter((code) => !offered.includes(code)),
+        `${constraint.id} names a country the origin block does not offer`
+      ).toEqual([])
+    }
+  })
+
+  it('Should order the constraints narrowest first', () => {
+    const countryCounts = originConstraints().map(
+      (constraint) => constraint.countries.length
+    )
+    expect(countryCounts).toEqual(
+      countryCounts.toSorted((left, right) => left - right)
+    )
+  })
+
+  it('Should hold the origin block minus the four non-member states', () => {
+    const euMemberStates = originConstraints().find(
+      (constraint) => constraint.id === 'eu-member-states'
+    )
+    const offered = originCountries().map(({ value }) => value)
+
+    expect([...euMemberStates.countries].toSorted()).toEqual(
+      offered.filter((code) => !NON_MEMBER_STATES.includes(code)).toSorted()
+    )
+    expect(euMemberStates.countries).toHaveLength(27)
+  })
+
+  it('Should answer every constrained category from the constraint that binds it', () => {
+    for (const constraint of originConstraints()) {
+      for (const category of constraint.categories) {
+        expect(originCountriesFor(category)).toBe(constraint.countries)
+      }
+    }
+  })
+
+  it('Should refuse a caller that tries to extend a constraint', () => {
+    expect(() => originConstraints().push({ id: 'anywhere' })).toThrow(
+      TypeError
+    )
+    expect(() => originConstraints()[0].countries.push('ZZ')).toThrow(TypeError)
+  })
 })

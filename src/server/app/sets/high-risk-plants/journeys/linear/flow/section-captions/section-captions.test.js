@@ -12,7 +12,8 @@ const CAPTIONED = [
   ['dashboard', 'Dashboard'],
   ['commodity-type', ABOUT_THE_CONSIGNMENT],
   ['commodities', ABOUT_THE_CONSIGNMENT],
-  ['commodity-details', ABOUT_THE_CONSIGNMENT]
+  ['commodity-details', ABOUT_THE_CONSIGNMENT],
+  ['origin', ABOUT_THE_CONSIGNMENT]
 ]
 
 // Pages that open straight into their heading. Still empty: the spec rules the

@@ -19,6 +19,7 @@ import { groups, obligations } from './index.js'
 const MAX_WITHIN_CHAIN_DEPTH = 100
 
 const COMMODITY_TYPE = 'commodityType'
+const COUNTRY_OF_ORIGIN = 'countryOfOrigin'
 
 const nameOf = (obligation) => obligation.name
 
@@ -124,5 +125,9 @@ describe('continue-enforced prerequisites', () => {
     // A contains check, never an equality one: the test fixtures merge their
     // own entries into this module-level Set at setup.
     expect(ENFORCED_AT_CONTINUE).toContain(COMMODITY_TYPE)
+  })
+
+  it('Should enforce countryOfOrigin when the user continues', () => {
+    expect(ENFORCED_AT_CONTINUE).toContain(COUNTRY_OF_ORIGIN)
   })
 })

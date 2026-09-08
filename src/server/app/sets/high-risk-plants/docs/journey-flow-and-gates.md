@@ -4,16 +4,16 @@ The linear journey owns its topology in
 [`src/server/app/sets/high-risk-plants/journeys/linear/flow/`](../journeys/linear/flow/).
 The platform consumes that policy through `configureJourneyFlow()`.
 
-Those exports hold the start, commodity and commodityDetails sections, the
-`commodities` task row and the opening run's two steps — everything the journey
-has landed so far.
+Those exports hold the start, commodity, commodityDetails and origin sections,
+the `commodities` and `origin` task rows and the opening run's three steps —
+everything the journey has landed so far.
 
 ## Flow sections
 
 [`flow.js`](../journeys/linear/flow/flow.js) exports `sections`, today holding
 `start` (the dashboard), `commodity` (the commodity-type page and the
-commodities list) and `commodityDetails` (the collection's entry sub-page). A
-flow section is a navigation sequence:
+commodities list), `commodityDetails` (the collection's entry sub-page) and
+`origin` (the country-of-origin page). A flow section is a navigation sequence:
 
 ```js
 {
@@ -50,10 +50,10 @@ obligation fulfilment.
 ## Task rows
 
 [`task-rows.js`](../journeys/linear/flow/task-rows.js) exports `taskRows`, today
-holding the single `commodities` row — the entry question, the list page and
-the entry sub-page. That row spans two flow sections. A task row is a hub item
-and a submit-readiness unit; it is not a flow section. Do not call the hub
-entry a section in code.
+holding the `commodities` row — the entry question, the list page and the entry
+sub-page — and the `origin` row. The commodities row spans two flow sections. A
+task row is a hub item and a submit-readiness unit; it is not a flow section. Do
+not call the hub entry a section in code.
 
 ```js
 { id: '<task-row-id>', pages: [firstPage, secondPage] }
@@ -80,11 +80,12 @@ landed with the hub increment.
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds two steps, commodity-type then commodities: the opening run
-opens on the entry question, goes on to the consignment's commodities and, with
-no later step, `nextRunTarget` falls through to the hub, whose GET marks the run
-complete. An unknown step id still returns `null`. The entry sub-page is not a
-step — the list page sends a trader with no lines there and takes them back.
+`RUN_STEPS` holds three steps, commodity-type, commodities then origin: the
+opening run opens on the entry question, goes on to the consignment's
+commodities, then asks where they come from and, with no later step,
+`nextRunTarget` falls through to the hub, whose GET marks the run complete. An
+unknown step id still returns `null`. The entry sub-page is not a step — the
+list page sends a trader with no lines there and takes them back.
 
 The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey

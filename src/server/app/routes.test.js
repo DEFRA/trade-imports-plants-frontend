@@ -5,7 +5,10 @@ import { statusCodes } from '../common/constants/status-codes.js'
 import { makeScope } from './engine/index.js'
 import { isDispatchBuilt } from './flow/dispatch.js'
 import { allRoutes } from './sets/high-risk-plants/journeys/linear/features/index.js'
-import { COMPLETE_POTATO_CONSIGNMENT } from './sets/high-risk-plants/journeys/linear/test-support.js'
+import {
+  COMPLETE_NOTIFICATION,
+  COMPLETE_POTATO_CONSIGNMENT
+} from './sets/high-risk-plants/journeys/linear/test-support.js'
 import { copy as dashboardCopy } from './sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { authenticatedCredentials } from './engine/test-support.js'
 import { mockOidcConfig } from '../common/test-helpers/mock-oidc-config.js'
@@ -41,8 +44,10 @@ describe('high-risk-plants plugin registration', () => {
       'a commodity type with no line leaves the task unfinished'
     ).toBe(false)
     expect(
-      makeScope(COMPLETE_POTATO_CONSIGNMENT).readyForCheckYourAnswers
-    ).toBe(true)
+      makeScope(COMPLETE_POTATO_CONSIGNMENT).readyForCheckYourAnswers,
+      'a complete commodity section with no country of origin leaves the notification unfinished'
+    ).toBe(false)
+    expect(makeScope(COMPLETE_NOTIFICATION).readyForCheckYourAnswers).toBe(true)
   })
 
   it('Should name the set-owned session cookies', () => {
