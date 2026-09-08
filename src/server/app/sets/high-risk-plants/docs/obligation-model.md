@@ -116,9 +116,11 @@ covers the manifest as it stands. The first allow-lists landed with the
 commodity section, and
 [`obligations/whitelists.test.js`](../obligations/whitelists.test.js) landed
 with them: it holds every per-line obligation's `name` against `lineFields()`,
-every service field against the manifest, and every gate's allow-list against
-`categories()` — so a rename on one side alone, which would put a field in
-scope for no category, fails there.
+every service field against the manifest, every gate's allow-list against
+`categories()`, and every gate's allow-list against the categories
+`categoriesFor()` offers — so a rename on one side alone, which would put a
+field in scope for no category, fails there, and so does dropping a category
+from a commodity type while a gate still names it.
 
 The generic model contract is in the
 [platform obligation-model guide](../../../docs/obligation-model.md).

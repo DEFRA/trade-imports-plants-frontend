@@ -7,8 +7,9 @@
  * hold. So renaming an obligation, or renaming its `CATEGORIES_BY_LINE_FIELD`
  * key, on one side alone puts the field in scope for no category at all, and
  * every other test in the set stays green. This file holds the two sides in
- * step: the manifest's per-line names against the service's field list, and
- * every gate's allow-list against the service's categories.
+ * step: the manifest's per-line names against the service's field list, every
+ * gate's allow-list against the service's categories, and every gate's
+ * allow-list against the categories a commodity type actually offers.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -16,7 +17,9 @@ import { describe, expect, it } from 'vitest'
 import { commodityLine, obligations } from './index.js'
 import {
   categories,
+  categoriesFor,
   categoriesRequiring,
+  commodityTypes,
   lineFields
 } from '../services/commodities/index.js'
 
@@ -78,6 +81,21 @@ describe('every gate resolves to a real, non-empty allow-list', () => {
       expect(
         allowed.filter((category) => !categories().includes(category)),
         `${obligation.name} names a category the service does not offer`
+      ).toEqual([])
+    })
+  }
+})
+
+describe('every gate reaches a category a notification can hold', () => {
+  const offered = commodityTypes().flatMap((type) => [...categoriesFor(type)])
+
+  for (const obligation of gatedObligations) {
+    it(`Should scope ${obligation.name} to categories a commodity type offers`, () => {
+      expect(
+        categoriesRequiring(obligation.name).filter(
+          (category) => !offered.includes(category)
+        ),
+        `${obligation.name} applies on a category no commodity type offers, so it can never come into scope`
       ).toEqual([])
     })
   }

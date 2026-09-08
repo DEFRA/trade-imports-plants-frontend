@@ -38,9 +38,10 @@ first obligation allow-lists landed with the commodity section, and they read
 `categoriesRequiring()` rather than a hand-typed list, so the drift to guard
 against is a rename on one side alone.
 [`obligations/whitelists.test.js`](../obligations/whitelists.test.js) is that
-guard: it holds every per-line obligation's `name` against `lineFields()` and
-every gate's allow-list against `categories()`, so a field that would be in
-scope for no category fails there.
+guard: it holds every per-line obligation's `name` against `lineFields()`, every
+gate's allow-list against `categories()`, and every gate's allow-list against
+the categories `categoriesFor()` offers, so a field that would be in scope for
+no category — or for a category no commodity type offers — fails there.
 
 ## Platform services used by the journey
 
