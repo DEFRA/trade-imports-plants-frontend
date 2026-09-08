@@ -137,6 +137,19 @@ test.describe('overview hub feature', () => {
     ).toHaveCount(0)
   })
 
+  test('renders the destination row blocked while the entry question is unanswered', async ({
+    page
+  }) => {
+    await startNotification(page)
+
+    const destinationRow = taskRowByTitle(page, copy.rows.destination.title)
+    await expect(destinationRow).toBeVisible()
+    await expect(destinationRow).toContainText(copy.statuses.cannotStartYet)
+    await expect(
+      destinationRow.getByRole('link', { name: copy.rows.destination.title })
+    ).toHaveCount(0)
+  })
+
   test('renders no group that has landed no task row', async ({ page }) => {
     await startNotification(page)
 

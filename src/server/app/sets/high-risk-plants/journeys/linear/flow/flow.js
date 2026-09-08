@@ -7,6 +7,7 @@ import {
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
+import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 
 export const FLOW_ONLY_KEYS = []
 
@@ -32,11 +33,21 @@ export const FLOW_ONLY_KEYS = []
  * of scope for them, so the derived page gate fails and both the opening run
  * and the arrival row's hub entry (`rowGatePasses`/`rowEntry`) pass it over,
  * landing on arrival-details instead — a page every commodity type answers.
+ *
+ * The destination follows the arrival section rather than joining it. The
+ * opening run asks the arrival status ahead of it — that order is `RUN_STEPS`
+ * in run.js, not this array — so the page usually has a status to work from and
+ * shows the right one of its three questions. It is not a prerequisite: a
+ * trader entering from the hub with no status answered gets the pre-arrival
+ * question, which is what the page falls back to. It is a section of its own so
+ * that Continue leaves the arrival section at the arrival details;
+ * `nextInSection` would otherwise run on into the destination page.
  */
 export const sections = [
   { id: 'start', pages: [dashboardPage] },
   { id: 'commodity', pages: [commodityTypePage, commoditiesPage] },
   { id: 'commodityDetails', pages: [commodityDetailsPage] },
   { id: 'origin', pages: [originPage] },
-  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
+  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
+  { id: 'destination', pages: [placeOfDestinationPage] }
 ]

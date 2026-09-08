@@ -4,17 +4,19 @@ The linear journey owns its topology in
 [`src/server/app/sets/high-risk-plants/journeys/linear/flow/`](../journeys/linear/flow/).
 The platform consumes that policy through `configureJourneyFlow()`.
 
-Those exports hold the start, commodity, commodityDetails, origin and arrival
-sections, the `commodities`, `origin` and `arrival` task rows and the opening
-run's five steps — everything the journey has landed so far.
+Those exports hold the start, commodity, commodityDetails, origin, arrival and
+destination sections, the `commodities`, `origin`, `arrival` and `destination`
+task rows and the opening run's six steps — everything the journey has landed so
+far.
 
 ## Flow sections
 
 [`flow.js`](../journeys/linear/flow/flow.js) exports `sections`, today holding
 `start` (the dashboard), `commodity` (the commodity-type page and the
 commodities list), `commodityDetails` (the collection's entry sub-page),
-`origin` (the country-of-origin page) and `arrival` (the arrival-status
-question, then the arrival details). A flow section is a navigation sequence:
+`origin` (the country-of-origin page), `arrival` (the arrival-status question,
+then the arrival details) and `destination` (the place-of-destination page). A
+flow section is a navigation sequence:
 
 ```js
 {
@@ -52,8 +54,8 @@ obligation fulfilment.
 
 [`task-rows.js`](../journeys/linear/flow/task-rows.js) exports `taskRows`, today
 holding the `commodities` row — the entry question, the list page and the entry
-sub-page — the `origin` row and the `arrival` row. The commodities row spans two
-flow sections. A task row is a hub item and a submit-readiness unit; it is not a
+sub-page — the `origin` row, the `arrival` row and the `destination` row. The
+commodities row spans two flow sections. A task row is a hub item and a submit-readiness unit; it is not a
 flow section. Do not call the hub entry a section in code.
 
 The arrival row holds the arrival-status question and the arrival details. The
@@ -88,13 +90,15 @@ landed with the hub increment.
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds five steps, commodity-type, commodities, origin,
-arrival-status then arrival-details: the opening run opens on the entry
-question, goes on to the consignment's commodities, asks where they come from,
-asks whether they have arrived and then when, and with no later step
-`nextRunTarget` falls through to the hub, whose GET marks the run complete. An
-unknown step id still returns `null`. The entry sub-page is not a step — the
-list page sends a trader with no lines there and takes them back. The
+`RUN_STEPS` holds six steps, commodity-type, commodities, origin,
+arrival-status, arrival-details then place-of-destination: the opening run opens
+on the entry question, goes on to the consignment's commodities, asks where they
+come from, asks whether they have arrived, then when, and closes on where the
+consignment is going. Place-of-destination is asked of every commodity type —
+the `placeOfDestination` obligation carries no `applyTo` — and with no later step
+after it `nextRunTarget` falls through to the hub, whose GET marks the run
+complete. An unknown step id still returns `null`. The entry sub-page is not a
+step — the list page sends a trader with no lines there and takes them back. The
 arrival-status step is skipped for potatoes, whose notification is never asked
 the question: its target is `null` while the answer is out of scope, and the run
 goes straight on to arrival-details, which every commodity type answers.
@@ -157,10 +161,11 @@ engine suite stays journey-neutral; it never imports this set.
 
 `captionSections` is data — an array of `{ id, pages }` importing page
 identities from the features — and `sectionCaptionOf(pageId)` resolves the
-section's name from the copy pair. Never a string chosen page by page. Three
+section's name from the copy pair. Never a string chosen page by page. Four
 caption sections exist so far — the dashboard; About the consignment over the
 four commodity and origin pages (commodity-type, commodities,
-commodity-details, origin); and Arrival over the arrival-status question; the
+commodity-details, origin); Arrival over the arrival-status question and the
+arrival details; and Destination over the place-of-destination page; the
 module's doc comment names the rest the journey spec still expects, so a page
 increment knows where to file itself.
 

@@ -18,6 +18,7 @@ import {
   sizeOfTree,
   species
 } from './sections/commodity.js'
+import { placeOfDestination } from './sections/destination.js'
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
@@ -32,6 +33,7 @@ export {
   eppoCode,
   genus,
   phytosanitaryTreatments,
+  placeOfDestination,
   potatoIntendedUse,
   potatoVariety,
   proposedPlaceOfLanding,
@@ -57,7 +59,8 @@ export const obligations = [
   arrivalStatus,
   arrivalDate,
   arrivalTime,
-  proposedPlaceOfLanding
+  proposedPlaceOfLanding,
+  placeOfDestination
 ]
 
 export const groups = obligations.filter((obligation) =>

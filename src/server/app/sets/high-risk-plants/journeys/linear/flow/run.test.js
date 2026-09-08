@@ -6,6 +6,7 @@ import { commoditiesPage } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
+import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 import { RUN_STEPS, nextRunTarget } from './run.js'
 
 const JOURNEY_ID = 'HRP-0001'
@@ -18,7 +19,8 @@ const PLANTS_RUN = [
   'commodityLines',
   'countryOfOrigin',
   'arrivalStatus',
-  'arrivalDate'
+  'arrivalDate',
+  'placeOfDestination'
 ]
 const POTATO_RUN = [
   'commodityType',
@@ -26,7 +28,8 @@ const POTATO_RUN = [
   'countryOfOrigin',
   'arrivalDate',
   'arrivalTime',
-  'proposedPlaceOfLanding'
+  'proposedPlaceOfLanding',
+  'placeOfDestination'
 ]
 
 const scopeOf = (...names) => ({
@@ -42,13 +45,14 @@ const answering = (...names) => ({
 describe('#RUN_STEPS — the opening run', () => {
   beforeAll(() => installHighRiskPlantsJourney())
 
-  it('Should open on commodity-type, then commodities, origin, arrival status and arrival details', () => {
+  it('Should open on commodity-type, then commodities, origin, arrival status, arrival details and the destination', () => {
     expect(RUN_STEPS.map((step) => step.id)).toEqual([
       commodityTypePage.id,
       commoditiesPage.id,
       originPage.id,
       arrivalStatusPage.id,
-      arrivalDetailsPage.id
+      arrivalDetailsPage.id,
+      placeOfDestinationPage.id
     ])
   })
 
@@ -138,6 +142,27 @@ describe('#RUN_STEPS — the opening run', () => {
       `/notifications/${JOURNEY_ID}/arrival-details`
     )
   })
+
+  it('Should close the run on the place of destination for every commodity type', () => {
+    expect(RUN_STEPS[5].target(answering(...PLANTS_RUN), JOURNEY_ID)).toBe(
+      `/notifications/${JOURNEY_ID}/destinations/select`
+    )
+    expect(RUN_STEPS[5].target(answering(...POTATO_RUN), JOURNEY_ID)).toBe(
+      `/notifications/${JOURNEY_ID}/destinations/select`
+    )
+  })
+
+  it('Should skip the place of destination while the origin is unanswered', () => {
+    // placeOfDestination is in scope here, so the null can only come from the
+    // derived countryOfOrigin prerequisite the page inherits by sitting after
+    // origin in flow.js.
+    expect(
+      RUN_STEPS[5].target(
+        answering('commodityType', 'commodityLines', 'placeOfDestination'),
+        JOURNEY_ID
+      )
+    ).toBeNull()
+  })
 })
 
 describe('#nextRunTarget', () => {
@@ -181,9 +206,19 @@ describe('#nextRunTarget', () => {
     ).toBe(`/notifications/${JOURNEY_ID}/arrival-details`)
   })
 
-  it("Should fall through to the overview after the run's last step", () => {
+  it('Should send the arrival details on to the place of destination', () => {
     expect(
       nextRunTarget(arrivalDetailsPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
+    ).toBe(`/notifications/${JOURNEY_ID}/destinations/select`)
+  })
+
+  it("Should fall through to the overview after the run's last step", () => {
+    expect(
+      nextRunTarget(
+        placeOfDestinationPage.id,
+        answering(...PLANTS_RUN),
+        JOURNEY_ID
+      )
     ).toBe(`/notifications/${JOURNEY_ID}`)
   })
 

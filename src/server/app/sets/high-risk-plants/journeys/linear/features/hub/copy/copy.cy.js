@@ -21,6 +21,7 @@ export const copy = {
   rows: {
     commodities: { title: 'Beth ydych chi’n ei fewnforio?' },
     origin: { title: 'O ble mae’r llwyth hwn yn dod?' },
-    arrival: { title: 'Manylion cyrraedd' }
+    arrival: { title: 'Manylion cyrraedd' },
+    destination: { title: 'Man cyrchfan' }
   }
 }

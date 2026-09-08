@@ -35,6 +35,7 @@ import * as commodityDetails from './sets/high-risk-plants/journeys/linear/featu
 import * as origin from './sets/high-risk-plants/journeys/linear/features/origin/controller.js'
 import * as arrivalStatus from './sets/high-risk-plants/journeys/linear/features/arrival-status/controller.js'
 import * as arrivalDetails from './sets/high-risk-plants/journeys/linear/features/arrival-details/controller.js'
+import * as placeOfDestination from './sets/high-risk-plants/journeys/linear/features/place-of-destination/controller.js'
 
 // Every manifest read is deferred: at module load the configured set is still
 // the fixture, and the plants set only arrives in `beforeAll`.
@@ -91,6 +92,14 @@ const cases = [
       arrivalTime: '14:30',
       proposedPlaceOfLanding: 'GB DVR'
     }
+  },
+  {
+    id: 'place-of-destination',
+    collects: placeOfDestination.meta.collects,
+    handler: postHandlerOf(placeOfDestination),
+    // The picker posts the id of the address-book row the trader ticked. The
+    // unit suite runs in stub mode, so this is a record the stub book holds.
+    payload: { placeOfDestination: 'tech-imports-ltd' }
   }
 ]
 
