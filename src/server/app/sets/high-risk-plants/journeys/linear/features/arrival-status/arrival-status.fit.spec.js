@@ -22,6 +22,7 @@ const COMMODITY_LIST_URL = /\/notifications\/[^/]+\/commodities$/
 const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/arrival-status$/
+const ARRIVAL_DETAILS_URL = /\/notifications\/[^/]+\/arrival-details$/
 const JOURNEY_ID_SEGMENT = 2
 
 const STATUS_INPUT_SELECTOR = 'input[name="arrivalStatus"]'
@@ -207,7 +208,7 @@ test.describe('arrival-status feature', () => {
     )
   })
 
-  test('saves a choice, reaches the overview and shows it again on return', async ({
+  test('saves a choice, reaches the arrival details and shows it again on return', async ({
     page
   }) => {
     const reference = await startAtArrivalStatus(page)
@@ -215,7 +216,7 @@ test.describe('arrival-status feature', () => {
     await radioFor(page, ALREADY_ARRIVED).check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
 
     await page.goto(arrivalStatusPathOf(reference))
     await expect(radioFor(page, ALREADY_ARRIVED)).toBeChecked()
@@ -325,7 +326,7 @@ test.describe('arrival-status feature', () => {
     await radioFor(page, NOT_YET_ARRIVED).check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
   })
 
   test('has no serious or critical axe violations on the initial render', async ({
@@ -365,7 +366,7 @@ test.describe('arrival-status — the question potatoes are never asked', () => 
     await signIn(page)
   })
 
-  test('sends a potato notification from origin straight to the overview', async ({
+  test('sends a potato notification from origin past the question to the details', async ({
     page
   }) => {
     const reference = await startNotification(page)
@@ -373,24 +374,23 @@ test.describe('arrival-status — the question potatoes are never asked', () => 
     await addLine(page, WARE_POTATOES, WARE_POTATO_LINE_FIELDS)
     await saveOrigin(page, reference, SPAIN)
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
   })
 
-  test('blocks the arrival row on the overview for a potato notification', async ({
+  test('opens the arrival row on the overview at the details page for a potato notification', async ({
     page
   }) => {
     const reference = await startNotification(page)
     await chooseCommodityType(page, POTATOES)
     await addLine(page, WARE_POTATOES, WARE_POTATO_LINE_FIELDS)
     await saveOrigin(page, reference, SPAIN)
+    await page.goto(`/notifications/${reference}`)
 
-    const taskList = page.locator('.govuk-task-list')
     await expect(
-      taskList.getByText(hubCopy.rows.arrival.title, { exact: true })
-    ).toBeVisible()
-    await expect(
-      taskList.getByRole('link', { name: hubCopy.rows.arrival.title })
-    ).toHaveCount(0)
+      page
+        .locator('.govuk-task-list')
+        .getByRole('link', { name: hubCopy.rows.arrival.title })
+    ).toHaveAttribute('href', `/notifications/${reference}/arrival-details`)
   })
 
   test('opens the arrival row on the overview for a wood notification', async ({

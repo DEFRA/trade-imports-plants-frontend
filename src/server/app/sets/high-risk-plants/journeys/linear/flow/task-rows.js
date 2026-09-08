@@ -7,15 +7,15 @@ import {
 } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
+import { arrivalDetailsPage } from '../features/arrival-details/page.js'
 
 /**
  * The hub's task rows.
  *
- * The arrival row holds only the arrival-status question so far, and that
- * question is out of scope for potatoes — so a potato notification sees the
- * row blocked until arrival-details, which every commodity type answers, joins
- * it. The row is not marked `conditional`: its content will not be wholly
- * conditional once that page lands.
+ * The arrival row holds the arrival question and the arrival details. The
+ * question is out of scope for potatoes, so a potato notification opens the row
+ * on the details page instead — every commodity type owes a date. The row is
+ * not marked `conditional`: no notification finds the whole of it inapplicable.
  */
 export const taskRows = [
   {
@@ -23,7 +23,7 @@ export const taskRows = [
     pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
   },
   { id: 'origin', pages: [originPage] },
-  { id: 'arrival', pages: [arrivalStatusPage] }
+  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
 ]
 
 export const taskRowById = (id) => taskRows.find((row) => row.id === id)

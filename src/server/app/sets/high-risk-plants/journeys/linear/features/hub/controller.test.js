@@ -160,58 +160,6 @@ describe('#hubGet', () => {
     ])
   })
 
-  it('Should block the arrival row for a potato notification', async () => {
-    // The origin is answered, so the block is the scope gate rather than an
-    // unmet prerequisite.
-    const { h } = await renderHub({
-      seed: { commodityType: POTATOES, countryOfOrigin: FRANCE }
-    })
-
-    const [arrivalRow] = h.captured.view.context.groups[1].items
-    expect(arrivalRow).not.toHaveProperty('href')
-    expect(arrivalRow.status).toEqual(CANNOT_START_STATUS)
-  })
-
-  it('Should keep the arrival row blocked until a plants notification names its origin', async () => {
-    const { h } = await renderHub({
-      seed: { commodityType: PLANTS_FOR_PLANTING }
-    })
-
-    const [arrivalRow] = h.captured.view.context.groups[1].items
-    expect(arrivalRow).not.toHaveProperty('href')
-    expect(arrivalRow.status).toEqual(CANNOT_START_STATUS)
-  })
-
-  it('Should open the arrival row once a plants notification names its origin', async () => {
-    const { journeyId, h } = await renderHub({
-      seed: { commodityType: PLANTS_FOR_PLANTING, countryOfOrigin: FRANCE }
-    })
-
-    const [arrivalRow] = h.captured.view.context.groups[1].items
-    expect(arrivalRow.href).toBe(`/notifications/${journeyId}/arrival-status`)
-    expect(arrivalRow.status).toEqual({
-      tag: {
-        text: copy.statuses.notYetStarted,
-        classes: NOT_STARTED_TAG_CLASS
-      }
-    })
-  })
-
-  it('Should complete the arrival row once the arrival status is chosen', async () => {
-    const { h } = await renderHub({
-      seed: {
-        commodityType: PLANTS_FOR_PLANTING,
-        countryOfOrigin: FRANCE,
-        arrivalStatus: ALREADY_ARRIVED
-      }
-    })
-
-    const [arrivalRow] = h.captured.view.context.groups[1].items
-    expect(arrivalRow.status).toEqual({
-      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
-    })
-  })
-
   it('Should offer no link to origin until the entry question is answered', async () => {
     const { h } = await renderHub()
 
@@ -304,5 +252,74 @@ describe('#hubGet', () => {
     const { h } = await renderHub()
 
     expect(h.captured.cookies).not.toHaveProperty(SESSION_COOKIES.openingRun)
+  })
+})
+
+describe('#hubGet — the arrival row', () => {
+  beforeAll(() => {
+    configureRecords(recordsStub)
+    configureSession(sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
+
+  const arrivalRowIn = async (seed) => {
+    const { journeyId, h } = await renderHub({ seed })
+    const [arrivalRow] = h.captured.view.context.groups[1].items
+    return { journeyId, arrivalRow }
+  }
+
+  it('Should open the row for a potato notification at the details page', async () => {
+    // The status question is out of scope for potatoes, so the row opens on
+    // the details page, which every commodity type answers.
+    const { journeyId, arrivalRow } = await arrivalRowIn({
+      commodityType: POTATOES,
+      countryOfOrigin: FRANCE
+    })
+
+    expect(arrivalRow.href).toBe(`/notifications/${journeyId}/arrival-details`)
+    expect(arrivalRow.status).toEqual({
+      tag: {
+        text: copy.statuses.notYetStarted,
+        classes: NOT_STARTED_TAG_CLASS
+      }
+    })
+  })
+
+  it('Should keep the row blocked until a plants notification names its origin', async () => {
+    const { arrivalRow } = await arrivalRowIn({
+      commodityType: PLANTS_FOR_PLANTING
+    })
+
+    expect(arrivalRow).not.toHaveProperty('href')
+    expect(arrivalRow.status).toEqual(CANNOT_START_STATUS)
+  })
+
+  it('Should open the row at the status question once a plants notification names its origin', async () => {
+    const { journeyId, arrivalRow } = await arrivalRowIn({
+      commodityType: PLANTS_FOR_PLANTING,
+      countryOfOrigin: FRANCE
+    })
+
+    expect(arrivalRow.href).toBe(`/notifications/${journeyId}/arrival-status`)
+    expect(arrivalRow.status).toEqual({
+      tag: {
+        text: copy.statuses.notYetStarted,
+        classes: NOT_STARTED_TAG_CLASS
+      }
+    })
+  })
+
+  it('Should complete the row once the status and the date are given', async () => {
+    const { arrivalRow } = await arrivalRowIn({
+      commodityType: PLANTS_FOR_PLANTING,
+      countryOfOrigin: FRANCE,
+      arrivalStatus: ALREADY_ARRIVED,
+      arrivalDate: { day: '27', month: '3', year: '2026' }
+    })
+
+    expect(arrivalRow.status).toEqual({
+      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
+    })
   })
 })

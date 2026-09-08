@@ -6,6 +6,7 @@ import {
 } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
+import { arrivalDetailsPage } from '../features/arrival-details/page.js'
 
 export const FLOW_ONLY_KEYS = []
 
@@ -26,14 +27,16 @@ export const FLOW_ONLY_KEYS = []
  * named a country.
  *
  * The arrival section opens on the arrival-status question, whose answer
- * decides what the rest of the section asks for. Potato notifications never
- * see it: `arrivalStatus` is out of scope for them, so the derived page gate
- * fails and both the opening run and the section entry pass it over.
+ * decides what the rest of the section asks for, and goes on to the arrival
+ * details. Potato notifications never see the question: `arrivalStatus` is out
+ * of scope for them, so the derived page gate fails and both the opening run
+ * and the arrival row's hub entry (`rowGatePasses`/`rowEntry`) pass it over,
+ * landing on arrival-details instead — a page every commodity type answers.
  */
 export const sections = [
   { id: 'start', pages: [dashboardPage] },
   { id: 'commodity', pages: [commodityTypePage, commoditiesPage] },
   { id: 'commodityDetails', pages: [commodityDetailsPage] },
   { id: 'origin', pages: [originPage] },
-  { id: 'arrival', pages: [arrivalStatusPage] }
+  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
 ]

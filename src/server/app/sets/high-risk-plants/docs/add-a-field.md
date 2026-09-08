@@ -9,30 +9,43 @@ are relative to
 
 ## Read these files first
 
-> **EXEMPLAR PLACEHOLDER — no plants feature exists yet.**
->
-> This section normally lists a real feature to copy. The high-risk-plants set
-> owns no features, so there is nothing to point at. Do not follow the animals
-> paths: they do not exist in this repository, and the whole point of the port
-> is that plant content is written, not copied.
->
-> **The exemplar this recipe needs** is a feature with several fields,
-> conditional scope, service-backed options, per-rule validation and
-> check-answers rows. No feature is named here on purpose: the journey's
-> requirements are not agreed, so naming a candidate would be inventing them.
->
-> When such a feature is built, replace this block with links to its
-> obligation section, `evaluation.js`, `controller.js`, `template.njk`, both
-> copy bundles, `controller.test.js`, its fit spec, its check-answers card and
-> its mapper section — and delete this note.
->
-> A second placeholder: the recipe for a field that **normalises input before it
-> saves** needs its own exemplar, and there is none yet either.
+`arrival-details` is the worked example for a page of several fields: a date
+whose label switches with the state the notification is in, a time and a place
+of landing that only potato notifications are asked for, a service-backed
+option list behind a type-ahead, and a validation rule per field. Copy its
+shape.
 
-Until an exemplar exists, read the platform guides instead —
+- [`obligations/sections/arrival.js`](../obligations/sections/arrival.js) —
+  `arrivalDate` unconditional, `arrivalTime` and `proposedPlaceOfLanding` behind
+  one `equalsGate` on the commodity type
+- [`journeys/linear/features/arrival-details/evaluation.js`](../journeys/linear/features/arrival-details/evaluation.js)
+- [`journeys/linear/features/arrival-details/controller.js`](../journeys/linear/features/arrival-details/controller.js)
+  — `scope.has()` decides what is rendered, what is validated and what is
+  committed
+- [`journeys/linear/features/arrival-details/template.njk`](../journeys/linear/features/arrival-details/template.njk)
+- [`journeys/linear/features/arrival-details/copy/copy.en.js`](../journeys/linear/features/arrival-details/copy/copy.en.js)
+  and
+  [`copy/copy.cy.js`](../journeys/linear/features/arrival-details/copy/copy.cy.js)
+  — the switching label as a map keyed on state, never a sentence chosen in the
+  model
+- [`journeys/linear/features/arrival-details/controller.test.js`](../journeys/linear/features/arrival-details/controller.test.js)
+- [`journeys/linear/features/arrival-details/arrival-details.fit.spec.js`](../journeys/linear/features/arrival-details/arrival-details.fit.spec.js)
+
+It is also the worked example for a field that **normalises input before it
+saves**: the date arrives as `d/m/yyyy` text from the MoJ picker and is stored
+as the `{ day, month, year }` parts object. `committedValues()` in that
+controller does the conversion after validation, and
+[`arrival-bounds.js`](../journeys/linear/features/arrival-details/arrival-bounds.js)
+beside it returns the one bound the date has in both the shapes its two
+consumers need.
+
+There is no check-answers card yet, so the check-answers step below still
+carries its own placeholder.
+
+Read the platform guides alongside it —
 [Validation](../../../docs/validation.md),
 [Scope and wipe](../../../docs/scope-and-wipe.md) and
-[Feature anatomy](features.md) — and follow the steps below literally.
+[Feature anatomy](features.md).
 
 ## 1. Add the obligation and run the focused tests
 

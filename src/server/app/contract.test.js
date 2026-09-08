@@ -34,6 +34,7 @@ import * as commodities from './sets/high-risk-plants/journeys/linear/features/c
 import * as commodityDetails from './sets/high-risk-plants/journeys/linear/features/commodities/details/details.controller.js'
 import * as origin from './sets/high-risk-plants/journeys/linear/features/origin/controller.js'
 import * as arrivalStatus from './sets/high-risk-plants/journeys/linear/features/arrival-status/controller.js'
+import * as arrivalDetails from './sets/high-risk-plants/journeys/linear/features/arrival-details/controller.js'
 
 // Every manifest read is deferred: at module load the configured set is still
 // the fixture, and the plants set only arrives in `beforeAll`.
@@ -77,6 +78,19 @@ const cases = [
     // name one of them before the answer is committable at all.
     seed: { commodityType: 'plants-for-planting' },
     payload: { arrivalStatus: 'not-yet-arrived' }
+  },
+  {
+    id: 'arrival-details',
+    collects: arrivalDetails.meta.collects,
+    handler: postHandlerOf(arrivalDetails),
+    // The time and the place of landing are potato matters, so the seed names
+    // potatoes to bring all three declared names into scope at once.
+    seed: { commodityType: 'potatoes' },
+    payload: {
+      arrivalDate: '27/3/2026',
+      arrivalTime: '14:30',
+      proposedPlaceOfLanding: 'GB DVR'
+    }
   }
 ]
 

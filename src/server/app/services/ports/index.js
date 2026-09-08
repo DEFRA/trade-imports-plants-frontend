@@ -13,7 +13,12 @@ export const prime = async () => {
 
 export const list = () => ports
 
+const displayName = (port) => `${port.name} (${port.code})`
+
 export const label = (code) => {
   const port = ports.find((entry) => entry.code === code)
-  return port ? `${port.name} (${port.code})` : undefined
+  return port ? displayName(port) : undefined
 }
+
+export const portOptions = () =>
+  ports.map((port) => ({ value: port.code, text: displayName(port) }))

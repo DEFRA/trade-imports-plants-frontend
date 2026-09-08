@@ -16,9 +16,11 @@
  * commodity line — so nothing in the model would notice a category or a
  * country code drifting out of the origin block the countries service primes.
  *
- * The arrival-status gate is the one notification-level gate, and it names its
- * commodity types as literals. A rename on either side would leave it
- * admitting nothing, so it is held here too.
+ * The three notification-level gates — arrival status, and the potato pair of
+ * arrival time and proposed place of landing — name their commodity types as
+ * literals (`POST_ARRIVAL_COMMODITY_TYPES` and `POTATOES` in
+ * obligations/sections/arrival.js). A rename on either side would leave one
+ * admitting nothing, so they are held here too.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -26,9 +28,11 @@ import { describe, expect, it } from 'vitest'
 import { obligationMetadata } from '../../../model/obligations/helpers/index.js'
 import {
   arrivalStatus,
+  arrivalTime,
   commodityLine,
   commodityType,
-  obligations
+  obligations,
+  proposedPlaceOfLanding
 } from './index.js'
 import {
   categories,
@@ -201,7 +205,7 @@ describe('the origin constraints stay inside the service vocabulary', () => {
   })
 })
 
-describe('the arrival-status gate stays inside the service vocabulary', () => {
+describe('the notification-level gates stay inside the service vocabulary', () => {
   const gateValues = () => obligationMetadata(arrivalStatus).values
 
   it('Should gate on the commodity-type answer', () => {
@@ -226,4 +230,31 @@ describe('the arrival-status gate stays inside the service vocabulary', () => {
       'wood-and-cut-trees'
     ])
   })
+
+  // The time and the place of landing are gated the same way, on the same
+  // notification-level answer. `equalsGate` exposes a singular `value` where
+  // `includesGate` exposes `values`.
+  for (const obligation of [arrivalTime, proposedPlaceOfLanding]) {
+    describe(`the ${obligation.name} gate`, () => {
+      it('Should gate on the commodity-type answer', () => {
+        expect(obligationMetadata(obligation).dependsOn).toEqual([
+          commodityType.id
+        ])
+      })
+
+      it('Should name a commodity type the service offers', () => {
+        expect(
+          commodityTypes().includes(obligationMetadata(obligation).value),
+          `the ${obligation.name} gate names a commodity type no notification can hold`
+        ).toBe(true)
+      })
+
+      it('Should admit potatoes and nothing else', () => {
+        // Reg 24A gives only potatoes a time and a place of landing, so
+        // another commodity type must be ruled in rather than joining the
+        // gate silently.
+        expect(obligationMetadata(obligation).value).toBe('potatoes')
+      })
+    })
+  }
 })

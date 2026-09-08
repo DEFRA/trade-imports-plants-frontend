@@ -12,6 +12,9 @@ const defaults = copyFor({ en, cy })
 const POSTCODE = /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s*\d[A-Za-z]{2}$/
 const VEHICLE_REG = /^[A-Za-z]{2}\d{2}\s?[A-Za-z]{3}$/
 const PHONE_ALLOWED = /^[0-9+()\-.,;\s]+$/
+// 24-hour clock, 00:00 to 23:59. A colon and two digits either side: the shape
+// the hint asks for, so nothing else has to be guessed at.
+const TIME_24_HOUR = /^([01]\d|2[0-3]):[0-5]\d$/
 const UK_PHONE_MIN_DIGITS = 7
 const UK_PHONE_MAX_DIGITS = 15
 const INVALID_ERROR_CODE = 'any.invalid'
@@ -263,6 +266,16 @@ const isOutsideBounds = (date, min, max) =>
   (min != null && date.getTime() < min.getTime()) ||
   (max != null && date.getTime() > max.getTime())
 
+const dateWithinBounds = (min, max) => (raw, helpers) => {
+  const parsed = parseDateText(raw)
+  if (!parsed) {
+    return helpers.error(INVALID_ERROR_CODE)
+  }
+  return isOutsideBounds(parsed, min, max)
+    ? helpers.error(RANGE_ERROR_CODE)
+    : raw
+}
+
 /**
  * Blank passes, so the range rule never makes an optional field required.
  * @param {string} name
@@ -286,15 +299,7 @@ export const dateTextInRange = (
     Joi.string()
       .trim()
       .allow('')
-      .custom((raw, helpers) => {
-        const parsed = parseDateText(raw)
-        if (!parsed) {
-          return helpers.error(INVALID_ERROR_CODE)
-        }
-        return isOutsideBounds(parsed, min, max)
-          ? helpers.error(RANGE_ERROR_CODE)
-          : raw
-      })
+      .custom(dateWithinBounds(min, max))
       .messages({
         [INVALID_ERROR_CODE]: invalidMessage,
         [RANGE_ERROR_CODE]: rangeMessage ?? invalidMessage
@@ -303,3 +308,60 @@ export const dateTextInRange = (
 
 export const dateText = (name, message = defaults.date) =>
   dateTextInRange(name, { invalidMessage: message })
+
+/**
+ * Save-blocking date text, optionally bounded. A separate primitive rather than
+ * `compose(requiredText, dateTextInRange)` because `dateTextInRange` allows the
+ * empty string, and composing schemas merges that allowance onto the required
+ * rule — blank would then pass. `requiredMaxText` and `requiredIntegerInRange`
+ * exist for the same reason.
+ * @param {string} name
+ * @param {object} options
+ * @param {Date} [options.min] - Inclusive, midnight UTC. Build bounds with the
+ * `calendar.js` helpers; a `new Date()` carrying a time loses that whole day.
+ * @param {Date} [options.max] - Inclusive, midnight UTC, same contract.
+ * @param {object} options.messages
+ * @param {string} options.messages.required - Shown when the value is blank or
+ * absent.
+ * @param {string} [options.messages.invalid] - Shown when the value is not a
+ * real calendar date.
+ * @param {string} [options.messages.range] - Shown when a real date falls
+ * outside the bounds. Falls back to `invalid`.
+ */
+export const requiredDateTextInRange = (name, { min, max, messages }) =>
+  single(
+    name,
+    Joi.string()
+      .trim()
+      .required()
+      .custom(dateWithinBounds(min, max))
+      .messages({
+        'string.empty': messages.required,
+        'any.required': messages.required,
+        [INVALID_ERROR_CODE]: messages.invalid ?? defaults.date,
+        [RANGE_ERROR_CODE]: messages.range ?? messages.invalid ?? defaults.date
+      })
+  )
+
+/**
+ * Save-blocking time of day on the 24-hour clock. Required and format in one
+ * primitive for the same reason as `requiredDateTextInRange`.
+ * @param {string} name
+ * @param {object} messages
+ * @param {string} messages.required - Shown when the value is blank or absent.
+ * @param {string} [messages.invalid] - Shown when the value is not a real
+ * 24-hour time.
+ */
+export const requiredTime = (name, messages) =>
+  single(
+    name,
+    Joi.string()
+      .trim()
+      .required()
+      .pattern(TIME_24_HOUR)
+      .messages({
+        'string.empty': messages.required,
+        'any.required': messages.required,
+        'string.pattern.base': messages.invalid ?? defaults.time
+      })
+  )

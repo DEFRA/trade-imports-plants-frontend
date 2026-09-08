@@ -6,6 +6,7 @@ import * as commoditiesList from './commodities/list/list.controller.js'
 import * as commodityDetails from './commodities/details/details.controller.js'
 import * as origin from './origin/controller.js'
 import * as arrivalStatus from './arrival-status/controller.js'
+import * as arrivalDetails from './arrival-details/controller.js'
 
 // Neither the dashboard nor the hub exports meta: they collect nothing, are
 // never gated and are never a task row, so they stay out of the dispatch index.
@@ -15,7 +16,8 @@ export const dispatchPages = [
   commoditiesList.meta,
   commodityDetails.meta,
   origin.meta,
-  arrivalStatus.meta
+  arrivalStatus.meta,
+  arrivalDetails.meta
 ]
 
 export const allRoutes = [
@@ -26,5 +28,6 @@ export const allRoutes = [
   ...commoditiesList.routes,
   ...commodityDetails.routes,
   ...origin.routes,
-  ...arrivalStatus.routes
+  ...arrivalStatus.routes,
+  ...arrivalDetails.routes
 ]

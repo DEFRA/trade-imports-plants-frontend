@@ -26,12 +26,17 @@ import {
 } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
+import { ALREADY_ARRIVED } from '../features/arrival-status/statuses.js'
+import { arrivalDetailsPage } from '../features/arrival-details/page.js'
 import { commodityTypes } from '../../../services/commodities/index.js'
 import { dispatchPages } from '../features/index.js'
 import { rowParts, rowStatus, taskRowById, taskRows } from './task-rows.js'
 
 const REVIEW_ROW_ID = 'review'
 const NO_OBLIGATIONS = { obligations: [], groups: [] }
+const PLANTS_FOR_PLANTING = 'plants-for-planting'
+const POTATOES = 'potatoes'
+const AN_ARRIVAL_DATE = { day: '27', month: '3', year: '2026' }
 
 // Stand-ins for `rowParts` and `rowStatus`, which are page-agnostic: they are
 // driven over a dispatch index of their own so the cases stay independent of
@@ -57,7 +62,7 @@ describe('#taskRows — the rows the hub can resolve', () => {
         pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
       },
       { id: 'origin', pages: [originPage] },
-      { id: 'arrival', pages: [arrivalStatusPage] }
+      { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
     ])
   })
 
@@ -161,7 +166,7 @@ describe('#rowStatus — one status per hub task row', () => {
   it('Should hold the row in progress while a line is missing a field', () => {
     expect(
       statusIn('commodities', {
-        commodityType: 'potatoes',
+        commodityType: POTATOES,
         commodityLines: [{ category: 'seed-potatoes' }]
       })
     ).toBe(IN_PROGRESS)
@@ -170,7 +175,7 @@ describe('#rowStatus — one status per hub task row', () => {
   it('Should hold the row in progress while any one line is incomplete', () => {
     expect(
       statusIn('commodities', {
-        commodityType: 'potatoes',
+        commodityType: POTATOES,
         commodityLines: [
           ...COMPLETE_POTATO_CONSIGNMENT.commodityLines,
           { category: 'seed-potatoes' }
@@ -188,24 +193,44 @@ describe('#rowStatus — one status per hub task row', () => {
   })
 
   it('Should hold the arrival row at Not yet started on a plants notification', () => {
-    expect(statusIn('arrival', { commodityType: 'plants-for-planting' })).toBe(
+    expect(statusIn('arrival', { commodityType: PLANTS_FOR_PLANTING })).toBe(
       NOT_STARTED
     )
   })
 
-  it('Should complete the arrival row once the arrival status is chosen', () => {
+  it('Should hold the arrival row in progress on a status with no date', () => {
     expect(
       statusIn('arrival', {
-        commodityType: 'plants-for-planting',
-        arrivalStatus: 'already-arrived'
+        commodityType: PLANTS_FOR_PLANTING,
+        arrivalStatus: ALREADY_ARRIVED
+      })
+    ).toBe(IN_PROGRESS)
+  })
+
+  it('Should complete the arrival row on a plants notification once both are answered', () => {
+    expect(
+      statusIn('arrival', {
+        commodityType: PLANTS_FOR_PLANTING,
+        arrivalStatus: ALREADY_ARRIVED,
+        arrivalDate: AN_ARRIVAL_DATE
       })
     ).toBe(FULFILLED)
   })
 
-  it('Should hold the arrival row not applicable on a potato notification', () => {
-    // Its only page asks a question potatoes are never asked. The row stops
-    // being NA when arrival-details, which every commodity type answers, joins
-    // it.
-    expect(statusIn('arrival', { commodityType: 'potatoes' })).toBe(NA)
+  it('Should hold the arrival row at Not yet started on a potato notification', () => {
+    // The status question is out of scope for potatoes, but the date, the time
+    // and the place of landing are not, so the row is applicable.
+    expect(statusIn('arrival', { commodityType: POTATOES })).toBe(NOT_STARTED)
+  })
+
+  it('Should complete the arrival row on a potato notification without a status', () => {
+    expect(
+      statusIn('arrival', {
+        commodityType: POTATOES,
+        arrivalDate: AN_ARRIVAL_DATE,
+        arrivalTime: '14:30',
+        proposedPlaceOfLanding: 'GB DVR'
+      })
+    ).toBe(FULFILLED)
   })
 })

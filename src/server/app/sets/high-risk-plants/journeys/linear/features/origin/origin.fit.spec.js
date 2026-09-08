@@ -16,6 +16,9 @@ const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details/
 const COMMODITY_LIST_URL = /\/notifications\/[^/]+\/commodities$/
 const HUB_URL = /\/notifications\/[^/]+$/
 const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
+// A potato notification is never asked the arrival question, so Continue from
+// origin lands on the arrival details.
+const ARRIVAL_DETAILS_URL = /\/notifications\/[^/]+\/arrival-details$/
 const JOURNEY_ID_SEGMENT = 2
 
 // accessible-autocomplete enhances the native <select>: the visible combobox
@@ -183,7 +186,7 @@ test.describe('origin feature', () => {
     )
   })
 
-  test('saves a country, reaches the overview and shows it again on return', async ({
+  test('saves a country, reaches the arrival details and shows it again on return', async ({
     page
   }) => {
     const reference = await startAtOrigin(page)
@@ -191,7 +194,7 @@ test.describe('origin feature', () => {
     await chooseCountry(page, FRANCE)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
 
     await page.goto(originPathOf(reference))
     await expect(page.locator(COUNTRY_INPUT)).toHaveValue(FRANCE)
@@ -262,7 +265,7 @@ test.describe('origin feature', () => {
     await chooseCountry(page, FRANCE)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
   })
 
   test('has no serious or critical axe violations on the initial render', async ({
@@ -336,7 +339,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
     await chooseCountry(page, SPAIN)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
   })
 
   test('refuses a country outside the EU for a wood consignment', async ({

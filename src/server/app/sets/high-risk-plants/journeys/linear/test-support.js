@@ -45,15 +45,21 @@ export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
 
 /**
  * A notification with every section the journey has built answered — today the
- * commodities and the origin. Whatever asks "is this ready for Check your
- * answers" needs this rather than the commodity fixture above, and each new
- * section's increment adds its own answers here.
+ * commodities, the origin and the arrival. Whatever asks "is this ready for
+ * Check your answers" needs this rather than the commodity fixture above, and
+ * each new section's increment adds its own answers here.
  *
  * Seed potatoes narrow the origin to nothing, so any primed country stands.
+ * They also carry no arrival status — reg 24A gives potatoes no post-arrival
+ * branch — and do owe a time and a place of landing, so the arrival answers
+ * here are the potato three, not the plants two.
  */
 export const COMPLETE_NOTIFICATION = Object.freeze({
   ...COMPLETE_POTATO_CONSIGNMENT,
-  countryOfOrigin: 'FR'
+  countryOfOrigin: 'FR',
+  arrivalDate: Object.freeze({ day: '27', month: '3', year: '2026' }),
+  arrivalTime: '14:30',
+  proposedPlaceOfLanding: 'GB DVR'
 })
 
 export const installHighRiskPlantsJourney = () => {
