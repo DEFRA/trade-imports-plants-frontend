@@ -20,27 +20,35 @@ are relative to
 
 ## Read these files first
 
-> **EXEMPLAR PLACEHOLDER — no plants feature group exists yet.**
->
-> This section normally points at the current multi-page feature group. The
-> high-risk-plants set owns none. Do not follow the animals paths.
->
-> **The exemplar this recipe needs** is a multi-page feature group: several
-> pages, one shared copy folder namespaced by page, one `page.js` per page and
-> its specs under `fit/`. No feature group is named here on purpose: the
-> journey's requirements are not agreed, so naming a candidate would be
-> inventing them.
->
-> When one is built, replace this block with links to its obligation section,
-> `page.js` files, `evaluation.js`, shared copy bundles, each page controller
-> and template, and its `fit/` specs — and delete this note.
->
-> Note the shape it should demonstrate: **a flow section and a task row are not
-> one-to-one.** One flow section can hold several pages while the hub renders
-> fewer task rows over them. For a new feature group that needs one hub entry,
-> put all of its pages in one new task row.
+`commodities` is this set's multi-page feature group: a list page that owns the
+`commodityLines` collection and a `details` sub-page that adds or edits one
+line, one shared copy folder namespaced by page (`list.*` and `details.*`), one
+`page.js` exporting both page identities, and both pages' specs under `fit/`.
+Copy its shape.
 
-Trace registration through these, which do exist:
+- [`obligations/sections/commodity.js`](../obligations/sections/commodity.js)
+- [`journeys/linear/features/commodities/page.js`](../journeys/linear/features/commodities/page.js)
+- [`journeys/linear/features/commodities/evaluation.js`](../journeys/linear/features/commodities/evaluation.js)
+- [`journeys/linear/features/commodities/copy/copy.en.js`](../journeys/linear/features/commodities/copy/copy.en.js)
+- [`journeys/linear/features/commodities/copy/copy.cy.js`](../journeys/linear/features/commodities/copy/copy.cy.js)
+- [`journeys/linear/features/commodities/copy/copy.test.js`](../journeys/linear/features/commodities/copy/copy.test.js)
+- [`journeys/linear/features/commodities/list/list.controller.js`](../journeys/linear/features/commodities/list/list.controller.js)
+- [`journeys/linear/features/commodities/list/template.njk`](../journeys/linear/features/commodities/list/template.njk)
+- [`journeys/linear/features/commodities/details/details.controller.js`](../journeys/linear/features/commodities/details/details.controller.js)
+- [`journeys/linear/features/commodities/details/template.njk`](../journeys/linear/features/commodities/details/template.njk)
+- [`journeys/linear/features/commodities/fit/list.fit.spec.js`](../journeys/linear/features/commodities/fit/list.fit.spec.js)
+- [`journeys/linear/features/commodities/fit/details.fit.spec.js`](../journeys/linear/features/commodities/fit/details.fit.spec.js)
+
+It is also the worked example of the rule that **a flow section and a task row
+are not one-to-one**: its pages sit in two flow sections — `commodity` holds
+the commodity-type page and the list page, `commodityDetails` holds the entry
+sub-page — under the single `commodities` task row. For a new feature group
+that needs one hub entry, put all of its pages in one new task row.
+
+Read the files above, not the animals paths; the animals paths do not exist in
+this repository.
+
+Trace registration through these:
 
 - [`journeys/linear/features/index.js`](../journeys/linear/features/index.js)
 - [`journeys/linear/features/evaluation.js`](../journeys/linear/features/evaluation.js)
@@ -100,15 +108,17 @@ journeys/linear/features/<group>/
 │   ├── copy.en.js
 │   └── copy.test.js
 ├── fit/
-│   └── <group>.fit.spec.js
+│   ├── axe.js
+│   ├── <first-page>.fit.spec.js
+│   └── <second-page>.fit.spec.js
 ├── <first-page>/
 │   ├── <first-page>.controller.js
 │   ├── <first-page>.controller.test.js
-│   └── <first-page>.njk
+│   └── template.njk
 ├── <second-page>/
 │   ├── <second-page>.controller.js
 │   ├── <second-page>.controller.test.js
-│   └── <second-page>.njk
+│   └── template.njk
 ├── evaluation.js
 └── page.js
 ```
@@ -336,16 +346,24 @@ Add axe coverage for every new page in both states:
 - initial render
 - validation error state after the error summary appears
 
-Run `AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa'])` and fail on every
-`serious` or `critical` violation. Filter only a proved component false
-positive.
+Build axe with `AxeBuilder({ page })`, fail on every `serious` or `critical`
+violation, and filter only a proved component false positive. Do not spell the
+tag list out in each spec: put it in one helper the whole group calls.
 
 Add or extend the hub axe test when the new row or a new group heading changes
 the hub state.
 
-> **EXEMPLAR PLACEHOLDER** — the multi-page axe helper pattern should be
-> established by the first multi-page feature group's `fit/` specs, and cited once
-> it exists.
+[`journeys/linear/features/commodities/fit/axe.js`](../journeys/linear/features/commodities/fit/axe.js)
+is that helper for the multi-page group, and
+[`list.fit.spec.js`](../journeys/linear/features/commodities/fit/list.fit.spec.js)
+and
+[`details.fit.spec.js`](../journeys/linear/features/commodities/fit/details.fit.spec.js)
+both call it. One helper beside the group's specs keeps the tag list and the
+impact threshold identical on every page of the group, so a second page cannot
+quietly be checked against a narrower set of rules than the first. Its tags are
+`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` and `wcag22aa`: axe-core tags a rule
+by the WCAG version that introduced it, so a rule reachable only through the
+2.1 or 2.2 tags would never run on the two WCAG 2.0 tags alone.
 
 ## 11. Run every check
 

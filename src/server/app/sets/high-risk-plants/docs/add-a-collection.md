@@ -8,32 +8,54 @@ only some instances.
 
 ## Read these files first
 
-> **EXEMPLAR PLACEHOLDER — no plants collection exists yet.**
->
-> This recipe normally traces every snippet to a live collection. The
-> high-risk-plants set owns none. Do not follow the animals paths; they do not
-> exist in this repository, and the plant collections are different data.
->
-> No collection is named here on purpose: the journey's requirements are not
-> agreed, so naming a candidate would be inventing them. Three _shapes_ need an
-> exemplar, whichever collections turn out to fill them:
->
-> 1. **a single-page add-another loop** — a top-level collection where the entry
->    form and the read-back table sit on one page, with a per-row Remove.
-> 2. **a two-page batch** — a top-level collection with a search page that
->    reconciles the selection and a consolidated-details page that edits every
->    entry in place. This is also where a per-instance conditional field and a
->    collection floor should be demonstrated.
-> 3. **a nested collection** — one level down inside another, with a
->    per-instance count cap declared in
->    [`src/server/app/bridge/obligation-source.js`](../../../bridge/obligation-source.js).
->
-> Replace this block with links to those three once they exist, and check every
-> snippet below against the code rather than leaving it illustrative.
+`commodityLines` is this set's collection. Read it before writing another:
+
+- [`obligations/sections/commodity.js`](../obligations/sections/commodity.js) —
+  the `commodityLine` group, its `minEntries` floor and every per-instance
+  conditional field
+- [`journeys/linear/features/commodities/list/list.controller.js`](../journeys/linear/features/commodities/list/list.controller.js) —
+  the page that declares the group in `collects`, reads `collectionView` and
+  removes an instance
+- [`journeys/linear/features/commodities/details/details.controller.js`](../journeys/linear/features/commodities/details/details.controller.js) —
+  the entry sub-page that collects nothing of its own and appends or updates one
+  instance
+- [`journeys/linear/features/commodities/line-form.js`](../journeys/linear/features/commodities/line-form.js) and
+  [`entry-index.js`](../journeys/linear/features/commodities/entry-index.js) —
+  the per-field widgets and validation rules, and the index the entry page edits
+  at. The per-category field set itself is `lineFieldsFor(category)` in
+  [`services/commodities/index.js`](../services/commodities/index.js)
+- [`journeys/linear/features/commodities/fit/list.fit.spec.js`](../journeys/linear/features/commodities/fit/list.fit.spec.js) and
+  [`fit/details.fit.spec.js`](../journeys/linear/features/commodities/fit/details.fit.spec.js)
+
+It takes a fourth shape: a **list page plus entry sub-page**, where the list page
+owns the group and the entry sub-page adds or edits one line at a time. It is
+not the single-page loop and not the batch split — nothing in it reconciles a
+selection, and no page edits every line at once. Its recipe is under "Build the
+loop pages" with the other three. What it demonstrates for every shape alike is
+the **per-instance conditional field** (a line's category decides which fields
+that line is asked for) and the **collection floor** (`minEntries: 1` on the
+group).
+
+Two of the four still have no plants exemplar:
+
+1. **the single-page loop** — a top-level collection where the entry form and
+   the read-back table sit on one page, with a per-row Remove. The animals set's
+   `documents` collection remains the reference.
+2. **the nested loop** — one level down inside another, with a per-instance
+   count cap declared in
+   [`src/server/app/bridge/obligation-source.js`](../../../bridge/obligation-source.js).
+   The animals set's `animalIdentifiers` collection remains the reference.
+
+Do not follow the animals paths: they do not exist in this repository, and the
+plant collections are different data. Replace each shape with links to a plants
+collection once one fills it.
 
 The engine, bridge and model APIs this recipe uses all exist today and are
-generic. Every code block below is the shape to write, not a quotation from this
-repository.
+generic. Where a code block below names something that is not in this repository
+— a nested group, a second collection — it is the shape to write, not a
+quotation. Every block that names a `commodityLines` field is quoted from
+[`obligations/sections/commodity.js`](../obligations/sections/commodity.js) and
+must stay in step with it.
 
 ## 1. Declare the group and its members in the manifest
 
@@ -55,13 +77,13 @@ export const commodityLine = {
   name: 'commodityLines',
   requires: {
     minEntries: 1,
-    errorCode: 'obligation.commodityLine.atLeastOne'
+    errorCode: 'obligation.commodityLines.atLeastOne'
   }
 }
 
-export const commodityCode = {
+export const category = {
   id: '<a new UUID>',
-  name: 'commoditySelection',
+  name: 'category',
   within: commodityLine,
   status: 'mandatory'
 }
@@ -83,7 +105,7 @@ Collection-level facts:
   import). A member with no `applyTo` is always in scope for every instance; a
   member with `applyTo` is scoped per instance (see step 2).
 - Member names are the keys inside each request-local instance object
-  (`answers.commodityLines[0].commoditySelection`) and the DOM field names.
+  (`answers.commodityLines[0].category`) and the DOM field names.
   They must be path-safe — no `.`, `[` or `]` — or `buildDispatch` throws at
   boot ([`src/server/app/flow/dispatch.js`](../../../flow/dispatch.js)).
 
@@ -114,7 +136,7 @@ const unit = {
 
 export const evaluationBindings = feature('commodities', [
   grouped({
-    field: 'commoditySelection',
+    field: 'commodityCode',
     obligation: commodityCode,
     groups: [line]
   }),
@@ -145,13 +167,13 @@ from
 — no new syntax on the obligation itself:
 
 ```js
-export const numberOfPackages = {
+export const genus = {
   id: '<a new UUID>',
-  name: 'numberOfPackages',
+  name: 'genus',
   within: commodityLine,
-  status: 'optional',
-  applyTo: allowListed(commodityCode, PACKAGE_COUNT_COMMODITIES, null, [
-    numberOfPackagesReason
+  status: 'mandatory',
+  applyTo: allowListed(category, () => categoriesRequiring('genus'), null, [
+    appliesBecauseCategory
   ])
 }
 ```
@@ -161,13 +183,19 @@ instances whose gate value is on the allow-list. The **projection group**
 argument is what makes it work at depth:
 
 - **`null` projection** — the gate and the gated field sit at the same identity
-  level. `numberOfPackages` and its gate `commodityCode` are both `within
+  level. `genus` and its gate `category` are both `within
 commodityLine`, so the field is in scope for exactly the lines whose own
-  commodity code is allow-listed.
+  category is allow-listed.
 - **a group** — the gated field is deeper than its gate. A per-identifier field
-  that is `within` the identifier group but gates on `commodityCode`, which
+  that is `within` the identifier group but gates on `category`, which
   lives one level up on the line, passes the identifier group as the projection
   group so the line-level decision projects down onto every record in that line.
+
+Every conditional field on a commodity line is built this way, by the
+`gatedOnCategory` factory in
+[`obligations/sections/commodity.js`](../obligations/sections/commodity.js): the
+gate is the line's own `category`, the projection is `null`, and the allow-list
+is read lazily so the module does no IO when it loads.
 
 When an instance falls out of scope, the engine wipes that instance's stale
 value — a field-level wipe inside one instance, not a whole-instance delete. The
@@ -175,8 +203,13 @@ reveal markup (show or hide the field as the user types) is page-side, in the
 entry template. Scope and wipe stay in the model.
 
 Any allow-list of values has to come from a set-owned reference service, and
-`obligations/whitelists.test.js` has to check it against that service. Both are
-still to be written — see [services.md](services.md).
+[`obligations/whitelists.test.js`](../obligations/whitelists.test.js) has to
+check it against that service. Both exist:
+[`services/commodities/index.js`](../services/commodities/index.js) holds every
+commodity allow-list, each gate reads it through `categoriesRequiring()` rather
+than a hand-typed list, and the test holds the manifest and the service against
+each other so a rename on one side alone fails there. See
+[services.md](services.md).
 
 ## 3. What the engine gives you free
 
@@ -212,9 +245,41 @@ reads facts from the engine barrel
 ([`src/server/app/engine/index.js`](../../../engine/index.js)) and writes through
 it — it never touches the evaluator directly.
 
-`state.collectionView(answers, collectionPath)` returns facts only:
+`state.collectionView(answers, collectionPath, evaluation)` returns facts only:
 `[{ index, path, entry, complete }]`. No hrefs, no labels, no view-models. The
 controller builds its own rows over those facts.
+
+### The list page plus entry sub-page (this set's shape)
+
+`commodityLines` takes this shape. Two pages the flow knows about: a LIST page
+that declares the group in `collects`, reads `collectionView` for its rows and
+removes an instance, and an ENTRY SUB-PAGE that collects nothing of its own
+(`collects: []`) and appends or updates exactly one instance.
+
+```js
+// list.controller.js — the list page owns the group
+export const meta = { ...page, collects: ['commodityLines'] }
+
+await state.removeEntryAt(request, h, ['commodityLines'], index)
+```
+
+```js
+// details.controller.js — the entry sub-page owns one instance
+export const meta = { ...page, collects: [] }
+
+const index = await state.appendEntryAt(request, h, ['commodityLines'], entry)
+await state.updateEntryAt(request, h, ['commodityLines'], index, entry)
+```
+
+The sub-page carries the index it is editing rather than reconciling a
+selection, so nothing here uses `reconcileEntriesAt` and no page edits every
+line at once. Read
+[`list.controller.js`](../journeys/linear/features/commodities/list/list.controller.js)
+and
+[`details.controller.js`](../journeys/linear/features/commodities/details/details.controller.js)
+together: the index the sub-page edits at is derived in
+[`entry-index.js`](../journeys/linear/features/commodities/entry-index.js), and
+an index the collection has no entry for is refused rather than acted on.
 
 ### The single-page loop (entry form + read-back on one page)
 
@@ -294,7 +359,11 @@ await state.appendEntryAt(
 and reads its instances with the same `collectionView` call, deeper:
 
 ```js
-state.collectionView(answers, ['commodityLines', index, 'nestedCollection'])
+state.collectionView(
+  answers,
+  ['commodityLines', index, 'nestedCollection'],
+  evaluation
+)
 ```
 
 ### Thread the change context through the loop
