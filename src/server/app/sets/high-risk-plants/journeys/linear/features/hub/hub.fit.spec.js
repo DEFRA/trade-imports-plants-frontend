@@ -96,6 +96,23 @@ test.describe('overview hub feature', () => {
     ).toHaveCount(0)
   })
 
+  test('renders the origin row blocked while the entry question is unanswered', async ({
+    page
+  }) => {
+    await startNotification(page)
+
+    const taskList = page.locator('.govuk-task-list')
+    await expect(
+      taskList.getByText(copy.rows.origin.title, { exact: true })
+    ).toBeVisible()
+    await expect(
+      taskList.getByText(copy.statuses.cannotStartYet, { exact: true })
+    ).toBeVisible()
+    await expect(
+      taskList.getByRole('link', { name: copy.rows.origin.title })
+    ).toHaveCount(0)
+  })
+
   test('renders no group that has landed no task row', async ({ page }) => {
     await startNotification(page)
 

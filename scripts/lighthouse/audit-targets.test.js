@@ -51,11 +51,12 @@ const DELETE_PATH = '/notifications/{journeyId}/delete'
 const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
 const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
 const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
+const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
   { method: 'GET', path: HUB_PATH },
-  { method: 'GET', path: '/notifications/{journeyId}/origin' },
+  { method: 'GET', path: ORIGIN_PATH },
   { method: 'GET', path: '/notifications/{journeyId}/treatments' },
   { method: 'GET', path: '/notifications/{journeyId}/late-reason' },
   { method: 'GET', path: '/notifications/{journeyId}/uploads/status' },
@@ -170,7 +171,8 @@ describe('#auditPaths', () => {
       `/notifications/${journeyIds.warePotatoes}/delete`,
       `/notifications/${journeyIds.warePotatoes}/commodity-type`,
       `/notifications/${journeyIds.warePotatoes}/commodities`,
-      `/notifications/${journeyIds.warePotatoes}/commodities/details`
+      `/notifications/${journeyIds.warePotatoes}/commodities/details`,
+      `/notifications/${journeyIds.warePotatoes}/origin`
     ])
   })
 })
@@ -191,7 +193,8 @@ describe('#auditableRoutePaths', () => {
       DELETE_PATH,
       COMMODITY_TYPE_PATH,
       COMMODITIES_PATH,
-      COMMODITY_DETAILS_PATH
+      COMMODITY_DETAILS_PATH,
+      ORIGIN_PATH
     ])
   })
 })

@@ -4,6 +4,7 @@ import * as deleteNotification from './delete-notification/controller.js'
 import * as commodityType from './commodity-type/controller.js'
 import * as commoditiesList from './commodities/list/list.controller.js'
 import * as commodityDetails from './commodities/details/details.controller.js'
+import * as origin from './origin/controller.js'
 
 // Neither the dashboard nor the hub exports meta: they collect nothing, are
 // never gated and are never a task row, so they stay out of the dispatch index.
@@ -11,7 +12,8 @@ import * as commodityDetails from './commodities/details/details.controller.js'
 export const dispatchPages = [
   commodityType.meta,
   commoditiesList.meta,
-  commodityDetails.meta
+  commodityDetails.meta,
+  origin.meta
 ]
 
 export const allRoutes = [
@@ -20,5 +22,6 @@ export const allRoutes = [
   ...deleteNotification.routes,
   ...commodityType.routes,
   ...commoditiesList.routes,
-  ...commodityDetails.routes
+  ...commodityDetails.routes,
+  ...origin.routes
 ]

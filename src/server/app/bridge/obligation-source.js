@@ -32,7 +32,10 @@ export const SYSTEM_POPULATED = new Set()
 
 // Obligations a page must have collected before "Continue" may advance past
 // it.
-export const ENFORCED_AT_CONTINUE = new Set(['commodityType'])
+export const ENFORCED_AT_CONTINUE = new Set([
+  'commodityType',
+  'countryOfOrigin'
+])
 
 // Collection admission-control cap: a collection's entry count is
 // capped at the value of a sibling count field in the frame that holds it.

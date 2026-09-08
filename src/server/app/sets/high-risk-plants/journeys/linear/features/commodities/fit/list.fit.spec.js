@@ -14,7 +14,7 @@ const DETAILS_EDIT_URL =
   /\/notifications\/[^/]+\/commodities\/details\?index=\d+$/
 const LIST_URL = /\/notifications\/[^/]+\/commodities$/
 const REMOVED_URL = /\/notifications\/[^/]+\/commodities\?removed=\d+$/
-const HUB_URL = /\/notifications\/[^/]+$/
+const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
 
 const POTATOES = 'potatoes'
 const WOOD = 'wood-and-cut-trees'
@@ -172,14 +172,14 @@ test.describe('commodities list', () => {
     await expect(page).toHaveURL(DETAILS_URL)
   })
 
-  test('leaves the section for the overview on Save and continue', async ({
+  test('leaves the section for the origin page on Save and continue', async ({
     page
   }) => {
     await startWithOneLine(page)
 
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(ORIGIN_URL)
   })
 
   test('ends with the primary control alone', async ({ page }) => {

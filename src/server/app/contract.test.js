@@ -32,6 +32,7 @@ import { installHighRiskPlantsJourney } from './sets/high-risk-plants/journeys/l
 import * as commodityType from './sets/high-risk-plants/journeys/linear/features/commodity-type/controller.js'
 import * as commodities from './sets/high-risk-plants/journeys/linear/features/commodities/list/list.controller.js'
 import * as commodityDetails from './sets/high-risk-plants/journeys/linear/features/commodities/details/details.controller.js'
+import * as origin from './sets/high-risk-plants/journeys/linear/features/origin/controller.js'
 
 // Every manifest read is deferred: at module load the configured set is still
 // the fixture, and the plants set only arrives in `beforeAll`.
@@ -60,6 +61,12 @@ const cases = [
     collects: commodityType.meta.collects,
     handler: postHandlerOf(commodityType),
     payload: { commodityType: 'potatoes' }
+  },
+  {
+    id: 'origin',
+    collects: origin.meta.collects,
+    handler: postHandlerOf(origin),
+    payload: { countryOfOrigin: 'FR' }
   }
 ]
 

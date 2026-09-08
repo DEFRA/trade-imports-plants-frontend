@@ -12,12 +12,14 @@ import {
   sizeOfTree,
   species
 } from './sections/commodity.js'
+import { countryOfOrigin } from './sections/origin.js'
 
 export {
   category,
   commodityCode,
   commodityLine,
   commodityType,
+  countryOfOrigin,
   eppoCode,
   genus,
   phytosanitaryTreatments,
@@ -40,7 +42,8 @@ export const obligations = [
   potatoIntendedUse,
   eppoCode,
   sizeOfTree,
-  phytosanitaryTreatments
+  phytosanitaryTreatments,
+  countryOfOrigin
 ]
 
 export const groups = obligations.filter((obligation) =>
