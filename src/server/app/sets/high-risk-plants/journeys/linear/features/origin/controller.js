@@ -98,6 +98,9 @@ const errorsFor = (payload, constraints) => {
 
 // The back link is the one thing on this page told by what has been saved: a
 // notification with nothing saved has no overview worth returning to.
+export const originErrors = (current) =>
+  errorsFor(current.answers, constraintsOn(categoriesOf(current)))
+
 const backLinkFor = (journey, answers) =>
   hasCommittedNotificationAnswers(answers)
     ? hubPath(journey.journeyId)

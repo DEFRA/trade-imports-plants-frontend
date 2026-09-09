@@ -39,7 +39,7 @@ export const GROUPS = [
     id: 'consignment-parties',
     rows: ['consignor', 'identificationNumbers', 'contact']
   },
-  { id: 'check-and-submit', rows: [] }
+  { id: 'check-and-submit', rows: ['review'] }
 ]
 
 const REVIEW_ROW_ID = 'review'

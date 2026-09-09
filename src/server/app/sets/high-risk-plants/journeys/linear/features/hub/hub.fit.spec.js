@@ -14,7 +14,8 @@ const ARRIVAL_GROUP_ID = 'arrival-and-destination'
 const RENDERED_GROUP_IDS = [
   CONSIGNMENT_GROUP_ID,
   ARRIVAL_GROUP_ID,
-  'consignment-parties'
+  'consignment-parties',
+  'check-and-submit'
 ]
 const RENDERED_GROUP_COUNT = RENDERED_GROUP_IDS.length
 

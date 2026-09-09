@@ -11,6 +11,8 @@
  * Vitest gives each file its own module registry, so nothing leaks to another
  * file and there is nothing to restore.
  */
+import { configureReadyForCheckYourAnswers } from '../../../../bridge/readiness-config.js'
+import { readyForCheckYourAnswers } from '../../../../flow/section-status.js'
 import { configureFulfilmentRegistry } from '../../../../bridge/fulfilment-registry.js'
 import { configureObligationSet } from '../../../../model/obligations/manifest.js'
 import { configureJourneyFlow } from '../../../../flow/journey-flow.js'
@@ -78,6 +80,7 @@ export const COMPLETE_NOTIFICATION = Object.freeze({
 })
 
 export const installHighRiskPlantsJourney = () => {
+  configureReadyForCheckYourAnswers(readyForCheckYourAnswers)
   configureObligationSet(highRiskPlantsObligationSet)
   configureFulfilmentRegistry(featureEvaluationBindings)
   configureJourneyFlow({

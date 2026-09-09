@@ -1,3 +1,4 @@
+import { notificationViewPage } from '../features/check-answers/page.js'
 import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
@@ -54,5 +55,10 @@ export const sections = [
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
   { id: 'destination', pages: [placeOfDestinationPage] },
   { id: 'parties', pages: [consignorPage, identificationNumbersPage] },
-  { id: 'contact', pages: [consignmentContactSelectPage] }
+  { id: 'contact', pages: [consignmentContactSelectPage] },
+  {
+    id: 'review',
+    gate: (scope) => scope.readyForCheckYourAnswers,
+    pages: [notificationViewPage]
+  }
 ]
