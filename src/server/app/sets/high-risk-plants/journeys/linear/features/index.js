@@ -1,3 +1,4 @@
+import * as contact from './consignment-contact-select/controller.js'
 import * as identificationNumbers from './identification-numbers/controller.js'
 import * as consignor from './consignor-select/controller.js'
 import * as dashboard from './dashboard/controller.js'
@@ -15,6 +16,7 @@ import * as placeOfDestination from './place-of-destination/controller.js'
 // never gated and are never a task row, so they stay out of the dispatch index.
 // Nor does delete-notification: it is an action slug, not a journey page.
 export const dispatchPages = [
+  contact.meta,
   identificationNumbers.meta,
   commodityType.meta,
   commoditiesList.meta,
@@ -27,6 +29,7 @@ export const dispatchPages = [
 ]
 
 export const allRoutes = [
+  ...contact.routes,
   ...identificationNumbers.routes,
   ...dashboard.routes,
   ...hub.routes,

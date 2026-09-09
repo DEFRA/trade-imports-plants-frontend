@@ -188,6 +188,8 @@ for (const [commodityType, fields] of branches) {
         }
       }
       await saveAndContinue(page).click()
+      await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+      await saveAndContinue(page).click()
       await expect(page).toHaveURL(HUB_URL)
       await expect(
         page.getByRole('listitem').filter({
@@ -292,6 +294,8 @@ test('wood can leave the optional reference blank and the overview labels it Opt
   await signIn(page)
   await startAtIdentification(page)
   await saveAndContinue(page).click()
+  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await saveAndContinue(page).click()
   await expect(page).toHaveURL(HUB_URL)
   const row = page.getByRole('listitem').filter({
     has: page.getByRole('link', {
@@ -308,6 +312,8 @@ test('changing commodity type purges the supplier number and preserves the commo
   const reference = await selectBranch(page, PLANTS_FOR_PLANTING)
   await input(page, 'supplierIdentificationNumber').fill('GB-12345')
   await input(page, 'consignmentNumber').fill('REF')
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(HUB_URL)
   await page.goto(`/notifications/${reference}/commodity-type`)

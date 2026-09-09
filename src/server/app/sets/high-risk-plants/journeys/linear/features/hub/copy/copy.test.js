@@ -64,6 +64,7 @@ describe('#copy', () => {
 
   it('Should hold only the rows the journey has landed', () => {
     expect(Object.keys(copy.rows)).toEqual([
+      'contact',
       'identificationNumbers',
       'consignor',
       'commodities',
@@ -77,4 +78,9 @@ describe('#copy', () => {
 it('Should title the consignor row in both locales', () => {
   expect(copy.rows.consignor).toEqual({ title: 'Consignor or exporter' })
   expect(cy.rows.consignor).toEqual({ title: 'Anfonwr neu allforiwr' })
+})
+
+it('Should title the contact row in both locales', () => {
+  expect(copy.rows.contact.title).toBe('Contact address for consignment')
+  expect(cy.rows.contact.title).toBe('Cyfeiriad cyswllt ar gyfer y llwyth')
 })

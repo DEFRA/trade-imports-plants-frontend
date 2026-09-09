@@ -1,3 +1,4 @@
+import { contactAddress } from './sections/contact.js'
 import {
   supplierIdentificationNumber,
   producerIdentificationNumber,
@@ -29,6 +30,7 @@ import { placeOfDestination } from './sections/destination.js'
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
+  contactAddress,
   supplierIdentificationNumber,
   producerIdentificationNumber,
   cropIdentificationNumber,
@@ -55,6 +57,7 @@ export {
 }
 
 export const obligations = [
+  contactAddress,
   supplierIdentificationNumber,
   producerIdentificationNumber,
   cropIdentificationNumber,

@@ -19,6 +19,7 @@ export const copy = {
     'check-and-submit': '4. Gwirio a chyflwyno'
   },
   rows: {
+    contact: { title: 'Cyfeiriad cyswllt ar gyfer y llwyth' },
     identificationNumbers: { title: 'Rhifau adnabod' },
     consignor: { title: 'Anfonwr neu allforiwr' },
     commodities: { title: 'Beth ydych chi’n ei fewnforio?' },

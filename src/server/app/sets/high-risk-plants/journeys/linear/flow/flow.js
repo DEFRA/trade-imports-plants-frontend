@@ -1,3 +1,4 @@
+import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { dashboardPage } from '../features/dashboard/page.js'
@@ -52,5 +53,6 @@ export const sections = [
   { id: 'origin', pages: [originPage] },
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
   { id: 'destination', pages: [placeOfDestinationPage] },
-  { id: 'parties', pages: [consignorPage, identificationNumbersPage] }
+  { id: 'parties', pages: [consignorPage, identificationNumbersPage] },
+  { id: 'contact', pages: [consignmentContactSelectPage] }
 ]

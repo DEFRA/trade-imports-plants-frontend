@@ -1,3 +1,5 @@
+const ADDRESS_ID = 'tech-imports-ltd'
+import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -68,7 +70,8 @@ describe('#taskRows — the rows the hub can resolve', () => {
       { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
       { id: 'destination', pages: [placeOfDestinationPage] },
       { id: 'consignor', pages: [consignorPage], conditional: true },
-      { id: 'identificationNumbers', pages: [identificationNumbersPage] }
+      { id: 'identificationNumbers', pages: [identificationNumbersPage] },
+      { id: 'contact', pages: [consignmentContactSelectPage] }
     ])
   })
 
@@ -248,7 +251,7 @@ describe('#rowStatus — one status per hub task row', () => {
       expect(
         statusIn('consignor', {
           commodityType,
-          consignor: { addressId: 'tech-imports-ltd' }
+          consignor: { addressId: ADDRESS_ID }
         })
       ).toBe(FULFILLED)
     }
@@ -270,6 +273,19 @@ describe('#rowStatus — one status per hub task row', () => {
       })
     ).toBe(FULFILLED)
   })
+  it('Should require contact and complete the row with an inline record', () => {
+    expect(statusIn('contact', {})).toBe(NOT_STARTED)
+    expect(
+      statusIn('contact', {
+        contactAddress: {
+          addressId: ADDRESS_ID,
+          name: 'Tech Imports',
+          address: { country: 'United Kingdom' }
+        }
+      })
+    ).toBe(FULFILLED)
+  })
+
   it('Should hold the destination row at Not yet started while nothing is answered', () => {
     expect(statusIn('destination', {})).toBe(NOT_STARTED)
   })
@@ -277,7 +293,7 @@ describe('#rowStatus — one status per hub task row', () => {
   it('Should complete the destination row once an address is referenced', () => {
     expect(
       statusIn('destination', {
-        placeOfDestination: { addressId: 'tech-imports-ltd' }
+        placeOfDestination: { addressId: ADDRESS_ID }
       })
     ).toBe(FULFILLED)
   })
