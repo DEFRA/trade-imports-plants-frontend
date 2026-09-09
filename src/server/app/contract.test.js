@@ -1,3 +1,4 @@
+import * as checkAnswers from './sets/high-risk-plants/journeys/linear/features/check-answers/controller.js'
 const ADDRESS_ID = 'tech-imports-ltd'
 import * as contact from './sets/high-risk-plants/journeys/linear/features/consignment-contact-select/controller.js'
 import * as identificationNumbers from './sets/high-risk-plants/journeys/linear/features/identification-numbers/controller.js'
@@ -181,6 +182,15 @@ describe('controller <-> model commit contract', () => {
       expect(new Set(committedIds(result))).toEqual(new Set(committable))
     }
   )
+
+  it('Should let Check your answers continue without committing any answers', async () => {
+    expect(checkAnswers.meta.collects).toEqual([])
+    const seed = { commodityType: 'potatoes', countryOfOrigin: 'FR' }
+    const result = await driveHandler(postHandlerOf(checkAnswers), { seed })
+    expect(result.after).toEqual(seed)
+    expect(committedIds(result)).toEqual([])
+    expect(result.response.redirect).toBe(`/notifications/${result.journeyId}`)
+  })
 
   // The collection splits the declaration from the write: the list page owns
   // `commodityLines` because it is where the group is read back and where

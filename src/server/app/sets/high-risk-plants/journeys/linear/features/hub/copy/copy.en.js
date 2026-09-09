@@ -25,6 +25,7 @@ export const copy = {
     'check-and-submit': '4. Check and submit'
   },
   rows: {
+    review: { title: 'Check and submit' },
     contact: { title: 'Contact address for consignment' },
     identificationNumbers: { title: 'Identification numbers' },
     consignor: { title: 'Consignor or exporter' },

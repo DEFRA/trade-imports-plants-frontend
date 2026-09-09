@@ -1,0 +1,181 @@
+import { collectionView } from '../../../../../../../engine/index.js'
+import { copyFor } from '../../../../../../../shared/copy.js'
+import * as countries from '../../../../../../../services/countries/index.js'
+import * as ports from '../../../../../../../services/ports/index.js'
+import { lineFieldsFor } from '../../../../../services/commodities/index.js'
+import { detailsHref } from '../../commodities/links.js'
+import { addressText } from '../../address-book-picker/address-lines.js'
+import { copy as en } from '../copy/copy.en.js'
+import { copy as cy } from '../copy/copy.cy.js'
+import { row, readOnlyRow } from './rows/summary-row.js'
+import { changeAction, editableActions } from './rows/change-link.js'
+import { dateText } from './rows/value-text.js'
+import { copy as arrivalEn } from '../../arrival-details/copy/copy.en.js'
+import { copy as arrivalCy } from '../../arrival-details/copy/copy.cy.js'
+import { copy as destinationEn } from '../../place-of-destination/copy/copy.en.js'
+import { copy as destinationCy } from '../../place-of-destination/copy/copy.cy.js'
+import { POTATO_ARRIVAL } from '../../arrival-details/fields.js'
+import {
+  ALREADY_ARRIVED,
+  ARRIVAL_STATUS,
+  NOT_YET_ARRIVED
+} from '../../arrival-status/statuses.js'
+
+const copy = copyFor({ en, cy })
+const arrivalCopy = copyFor({ en: arrivalEn, cy: arrivalCy })
+const destinationCopy = copyFor({ en: destinationEn, cy: destinationCy })
+
+/**
+ * Potatoes are never asked whether the consignment has arrived, so no arrival
+ * status in scope selects the potato state. An unanswered status selects the
+ * pre-arrival state for both the date label and destination heading.
+ */
+const arrivalStateOf = (answers, scope) => {
+  if (!scope.has(ARRIVAL_STATUS)) {
+    return POTATO_ARRIVAL
+  }
+  return answers[ARRIVAL_STATUS] === ALREADY_ARRIVED
+    ? ALREADY_ARRIVED
+    : NOT_YET_ARRIVED
+}
+
+const IDENTIFIERS = [
+  'supplierIdentificationNumber',
+  'producerIdentificationNumber',
+  'cropIdentificationNumber',
+  'consignmentNumber'
+]
+
+const partyCard = (field, title, party, journeyId, readOnly) => ({
+  title,
+  ...editableActions(readOnly, changeAction(journeyId, field, title)),
+  rows: [
+    readOnlyRow(copy.labels.name, party?.name),
+    readOnlyRow(
+      copy.labels.address,
+      party &&
+        [addressText(party.address), party.address?.country]
+          .filter(Boolean)
+          .join(', ')
+    ),
+    readOnlyRow(copy.labels.telephoneNumber, party?.address?.telephoneNumber),
+    readOnlyRow(copy.labels.emailAddress, party?.address?.emailAddress)
+  ]
+})
+
+const commodityCards = (answers, evaluation, journeyId, readOnly) =>
+  collectionView(answers, ['commodityLines'], evaluation).map(
+    ({ index, entry }) => {
+      const title = `${copy.cards.commodity} ${index + 1}`
+      const actions = changeAction(journeyId, 'commodityLines', title)
+      actions.items[0].href = detailsHref(
+        { params: { journeyId }, query: { change: '1' } },
+        { index }
+      )
+      return {
+        title,
+        ...editableActions(readOnly, actions),
+        rows: [
+          readOnlyRow(
+            copy.labels.category,
+            copy.categoryLabels[entry.category]
+          ),
+          ...lineFieldsFor(entry.category).map((field) =>
+            readOnlyRow(
+              copy.labels[field],
+              field === 'genus' ? copy.genusLabels[entry[field]] : entry[field]
+            )
+          )
+        ]
+      }
+    }
+  )
+
+export const buildSections = (
+  { journey, answers, scope, evaluation },
+  parties,
+  readOnly
+) => {
+  const arrivalState = arrivalStateOf(answers, scope)
+  const journeyId = journey.journeyId
+  const answerRow = (field, value = answers[field]) =>
+    row(journeyId, readOnly, copy.labels[field], value, field)
+  const scopedRows = (fields) =>
+    fields.filter((field) => scope.has(field)).map((field) => answerRow(field))
+  const arrivalRows = [
+    ...(scope.has('arrivalStatus')
+      ? [answerRow('arrivalStatus', copy.statusLabels[answers.arrivalStatus])]
+      : []),
+    row(
+      journeyId,
+      readOnly,
+      arrivalCopy.dateLabels[arrivalState],
+      dateText(answers.arrivalDate),
+      'arrivalDate'
+    ),
+    ...scopedRows(['arrivalTime']),
+    ...(scope.has('proposedPlaceOfLanding')
+      ? [
+          answerRow(
+            'proposedPlaceOfLanding',
+            ports.label(answers.proposedPlaceOfLanding)
+          )
+        ]
+      : [])
+  ]
+  return [
+    {
+      heading: copy.sections.consignment,
+      cards: [
+        {
+          title: copy.cards.import,
+          rows: [
+            answerRow('commodityType', copy.typeLabels[answers.commodityType]),
+            answerRow(
+              'countryOfOrigin',
+              countries.originLabel(answers.countryOfOrigin)
+            )
+          ]
+        },
+        ...commodityCards(answers, evaluation, journeyId, readOnly)
+      ]
+    },
+    {
+      heading: copy.sections.arrival,
+      cards: [
+        { title: copy.cards.arrival, rows: arrivalRows },
+        partyCard(
+          'placeOfDestination',
+          destinationCopy.headings[arrivalState],
+          parties.placeOfDestination,
+          journeyId,
+          readOnly
+        )
+      ]
+    },
+    {
+      heading: copy.sections.parties,
+      cards: [
+        ...(scope.has('consignor')
+          ? [
+              partyCard(
+                'consignor',
+                copy.cards.consignor,
+                parties.consignor,
+                journeyId,
+                readOnly
+              )
+            ]
+          : []),
+        { title: copy.cards.identification, rows: scopedRows(IDENTIFIERS) },
+        partyCard(
+          'contactAddress',
+          copy.cards.contact,
+          parties.contactAddress,
+          journeyId,
+          readOnly
+        )
+      ]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
 import { GROUPS, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 
+const REVIEW_GROUP_ID = 'check-and-submit'
 const PARTIES_GROUP_ID = 'consignment-parties'
 
 const hubGet = routes.find((route) => route.method === 'GET').handler
@@ -30,7 +31,8 @@ const ARRIVAL_GROUP_ID = 'arrival-and-destination'
 const RENDERED_GROUP_IDS = [
   CONSIGNMENT_GROUP_ID,
   ARRIVAL_GROUP_ID,
-  PARTIES_GROUP_ID
+  PARTIES_GROUP_ID,
+  REVIEW_GROUP_ID
 ]
 const NOT_STARTED_TAG_CLASS = 'govuk-tag--blue'
 const COMPLETED_TAG_CLASS = 'govuk-tag--green'
@@ -180,6 +182,16 @@ describe('#hubGet', () => {
             status: CANNOT_START_STATUS
           }
         ]
+      },
+      {
+        id: REVIEW_GROUP_ID,
+        caption: copy.groups[REVIEW_GROUP_ID],
+        items: [
+          {
+            title: { text: copy.rows.review.title },
+            status: CANNOT_START_STATUS
+          }
+        ]
       }
     ])
   })
@@ -245,12 +257,12 @@ describe('#hubGet', () => {
     expect(row.href).toBe(`/notifications/${journeyId}/commodity-type`)
   })
 
-  it('Should render nothing for the two groups that have landed no row', async () => {
+  it('Should render the review group after the answer groups', async () => {
     const { h } = await renderHub()
 
-    expect(
-      GROUPS.find((group) => group.id === 'check-and-submit').rows
-    ).toEqual([])
+    expect(GROUPS.find((group) => group.id === REVIEW_GROUP_ID).rows).toEqual([
+      'review'
+    ])
     expect(h.captured.view.context.groups.map((group) => group.id)).toEqual(
       RENDERED_GROUP_IDS
     )

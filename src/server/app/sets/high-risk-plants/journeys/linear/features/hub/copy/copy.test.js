@@ -64,6 +64,7 @@ describe('#copy', () => {
 
   it('Should hold only the rows the journey has landed', () => {
     expect(Object.keys(copy.rows)).toEqual([
+      'review',
       'contact',
       'identificationNumbers',
       'consignor',
@@ -83,4 +84,9 @@ it('Should title the consignor row in both locales', () => {
 it('Should title the contact row in both locales', () => {
   expect(copy.rows.contact.title).toBe('Contact address for consignment')
   expect(cy.rows.contact.title).toBe('Cyfeiriad cyswllt ar gyfer y llwyth')
+})
+
+it('Should title the review row in both locales', () => {
+  expect(copy.rows.review.title).toBe('Check and submit')
+  expect(cy.rows.review.title).toBe('Gwirio a chyflwyno')
 })
