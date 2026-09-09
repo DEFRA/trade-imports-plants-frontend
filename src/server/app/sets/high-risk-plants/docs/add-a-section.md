@@ -282,8 +282,18 @@ Pass obligation names to `row()` and `changeAction()` so Change links resolve
 through dispatch. Use `scope` to omit out-of-scope rows. Extend the
 check-answers feature spec for every value and Change target.
 
-> **EXEMPLAR PLACEHOLDER** — `journeys/linear/features/check-answers/` does not
-> exist. The first feature group that needs check-answers output builds it.
+Follow the section builders in
+[`journeys/linear/features/check-answers/view-model/index.js`](../journeys/linear/features/check-answers/view-model/index.js)
+and their output in
+[`template.njk`](../journeys/linear/features/check-answers/template.njk).
+The view model builds cards with `row()` and `changeAction()`, omits conditional
+rows and cards outside scope, and uses service label functions for coded values.
+Add the section's copy to both
+[`copy/copy.en.js`](../journeys/linear/features/check-answers/copy/copy.en.js)
+and [`copy/copy.cy.js`](../journeys/linear/features/check-answers/copy/copy.cy.js).
+Extend
+[`check-answers.fit.spec.js`](../journeys/linear/features/check-answers/check-answers.fit.spec.js),
+which covers saved answers, scoped cards, Change navigation and accessibility.
 
 ## 8. Update downstream persistence when applicable
 
