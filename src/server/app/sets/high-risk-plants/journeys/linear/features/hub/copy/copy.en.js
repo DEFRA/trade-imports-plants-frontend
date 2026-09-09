@@ -25,6 +25,7 @@ export const copy = {
     'check-and-submit': '4. Check and submit'
   },
   rows: {
+    consignor: { title: 'Consignor or exporter' },
     commodities: { title: 'What are you importing?' },
     origin: { title: 'Where is this consignment coming from?' },
     arrival: { title: 'Arrival details' },

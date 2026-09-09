@@ -9,6 +9,7 @@
 // must arrive with its Welsh string; do not invent one.
 export const copy = {
   sections: {
+    consignmentParties: 'Partïon y llwyth',
     dashboard: 'Dangosfwrdd',
     aboutTheConsignment: 'Am y llwyth',
     arrival: 'Cyrraedd',

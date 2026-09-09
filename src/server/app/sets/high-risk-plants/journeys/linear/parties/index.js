@@ -1,3 +1,4 @@
+import { CONSIGNOR } from '../features/consignor-select/fields.js'
 import * as addressBook from '../../../../../services/address-book/index.js'
 import { organisationIdOf } from '../../../../../../common/helpers/organisation-id.js'
 import { PLACE_OF_DESTINATION } from '../features/place-of-destination/fields.js'
@@ -15,7 +16,10 @@ import { PLACE_OF_DESTINATION } from '../features/place-of-destination/fields.js
  * is the answer, so there is no reference to dangle and nothing to clear when
  * the record it was taken from is deleted. This journey has no such answer yet.
  */
-export const REFERENCE_PARTIES = Object.freeze([PLACE_OF_DESTINATION])
+export const REFERENCE_PARTIES = Object.freeze([
+  PLACE_OF_DESTINATION,
+  CONSIGNOR
+])
 
 /** A reference resolves only to a record the book still holds. A soft-deleted
  * record comes back with `deleted: true` and counts as gone — the UCD decision

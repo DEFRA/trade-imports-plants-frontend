@@ -1,3 +1,4 @@
+import { consignorPage } from '../features/consignor-select/page.js'
 import { statusOf } from '../../../../../bridge/status/index.js'
 import { collectsOf } from '../../../../../flow/dispatch.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
@@ -28,7 +29,8 @@ export const taskRows = [
   },
   { id: 'origin', pages: [originPage] },
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
-  { id: 'destination', pages: [placeOfDestinationPage] }
+  { id: 'destination', pages: [placeOfDestinationPage] },
+  { id: 'consignor', pages: [consignorPage], conditional: true }
 ]
 
 export const taskRowById = (id) => taskRows.find((row) => row.id === id)

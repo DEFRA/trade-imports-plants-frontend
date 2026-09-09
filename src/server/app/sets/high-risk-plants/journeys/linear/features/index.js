@@ -1,3 +1,4 @@
+import * as consignor from './consignor-select/controller.js'
 import * as dashboard from './dashboard/controller.js'
 import * as hub from './hub/controller.js'
 import * as deleteNotification from './delete-notification/controller.js'
@@ -19,6 +20,7 @@ export const dispatchPages = [
   origin.meta,
   arrivalStatus.meta,
   arrivalDetails.meta,
+  consignor.meta,
   placeOfDestination.meta
 ]
 
@@ -32,5 +34,6 @@ export const allRoutes = [
   ...origin.routes,
   ...arrivalStatus.routes,
   ...arrivalDetails.routes,
+  ...consignor.routes,
   ...placeOfDestination.routes
 ]

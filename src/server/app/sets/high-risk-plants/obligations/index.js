@@ -1,3 +1,4 @@
+import { consignor } from './sections/parties.js'
 import {
   arrivalDate,
   arrivalStatus,
@@ -22,6 +23,7 @@ import { placeOfDestination } from './sections/destination.js'
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
+  consignor,
   arrivalDate,
   arrivalStatus,
   arrivalTime,
@@ -43,6 +45,7 @@ export {
 }
 
 export const obligations = [
+  consignor,
   commodityType,
   commodityLine,
   category,

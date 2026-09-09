@@ -1,3 +1,4 @@
+import * as consignor from './sets/high-risk-plants/journeys/linear/features/consignor-select/controller.js'
 /**
  * The controller <-> model commit contract.
  *
@@ -59,6 +60,13 @@ const committableCollects = (collects) => {
 }
 
 const cases = [
+  {
+    id: 'consignor-select',
+    collects: consignor.meta.collects,
+    handler: postHandlerOf(consignor),
+    seed: { commodityType: 'plants-for-planting' },
+    payload: { consignor: 'tech-imports-ltd' }
+  },
   {
     id: 'commodity-type',
     collects: commodityType.meta.collects,

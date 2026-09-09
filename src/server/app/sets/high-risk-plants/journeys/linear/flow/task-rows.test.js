@@ -1,3 +1,4 @@
+import { consignorPage } from '../features/consignor-select/page.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { buildDispatch } from '../../../../../flow/dispatch.js'
@@ -64,7 +65,8 @@ describe('#taskRows — the rows the hub can resolve', () => {
       },
       { id: 'origin', pages: [originPage] },
       { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
-      { id: 'destination', pages: [placeOfDestinationPage] }
+      { id: 'destination', pages: [placeOfDestinationPage] },
+      { id: 'consignor', pages: [consignorPage], conditional: true }
     ])
   })
 
@@ -73,6 +75,7 @@ describe('#taskRows — the rows the hub can resolve', () => {
     expect(taskRowById('origin')).toBe(taskRows[1])
     expect(taskRowById('arrival')).toBe(taskRows[2])
     expect(taskRowById('destination')).toBe(taskRows[3])
+    expect(taskRowById('consignor')).toBe(taskRows[4])
   })
 
   it('Should resolve no id the journey has not landed', () => {
@@ -235,6 +238,19 @@ describe('#rowStatus — one status per hub task row', () => {
         proposedPlaceOfLanding: 'GB DVR'
       })
     ).toBe(FULFILLED)
+  })
+
+  it('Should require consignor for plants and wood, hide it for potatoes and complete a reference', () => {
+    for (const commodityType of ['plants-for-planting', 'wood-and-cut-trees']) {
+      expect(statusIn('consignor', { commodityType })).toBe(NOT_STARTED)
+      expect(
+        statusIn('consignor', {
+          commodityType,
+          consignor: { addressId: 'tech-imports-ltd' }
+        })
+      ).toBe(FULFILLED)
+    }
+    expect(statusIn('consignor', { commodityType: POTATOES })).toBe(NA)
   })
 
   it('Should hold the destination row at Not yet started while nothing is answered', () => {

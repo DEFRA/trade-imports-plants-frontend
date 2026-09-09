@@ -19,6 +19,7 @@ export const copy = {
     'check-and-submit': '4. Gwirio a chyflwyno'
   },
   rows: {
+    consignor: { title: 'Anfonwr neu allforiwr' },
     commodities: { title: 'Beth ydych chi’n ei fewnforio?' },
     origin: { title: 'O ble mae’r llwyth hwn yn dod?' },
     arrival: { title: 'Manylion cyrraedd' },
