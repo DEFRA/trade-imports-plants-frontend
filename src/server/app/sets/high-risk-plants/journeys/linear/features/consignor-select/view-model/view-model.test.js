@@ -4,7 +4,10 @@ import { pagePath } from '../../../../../../../shared/paths.js'
 import { CONSIGNOR } from '../fields.js'
 import { consignorPage } from '../page.js'
 import { copy } from '../copy/copy.en.js'
-import { addressText, detailLines } from './address-lines.js'
+import {
+  addressText,
+  detailLines
+} from '../../address-book-picker/address-lines.js'
 import { pagination, resultsHref } from './pagination.js'
 import { pickerViewModel } from './index.js'
 

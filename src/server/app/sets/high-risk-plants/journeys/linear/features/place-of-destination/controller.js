@@ -1,4 +1,3 @@
-import { hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -7,8 +6,8 @@ import {
 } from '../../../../../../lib/http-status.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
+import { chosenFor, renderPicker } from '../address-book-picker/render.js'
 import {
   ALREADY_ARRIVED,
   ARRIVAL_STATUS,
@@ -68,56 +67,19 @@ const destinationStateOf = (answers, scope) => {
 
 const committedId = (answers) => answers[PLACE_OF_DESTINATION]?.addressId
 
-/** A selection resolves only to a record the book still holds: a missing or
- * soft-deleted id is treated as no selection, the same way a stored reference
- * to a deleted record reads as never entered. An outage is not that — the
- * address book throws and the throw propagates, because an unavailable service
- * must never be indistinguishable from a deletion. */
-const chosenFor = async (orgId, selectedId) => {
-  if (!selectedId) {
-    return undefined
-  }
-  const record = await addressBook.party(orgId, selectedId)
-  return record && !record.deleted ? record : undefined
-}
-
-const render = async (
-  request,
-  h,
-  current,
-  { query, page: pageNumber, selectedId, error, recoverableError = false }
-) => {
-  const orgId = organisationIdOf(request)
-  const found = await addressBook.search(orgId, { query, page: pageNumber })
-  const selected = await chosenFor(orgId, selectedId)
-  // A reference that no longer resolves must not travel as "Selected address"
-  // or in the paging links, so it counts as no selection here too.
-  const effectiveSelectedId = selected ? selectedId : ''
+// The question means a different thing in each of the three states, so the
+// heading and the description are chosen per notification rather than fixed.
+const render = (request, h, current, pageState) => {
   const destinationState = destinationStateOf(current.answers, current.scope)
 
-  return h.view(view, {
-    ...kit.base(copy.title, {
-      backLink: hubPath(current.journey.journeyId),
-      journey: current.journey,
-      page,
-      recoverableError
-    }),
-    contentColumnClass: kit.surfaceClass('display'),
+  return renderPicker(request, h, current, pageState, {
+    view,
+    page,
     copy,
+    fieldName: PLACE_OF_DESTINATION,
+    pickerViewModel,
     heading: copy.headings[destinationState],
-    description: copy.descriptions[destinationState],
-    errorSummary: kit.errorSummary(
-      error ? { [PLACE_OF_DESTINATION]: error } : undefined,
-      {
-        href: () =>
-          found.results.length > 0 ? `#${PLACE_OF_DESTINATION}` : '#q'
-      }
-    ),
-    picker: pickerViewModel(
-      current.journey.journeyId,
-      { query, selectedId: effectiveSelectedId, error, found, selected },
-      copy
-    )
+    description: copy.descriptions[destinationState]
   })
 }
 

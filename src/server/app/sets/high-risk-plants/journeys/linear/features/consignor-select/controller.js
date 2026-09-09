@@ -7,8 +7,8 @@ import {
 } from '../../../../../../lib/http-status.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
+import { chosenFor, renderPicker } from '../address-book-picker/render.js'
 import { consignorPage as page } from './page.js'
 import { CONSIGNOR } from './fields.js'
 import { pickerViewModel } from './view-model/index.js'
@@ -45,53 +45,18 @@ const isSearch = (payload) => payload.action === SEARCH_ACTION
 
 const committedId = (answers) => answers[CONSIGNOR]?.addressId
 
-/** A selection resolves only to a record the book still holds: a missing or
- * soft-deleted id is treated as no selection, the same way a stored reference
- * to a deleted record reads as never entered. An outage is not that — the
- * address book throws and the throw propagates, because an unavailable service
- * must never be indistinguishable from a deletion. */
-const chosenFor = async (orgId, selectedId) => {
-  if (!selectedId) {
-    return undefined
-  }
-  const record = await addressBook.party(orgId, selectedId)
-  return record && !record.deleted ? record : undefined
-}
-
-const render = async (
-  request,
-  h,
-  current,
-  { query, page: pageNumber, selectedId, error, recoverableError = false }
-) => {
-  const orgId = organisationIdOf(request)
-  const found = await addressBook.search(orgId, { query, page: pageNumber })
-  const selected = await chosenFor(orgId, selectedId)
-  // A reference that no longer resolves must not travel as "Selected address"
-  // or in the paging links, so it counts as no selection here too.
-  const effectiveSelectedId = selected ? selectedId : ''
-
-  return h.view(view, {
-    ...kit.base(copy.title, {
-      backLink: hubPath(current.journey.journeyId),
-      journey: current.journey,
-      page,
-      recoverableError
-    }),
-    contentColumnClass: kit.surfaceClass('display'),
+// The page asks one question in one voice, so the heading and the description
+// are the page's own copy rather than chosen per notification.
+const render = (request, h, current, pageState) =>
+  renderPicker(request, h, current, pageState, {
+    view,
+    page,
     copy,
+    fieldName: CONSIGNOR,
+    pickerViewModel,
     heading: copy.title,
-    description: copy.description,
-    errorSummary: kit.errorSummary(error ? { [CONSIGNOR]: error } : undefined, {
-      href: () => (found.results.length > 0 ? `#${CONSIGNOR}` : '#q')
-    }),
-    picker: pickerViewModel(
-      current.journey.journeyId,
-      { query, selectedId: effectiveSelectedId, error, found, selected },
-      copy
-    )
+    description: copy.description
   })
-}
 
 const get = async (request, h) => {
   const current = await state.get(request, h)
