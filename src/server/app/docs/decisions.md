@@ -49,9 +49,13 @@ code.
 [`src/server/app/routes.js`](../routes.js) is allowed to know which set and journey
 exist. Model, bridge, engine and flow accept their concrete policy through
 `configureObligationSet`, `configureFulfilmentRegistry`, `configureJourneyFlow`,
-`configureReadyForCheckYourAnswers`, `configureRecords` and `configureSession`.
+`configureReadyForCheckYourAnswers`, `configureAnswersForRead`, `configureRecords`
+and `configureSession`.
 
 Injection is what keeps the bridge from reaching up into flow.
 `configureReadyForCheckYourAnswers` hands it the task-row roll-up from
 `flow/section-status.js`, and `configureJourneyFlow` forwards the journey's
-flow-only keys into `bridge/flow-only-keys.js`.
+flow-only keys into `bridge/flow-only-keys.js`. `configureAnswersForRead` hands
+the bridge the set's party sanitiser, so an address-book reference the book no
+longer resolves drops out of every read without the engine ever knowing what a
+party is.
