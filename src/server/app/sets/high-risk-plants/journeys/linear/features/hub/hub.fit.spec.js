@@ -1,3 +1,4 @@
+import { copy as typeCopy } from '../commodity-type/copy/copy.en.js'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
@@ -183,4 +184,34 @@ test.describe('overview hub feature', () => {
       `Overview hub initial render has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
     ).toEqual([])
   })
+})
+
+test('shows consignor only for plants and wood notifications', async ({
+  page
+}) => {
+  await signIn(page)
+  const reference = await startNotification(page)
+  for (const commodityType of [
+    'plants-for-planting',
+    'wood-and-cut-trees',
+    'potatoes'
+  ]) {
+    await page.goto(`/notifications/${reference}/commodity-type`)
+    await page
+      .getByRole('radio', {
+        name: typeCopy.typeLabels[commodityType],
+        exact: true
+      })
+      .check()
+    await page
+      .getByRole('button', { name: sharedCopy.saveActions.saveAndReturnToHub })
+      .click()
+    await expect(page).toHaveURL(HUB_URL)
+    const row = taskRowByTitle(page, copy.rows.consignor.title)
+    if (commodityType === 'potatoes') {
+      await expect(row).toHaveCount(0)
+    } else {
+      await expect(row).toContainText(copy.statuses.cannotStartYet)
+    }
+  }
 })

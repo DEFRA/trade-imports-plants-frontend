@@ -27,6 +27,7 @@ import { describe, expect, it } from 'vitest'
 
 import { obligationMetadata } from '../../../model/obligations/helpers/index.js'
 import {
+  consignor,
   arrivalStatus,
   arrivalTime,
   commodityLine,
@@ -257,4 +258,13 @@ describe('the notification-level gates stay inside the service vocabulary', () =
       })
     })
   }
+})
+
+it('Should gate consignor on the two supported plants and wood types', () => {
+  const metadata = obligationMetadata(consignor)
+  expect(metadata.dependsOn).toEqual([commodityType.id])
+  expect(metadata.values).toEqual(['plants-for-planting', 'wood-and-cut-trees'])
+  expect(
+    metadata.values.every((value) => commodityTypes().includes(value))
+  ).toBe(true)
 })

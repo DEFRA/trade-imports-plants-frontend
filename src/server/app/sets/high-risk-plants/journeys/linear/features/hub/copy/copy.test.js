@@ -64,10 +64,16 @@ describe('#copy', () => {
 
   it('Should hold only the rows the journey has landed', () => {
     expect(Object.keys(copy.rows)).toEqual([
+      'consignor',
       'commodities',
       'origin',
       'arrival',
       'destination'
     ])
   })
+})
+
+it('Should title the consignor row in both locales', () => {
+  expect(copy.rows.consignor).toEqual({ title: 'Consignor or exporter' })
+  expect(cy.rows.consignor).toEqual({ title: 'Anfonwr neu allforiwr' })
 })

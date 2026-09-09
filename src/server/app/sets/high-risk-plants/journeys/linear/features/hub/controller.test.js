@@ -229,10 +229,8 @@ describe('#hubGet', () => {
     const { h } = await renderHub()
 
     expect(
-      GROUPS.filter((group) => !RENDERED_GROUP_IDS.includes(group.id)).every(
-        (group) => group.rows.length === 0
-      )
-    ).toBe(true)
+      GROUPS.find((group) => group.id === 'check-and-submit').rows
+    ).toEqual([])
     expect(h.captured.view.context.groups.map((group) => group.id)).toEqual(
       RENDERED_GROUP_IDS
     )
@@ -382,5 +380,45 @@ describe('#hubGet — the destination row', () => {
     expect(destinationRow.status).toEqual({
       tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
+  })
+})
+
+describe('#hubGet — consignor', () => {
+  beforeAll(() => {
+    configureRecords(recordsStub)
+    configureSession(sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
+
+  it('Should hide the consignor group for potatoes', async () => {
+    const { h } = await renderHub({ seed: { commodityType: POTATOES } })
+    expect(h.captured.view.context.groups.map(({ id }) => id)).not.toContain(
+      'consignment-parties'
+    )
+  })
+
+  it('Should link plants and wood to the picker and complete a saved reference', async () => {
+    for (const commodityType of [PLANTS_FOR_PLANTING, 'wood-and-cut-trees']) {
+      const { journeyId, h } = await renderHub({
+        seed: {
+          commodityType,
+          countryOfOrigin: FRANCE,
+          consignor: { addressId: 'tech-imports-ltd' }
+        }
+      })
+      const group = h.captured.view.context.groups.find(
+        ({ id }) => id === 'consignment-parties'
+      )
+      expect(group.items).toEqual([
+        {
+          title: { text: copy.rows.consignor.title },
+          href: `/notifications/${journeyId}/consignors/select`,
+          status: {
+            tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
+          }
+        }
+      ])
+    }
   })
 })

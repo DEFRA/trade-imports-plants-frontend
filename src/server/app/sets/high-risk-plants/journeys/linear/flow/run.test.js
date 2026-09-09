@@ -1,3 +1,4 @@
+import { consignorPage } from '../features/consignor-select/page.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { installHighRiskPlantsJourney } from '../test-support.js'
@@ -20,7 +21,8 @@ const PLANTS_RUN = [
   'countryOfOrigin',
   'arrivalStatus',
   'arrivalDate',
-  'placeOfDestination'
+  'placeOfDestination',
+  'consignor'
 ]
 const POTATO_RUN = [
   'commodityType',
@@ -52,7 +54,8 @@ describe('#RUN_STEPS — the opening run', () => {
       originPage.id,
       arrivalStatusPage.id,
       arrivalDetailsPage.id,
-      placeOfDestinationPage.id
+      placeOfDestinationPage.id,
+      consignorPage.id
     ])
   })
 
@@ -214,11 +217,7 @@ describe('#nextRunTarget', () => {
 
   it("Should fall through to the overview after the run's last step", () => {
     expect(
-      nextRunTarget(
-        placeOfDestinationPage.id,
-        answering(...PLANTS_RUN),
-        JOURNEY_ID
-      )
+      nextRunTarget(consignorPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
     ).toBe(`/notifications/${JOURNEY_ID}`)
   })
 
@@ -246,5 +245,25 @@ describe('#nextRunTarget', () => {
     expect(
       nextRunTarget('not-a-step', scopeOf('commodityType'), JOURNEY_ID)
     ).toBeNull()
+  })
+})
+
+describe('consignor opening-run step', () => {
+  beforeAll(installHighRiskPlantsJourney)
+  it('Should follow destination for plants and wood and skip it for potatoes', () => {
+    expect(
+      nextRunTarget(
+        placeOfDestinationPage.id,
+        answering(...PLANTS_RUN),
+        JOURNEY_ID
+      )
+    ).toBe(`/notifications/${JOURNEY_ID}/consignors/select`)
+    expect(
+      nextRunTarget(
+        placeOfDestinationPage.id,
+        answering(...POTATO_RUN),
+        JOURNEY_ID
+      )
+    ).toBe(`/notifications/${JOURNEY_ID}`)
   })
 })

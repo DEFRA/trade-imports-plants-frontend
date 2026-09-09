@@ -1,3 +1,4 @@
+import { hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -8,19 +9,14 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 import { chosenFor, renderPicker } from '../address-book-picker/render.js'
-import {
-  ALREADY_ARRIVED,
-  ARRIVAL_STATUS,
-  NOT_YET_ARRIVED
-} from '../arrival-status/statuses.js'
-import { placeOfDestinationPage as page } from './page.js'
-import { PLACE_OF_DESTINATION, POTATO_DESTINATION } from './fields.js'
+import { consignorPage as page } from './page.js'
+import { CONSIGNOR } from './fields.js'
 import { pickerViewModel } from './view-model/index.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
 /**
- * Where the consignment is going, picked from the organisation's address book.
+ * The consignor or exporter, picked from the organisation's address book.
  *
  * The whole page is one form. The search button and the primary are both
  * submits, told apart by their `action` value, and paging is a link — so the
@@ -31,9 +27,9 @@ import { copy as cy } from './copy/copy.cy.js'
  * is corrected on the notification too, and a record they delete stops
  * resolving rather than leaving a stale copy behind.
  */
-export const meta = { ...page, collects: [PLACE_OF_DESTINATION] }
+export const meta = { ...page, collects: [CONSIGNOR] }
 
-const view = `${TEMPLATES}/features/place-of-destination/template`
+const view = `${TEMPLATES}/features/consignor-select/template`
 
 const copy = copyFor({ en, cy })
 
@@ -47,44 +43,26 @@ const parsePageNumber = (value) => {
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
-/**
- * Which of the three questions this page is asking.
- *
- * Potatoes are never asked whether the consignment has arrived — reg 24A gives
- * them no post-arrival branch — so a notification with no arrival status in
- * scope is asked for the intended destination. Plants and wood take the state
- * from the arrival-status page; one that has not been answered yet is asked
- * the pre-arrival question, which is the one the journey opens on.
- */
-const destinationStateOf = (answers, scope) => {
-  if (!scope.has(ARRIVAL_STATUS)) {
-    return POTATO_DESTINATION
-  }
-  return answers[ARRIVAL_STATUS] === ALREADY_ARRIVED
-    ? ALREADY_ARRIVED
-    : NOT_YET_ARRIVED
-}
+const committedId = (answers) => answers[CONSIGNOR]?.addressId
 
-const committedId = (answers) => answers[PLACE_OF_DESTINATION]?.addressId
-
-// The question means a different thing in each of the three states, so the
-// heading and the description are chosen per notification rather than fixed.
-const render = (request, h, current, pageState) => {
-  const destinationState = destinationStateOf(current.answers, current.scope)
-
-  return renderPicker(request, h, current, pageState, {
+// The page asks one question in one voice, so the heading and the description
+// are the page's own copy rather than chosen per notification.
+const render = (request, h, current, pageState) =>
+  renderPicker(request, h, current, pageState, {
     view,
     page,
     copy,
-    fieldName: PLACE_OF_DESTINATION,
+    fieldName: CONSIGNOR,
     pickerViewModel,
-    heading: copy.headings[destinationState],
-    description: copy.descriptions[destinationState]
+    heading: copy.title,
+    description: copy.description
   })
-}
 
 const get = async (request, h) => {
   const current = await state.get(request, h)
+  if (!current.scope.has(CONSIGNOR)) {
+    return h.redirect(hubPath(current.journey.journeyId))
+  }
   return render(request, h, current, {
     query: request.query.q ?? '',
     page: parsePageNumber(request.query.page),
@@ -95,8 +73,12 @@ const get = async (request, h) => {
 const post = async (request, h) => {
   const payload = request.payload ?? {}
   const query = payload.q ?? ''
-  const selectedId = payload[PLACE_OF_DESTINATION] || payload.selected || ''
+  const selectedId = payload[CONSIGNOR] || payload.selected || ''
   const current = await state.get(request, h)
+
+  if (!current.scope.has(CONSIGNOR)) {
+    return h.redirect(hubPath(current.journey.journeyId))
+  }
 
   if (isSearch(payload)) {
     // A new search starts at the first page, whichever page it was run from.
@@ -114,7 +96,7 @@ const post = async (request, h) => {
         query,
         page: parsePageNumber(payload.page),
         selectedId: '',
-        error: copy.errors.placeOfDestination
+        error: copy.errors.consignor
       })
     ).code(HTTP_STATUS_BAD_REQUEST)
   }
@@ -123,7 +105,7 @@ const post = async (request, h) => {
   const { failure } = await kit.recoverableSave(
     async () => {
       committed = await state.commit(request, h, {
-        [PLACE_OF_DESTINATION]: { addressId: chosen.id }
+        [CONSIGNOR]: { addressId: chosen.id }
       })
     },
     async () =>

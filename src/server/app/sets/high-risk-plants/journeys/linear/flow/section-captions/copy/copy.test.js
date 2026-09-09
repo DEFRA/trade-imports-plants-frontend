@@ -19,7 +19,8 @@ describe('section-caption copy modules', () => {
       dashboard: 'Dashboard',
       aboutTheConsignment: 'About the consignment',
       arrival: 'Arrival',
-      destination: 'Destination'
+      destination: 'Destination',
+      consignmentParties: 'Consignment parties'
     })
   })
 
@@ -28,7 +29,8 @@ describe('section-caption copy modules', () => {
       dashboard: 'Dangosfwrdd',
       aboutTheConsignment: 'Am y llwyth',
       arrival: 'Cyrraedd',
-      destination: 'Cyrchfan'
+      destination: 'Cyrchfan',
+      consignmentParties: 'Partïon y llwyth'
     })
   })
 })

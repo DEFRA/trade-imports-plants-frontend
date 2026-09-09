@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { pagePath } from '../../../../../../../shared/paths.js'
-import { PLACE_OF_DESTINATION } from '../fields.js'
-import { placeOfDestinationPage } from '../page.js'
+import { CONSIGNOR } from '../fields.js'
+import { consignorPage } from '../page.js'
 import { copy } from '../copy/copy.en.js'
 import {
   addressText,
@@ -13,7 +13,7 @@ import { pickerViewModel } from './index.js'
 
 const JOURNEY_ID = 'HRP-0001'
 const PAGE_SIZE = 5
-const PAGE_PATH = pagePath(JOURNEY_ID, placeOfDestinationPage.slug)
+const PAGE_PATH = pagePath(JOURNEY_ID, consignorPage.slug)
 const LABELS = copy.pagination
 
 const LINE_1 = '18 Dockside Road'
@@ -104,14 +104,14 @@ describe('#resultsHref', () => {
         selectedId: TECH_IMPORTS_ID
       })
     ).toBe(
-      `/notifications/${JOURNEY_ID}/destinations/select?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
+      `/notifications/${JOURNEY_ID}/consignors/select?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
     )
   })
 
   it('Should leave out a search term and a selection it does not have', () => {
     expect(
       resultsHref(JOURNEY_ID, { query: '', page: 2, selectedId: '' })
-    ).toBe(`/notifications/${JOURNEY_ID}/destinations/select?page=2`)
+    ).toBe(`/notifications/${JOURNEY_ID}/consignors/select?page=2`)
   })
 })
 
@@ -226,8 +226,8 @@ describe('#pickerViewModel', () => {
     )
 
     expect(picker.rows.map((row) => row.idPrefix)).toEqual([
-      'placeOfDestination',
-      'placeOfDestination-2'
+      'consignor',
+      'consignor-2'
     ])
   })
 
@@ -239,8 +239,8 @@ describe('#pickerViewModel', () => {
     )
 
     expect(picker.rows.map((row) => row.idPrefix)).toEqual([
-      PLACE_OF_DESTINATION,
-      'placeOfDestination-7'
+      CONSIGNOR,
+      'consignor-7'
     ])
   })
 

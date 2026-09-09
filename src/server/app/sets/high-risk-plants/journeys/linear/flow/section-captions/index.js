@@ -1,3 +1,4 @@
+import { consignorPage } from '../../features/consignor-select/page.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
@@ -25,7 +26,7 @@ const copy = copyFor({ en, cy })
  * Pages still to be built, filed here by their own increment as each lands —
  * into the existing section entry where one exists:
  *
- * - `consignmentParties` — consignor-select, identification-numbers
+ * - `consignmentParties` — identification-numbers
  *
  * A page that is absent is deliberately bare. The overview hub, the contact
  * page, check your answers, declaration and confirmation open straight into
@@ -44,7 +45,8 @@ export const captionSections = [
     ]
   },
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
-  { id: 'destination', pages: [placeOfDestinationPage] }
+  { id: 'destination', pages: [placeOfDestinationPage] },
+  { id: 'consignmentParties', pages: [consignorPage] }
 ]
 
 const sectionIdByPageId = new Map(

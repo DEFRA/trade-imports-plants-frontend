@@ -58,6 +58,7 @@ const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
 const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
+const CONSIGNOR_PATH = '/notifications/{journeyId}/consignors/select'
 const ARRIVAL_DETAILS_PATH = '/notifications/{journeyId}/arrival-details'
 const PLACE_OF_DESTINATION_PATH =
   '/notifications/{journeyId}/destinations/select'
@@ -67,6 +68,7 @@ const ROUTES = [
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: ORIGIN_PATH },
   { method: 'GET', path: ARRIVAL_STATUS_PATH },
+  { method: 'GET', path: CONSIGNOR_PATH },
   { method: 'GET', path: '/notifications/{journeyId}/treatments' },
   { method: 'GET', path: '/notifications/{journeyId}/late-reason' },
   { method: 'GET', path: '/notifications/{journeyId}/uploads/status' },
@@ -136,7 +138,10 @@ describe('#auditPaths', () => {
     ).toEqual([`/notifications/${journeyIds.warePotatoesLate}/late-reason`])
     expect(
       paths.filter((path) => path.includes(journeyIds.plantsForPlanting))
-    ).toEqual([`/notifications/${journeyIds.plantsForPlanting}/arrival-status`])
+    ).toEqual([
+      `/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
+      `/notifications/${journeyIds.plantsForPlanting}/consignors/select`
+    ])
     expect(
       paths.filter((path) => path.includes(journeyIds.warePotatoes))
     ).toEqual([
@@ -194,6 +199,7 @@ describe('#auditPaths', () => {
       // Audited on the ware-potato default too: the picker is the same page
       // whichever state it asks its question in, and the ware-potato shape is
       // the one that reaches it without an arrival status.
+      `/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
       `/notifications/${journeyIds.warePotatoes}/destinations/select`
     ])
   })
@@ -219,6 +225,7 @@ describe('#auditableRoutePaths', () => {
       ORIGIN_PATH,
       ARRIVAL_STATUS_PATH,
       ARRIVAL_DETAILS_PATH,
+      CONSIGNOR_PATH,
       PLACE_OF_DESTINATION_PATH
     ])
   })

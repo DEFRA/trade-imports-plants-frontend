@@ -1,3 +1,4 @@
+import { evaluationBindings as consignor } from './consignor-select/evaluation.js'
 import { evaluationBindings as commodityType } from './commodity-type/evaluation.js'
 import { evaluationBindings as commodities } from './commodities/evaluation.js'
 import { evaluationBindings as origin } from './origin/evaluation.js'
@@ -11,5 +12,6 @@ export const featureEvaluationBindings = Object.freeze([
   origin,
   arrivalStatus,
   arrivalDetails,
-  placeOfDestination
+  placeOfDestination,
+  consignor
 ])
