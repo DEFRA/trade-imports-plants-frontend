@@ -91,91 +91,142 @@ const commodityCards = (answers, evaluation, journeyId, readOnly) =>
     }
   )
 
-export const buildSections = (
+/**
+ * Everything a section builder needs: the journey's answers and scope, the
+ * identifiers the change links are built from, and the two row helpers that
+ * close over them. Assembled once by `buildSections` and passed to each
+ * section so the builders stay small and independently readable.
+ */
+const sectionContext = (
   { journey, answers, scope, evaluation },
   parties,
   readOnly
 ) => {
-  const arrivalState = arrivalStateOf(answers, scope)
   const journeyId = journey.journeyId
   const answerRow = (field, value = answers[field]) =>
     row(journeyId, readOnly, copy.labels[field], value, field)
-  const scopedRows = (fields) =>
-    fields.filter((field) => scope.has(field)).map((field) => answerRow(field))
-  const arrivalRows = [
-    ...(scope.has('arrivalStatus')
-      ? [answerRow('arrivalStatus', copy.statusLabels[answers.arrivalStatus])]
-      : []),
-    row(
-      journeyId,
-      readOnly,
-      arrivalCopy.dateLabels[arrivalState],
-      dateText(answers.arrivalDate),
-      'arrivalDate'
-    ),
-    ...scopedRows(['arrivalTime']),
-    ...(scope.has('proposedPlaceOfLanding')
+  return {
+    answers,
+    scope,
+    evaluation,
+    parties,
+    journeyId,
+    readOnly,
+    arrivalState: arrivalStateOf(answers, scope),
+    answerRow,
+    scopedRows: (fields) =>
+      fields
+        .filter((field) => scope.has(field))
+        .map((field) => answerRow(field))
+  }
+}
+
+const consignmentSection = ({
+  answers,
+  evaluation,
+  journeyId,
+  readOnly,
+  answerRow
+}) => ({
+  heading: copy.sections.consignment,
+  cards: [
+    {
+      title: copy.cards.import,
+      rows: [
+        answerRow('commodityType', copy.typeLabels[answers.commodityType]),
+        answerRow(
+          'countryOfOrigin',
+          countries.originLabel(answers.countryOfOrigin)
+        )
+      ]
+    },
+    ...commodityCards(answers, evaluation, journeyId, readOnly)
+  ]
+})
+
+const arrivalRows = ({
+  answers,
+  scope,
+  arrivalState,
+  journeyId,
+  readOnly,
+  answerRow,
+  scopedRows
+}) => [
+  ...(scope.has('arrivalStatus')
+    ? [answerRow('arrivalStatus', copy.statusLabels[answers.arrivalStatus])]
+    : []),
+  row(
+    journeyId,
+    readOnly,
+    arrivalCopy.dateLabels[arrivalState],
+    dateText(answers.arrivalDate),
+    'arrivalDate'
+  ),
+  ...scopedRows(['arrivalTime']),
+  ...(scope.has('proposedPlaceOfLanding')
+    ? [
+        answerRow(
+          'proposedPlaceOfLanding',
+          ports.label(answers.proposedPlaceOfLanding)
+        )
+      ]
+    : [])
+]
+
+const arrivalSection = (context) => {
+  const { arrivalState, parties, journeyId, readOnly } = context
+  return {
+    heading: copy.sections.arrival,
+    cards: [
+      { title: copy.cards.arrival, rows: arrivalRows(context) },
+      partyCard(
+        'placeOfDestination',
+        destinationCopy.headings[arrivalState],
+        parties.placeOfDestination,
+        journeyId,
+        readOnly
+      )
+    ]
+  }
+}
+
+const partiesSection = ({
+  scope,
+  parties,
+  journeyId,
+  readOnly,
+  scopedRows
+}) => ({
+  heading: copy.sections.parties,
+  cards: [
+    ...(scope.has('consignor')
       ? [
-          answerRow(
-            'proposedPlaceOfLanding',
-            ports.label(answers.proposedPlaceOfLanding)
+          partyCard(
+            'consignor',
+            copy.cards.consignor,
+            parties.consignor,
+            journeyId,
+            readOnly
           )
         ]
-      : [])
+      : []),
+    { title: copy.cards.identification, rows: scopedRows(IDENTIFIERS) },
+    partyCard(
+      'contactAddress',
+      copy.cards.contact,
+      parties.contactAddress,
+      journeyId,
+      readOnly
+    )
   ]
+})
+
+export const buildSections = (journeyState, parties, readOnly) => {
+  const context = sectionContext(journeyState, parties, readOnly)
   return [
-    {
-      heading: copy.sections.consignment,
-      cards: [
-        {
-          title: copy.cards.import,
-          rows: [
-            answerRow('commodityType', copy.typeLabels[answers.commodityType]),
-            answerRow(
-              'countryOfOrigin',
-              countries.originLabel(answers.countryOfOrigin)
-            )
-          ]
-        },
-        ...commodityCards(answers, evaluation, journeyId, readOnly)
-      ]
-    },
-    {
-      heading: copy.sections.arrival,
-      cards: [
-        { title: copy.cards.arrival, rows: arrivalRows },
-        partyCard(
-          'placeOfDestination',
-          destinationCopy.headings[arrivalState],
-          parties.placeOfDestination,
-          journeyId,
-          readOnly
-        )
-      ]
-    },
-    {
-      heading: copy.sections.parties,
-      cards: [
-        ...(scope.has('consignor')
-          ? [
-              partyCard(
-                'consignor',
-                copy.cards.consignor,
-                parties.consignor,
-                journeyId,
-                readOnly
-              )
-            ]
-          : []),
-        { title: copy.cards.identification, rows: scopedRows(IDENTIFIERS) },
-        partyCard(
-          'contactAddress',
-          copy.cards.contact,
-          parties.contactAddress,
-          journeyId,
-          readOnly
-        )
-      ]
-    }
+    consignmentSection(context),
+    arrivalSection(context),
+    partiesSection(context)
   ]
 }
