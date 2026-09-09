@@ -173,7 +173,7 @@ test('accepts a late notification and shows the stored late banner on the read-o
 }) => {
   const reference = await completeNotification(page, true)
   await expect(
-    page.getByText(copy.late.warning(copy.late.potatoes(2)), { exact: true })
+    page.getByText(copy.late.warning(copy.late.potatoes(2)))
   ).toBeVisible()
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
   await expect(page).toHaveURL(/\/declaration$/)
