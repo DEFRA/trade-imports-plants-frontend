@@ -1,3 +1,4 @@
+import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { hubPath, pagePath } from '../../../../../shared/paths.js'
 import { pageGatePasses } from '../../../../../flow/gates.js'
@@ -19,7 +20,8 @@ const flowPageTarget = (page) => (scope, journeyId) =>
  * sends a trader with no lines there and takes them back. The arrival-status
  * step is skipped for potatoes, whose notification is never asked the
  * question. Arrival details and destination are asked of every commodity type;
- * the final consignor step is skipped for potatoes. */
+ * the consignor step is skipped for potatoes, then every type reaches
+ * identification numbers. */
 export const RUN_STEPS = [
   { id: commodityTypePage.id, target: flowPageTarget(commodityTypePage) },
   { id: commoditiesPage.id, target: flowPageTarget(commoditiesPage) },
@@ -30,7 +32,11 @@ export const RUN_STEPS = [
     id: placeOfDestinationPage.id,
     target: flowPageTarget(placeOfDestinationPage)
   },
-  { id: consignorPage.id, target: flowPageTarget(consignorPage) }
+  { id: consignorPage.id, target: flowPageTarget(consignorPage) },
+  {
+    id: identificationNumbersPage.id,
+    target: flowPageTarget(identificationNumbersPage)
+  }
 ]
 
 export const nextRunTarget = (stepId, scope, journeyId) => {

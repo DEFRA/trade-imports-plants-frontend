@@ -6,6 +6,10 @@ describe('notification projection', () => {
     expect(
       fulfilmentToNotification(
         {
+          '26c11d80-6b9c-4211-9fad-1e47046658cb': 'ID_123',
+          '3c59568c-1954-4cae-9c96-65274ea68b1c': 'ID_123',
+          '33d7105c-776d-475d-8653-414f326182cd': 'ID_123',
+          '1d3e1a55-6e0e-4322-ae2c-48a43b6c7b71': 'ID_123',
           '478148de-8e15-4c44-a435-15f24a1c177b': {
             addressId: 'tech-imports-ltd'
           }

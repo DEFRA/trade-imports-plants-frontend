@@ -1,3 +1,4 @@
+import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -66,7 +67,8 @@ describe('#taskRows — the rows the hub can resolve', () => {
       { id: 'origin', pages: [originPage] },
       { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
       { id: 'destination', pages: [placeOfDestinationPage] },
-      { id: 'consignor', pages: [consignorPage], conditional: true }
+      { id: 'consignor', pages: [consignorPage], conditional: true },
+      { id: 'identificationNumbers', pages: [identificationNumbersPage] }
     ])
   })
 
@@ -253,6 +255,21 @@ describe('#rowStatus — one status per hub task row', () => {
     expect(statusIn('consignor', { commodityType: POTATOES })).toBe(NA)
   })
 
+  it('Should make identifiers optional only for wood and complete the required branch', () => {
+    expect(
+      statusIn('identificationNumbers', { commodityType: 'wood-and-cut-trees' })
+    ).toBe(OPTIONAL)
+    expect(statusIn('identificationNumbers', { commodityType: POTATOES })).toBe(
+      NOT_STARTED
+    )
+    expect(
+      statusIn('identificationNumbers', {
+        commodityType: POTATOES,
+        producerIdentificationNumber: 'P1',
+        cropIdentificationNumber: 'C1'
+      })
+    ).toBe(FULFILLED)
+  })
   it('Should hold the destination row at Not yet started while nothing is answered', () => {
     expect(statusIn('destination', {})).toBe(NOT_STARTED)
   })

@@ -1,3 +1,4 @@
+import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { statusOf } from '../../../../../bridge/status/index.js'
 import { collectsOf } from '../../../../../flow/dispatch.js'
@@ -30,7 +31,8 @@ export const taskRows = [
   { id: 'origin', pages: [originPage] },
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
   { id: 'destination', pages: [placeOfDestinationPage] },
-  { id: 'consignor', pages: [consignorPage], conditional: true }
+  { id: 'consignor', pages: [consignorPage], conditional: true },
+  { id: 'identificationNumbers', pages: [identificationNumbersPage] }
 ]
 
 export const taskRowById = (id) => taskRows.find((row) => row.id === id)

@@ -11,7 +11,11 @@ const HUB_URL = /\/notifications\/[^/]+$/
 const JOURNEY_ID_SEGMENT = 2
 const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
 const ARRIVAL_GROUP_ID = 'arrival-and-destination'
-const RENDERED_GROUP_IDS = [CONSIGNMENT_GROUP_ID, ARRIVAL_GROUP_ID]
+const RENDERED_GROUP_IDS = [
+  CONSIGNMENT_GROUP_ID,
+  ARRIVAL_GROUP_ID,
+  'consignment-parties'
+]
 const RENDERED_GROUP_COUNT = RENDERED_GROUP_IDS.length
 
 const journeyIdFromPage = (page) =>
@@ -214,4 +218,15 @@ test('shows consignor only for plants and wood notifications', async ({
       await expect(row).toContainText(copy.statuses.cannotStartYet)
     }
   }
+})
+
+test('shows the identification numbers row blocked before prerequisites are answered', async ({
+  page
+}) => {
+  await signIn(page)
+  await startNotification(page)
+  const row = taskRowByTitle(page, copy.rows.identificationNumbers.title)
+  await expect(row).toBeVisible()
+  await expect(row).toContainText(copy.statuses.cannotStartYet)
+  await expect(row.getByRole('link')).toHaveCount(0)
 })

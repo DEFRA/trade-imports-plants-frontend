@@ -1,3 +1,4 @@
+import { identificationNumbersPage } from '../../features/identification-numbers/page.js'
 import { consignorPage } from '../../features/consignor-select/page.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { copy as en } from './copy/copy.en.js'
@@ -23,11 +24,6 @@ const copy = copyFor({ en, cy })
  * where the page sits in the journey, not of the page's own copy. One entry
  * per section, listing its pages — never a string per page.
  *
- * Pages still to be built, filed here by their own increment as each lands —
- * into the existing section entry where one exists:
- *
- * - `consignmentParties` — identification-numbers
- *
  * A page that is absent is deliberately bare. The overview hub, the contact
  * page, check your answers, declaration and confirmation open straight into
  * their heading. The unit test beside this file lists those pages explicitly,
@@ -46,7 +42,10 @@ export const captionSections = [
   },
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
   { id: 'destination', pages: [placeOfDestinationPage] },
-  { id: 'consignmentParties', pages: [consignorPage] }
+  {
+    id: 'consignmentParties',
+    pages: [consignorPage, identificationNumbersPage]
+  }
 ]
 
 const sectionIdByPageId = new Map(
