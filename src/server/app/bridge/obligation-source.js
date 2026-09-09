@@ -26,9 +26,14 @@ export const obligationByPath = (templatePath) =>
     (obligation) => templatePathOf(obligation) === templatePath
   )
 
-// Obligations the system fills in, presented by no page. Empty until the
-// journey's obligations are agreed.
-export const SYSTEM_POPULATED = new Set()
+// Resolve system ownership from the configured manifest, never a set-specific list.
+class SystemPopulated extends Set {
+  has(name) {
+    return super.has(name) || obligationByName(name)?.system === true
+  }
+}
+
+export const SYSTEM_POPULATED = new SystemPopulated()
 
 // Obligations a page must have collected before "Continue" may advance past
 // it.

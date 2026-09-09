@@ -1,4 +1,17 @@
 export const copy = {
+  late: {
+    title: 'Important',
+    heading: 'Your notification was made outside the required timing',
+    accepted: 'It has still been accepted and recorded.',
+    warning: (rule) =>
+      `If you submit this notification today it will be late. ${rule} You can still submit it.`,
+    icon: 'Warning',
+    potatoes: (days) =>
+      `Notifications for potatoes must be made at least ${days} days before the expected date of arrival.`,
+    plantsAndWood: (days) =>
+      `Notifications for plants for planting and wood must be made no later than ${days} days after the date of arrival.`
+  },
+
   title: 'Check your answers',
   change: 'Change',
   notProvided: 'Not provided',

@@ -207,7 +207,7 @@ describe('Check your answers', () => {
         payload
       })
       expect(result.response.redirect).toBe(
-        `/notifications/${result.journeyId}`
+        `/notifications/${result.journeyId}${payload.exit ? '' : '/declaration'}`
       )
       expect(result.after).toEqual(COMPLETE_NOTIFICATION)
     }
@@ -238,6 +238,52 @@ describe('Check your answers', () => {
       redirect: `/notifications/${journey.journeyId}/notification-view`
     })
   })
+})
+
+describe('Check your answers lateness', () => {
+  it('Should warn using the request clock without writing lateness on draft GET', async () => {
+    const journey = await store.create()
+    await store.seedAnswers(journey.journeyId, COMPLETE_NOTIFICATION)
+    const request = journeyRequest(journey.journeyId, {
+      app: { clock: () => new Date('2026-03-26T00:00:00Z') }
+    })
+    const h = stubH()
+    await get(request, h)
+    expect(h.captured.view.context.lateWarning).toBe(true)
+    expect(h.captured.view.context.lateNotification).toBe(false)
+    expect(h.captured.view.context.lateRule).toContain('2 days before')
+    expect((await store.get(journey.journeyId)).answers).toEqual(
+      COMPLETE_NOTIFICATION
+    )
+    request.app.clock = () => new Date('2026-03-25T23:59:59Z')
+    await get(request, h)
+    expect(h.captured.view.context.lateWarning).toBe(false)
+  })
+
+  it.each(['late', 'on-time'])(
+    'Should render submitted lateness only from the stored %s value',
+    async (indicator) => {
+      const journey = await store.create()
+      await store.seedAnswers(journey.journeyId, {
+        ...COMPLETE_NOTIFICATION,
+        lateNotificationIndicator: indicator
+      })
+      await store.submit(journey.journeyId)
+      const request = journeyRequest(journey.journeyId, {
+        app: {
+          clock: () => {
+            throw new Error('must not recompute')
+          }
+        }
+      })
+      const h = stubH()
+      await get(request, h)
+      expect(h.captured.view.context.lateWarning).toBe(false)
+      expect(h.captured.view.context.lateNotification).toBe(
+        indicator === 'late'
+      )
+    }
+  )
 
   it('Should let unexpected address-book errors escape', async () => {
     vi.spyOn(addressBook, 'party').mockRejectedValue(

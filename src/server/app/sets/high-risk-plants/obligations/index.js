@@ -1,3 +1,4 @@
+import { lateNotificationIndicator } from './sections/review.js'
 import { contactAddress } from './sections/contact.js'
 import {
   supplierIdentificationNumber,
@@ -30,6 +31,7 @@ import { placeOfDestination } from './sections/destination.js'
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
+  lateNotificationIndicator,
   contactAddress,
   supplierIdentificationNumber,
   producerIdentificationNumber,
@@ -57,6 +59,7 @@ export {
 }
 
 export const obligations = [
+  lateNotificationIndicator,
   contactAddress,
   supplierIdentificationNumber,
   producerIdentificationNumber,

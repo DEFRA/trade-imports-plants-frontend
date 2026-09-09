@@ -1,5 +1,18 @@
 // MACHINE-DRAFT Welsh — not reviewed by a translator.
 export const copy = {
+  late: {
+    title: 'Pwysig',
+    heading: 'Gwnaed eich hysbysiad y tu allan i’r amser gofynnol',
+    accepted: 'Mae wedi cael ei dderbyn a’i gofnodi o hyd.',
+    warning: (rule) =>
+      `Os byddwch yn cyflwyno’r hysbysiad hwn heddiw bydd yn hwyr. ${rule} Gallwch ei gyflwyno o hyd.`,
+    icon: 'Rhybudd',
+    potatoes: (days) =>
+      `Rhaid gwneud hysbysiadau am datws o leiaf ${days} diwrnod cyn y dyddiad cyrraedd disgwyliedig.`,
+    plantsAndWood: (days) =>
+      `Rhaid gwneud hysbysiadau am blanhigion i’w plannu a phren heb fod yn hwyrach na ${days} diwrnod ar ôl y dyddiad cyrraedd.`
+  },
+
   title: 'Gwiriwch eich atebion',
   change: 'Newid',
   notProvided: 'Heb ei ddarparu',
