@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeAll, afterAll } from 'vitest'
 import { createServer } from '../server.js'
 import { statusCodes } from '../common/constants/status-codes.js'
 import { makeScope } from './engine/index.js'
+import { answersForRead } from './bridge/answers-read.js'
 import { isDispatchBuilt } from './flow/dispatch.js'
 import { allRoutes } from './sets/high-risk-plants/journeys/linear/features/index.js'
 import {
@@ -48,6 +49,19 @@ describe('high-risk-plants plugin registration', () => {
       'a complete commodity section with no country of origin leaves the notification unfinished'
     ).toBe(false)
     expect(makeScope(COMPLETE_NOTIFICATION).readyForCheckYourAnswers).toBe(true)
+  })
+
+  it('Should inject the set party sanitiser into the answers-read seam', async () => {
+    // Registration replaces the bridge's identity default, so a reference the
+    // address book does not resolve stops being an answer on every read. The
+    // seam is only proved here: nothing else configures it.
+    const request = { auth: { credentials: authenticatedCredentials } }
+    const dangling = { placeOfDestination: { addressId: 'no-such-address' } }
+
+    await expect(answersForRead(request, dangling)).resolves.toEqual({})
+    await expect(answersForRead(request, COMPLETE_NOTIFICATION)).resolves.toBe(
+      COMPLETE_NOTIFICATION
+    )
   })
 
   it('Should name the set-owned session cookies', () => {
