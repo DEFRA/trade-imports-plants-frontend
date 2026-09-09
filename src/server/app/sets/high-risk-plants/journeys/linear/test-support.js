@@ -59,6 +59,8 @@ export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
  */
 export const COMPLETE_NOTIFICATION = Object.freeze({
   ...COMPLETE_POTATO_CONSIGNMENT,
+  producerIdentificationNumber: 'P123',
+  cropIdentificationNumber: 'C123',
   countryOfOrigin: 'FR',
   arrivalDate: Object.freeze({ day: '27', month: '3', year: '2026' }),
   arrivalTime: '14:30',

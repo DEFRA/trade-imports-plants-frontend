@@ -1,3 +1,4 @@
+import * as identificationNumbers from './sets/high-risk-plants/journeys/linear/features/identification-numbers/controller.js'
 import * as consignor from './sets/high-risk-plants/journeys/linear/features/consignor-select/controller.js'
 /**
  * The controller <-> model commit contract.
@@ -40,6 +41,8 @@ import * as placeOfDestination from './sets/high-risk-plants/journeys/linear/fea
 
 // Every manifest read is deferred: at module load the configured set is still
 // the fixture, and the plants set only arrives in `beforeAll`.
+const PLANTS_FOR_PLANTING = 'plants-for-planting'
+
 const manifestNames = () =>
   [...walkObligations()].map((node) => node.obligation.name)
 
@@ -61,10 +64,49 @@ const committableCollects = (collects) => {
 
 const cases = [
   {
+    id: 'identification-numbers-plants-for-planting',
+    collects: identificationNumbers.meta.collects.filter((name) =>
+      ['supplierIdentificationNumber', 'consignmentNumber'].includes(name)
+    ),
+    handler: postHandlerOf(identificationNumbers),
+    seed: { commodityType: PLANTS_FOR_PLANTING },
+    payload: {
+      supplierIdentificationNumber: 'ID_123',
+      consignmentNumber: 'ID_123'
+    }
+  },
+  {
+    id: 'identification-numbers-potatoes',
+    collects: identificationNumbers.meta.collects.filter((name) =>
+      [
+        'producerIdentificationNumber',
+        'cropIdentificationNumber',
+        'consignmentNumber'
+      ].includes(name)
+    ),
+    handler: postHandlerOf(identificationNumbers),
+    seed: { commodityType: 'potatoes' },
+    payload: {
+      producerIdentificationNumber: 'ID_123',
+      cropIdentificationNumber: 'ID_123',
+      consignmentNumber: 'ID_123'
+    }
+  },
+  {
+    id: 'identification-numbers-wood-and-cut-trees',
+    collects: identificationNumbers.meta.collects.filter((name) =>
+      ['consignmentNumber'].includes(name)
+    ),
+    handler: postHandlerOf(identificationNumbers),
+    seed: { commodityType: 'wood-and-cut-trees' },
+    payload: { consignmentNumber: 'ID_123' }
+  },
+
+  {
     id: 'consignor-select',
     collects: consignor.meta.collects,
     handler: postHandlerOf(consignor),
-    seed: { commodityType: 'plants-for-planting' },
+    seed: { commodityType: PLANTS_FOR_PLANTING },
     payload: { consignor: 'tech-imports-ltd' }
   },
   {
@@ -85,7 +127,7 @@ const cases = [
     handler: postHandlerOf(arrivalStatus),
     // The question is only in scope for plants and wood, so the seed has to
     // name one of them before the answer is committable at all.
-    seed: { commodityType: 'plants-for-planting' },
+    seed: { commodityType: PLANTS_FOR_PLANTING },
     payload: { arrivalStatus: 'not-yet-arrived' }
   },
   {

@@ -310,7 +310,7 @@ test.describe('place-of-destination — saving an address', () => {
     await signIn(page)
   })
 
-  test('saves the chosen address, reaches the overview and shows it again on return', async ({
+  test('saves the chosen address, continues to identification numbers and shows it again on return', async ({
     page
   }) => {
     const reference = await startAtDestination(page)
@@ -318,7 +318,7 @@ test.describe('place-of-destination — saving an address', () => {
     await rowRadio(page, TECH_IMPORTS).check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(/\/identification-numbers$/)
 
     await page.goto(destinationPathOf(reference))
     await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
@@ -414,7 +414,7 @@ test.describe('place-of-destination — the answers it refuses', () => {
     await rowRadio(page, TECH_IMPORTS).check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(/\/identification-numbers$/)
   })
 
   test('continuing with nothing found focuses the search box', async ({

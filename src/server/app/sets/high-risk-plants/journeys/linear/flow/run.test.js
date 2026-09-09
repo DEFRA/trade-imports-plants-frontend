@@ -1,3 +1,4 @@
+import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -22,7 +23,8 @@ const PLANTS_RUN = [
   'arrivalStatus',
   'arrivalDate',
   'placeOfDestination',
-  'consignor'
+  'consignor',
+  'consignmentNumber'
 ]
 const POTATO_RUN = [
   'commodityType',
@@ -31,7 +33,8 @@ const POTATO_RUN = [
   'arrivalDate',
   'arrivalTime',
   'proposedPlaceOfLanding',
-  'placeOfDestination'
+  'placeOfDestination',
+  'consignmentNumber'
 ]
 
 const scopeOf = (...names) => ({
@@ -55,7 +58,8 @@ describe('#RUN_STEPS — the opening run', () => {
       arrivalStatusPage.id,
       arrivalDetailsPage.id,
       placeOfDestinationPage.id,
-      consignorPage.id
+      consignorPage.id,
+      identificationNumbersPage.id
     ])
   })
 
@@ -217,7 +221,11 @@ describe('#nextRunTarget', () => {
 
   it("Should fall through to the overview after the run's last step", () => {
     expect(
-      nextRunTarget(consignorPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
+      nextRunTarget(
+        identificationNumbersPage.id,
+        answering(...PLANTS_RUN),
+        JOURNEY_ID
+      )
     ).toBe(`/notifications/${JOURNEY_ID}`)
   })
 
@@ -264,6 +272,6 @@ describe('consignor opening-run step', () => {
         answering(...POTATO_RUN),
         JOURNEY_ID
       )
-    ).toBe(`/notifications/${JOURNEY_ID}`)
+    ).toBe(`/notifications/${JOURNEY_ID}/identification-numbers`)
   })
 })

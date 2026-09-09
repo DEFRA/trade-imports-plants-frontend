@@ -1,4 +1,10 @@
-import { consignor } from './sections/parties.js'
+import {
+  supplierIdentificationNumber,
+  producerIdentificationNumber,
+  cropIdentificationNumber,
+  consignmentNumber,
+  consignor
+} from './sections/parties.js'
 import {
   arrivalDate,
   arrivalStatus,
@@ -23,6 +29,10 @@ import { placeOfDestination } from './sections/destination.js'
 import { countryOfOrigin } from './sections/origin.js'
 
 export {
+  supplierIdentificationNumber,
+  producerIdentificationNumber,
+  cropIdentificationNumber,
+  consignmentNumber,
   consignor,
   arrivalDate,
   arrivalStatus,
@@ -45,6 +55,10 @@ export {
 }
 
 export const obligations = [
+  supplierIdentificationNumber,
+  producerIdentificationNumber,
+  cropIdentificationNumber,
+  consignmentNumber,
   consignor,
   commodityType,
   commodityLine,

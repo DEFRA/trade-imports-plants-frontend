@@ -21,11 +21,17 @@ import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
 import { GROUPS, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 
+const PARTIES_GROUP_ID = 'consignment-parties'
+
 const hubGet = routes.find((route) => route.method === 'GET').handler
 
 const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
 const ARRIVAL_GROUP_ID = 'arrival-and-destination'
-const RENDERED_GROUP_IDS = [CONSIGNMENT_GROUP_ID, ARRIVAL_GROUP_ID]
+const RENDERED_GROUP_IDS = [
+  CONSIGNMENT_GROUP_ID,
+  ARRIVAL_GROUP_ID,
+  PARTIES_GROUP_ID
+]
 const NOT_STARTED_TAG_CLASS = 'govuk-tag--blue'
 const COMPLETED_TAG_CLASS = 'govuk-tag--green'
 const CANNOT_START_STATUS = {
@@ -159,6 +165,16 @@ describe('#hubGet', () => {
             title: { text: copy.rows.destination.title },
             status: CANNOT_START_STATUS
           })
+        ]
+      },
+      {
+        id: PARTIES_GROUP_ID,
+        caption: copy.groups[PARTIES_GROUP_ID],
+        items: [
+          {
+            title: { text: copy.rows.identificationNumbers.title },
+            status: CANNOT_START_STATUS
+          }
         ]
       }
     ])
@@ -391,11 +407,13 @@ describe('#hubGet — consignor', () => {
   })
   beforeEach(() => store.clear())
 
-  it('Should hide the consignor group for potatoes', async () => {
+  it('Should show only identification numbers in the parties group for potatoes', async () => {
     const { h } = await renderHub({ seed: { commodityType: POTATOES } })
-    expect(h.captured.view.context.groups.map(({ id }) => id)).not.toContain(
-      'consignment-parties'
-    )
+    expect(
+      h.captured.view.context.groups
+        .find(({ id }) => id === PARTIES_GROUP_ID)
+        .items.map((item) => item.title.text)
+    ).toEqual([copy.rows.identificationNumbers.title])
   })
 
   it('Should link plants and wood to the picker and complete a saved reference', async () => {
@@ -408,7 +426,7 @@ describe('#hubGet — consignor', () => {
         }
       })
       const group = h.captured.view.context.groups.find(
-        ({ id }) => id === 'consignment-parties'
+        ({ id }) => id === PARTIES_GROUP_ID
       )
       expect(group.items).toEqual([
         {
@@ -417,6 +435,19 @@ describe('#hubGet — consignor', () => {
           status: {
             tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
           }
+        },
+        {
+          title: { text: copy.rows.identificationNumbers.title },
+          href: `/notifications/${journeyId}/identification-numbers`,
+          status:
+            commodityType === 'wood-and-cut-trees'
+              ? { text: copy.statuses.optional }
+              : {
+                  tag: {
+                    text: copy.statuses.notYetStarted,
+                    classes: NOT_STARTED_TAG_CLASS
+                  }
+                }
         }
       ])
     }

@@ -64,6 +64,7 @@ describe('#copy', () => {
 
   it('Should hold only the rows the journey has landed', () => {
     expect(Object.keys(copy.rows)).toEqual([
+      'identificationNumbers',
       'consignor',
       'commodities',
       'origin',
