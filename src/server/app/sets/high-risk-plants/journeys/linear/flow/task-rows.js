@@ -1,3 +1,4 @@
+import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { statusOf } from '../../../../../bridge/status/index.js'
@@ -32,7 +33,8 @@ export const taskRows = [
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
   { id: 'destination', pages: [placeOfDestinationPage] },
   { id: 'consignor', pages: [consignorPage], conditional: true },
-  { id: 'identificationNumbers', pages: [identificationNumbersPage] }
+  { id: 'identificationNumbers', pages: [identificationNumbersPage] },
+  { id: 'contact', pages: [consignmentContactSelectPage] }
 ]
 
 export const taskRowById = (id) => taskRows.find((row) => row.id === id)

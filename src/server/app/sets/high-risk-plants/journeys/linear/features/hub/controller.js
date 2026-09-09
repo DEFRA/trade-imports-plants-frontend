@@ -35,7 +35,10 @@ const copy = copyFor({ en, cy })
 export const GROUPS = [
   { id: 'about-the-consignment', rows: ['commodities', 'origin'] },
   { id: 'arrival-and-destination', rows: ['arrival', 'destination'] },
-  { id: 'consignment-parties', rows: ['consignor', 'identificationNumbers'] },
+  {
+    id: 'consignment-parties',
+    rows: ['consignor', 'identificationNumbers', 'contact']
+  },
   { id: 'check-and-submit', rows: [] }
 ]
 

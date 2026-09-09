@@ -1,3 +1,5 @@
+const ADDRESS_ID = 'tech-imports-ltd'
+import * as contact from './sets/high-risk-plants/journeys/linear/features/consignment-contact-select/controller.js'
 import * as identificationNumbers from './sets/high-risk-plants/journeys/linear/features/identification-numbers/controller.js'
 import * as consignor from './sets/high-risk-plants/journeys/linear/features/consignor-select/controller.js'
 /**
@@ -64,6 +66,12 @@ const committableCollects = (collects) => {
 
 const cases = [
   {
+    id: 'consignment-contact-select',
+    collects: contact.meta.collects,
+    handler: postHandlerOf(contact),
+    payload: { contactAddress: ADDRESS_ID }
+  },
+  {
     id: 'identification-numbers-plants-for-planting',
     collects: identificationNumbers.meta.collects.filter((name) =>
       ['supplierIdentificationNumber', 'consignmentNumber'].includes(name)
@@ -107,7 +115,7 @@ const cases = [
     collects: consignor.meta.collects,
     handler: postHandlerOf(consignor),
     seed: { commodityType: PLANTS_FOR_PLANTING },
-    payload: { consignor: 'tech-imports-ltd' }
+    payload: { consignor: ADDRESS_ID }
   },
   {
     id: 'commodity-type',
@@ -149,7 +157,7 @@ const cases = [
     handler: postHandlerOf(placeOfDestination),
     // The picker posts the id of the address-book row the trader ticked. The
     // unit suite runs in stub mode, so this is a record the stub book holds.
-    payload: { placeOfDestination: 'tech-imports-ltd' }
+    payload: { placeOfDestination: ADDRESS_ID }
   }
 ]
 

@@ -1,3 +1,4 @@
+import { evaluationBindings as contact } from './consignment-contact-select/evaluation.js'
 import { evaluationBindings as identificationNumbers } from './identification-numbers/evaluation.js'
 import { evaluationBindings as consignor } from './consignor-select/evaluation.js'
 import { evaluationBindings as commodityType } from './commodity-type/evaluation.js'
@@ -8,6 +9,7 @@ import { evaluationBindings as arrivalDetails } from './arrival-details/evaluati
 import { evaluationBindings as placeOfDestination } from './place-of-destination/evaluation.js'
 
 export const featureEvaluationBindings = Object.freeze([
+  contact,
   identificationNumbers,
   commodityType,
   commodities,

@@ -1,3 +1,4 @@
+import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { hubPath, pagePath } from '../../../../../shared/paths.js'
@@ -36,6 +37,10 @@ export const RUN_STEPS = [
   {
     id: identificationNumbersPage.id,
     target: flowPageTarget(identificationNumbersPage)
+  },
+  {
+    id: consignmentContactSelectPage.id,
+    target: flowPageTarget(consignmentContactSelectPage)
   }
 ]
 

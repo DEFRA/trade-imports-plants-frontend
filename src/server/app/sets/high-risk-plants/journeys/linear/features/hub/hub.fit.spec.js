@@ -230,3 +230,20 @@ test('shows the identification numbers row blocked before prerequisites are answ
   await expect(row).toContainText(copy.statuses.cannotStartYet)
   await expect(row.getByRole('link')).toHaveCount(0)
 })
+
+test('contact task is visible and gated before the origin is answered', async ({
+  page
+}) => {
+  await signIn(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
+  await page
+    .getByRole('link', {
+      name: sharedCopy.saveActions.cancelAndReturnToHub,
+      exact: true
+    })
+    .click()
+  const row = taskRowByTitle(page, copy.rows.contact.title)
+  await expect(row).toContainText(copy.statuses.cannotStartYet)
+  await expect(row.getByRole('link')).toHaveCount(0)
+})

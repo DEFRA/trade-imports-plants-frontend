@@ -59,6 +59,15 @@ export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
  */
 export const COMPLETE_NOTIFICATION = Object.freeze({
   ...COMPLETE_POTATO_CONSIGNMENT,
+  contactAddress: Object.freeze({
+    addressId: 'tech-imports-ltd',
+    name: 'Tech Imports Ltd',
+    address: Object.freeze({
+      country: 'United Kingdom',
+      telephoneNumber: '01234567890',
+      emailAddress: 'contact@example.com'
+    })
+  }),
   producerIdentificationNumber: 'P123',
   cropIdentificationNumber: 'C123',
   countryOfOrigin: 'FR',

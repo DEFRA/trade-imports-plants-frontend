@@ -1,3 +1,4 @@
+import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
 import { consignorPage } from '../features/consignor-select/page.js'
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -24,7 +25,8 @@ const PLANTS_RUN = [
   'arrivalDate',
   'placeOfDestination',
   'consignor',
-  'consignmentNumber'
+  'consignmentNumber',
+  'contactAddress'
 ]
 const POTATO_RUN = [
   'commodityType',
@@ -34,7 +36,8 @@ const POTATO_RUN = [
   'arrivalTime',
   'proposedPlaceOfLanding',
   'placeOfDestination',
-  'consignmentNumber'
+  'consignmentNumber',
+  'contactAddress'
 ]
 
 const scopeOf = (...names) => ({
@@ -59,7 +62,8 @@ describe('#RUN_STEPS — the opening run', () => {
       arrivalDetailsPage.id,
       placeOfDestinationPage.id,
       consignorPage.id,
-      identificationNumbersPage.id
+      identificationNumbersPage.id,
+      consignmentContactSelectPage.id
     ])
   })
 
@@ -222,7 +226,7 @@ describe('#nextRunTarget', () => {
   it("Should fall through to the overview after the run's last step", () => {
     expect(
       nextRunTarget(
-        identificationNumbersPage.id,
+        consignmentContactSelectPage.id,
         answering(...PLANTS_RUN),
         JOURNEY_ID
       )
@@ -274,4 +278,17 @@ describe('consignor opening-run step', () => {
       )
     ).toBe(`/notifications/${JOURNEY_ID}/identification-numbers`)
   })
+})
+
+it('Should send every commodity type from identification numbers to contact', () => {
+  installHighRiskPlantsJourney()
+  for (const names of [PLANTS_RUN, POTATO_RUN]) {
+    expect(
+      nextRunTarget(
+        identificationNumbersPage.id,
+        answering(...names),
+        JOURNEY_ID
+      )
+    ).toBe(`/notifications/${JOURNEY_ID}/consignment/contact/select`)
+  }
 })

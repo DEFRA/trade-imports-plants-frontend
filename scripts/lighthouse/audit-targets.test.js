@@ -184,6 +184,7 @@ describe('#auditPaths', () => {
 
   it('Should audit every page the set registers today', () => {
     expect(auditPaths(journeyIds)).toEqual([
+      `/notifications/${journeyIds.warePotatoes}/consignment/contact/select`,
       `/notifications/${journeyIds.warePotatoes}/identification-numbers`,
       DASHBOARD_PATH,
       `/notifications/${journeyIds.warePotatoes}`,
@@ -217,6 +218,7 @@ describe('#auditableRoutePaths', () => {
 
   it('Should name every GET route the set registers today', () => {
     expect(auditableRoutePaths()).toEqual([
+      '/notifications/{journeyId}/consignment/contact/select',
       '/notifications/{journeyId}/identification-numbers',
       DASHBOARD_PATH,
       HUB_PATH,

@@ -174,6 +174,10 @@ describe('#hubGet', () => {
           {
             title: { text: copy.rows.identificationNumbers.title },
             status: CANNOT_START_STATUS
+          },
+          {
+            title: { text: copy.rows.contact.title },
+            status: CANNOT_START_STATUS
           }
         ]
       }
@@ -407,13 +411,13 @@ describe('#hubGet — consignor', () => {
   })
   beforeEach(() => store.clear())
 
-  it('Should show only identification numbers in the parties group for potatoes', async () => {
+  it('Should show identification numbers and contact in the parties group for potatoes', async () => {
     const { h } = await renderHub({ seed: { commodityType: POTATOES } })
     expect(
       h.captured.view.context.groups
         .find(({ id }) => id === PARTIES_GROUP_ID)
         .items.map((item) => item.title.text)
-    ).toEqual([copy.rows.identificationNumbers.title])
+    ).toEqual([copy.rows.identificationNumbers.title, copy.rows.contact.title])
   })
 
   it('Should link plants and wood to the picker and complete a saved reference', async () => {
@@ -448,6 +452,16 @@ describe('#hubGet — consignor', () => {
                     classes: NOT_STARTED_TAG_CLASS
                   }
                 }
+        },
+        {
+          title: { text: copy.rows.contact.title },
+          href: `/notifications/${journeyId}/consignment/contact/select`,
+          status: {
+            tag: {
+              text: copy.statuses.notYetStarted,
+              classes: NOT_STARTED_TAG_CLASS
+            }
+          }
         }
       ])
     }
