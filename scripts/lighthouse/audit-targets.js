@@ -13,9 +13,13 @@ export const TARGETS_FILE = new URL(
 
 /** GET routes Lighthouse deliberately does not audit. Every entry is checked
  * against the live route table, so a stale reason fails the build rather than
- * quietly shrinking the audit. Empty until the set registers a page that has to
- * be excluded, and each page increment adds its own reason. */
-export const SKIPPED = new Map()
+ * quietly shrinking the audit. Each page increment adds its own reason. */
+export const SKIPPED = new Map([
+  [
+    '/notifications/{journeyId}/confirmation',
+    'renders only on a submitted notification, and no seed shape completes the journey far enough to submit one yet'
+  ]
+])
 
 /** Routes whose answers live on a seeded notification other than the default —
  * either because the page only exists once the notification is submitted, or

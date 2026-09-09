@@ -1,4 +1,3 @@
-import { copy as confirmationCopy } from '../confirmation/copy/copy.en.js'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -8,7 +7,7 @@ import { copy as commodityCopy } from '../commodities/copy/copy.en.js'
 import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as idsCopy } from '../identification-numbers/copy/copy.en.js'
 import { copy } from '../check-answers/copy/copy.en.js'
-import { copy as declarationCopy } from './copy/copy.en.js'
+import { copy as declarationCopy } from '../declaration/copy/copy.en.js'
 
 const save = (page) =>
   page.getByRole('button', {
@@ -126,116 +125,67 @@ const openDeclaration = async (page, late = false) => {
   return reference
 }
 
-test('renders the plants declaration and Back navigation with no serious accessibility violations', async ({
+import { copy as confirmationCopy } from './copy/copy.en.js'
+
+test('shows an accessible submitted receipt, survives reload and links to the notification and dashboard', async ({
   page
 }) => {
   const reference = await openDeclaration(page)
-  await expect(
-    page.getByRole('heading', { name: declarationCopy.title, level: 1 })
-  ).toBeVisible()
-  for (const statement of declarationCopy.body) {
-    await expect(page.getByText(statement, { exact: true })).toBeVisible()
-  }
-  await expect(
-    page.getByRole('checkbox', { name: declarationCopy.declarationLabel })
-  ).not.toBeChecked()
-  await expect(
-    page.getByText(declarationCopy.dateOfDeclaration, { exact: false })
-  ).toBeVisible()
-  await assertAccessible(page)
   await page
-    .getByRole('link', { name: sharedCopy.layout.back, exact: true })
+    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
+    .check()
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  await expect(page).toHaveURL(
+    new RegExp(`/notifications/${reference}/confirmation$`)
+  )
+  await expect(
+    page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
+  ).toBeVisible()
+  await expect(
+    page.getByText(confirmationCopy.reference, { exact: false })
+  ).toContainText(reference)
+  await expect(
+    page.getByText(confirmationCopy.body, { exact: true })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
+  ).toHaveCount(0)
+  await assertAccessible(page)
+  await page.reload()
+  await expect(
+    page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
+  ).toBeVisible()
+  await page
+    .getByRole('link', { name: confirmationCopy.viewNotification, exact: true })
     .click()
   await expect(page).toHaveURL(
     new RegExp(`/notifications/${reference}/notification-view$`)
   )
-})
-
-test('requires confirmation, focuses the checkbox from the summary and has an accessible error state', async ({
-  page
-}) => {
-  await openDeclaration(page)
-  await page
-    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
-    .click()
-  const link = page
-    .getByRole('alert')
-    .getByRole('link', { name: declarationCopy.errors.declarationRequired })
-  await expect(link).toBeVisible()
-  await link.click()
-  await expect(
-    page.getByRole('checkbox', { name: declarationCopy.declarationLabel })
-  ).toBeFocused()
-  await assertAccessible(page)
-})
-
-test('accepts a late notification and shows the stored late banner on the read-only view', async ({
-  page
-}) => {
-  const reference = await completeNotification(page, true)
-  await expect(
-    page.getByText(copy.late.warning(copy.late.potatoes(2)))
-  ).toBeVisible()
-  await page.getByRole('button', { name: copy.continue, exact: true }).click()
-  await expect(page).toHaveURL(/\/declaration$/)
-  await page
-    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
-    .check()
-  await page
-    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
-    .click()
-  await expect(page).toHaveURL(
-    new RegExp(`/notifications/${reference}/confirmation$`)
-  )
-  await expect(
-    page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
-  ).toBeVisible()
-  await page.goto(`/notifications/${reference}/notification-view`)
-  await expect(
-    page.getByRole('heading', { name: copy.late.heading })
-  ).toBeVisible()
-  await expect(
-    page.getByText(copy.late.accepted, { exact: false })
-  ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: copy.continue, exact: true })
-  ).toHaveCount(0)
   await expect(page.getByRole('link', { name: /^Change/ })).toHaveCount(0)
-  await assertAccessible(page)
-  await page.reload()
+  await page.goto(`/notifications/${reference}/confirmation`)
+  await page
+    .getByRole('link', {
+      name: confirmationCopy.returnToDashboard,
+      exact: true
+    })
+    .click()
+  await expect(page).toHaveURL(/\/$/)
   await expect(
-    page.getByRole('heading', { name: copy.late.heading })
+    page.getByRole('button', { name: dashboardCopy.startButton })
   ).toBeVisible()
-  await page.goto(`/notifications/${reference}/declaration`)
-  await expect(page).toHaveURL(
-    new RegExp(`/notifications/${reference}/confirmation$`)
-  )
 })
 
-test('submits an on-time notification without a late banner', async ({
+test('returns a draft to check answers instead of showing a receipt', async ({
   page
 }) => {
-  const reference = await openDeclaration(page)
-  await page
-    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
-    .check()
-  await page
-    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
-    .click()
+  const reference = await completeNotification(page)
+  await page.goto(`/notifications/${reference}/confirmation`)
   await expect(page).toHaveURL(
-    new RegExp(`/notifications/${reference}/confirmation$`)
+    new RegExp(`/notifications/${reference}/notification-view$`)
   )
-  await expect(
-    page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
-  ).toBeVisible()
-  await page.goto(`/notifications/${reference}/notification-view`)
   await expect(
     page.getByRole('heading', { name: copy.title, level: 1 })
   ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: copy.late.heading })
-  ).toHaveCount(0)
-  await expect(
-    page.getByRole('button', { name: copy.continue, exact: true })
-  ).toHaveCount(0)
 })

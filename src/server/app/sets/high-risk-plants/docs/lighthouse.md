@@ -11,10 +11,12 @@ at import:
 
 - `scripts/lighthouse/audit-targets.js` (with `audit-targets.test.js`) derives
   the URL list from the app's own registered routes and holds the `SKIPPED`,
-  `FILLED_BY` and `QUERY` reasons. `SKIPPED` and `QUERY` are empty. `FILLED_BY`
-  holds one entry: arrival-status is audited on the `plantsForPlanting` shape,
-  because `arrivalStatus` is out of scope on the ware-potato default, so the
-  audit reads that page on a notification that actually asks the question.
+  `FILLED_BY` and `QUERY` reasons. `QUERY` is empty. `SKIPPED` holds one entry:
+  confirmation, because the page renders only on a submitted notification and
+  no seed shape completes the journey far enough to submit one. `FILLED_BY`
+  holds two entries: arrival-status and consignors/select, both on the
+  `plantsForPlanting` shape, because those questions are out of scope on the
+  ware-potato default.
 - `scripts/lighthouse/seed-notification.js` holds one `SEED_SHAPES` entry per
   blueprint use case — ware potatoes, ware potatoes notified late, seed
   potatoes, plants for planting, and wood — and fills a notification by walking
