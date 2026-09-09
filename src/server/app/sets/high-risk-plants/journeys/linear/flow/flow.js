@@ -1,3 +1,4 @@
+import { confirmationPage } from '../features/confirmation/page.js'
 import { declarationPage } from '../features/declaration/page.js'
 import { notificationViewPage } from '../features/check-answers/page.js'
 import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
@@ -60,6 +61,6 @@ export const sections = [
   {
     id: 'review',
     gate: (scope) => scope.readyForCheckYourAnswers,
-    pages: [notificationViewPage, declarationPage]
+    pages: [notificationViewPage, declarationPage, confirmationPage]
   }
 ]

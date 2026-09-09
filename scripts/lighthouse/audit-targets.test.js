@@ -40,12 +40,11 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// Only arrival-status needs a filled-by seed, and no registered page needs a
-// skip or a query string yet, so every assertion about one runs against a
-// synthetic route table that carries the real filled-by path too. Keying the
-// seeded ids off SEED_SHAPES
-// also proves the interface between the two modules: FILLED_BY names a shape,
-// and the shape has to be one the setup step seeds.
+// Confirmation is the one real skip, so the synthetic route table carries
+// the confirmation path too, alongside the real filled-by paths. No page
+// needs a query string yet. Keying the seeded ids off SEED_SHAPES also proves
+// the interface between the two modules: FILLED_BY names a shape, and the
+// shape has to be one the setup step seeds.
 const journeyIds = Object.fromEntries(
   Object.keys(SEED_SHAPES).map((shape, index) => [shape, `PHN-26-000${index}`])
 )
@@ -53,6 +52,7 @@ const journeyIds = Object.fromEntries(
 const DASHBOARD_PATH = '/'
 const HUB_PATH = '/notifications/{journeyId}'
 const DELETE_PATH = '/notifications/{journeyId}/delete'
+const CONFIRMATION_PATH = '/notifications/{journeyId}/confirmation'
 const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
 const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
 const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
@@ -66,6 +66,7 @@ const PLACE_OF_DESTINATION_PATH =
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
   { method: 'GET', path: HUB_PATH },
+  { method: 'GET', path: CONFIRMATION_PATH },
   { method: 'GET', path: ORIGIN_PATH },
   { method: 'GET', path: ARRIVAL_STATUS_PATH },
   { method: 'GET', path: CONSIGNOR_PATH },
@@ -82,7 +83,8 @@ const GET_PATHS = ROUTES.filter(({ method }) => method === 'GET').map(
 const SKIPPED_PATH = '/notifications/{journeyId}/uploads/status'
 const TREATMENTS_PATH = '/notifications/{journeyId}/treatments'
 const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
-const SKIPPED_PATH_COUNT = 1
+// The temporary uploads/status entry from withSkipped and the real confirmation entry.
+const SKIPPED_PATH_COUNT = 2
 
 /** The three maps are empty until pages land, so a test registers the entries
  * it needs for its own length and takes them back out again. */
@@ -210,12 +212,18 @@ describe('#auditPaths', () => {
 })
 
 describe('#auditableRoutePaths', () => {
+  it('Should leave out the confirmation page, which only renders on a submitted notification', () => {
+    expect(SKIPPED.get(CONFIRMATION_PATH)).toMatch(/submitted/)
+    expect(auditableRoutePaths()).not.toContain(CONFIRMATION_PATH)
+  })
+
   it('Should name every GET route the skip list does not name, journey id unsubstituted', () => {
     const paths = withSkipped(() => auditableRoutePaths(ROUTES))
 
     expect(paths).toHaveLength(GET_PATHS.length - SKIPPED_PATH_COUNT)
     expect(paths).toContain(TREATMENTS_PATH)
     expect(paths).not.toContain(SKIPPED_PATH)
+    expect(paths).not.toContain(CONFIRMATION_PATH)
   })
 
   it('Should name every GET route the set registers today', () => {
