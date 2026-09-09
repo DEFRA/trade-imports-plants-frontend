@@ -154,6 +154,10 @@ describe('#hubGet', () => {
           expect.objectContaining({
             title: { text: copy.rows.arrival.title },
             status: CANNOT_START_STATUS
+          }),
+          expect.objectContaining({
+            title: { text: copy.rows.destination.title },
+            status: CANNOT_START_STATUS
           })
         ]
       }
@@ -319,6 +323,63 @@ describe('#hubGet — the arrival row', () => {
     })
 
     expect(arrivalRow.status).toEqual({
+      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
+    })
+  })
+})
+
+describe('#hubGet — the destination row', () => {
+  beforeAll(() => {
+    configureRecords(recordsStub)
+    configureSession(sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
+
+  const destinationRowIn = async (seed) => {
+    const { journeyId, h } = await renderHub({ seed })
+    const [, destinationRow] = h.captured.view.context.groups[1].items
+    return { journeyId, destinationRow }
+  }
+
+  it('Should keep the row blocked until the notification names its origin', async () => {
+    const { destinationRow } = await destinationRowIn({
+      commodityType: POTATOES
+    })
+
+    expect(destinationRow).not.toHaveProperty('href')
+    expect(destinationRow.status).toEqual(CANNOT_START_STATUS)
+  })
+
+  it('Should open the row once the origin is named, for every commodity type', async () => {
+    // Every notification owes a place of destination, so the row is asked of
+    // potatoes and of plants alike.
+    for (const commodityType of [POTATOES, PLANTS_FOR_PLANTING]) {
+      const { journeyId, destinationRow } = await destinationRowIn({
+        commodityType,
+        countryOfOrigin: FRANCE
+      })
+
+      expect(destinationRow.href).toBe(
+        `/notifications/${journeyId}/destinations/select`
+      )
+      expect(destinationRow.status).toEqual({
+        tag: {
+          text: copy.statuses.notYetStarted,
+          classes: NOT_STARTED_TAG_CLASS
+        }
+      })
+    }
+  })
+
+  it('Should complete the row once an address has been picked', async () => {
+    const { destinationRow } = await destinationRowIn({
+      commodityType: POTATOES,
+      countryOfOrigin: FRANCE,
+      placeOfDestination: { addressId: 'tech-imports-ltd' }
+    })
+
+    expect(destinationRow.status).toEqual({
       tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
   })

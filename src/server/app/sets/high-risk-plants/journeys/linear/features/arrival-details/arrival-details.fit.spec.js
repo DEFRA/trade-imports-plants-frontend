@@ -22,6 +22,9 @@ const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
 const ARRIVAL_STATUS_URL = /\/notifications\/[^/]+\/arrival-status$/
 const PAGE_URL = /\/notifications\/[^/]+\/arrival-details$/
 const HUB_URL = /\/notifications\/[^/]+$/
+// Continue from here goes on to the place of destination, the last step of the
+// opening run, rather than straight back to the overview.
+const DESTINATION_URL = /\/notifications\/[^/]+\/destinations\/select$/
 const JOURNEY_ID_SEGMENT = 2
 
 const DATE_INPUT = 'input#arrivalDate'
@@ -225,7 +228,7 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(page.locator(PORT_INPUT)).toHaveValue(DOVER)
   })
 
-  test('saves all three answers, reaches the overview and shows them again on return', async ({
+  test('saves all three answers, reaches the destination and shows them again on return', async ({
     page
   }) => {
     const reference = await startAtPotatoDetails(page)
@@ -235,7 +238,7 @@ test.describe('arrival-details — a potato notification', () => {
     await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(DESTINATION_URL)
 
     await page.goto(arrivalDetailsPathOf(reference))
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_DATE)
@@ -347,7 +350,7 @@ test.describe('arrival-details — the question a plants notification is asked',
     await page.locator(DATE_INPUT).fill(A_PAST_DATE)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(DESTINATION_URL)
     await page.goto(arrivalDetailsPathOf(reference))
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_PAST_DATE)
   })
@@ -473,7 +476,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(DESTINATION_URL)
   })
 })
 

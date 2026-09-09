@@ -27,6 +27,7 @@ export const copy = {
   rows: {
     commodities: { title: 'What are you importing?' },
     origin: { title: 'Where is this consignment coming from?' },
-    arrival: { title: 'Arrival details' }
+    arrival: { title: 'Arrival details' },
+    destination: { title: 'Place of destination' }
   }
 }

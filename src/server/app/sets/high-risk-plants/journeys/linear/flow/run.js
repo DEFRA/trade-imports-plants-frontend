@@ -5,6 +5,7 @@ import { commoditiesPage } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
+import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 
 const flowPageTarget = (page) => (scope, journeyId) =>
   pageGatePasses(page, scope) ? pagePath(journeyId, page.slug) : null
@@ -16,13 +17,18 @@ const flowPageTarget = (page) => (scope, journeyId) =>
  * have arrived, then when. The entry sub-page is not a step: the list page
  * sends a trader with no lines there and takes them back. The arrival-status
  * step is skipped for potatoes, whose notification is never asked the
- * question; the arrival-details step is asked of every commodity type. */
+ * question; the arrival-details step and the place of destination that closes
+ * the run are asked of every commodity type. */
 export const RUN_STEPS = [
   { id: commodityTypePage.id, target: flowPageTarget(commodityTypePage) },
   { id: commoditiesPage.id, target: flowPageTarget(commoditiesPage) },
   { id: originPage.id, target: flowPageTarget(originPage) },
   { id: arrivalStatusPage.id, target: flowPageTarget(arrivalStatusPage) },
-  { id: arrivalDetailsPage.id, target: flowPageTarget(arrivalDetailsPage) }
+  { id: arrivalDetailsPage.id, target: flowPageTarget(arrivalDetailsPage) },
+  {
+    id: placeOfDestinationPage.id,
+    target: flowPageTarget(placeOfDestinationPage)
+  }
 ]
 
 export const nextRunTarget = (stepId, scope, journeyId) => {

@@ -59,6 +59,8 @@ const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
 const ARRIVAL_DETAILS_PATH = '/notifications/{journeyId}/arrival-details'
+const PLACE_OF_DESTINATION_PATH =
+  '/notifications/{journeyId}/destinations/select'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
@@ -188,7 +190,11 @@ describe('#auditPaths', () => {
       // Audited on the ware-potato default: the date is asked of every
       // commodity type, and potatoes are the shape that also carries the time
       // and the place of landing, so the audit reads the fullest page.
-      `/notifications/${journeyIds.warePotatoes}/arrival-details`
+      `/notifications/${journeyIds.warePotatoes}/arrival-details`,
+      // Audited on the ware-potato default too: the picker is the same page
+      // whichever state it asks its question in, and the ware-potato shape is
+      // the one that reaches it without an arrival status.
+      `/notifications/${journeyIds.warePotatoes}/destinations/select`
     ])
   })
 })
@@ -212,7 +218,8 @@ describe('#auditableRoutePaths', () => {
       COMMODITY_DETAILS_PATH,
       ORIGIN_PATH,
       ARRIVAL_STATUS_PATH,
-      ARRIVAL_DETAILS_PATH
+      ARRIVAL_DETAILS_PATH,
+      PLACE_OF_DESTINATION_PATH
     ])
   })
 })

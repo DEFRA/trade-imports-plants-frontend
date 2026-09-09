@@ -8,6 +8,7 @@ import {
 import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
+import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 
 /**
  * The hub's task rows.
@@ -16,6 +17,9 @@ import { arrivalDetailsPage } from '../features/arrival-details/page.js'
  * question is out of scope for potatoes, so a potato notification opens the row
  * on the details page instead — every commodity type owes a date. The row is
  * not marked `conditional`: no notification finds the whole of it inapplicable.
+ *
+ * The destination is a row of its own beside it in the same hub group. Every
+ * commodity type owes a place of destination, so it too is unconditional.
  */
 export const taskRows = [
   {
@@ -23,7 +27,8 @@ export const taskRows = [
     pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
   },
   { id: 'origin', pages: [originPage] },
-  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
+  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
+  { id: 'destination', pages: [placeOfDestinationPage] }
 ]
 
 export const taskRowById = (id) => taskRows.find((row) => row.id === id)

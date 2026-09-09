@@ -18,7 +18,8 @@ describe('section-caption copy modules', () => {
     expect(en.sections).toEqual({
       dashboard: 'Dashboard',
       aboutTheConsignment: 'About the consignment',
-      arrival: 'Arrival'
+      arrival: 'Arrival',
+      destination: 'Destination'
     })
   })
 
@@ -26,7 +27,8 @@ describe('section-caption copy modules', () => {
     expect(cy.sections).toEqual({
       dashboard: 'Dangosfwrdd',
       aboutTheConsignment: 'Am y llwyth',
-      arrival: 'Cyrraedd'
+      arrival: 'Cyrraedd',
+      destination: 'Cyrchfan'
     })
   })
 })

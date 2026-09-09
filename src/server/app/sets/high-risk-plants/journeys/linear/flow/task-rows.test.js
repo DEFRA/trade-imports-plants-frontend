@@ -28,6 +28,7 @@ import { originPage } from '../features/origin/page.js'
 import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { ALREADY_ARRIVED } from '../features/arrival-status/statuses.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
+import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 import { commodityTypes } from '../../../services/commodities/index.js'
 import { dispatchPages } from '../features/index.js'
 import { rowParts, rowStatus, taskRowById, taskRows } from './task-rows.js'
@@ -55,14 +56,15 @@ const stubSecondPage = {
 const scopeOf = (...names) => new Set(names)
 
 describe('#taskRows — the rows the hub can resolve', () => {
-  it('Should hold the rows the commodity, origin and arrival sections landed', () => {
+  it('Should hold the rows the commodity, origin, arrival and destination sections landed', () => {
     expect(taskRows).toEqual([
       {
         id: 'commodities',
         pages: [commodityTypePage, commoditiesPage, commodityDetailsPage]
       },
       { id: 'origin', pages: [originPage] },
-      { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
+      { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
+      { id: 'destination', pages: [placeOfDestinationPage] }
     ])
   })
 
@@ -70,6 +72,7 @@ describe('#taskRows — the rows the hub can resolve', () => {
     expect(taskRowById('commodities')).toBe(taskRows[0])
     expect(taskRowById('origin')).toBe(taskRows[1])
     expect(taskRowById('arrival')).toBe(taskRows[2])
+    expect(taskRowById('destination')).toBe(taskRows[3])
   })
 
   it('Should resolve no id the journey has not landed', () => {
@@ -232,5 +235,25 @@ describe('#rowStatus — one status per hub task row', () => {
         proposedPlaceOfLanding: 'GB DVR'
       })
     ).toBe(FULFILLED)
+  })
+
+  it('Should hold the destination row at Not yet started while nothing is answered', () => {
+    expect(statusIn('destination', {})).toBe(NOT_STARTED)
+  })
+
+  it('Should complete the destination row once an address is referenced', () => {
+    expect(
+      statusIn('destination', {
+        placeOfDestination: { addressId: 'tech-imports-ltd' }
+      })
+    ).toBe(FULFILLED)
+  })
+
+  it('Should hold the destination row at Not yet started on an empty reference', () => {
+    // A reference with no id is as good as no answer: the picker never writes
+    // one, but the status must not read the wrapper object as an answer.
+    expect(
+      statusIn('destination', { placeOfDestination: { addressId: '' } })
+    ).toBe(NOT_STARTED)
   })
 })

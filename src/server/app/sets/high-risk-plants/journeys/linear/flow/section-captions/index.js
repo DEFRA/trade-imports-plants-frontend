@@ -10,6 +10,7 @@ import {
 import { originPage } from '../../features/origin/page.js'
 import { arrivalStatusPage } from '../../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../../features/arrival-details/page.js'
+import { placeOfDestinationPage } from '../../features/place-of-destination/page.js'
 
 const copy = copyFor({ en, cy })
 
@@ -24,7 +25,6 @@ const copy = copyFor({ en, cy })
  * Pages still to be built, filed here by their own increment as each lands —
  * into the existing section entry where one exists:
  *
- * - `destination` — place-of-destination
  * - `consignmentParties` — consignor-select, identification-numbers
  *
  * A page that is absent is deliberately bare. The overview hub, the contact
@@ -43,7 +43,8 @@ export const captionSections = [
       originPage
     ]
   },
-  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] }
+  { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
+  { id: 'destination', pages: [placeOfDestinationPage] }
 ]
 
 const sectionIdByPageId = new Map(

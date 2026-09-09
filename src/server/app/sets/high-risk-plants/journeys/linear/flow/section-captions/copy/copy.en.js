@@ -11,6 +11,7 @@ export const copy = {
   sections: {
     dashboard: 'Dashboard',
     aboutTheConsignment: 'About the consignment',
-    arrival: 'Arrival'
+    arrival: 'Arrival',
+    destination: 'Destination'
   }
 }

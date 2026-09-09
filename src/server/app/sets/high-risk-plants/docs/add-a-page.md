@@ -208,13 +208,13 @@ If you add a task row, also:
   `journeys/linear/flow/task-rows.test.js`
 
 The hub feature is built, and it is the worked example for those bullets. It now
-renders three rows — commodities, origin and arrival — so read it as a worked
-example of a row that already exists rather than as an empty consumer.
+renders four rows — commodities, origin, arrival and destination — so read it as
+a worked example of a row that already exists rather than as an empty consumer.
 
 - [`journeys/linear/features/hub/controller.js`](../journeys/linear/features/hub/controller.js)
   holds `GROUPS` — the four numbered groups in the order the hub renders them.
   The first two now name the landed rows (`['commodities', 'origin']` and
-  `['arrival']`); consignment-parties and check-and-submit still hold an empty
+  `['arrival', 'destination']`); consignment-parties and check-and-submit still hold an empty
   `rows` list. It turns a row id into a task-list item: a row
   whose gate passes gets its `rowEntry()` link and a status tag, a row whose
   gate fails gets the "Cannot start yet" status and no link, and a conditional
@@ -258,9 +258,9 @@ that rule cannot express the page.
 
 Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
 only when it belongs in the opening run — that is, add it to `RUN_STEPS`, which
-currently holds four steps: commodity-type, commodities, origin and
-arrival-status, the last skipped for potatoes by its derived gate. Update its
-run tests if you do.
+currently holds six steps: commodity-type, commodities, origin, arrival-status,
+arrival-details and place-of-destination, the arrival-status step skipped for
+potatoes by its derived gate. Update its run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 
