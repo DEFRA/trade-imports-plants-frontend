@@ -1,3 +1,7 @@
+import * as declaration from './sets/high-risk-plants/journeys/linear/features/declaration/controller.js'
+import { COMPLETE_NOTIFICATION } from './sets/high-risk-plants/journeys/linear/test-support.js'
+import * as state from './engine/index.js'
+import { journeyRequest, stubH } from './engine/test-support.js'
 import * as checkAnswers from './sets/high-risk-plants/journeys/linear/features/check-answers/controller.js'
 const ADDRESS_ID = 'tech-imports-ltd'
 import * as contact from './sets/high-risk-plants/journeys/linear/features/consignment-contact-select/controller.js'
@@ -182,6 +186,24 @@ describe('controller <-> model commit contract', () => {
       expect(new Set(committedIds(result))).toEqual(new Set(committable))
     }
   )
+
+  it('Should commit only the declaration flow key and the system lateness value on declaration POST', async () => {
+    const journey = await store.create()
+    await store.seedAnswers(journey.journeyId, COMPLETE_NOTIFICATION)
+    const request = journeyRequest(journey.journeyId, {
+      payload: { declaration: 'confirmed' },
+      app: {}
+    })
+    const h = stubH()
+    await postHandlerOf(declaration)(request, h)
+    const current = await state.get(request, h)
+    expect(declaration.meta.collects).toEqual(['declaration'])
+    expect(current.answers.declaration).toBe('confirmed')
+    expect(
+      committedIds({ before: COMPLETE_NOTIFICATION, after: current.answers })
+    ).toEqual(['lateNotificationIndicator'])
+    expect((await store.get(journey.journeyId)).status).toBe(state.SUBMITTED)
+  })
 
   it('Should let Check your answers continue without committing any answers', async () => {
     expect(checkAnswers.meta.collects).toEqual([])

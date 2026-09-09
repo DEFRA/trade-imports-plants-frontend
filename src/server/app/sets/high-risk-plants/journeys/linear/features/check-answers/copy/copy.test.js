@@ -11,20 +11,17 @@ import { driveHandler } from '../../../../../../../engine/test-support.js'
 import * as checkAnswers from '../controller.js'
 import { copy } from './copy.en.js'
 
-const leaves = (node, path = []) =>
-  typeof node === 'object' && node !== null
-    ? Object.entries(node).flatMap(([key, value]) =>
-        leaves(value, [...path, key])
-      )
-    : [{ path: path.join('.'), value: node }]
+import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
 
 describe('checkAnswers copy module', () => {
-  it('Should have a non-empty string at every leaf', () => {
+  it('Should interpolate the supplied day count into both timing rules', () => {
+    expect(copy.late.potatoes(9)).toContain('9 days before')
+    expect(copy.late.plantsAndWood(9)).toContain('9 days after')
+  })
+
+  it('Should have a non-empty string or function at every leaf', () => {
     for (const { path, value } of leaves(copy)) {
-      expect(typeof value, `${path} must be a string`).toBe('string')
-      expect(value.trim().length, `${path} must not be empty`).toBeGreaterThan(
-        0
-      )
+      expect(isCopyLeaf(value), `${path} must be copy`).toBe(true)
     }
   })
 })

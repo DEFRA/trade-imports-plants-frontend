@@ -14,6 +14,12 @@ import { changeHref } from './view-model/rows/change-link.js'
 import { outstandingPartyErrors } from './view-model/outstanding-parties.js'
 import { originErrors } from '../origin/controller.js'
 
+import { lateness, requestClock } from '../review/lateness.js'
+import {
+  POTATO_DAYS_BEFORE_ARRIVAL,
+  PLANTS_WOOD_DAYS_AFTER_ARRIVAL
+} from '../timing-windows.js'
+
 export const meta = { ...page, collects: [] }
 const view = `${TEMPLATES}/features/check-answers/template`
 const copy = copyFor({ en, cy })
@@ -53,6 +59,19 @@ const render = async (request, h, current, disableAutoFocus = true) => {
     contentColumnClass: kit.surfaceClass('display'),
     copy,
     readOnly,
+    lateWarning:
+      current.journey.status === state.DRAFT &&
+      lateness(
+        requestClock(request),
+        current.answers.commodityType,
+        current.answers.arrivalDate
+      ) === 'late',
+    lateNotification:
+      readOnly && current.answers.lateNotificationIndicator === 'late',
+    lateRule:
+      current.answers.commodityType === 'potatoes'
+        ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
+        : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
     sections: buildSections(current, parties, readOnly),
     errorSummary: kit.errorSummary(errors, {
       href: (field) => changeHref(current.journey.journeyId, field),

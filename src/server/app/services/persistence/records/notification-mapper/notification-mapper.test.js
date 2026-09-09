@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { fulfilmentToNotification } from './index.js'
 
 describe('notification projection', () => {
+  it('Should omit system lateness because NotificationDto has no typed field for it', () => {
+    expect(
+      fulfilmentToNotification(
+        { 'c9e1043b-7fba-42d2-80c2-6d6384d9630c': 'late' },
+        'HRP-0001'
+      )
+    ).toEqual({ referenceNumber: 'HRP-0001' })
+  })
+
   it('Should omit consignor content from the envelope while canonical fulfilment owns it', () => {
     expect(
       fulfilmentToNotification(

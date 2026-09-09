@@ -6,7 +6,8 @@ import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as commodityCopy } from '../commodities/copy/copy.en.js'
 import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as idsCopy } from '../identification-numbers/copy/copy.en.js'
-import { copy } from './copy/copy.en.js'
+import { copy } from '../check-answers/copy/copy.en.js'
+import { copy as declarationCopy } from './copy/copy.en.js'
 
 const save = (page) =>
   page.getByRole('button', {
@@ -54,10 +55,10 @@ const startNotification = async (page) => {
   return reference
 }
 
-const completeNotification = async (page) => {
+const completeNotification = async (page, late = false) => {
   const reference = await startNotification(page)
   const date = new Date()
-  date.setDate(date.getDate() + 7)
+  date.setDate(date.getDate() + (late ? 0 : 7))
   await page
     .getByLabel(arrivalCopy.dateLabels.potatoes, { exact: true })
     .fill(`${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`)
@@ -115,115 +116,120 @@ const assertAccessible = async (page) => {
 
 test.beforeEach(async ({ page }) => signIn(page))
 
-test('renders saved answers, scoped cards and accessible Change links that return to review', async ({
-  page
-}) => {
-  const reference = await completeNotification(page)
-  await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
-  ).toBeVisible()
-  for (const heading of Object.values(copy.sections)) {
-    await expect(
-      page.getByRole('heading', { name: heading, level: 2 })
-    ).toBeVisible()
-  }
-  await expect(
-    page.getByRole('heading', { name: copy.cards.consignor, exact: true })
-  ).toHaveCount(0)
-  await expect(page.getByText(VARIETY, { exact: true })).toBeVisible()
-  await expect(
-    page.getByText('tech-imports-ltd@example.com', { exact: true })
-  ).toHaveCount(2)
-  await assertAccessible(page)
-  await page
-    .getByRole('link', {
-      name: 'Change country of origin (Import details)',
-      exact: true
-    })
-    .click()
-  await expect(page).toHaveURL(/\/origin\?change=1$/)
-  await save(page).click()
-  await expect(page).toHaveURL(cyaUrl)
-  await page
-    .getByRole('link', {
-      name: 'Change Commodity 1 (Commodity 1)',
-      exact: true
-    })
-    .click()
-  await expect(page).toHaveURL(/\/commodities\/details\?index=0&change=1$/)
-  await page.getByLabel(copy.labels.quantity, { exact: true }).fill('300')
-  await save(page).click()
-  await expect(page).toHaveURL(/\/commodities\?change=1$/)
-  await save(page).click()
-  await expect(page).toHaveURL(cyaUrl)
-  await page.reload()
-  await expect(page.getByText('300', { exact: true })).toBeVisible()
+const openDeclaration = async (page, late = false) => {
+  const reference = await completeNotification(page, late)
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
   await expect(page).toHaveURL(
     new RegExp(`/notifications/${reference}/declaration$`)
   )
-})
+  return reference
+}
 
-test('offers Back, Save and return, and Cancel to Overview', async ({
+test('renders the plants declaration and Back navigation with no serious accessibility violations', async ({
   page
 }) => {
-  const reference = await completeNotification(page)
-  const hub = `/notifications/${reference}`
+  const reference = await openDeclaration(page)
   await expect(
-    page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-  ).toHaveAttribute('href', hub)
+    page.getByRole('heading', { name: declarationCopy.title, level: 1 })
+  ).toBeVisible()
+  for (const statement of declarationCopy.body) {
+    await expect(page.getByText(statement, { exact: true })).toBeVisible()
+  }
   await expect(
-    page.getByRole('link', {
-      name: sharedCopy.saveActions.cancelAndReturnToHub,
-      exact: true
-    })
-  ).toHaveAttribute('href', hub)
-  await page
-    .getByRole('button', {
-      name: sharedCopy.saveActions.saveAndReturnToHub,
-      exact: true
-    })
-    .click()
-  await expect(page).toHaveURL(new RegExp(`${hub}$`))
-})
-
-test('rechecks a saved origin after a commodity change and exposes an accessible correction link', async ({
-  page
-}) => {
-  const reference = await completeNotification(page)
-  await page
-    .getByRole('link', {
-      name: 'Change Commodity 1 (Commodity 1)',
-      exact: true
-    })
-    .click()
-  await page
-    .getByRole('radio', {
-      name: copy.categoryLabels['ware-potatoes'],
-      exact: true
-    })
-    .check()
-  await save(page).click()
-  await expect(page).toHaveURL(/\/commodities\/details\?index=0&change=1$/)
-  await page
-    .getByLabel(copy.labels.potatoVariety, { exact: true })
-    .fill(VARIETY)
-  await page.getByLabel(copy.labels.quantity, { exact: true }).fill('250')
-  await page
-    .getByLabel(copy.labels.potatoIntendedUse, { exact: true })
-    .fill('Planting')
-  await save(page).click()
-  await expect(page).toHaveURL(/\/commodities\?change=1$/)
-  await save(page).click()
-  await expect(page).toHaveURL(cyaUrl)
-  await page.getByRole('button', { name: copy.continue, exact: true }).click()
-  await expect(page).toHaveURL(cyaUrl)
-  const error = page.getByRole('link', { name: /Poland/ })
-  await expect(error).toHaveAttribute(
-    'href',
-    `/notifications/${reference}/origin?change=1`
-  )
+    page.getByRole('checkbox', { name: declarationCopy.declarationLabel })
+  ).not.toBeChecked()
+  await expect(
+    page.getByText(declarationCopy.dateOfDeclaration, { exact: false })
+  ).toBeVisible()
   await assertAccessible(page)
-  await error.click()
-  await expect(page).toHaveURL(/\/origin\?change=1$/)
+  await page
+    .getByRole('link', { name: sharedCopy.layout.back, exact: true })
+    .click()
+  await expect(page).toHaveURL(
+    new RegExp(`/notifications/${reference}/notification-view$`)
+  )
+})
+
+test('requires confirmation, focuses the checkbox from the summary and has an accessible error state', async ({
+  page
+}) => {
+  await openDeclaration(page)
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  const link = page
+    .getByRole('alert')
+    .getByRole('link', { name: declarationCopy.errors.declarationRequired })
+  await expect(link).toBeVisible()
+  await link.click()
+  await expect(
+    page.getByRole('checkbox', { name: declarationCopy.declarationLabel })
+  ).toBeFocused()
+  await assertAccessible(page)
+})
+
+test('accepts a late notification and shows the stored late banner on the read-only view', async ({
+  page
+}) => {
+  const reference = await completeNotification(page, true)
+  await expect(
+    page.getByText(copy.late.warning(copy.late.potatoes(2)))
+  ).toBeVisible()
+  await page.getByRole('button', { name: copy.continue, exact: true }).click()
+  await expect(page).toHaveURL(/\/declaration$/)
+  await page
+    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
+    .check()
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  // The confirmation page belongs to the following increment; pin its redirect here.
+  await expect(page).toHaveURL(
+    new RegExp(`/notifications/${reference}/confirmation$`)
+  )
+  await page.goto(`/notifications/${reference}/notification-view`)
+  await expect(
+    page.getByRole('heading', { name: copy.late.heading })
+  ).toBeVisible()
+  await expect(
+    page.getByText(copy.late.accepted, { exact: false })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: copy.continue, exact: true })
+  ).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /^Change/ })).toHaveCount(0)
+  await assertAccessible(page)
+  await page.reload()
+  await expect(
+    page.getByRole('heading', { name: copy.late.heading })
+  ).toBeVisible()
+  await page.goto(`/notifications/${reference}/declaration`)
+  await expect(page).toHaveURL(
+    new RegExp(`/notifications/${reference}/confirmation$`)
+  )
+})
+
+test('submits an on-time notification without a late banner', async ({
+  page
+}) => {
+  const reference = await openDeclaration(page)
+  await page
+    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
+    .check()
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  await expect(page).toHaveURL(
+    new RegExp(`/notifications/${reference}/confirmation$`)
+  )
+  await page.goto(`/notifications/${reference}/notification-view`)
+  await expect(
+    page.getByRole('heading', { name: copy.title, level: 1 })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: copy.late.heading })
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: copy.continue, exact: true })
+  ).toHaveCount(0)
 })

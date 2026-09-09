@@ -1,3 +1,4 @@
+import { declarationPage } from '../features/declaration/page.js'
 import { notificationViewPage } from '../features/check-answers/page.js'
 import { consignmentContactSelectPage } from '../features/consignment-contact-select/page.js'
 import { identificationNumbersPage } from '../features/identification-numbers/page.js'
@@ -13,7 +14,7 @@ import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
 import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 
-export const FLOW_ONLY_KEYS = []
+export const FLOW_ONLY_KEYS = ['declaration']
 
 /**
  * The journey's page order.
@@ -59,6 +60,6 @@ export const sections = [
   {
     id: 'review',
     gate: (scope) => scope.readyForCheckYourAnswers,
-    pages: [notificationViewPage]
+    pages: [notificationViewPage, declarationPage]
   }
 ]

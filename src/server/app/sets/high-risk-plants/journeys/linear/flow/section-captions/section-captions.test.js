@@ -24,7 +24,7 @@ const CAPTIONED = [
 // overview hub, the contact page, check your answers, declaration and
 // confirmation bare, and each of those page increments adds itself here as it
 // lands.
-const BARE = ['consignment-contact-select', 'notification-view']
+const BARE = ['declaration', 'consignment-contact-select', 'notification-view']
 
 // `flow.js` exports no flat page list — the engine computes one privately in
 // `flow/prerequisites.js` — so the journey's pages come from its sections.

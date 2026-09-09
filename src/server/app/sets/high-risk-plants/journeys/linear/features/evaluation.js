@@ -8,7 +8,10 @@ import { evaluationBindings as arrivalStatus } from './arrival-status/evaluation
 import { evaluationBindings as arrivalDetails } from './arrival-details/evaluation.js'
 import { evaluationBindings as placeOfDestination } from './place-of-destination/evaluation.js'
 
+import { evaluationBindings as review } from './review/evaluation.js'
+
 export const featureEvaluationBindings = Object.freeze([
+  review,
   contact,
   identificationNumbers,
   commodityType,
