@@ -39,9 +39,6 @@ controller does the conversion after validation, and
 beside it returns the one bound the date has in both the shapes its two
 consumers need.
 
-There is no check-answers card yet, so the check-answers step below still
-carries its own placeholder.
-
 Read the platform guides alongside it —
 [Validation](../../../docs/validation.md),
 [Scope and wipe](../../../docs/scope-and-wipe.md) and
@@ -184,9 +181,20 @@ obligation path is in scope.
 Extend the check-answers feature spec to cover the displayed value and its
 Change link.
 
-> **EXEMPLAR PLACEHOLDER** — `journeys/linear/features/check-answers/` does not
-> exist. The first feature that needs a check-answers row builds it, and this
-> step should then link to its `view-model/` and `check-answers.fit.spec.js`.
+Follow
+[`journeys/linear/features/check-answers/view-model/`](../journeys/linear/features/check-answers/view-model/):
+`index.js` builds the cards, filters conditional rows with `scope.has()` and
+resolves coded values with `countries.originLabel()` and `ports.label()`.
+[`rows/summary-row.js`](../journeys/linear/features/check-answers/view-model/rows/summary-row.js)
+provides `row()`, and
+[`rows/change-link.js`](../journeys/linear/features/check-answers/view-model/rows/change-link.js)
+provides the dispatch-backed `changeAction()`.
+Use both
+[`copy/copy.en.js`](../journeys/linear/features/check-answers/copy/copy.en.js)
+and [`copy/copy.cy.js`](../journeys/linear/features/check-answers/copy/copy.cy.js)
+for labels. Extend
+[`check-answers.fit.spec.js`](../journeys/linear/features/check-answers/check-answers.fit.spec.js)
+for saved values, scoped output and Change navigation back to review.
 
 ## 6. Update downstream persistence when the backend needs the field
 
