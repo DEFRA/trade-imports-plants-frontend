@@ -16,6 +16,10 @@ export const TARGETS_FILE = new URL(
  * quietly shrinking the audit. Each page increment adds its own reason. */
 export const SKIPPED = new Map([
   [
+    '/notifications/{journeyId}/cancel-amend',
+    'renders only on an amending notification, and no seed shape submits then amends a notification yet; covered by the cancel-amend feature axe tests'
+  ],
+  [
     '/notifications/{journeyId}/confirmation',
     'renders only on a submitted notification, and no seed shape completes the journey far enough to submit one yet'
   ]

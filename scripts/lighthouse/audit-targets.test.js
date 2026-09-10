@@ -40,8 +40,8 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// Confirmation is the one real skip, so the synthetic route table carries
-// the confirmation path too, alongside the real filled-by paths. No page
+// Confirmation and cancel-amend require lifecycle states the seeds do not
+// create, so the synthetic route table carries both skipped paths. No page
 // needs a query string yet. Keying the seeded ids off SEED_SHAPES also proves
 // the interface between the two modules: FILLED_BY names a shape, and the
 // shape has to be one the setup step seeds.
@@ -52,6 +52,7 @@ const journeyIds = Object.fromEntries(
 const DASHBOARD_PATH = '/'
 const HUB_PATH = '/notifications/{journeyId}'
 const DELETE_PATH = '/notifications/{journeyId}/delete'
+const CANCEL_AMEND_PATH = '/notifications/{journeyId}/cancel-amend'
 const CONFIRMATION_PATH = '/notifications/{journeyId}/confirmation'
 const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
 const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
@@ -67,6 +68,7 @@ const ROUTES = [
   { method: 'GET', path: DASHBOARD_PATH },
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: CONFIRMATION_PATH },
+  { method: 'GET', path: CANCEL_AMEND_PATH },
   { method: 'GET', path: ORIGIN_PATH },
   { method: 'GET', path: ARRIVAL_STATUS_PATH },
   { method: 'GET', path: CONSIGNOR_PATH },
@@ -83,8 +85,8 @@ const GET_PATHS = ROUTES.filter(({ method }) => method === 'GET').map(
 const SKIPPED_PATH = '/notifications/{journeyId}/uploads/status'
 const TREATMENTS_PATH = '/notifications/{journeyId}/treatments'
 const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
-// The temporary uploads/status entry from withSkipped and the real confirmation entry.
-const SKIPPED_PATH_COUNT = 2
+// The temporary uploads/status entry and both lifecycle-only pages.
+const SKIPPED_PATH_COUNT = 3
 
 /** The three maps are empty until pages land, so a test registers the entries
  * it needs for its own length and takes them back out again. */
@@ -212,6 +214,11 @@ describe('#auditPaths', () => {
 })
 
 describe('#auditableRoutePaths', () => {
+  it('Should leave out cancel-amend because no seed shape is amending', () => {
+    expect(SKIPPED.get(CANCEL_AMEND_PATH)).toMatch(/amending/)
+    expect(auditableRoutePaths()).not.toContain(CANCEL_AMEND_PATH)
+  })
+
   it('Should leave out the confirmation page, which only renders on a submitted notification', () => {
     expect(SKIPPED.get(CONFIRMATION_PATH)).toMatch(/submitted/)
     expect(auditableRoutePaths()).not.toContain(CONFIRMATION_PATH)
