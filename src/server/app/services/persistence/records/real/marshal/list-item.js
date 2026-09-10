@@ -2,8 +2,9 @@ import { party } from '../../../../address-book/index.js'
 import { SUBMITTED } from '../../../../../engine/persistence/records.js'
 import { mapStatus } from '../status.js'
 
-/** SUBMITTED rows show the name frozen at submit; every other status live-resolves
- * a reference so an in-flight amendment reflects today's address book. */
+/** SUBMITTED rows prefer a name frozen at submit when present. Bare address
+ * references still resolve: this journey does not freeze names at submit.
+ * Every other status live-resolves so amendments reflect today's address book. */
 const nameOf = async (consignmentParty, lookup, status) => {
   if (!consignmentParty) {
     return null
@@ -11,7 +12,7 @@ const nameOf = async (consignmentParty, lookup, status) => {
   if (status === SUBMITTED && consignmentParty.name) {
     return consignmentParty.name
   }
-  if (consignmentParty.addressId && status !== SUBMITTED) {
+  if (consignmentParty.addressId) {
     const record = await lookup(consignmentParty.addressId)
     return record && !record.deleted ? (record.name ?? null) : null
   }
