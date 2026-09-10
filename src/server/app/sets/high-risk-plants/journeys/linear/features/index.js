@@ -1,3 +1,4 @@
+import * as cancelAmend from './cancel-amend/controller.js'
 import * as confirmation from './confirmation/controller.js'
 import * as declaration from './declaration/controller.js'
 import * as checkAnswers from './check-answers/controller.js'
@@ -17,7 +18,7 @@ import * as placeOfDestination from './place-of-destination/controller.js'
 
 // Neither the dashboard nor the hub exports meta: they collect nothing, are
 // never gated and are never a task row, so they stay out of the dispatch index.
-// Nor does delete-notification: it is an action slug, not a journey page.
+// Delete-notification and cancel-amend are action slugs, not journey pages.
 export const dispatchPages = [
   confirmation.meta,
   declaration.meta,
@@ -35,6 +36,7 @@ export const dispatchPages = [
 ]
 
 export const allRoutes = [
+  ...cancelAmend.routes,
   ...confirmation.routes,
   ...declaration.routes,
   ...checkAnswers.routes,
