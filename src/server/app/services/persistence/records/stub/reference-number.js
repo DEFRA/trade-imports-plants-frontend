@@ -6,7 +6,7 @@ export const REFERENCE_BODY_LENGTH = 6
 const YEAR_DIGITS = 2
 const TWO_DIGIT_YEAR_MODULUS = 100
 
-/** Mints a reference number as `{YY}-{XXXXXX}`, matching the backend's
+/** Mints a reference number as `GBN-HRP-{YY}-{XXXXXX}`, matching the backend's
  * `ReferenceNumberGenerator`. */
 export const mintReferenceNumber = () => {
   const year = String(
@@ -16,8 +16,5 @@ export const mintReferenceNumber = () => {
     { length: REFERENCE_BODY_LENGTH },
     () => CROCKFORD_BASE32[randomInt(CROCKFORD_BASE32.length)]
   ).join('')
-  // PENDING REQUIREMENTS: the human-facing type code that prefixes the
-  // reference number is not yet agreed. Prepend it here, and to the backend's
-  // ReferenceNumberGenerator, when it is.
-  return `${year}-${body}`
+  return `GBN-HRP-${year}-${body}`
 }
