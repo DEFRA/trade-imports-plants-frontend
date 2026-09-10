@@ -285,6 +285,38 @@ describe('Check your answers lateness', () => {
     }
   )
 
+  it('Should offer Cancel amendment only while amending, and the banner only after cancelling', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    const submitted = stubH()
+    await get(journeyRequest(journeyId), submitted)
+    expect(submitted.captured.view.context).toMatchObject({
+      readOnly: true,
+      deleteHref: `/notifications/${journeyId}/delete`,
+      cancelAmendHref: null,
+      amendmentCancelled: false
+    })
+    const cancelled = stubH()
+    await get(
+      journeyRequest(journeyId, { query: { cancelled: '1' } }),
+      cancelled
+    )
+    expect(cancelled.captured.view.context.amendmentCancelled).toBe(true)
+    await recordsStub.amend(journeyId)
+    const amending = stubH()
+    await get(
+      journeyRequest(journeyId, { query: { cancelled: '1' } }),
+      amending
+    )
+    expect(amending.captured.view.context).toMatchObject({
+      readOnly: false,
+      deleteHref: null,
+      cancelAmendHref: `/notifications/${journeyId}/cancel-amend`,
+      amendmentCancelled: false
+    })
+  })
+
   it('Should let unexpected address-book errors escape', async () => {
     vi.spyOn(addressBook, 'party').mockRejectedValue(
       new TypeError('unexpected')

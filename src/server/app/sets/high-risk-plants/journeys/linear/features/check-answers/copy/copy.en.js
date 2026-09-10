@@ -14,6 +14,12 @@ export const copy = {
 
   title: 'Check your answers',
   change: 'Change',
+  cancelAmend: {
+    link: 'Cancel amendment',
+    successTitle: 'Success',
+    successBody:
+      'The amendment has been cancelled and the submitted version restored.'
+  },
   notProvided: 'Not provided',
   continue: 'Continue',
   errors: {
