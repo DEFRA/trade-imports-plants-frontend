@@ -14,7 +14,9 @@ import { PLACE_OF_DESTINATION } from '../features/place-of-destination/fields.js
  *
  * An answer that holds a COPY of an address belongs nowhere near here. The copy
  * is the answer, so there is no reference to dangle and nothing to clear when
- * the record it was taken from is deleted. This journey has no such answer yet.
+ * the record it was taken from is deleted. `contactAddress` is that answer in
+ * this journey: the contact page commits `{ addressId, name, address }`, so it
+ * stays off this list.
  */
 export const REFERENCE_PARTIES = Object.freeze([
   PLACE_OF_DESTINATION,

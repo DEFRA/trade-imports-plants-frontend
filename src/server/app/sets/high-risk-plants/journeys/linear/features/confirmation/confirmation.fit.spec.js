@@ -87,7 +87,9 @@ const completeNotification = async (page, late = false) => {
     .fill('C123')
   await save(page).click()
   await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
-  await page.getByRole('radio', { name: contactName, exact: true }).check()
+  await page
+    .getByRole('radio', { name: `Select ${contactName}`, exact: true })
+    .check()
   await save(page).click()
   // The opening run stops at the hub once every prerequisite section is
   // answered but the review gate itself needs a manual visit.
