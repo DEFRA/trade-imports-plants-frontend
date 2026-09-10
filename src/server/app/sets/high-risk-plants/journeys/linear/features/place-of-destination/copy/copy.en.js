@@ -2,10 +2,11 @@
 // same party, and the picker chrome below is copied verbatim from the animals
 // party picker, apart from `pagination`, which that picker has no counterpart
 // for and which is the dashboard's own wording
-// (features/dashboard/copy/copy.en.js). The headings and the descriptions are
-// the journey spec's wording and have not been through a content review
-// (journey-spec.json pages[place-of-destination].descriptionByState,
-// decisions.json d-003).
+// (features/dashboard/copy/copy.en.js). The pre-arrival headings are the
+// title, so the page is called what the hub task row that leads to it is
+// called. The already-arrived heading and the descriptions are the journey
+// spec's wording and have not been through a content review (journey-spec.json
+// pages[place-of-destination].descriptionByState, decisions.json d-003).
 
 /**
  * The place-of-destination page — where the consignment is going, or where it
@@ -20,11 +21,13 @@
  * the results table and the selection — and is the same whichever state the
  * question is asked in.
  */
+const PAGE_NAME = 'Place of destination'
+
 export const copy = {
-  title: 'Place of destination',
+  title: PAGE_NAME,
   headings: {
-    potatoes: 'Intended destination',
-    'not-yet-arrived': 'Intended destination',
+    potatoes: PAGE_NAME,
+    'not-yet-arrived': PAGE_NAME,
     'already-arrived': 'Where is the consignment now?'
   },
   descriptions: {

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
+import { copy as hubEn } from '../../hub/copy/copy.en.js'
+import { copy as hubCy } from '../../hub/copy/copy.cy.js'
 import { DESTINATION_STATES } from '../fields.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
 
 const SENTINEL_ROWS_SHOWN = 5
 const SENTINEL_ROWS_FOUND = 13
+
+const PAGE_NAME_EN = 'Place of destination'
+const PAGE_NAME_CY = 'Man cyrchfan'
 
 describe('#copy', () => {
   it.each([
@@ -40,22 +45,39 @@ describe('#copy', () => {
   )
 
   it('Should carry the title the animals service already uses', () => {
-    expect(copy.title).toBe('Place of destination')
-    expect(cy.title).toBe('Man cyrchfan')
+    expect(copy.title).toBe(PAGE_NAME_EN)
+    expect(cy.title).toBe(PAGE_NAME_CY)
   })
 
-  it('Should ask for the intended destination until the consignment is here', () => {
+  it('Should call the page Place of destination until the consignment is here', () => {
     // Potatoes are never asked whether the consignment has arrived, so they
     // are asked the same question as a consignment still on its way.
-    expect(copy.headings.potatoes).toBe('Intended destination')
-    expect(copy.headings['not-yet-arrived']).toBe('Intended destination')
+    expect(copy.headings.potatoes).toBe(PAGE_NAME_EN)
+    expect(copy.headings['not-yet-arrived']).toBe(PAGE_NAME_EN)
     expect(copy.descriptions.potatoes).toBe(
       copy.descriptions['not-yet-arrived']
     )
-    expect(cy.headings.potatoes).toBe('Cyrchfan arfaethedig')
-    expect(cy.headings['not-yet-arrived']).toBe('Cyrchfan arfaethedig')
+    expect(cy.headings.potatoes).toBe(PAGE_NAME_CY)
+    expect(cy.headings['not-yet-arrived']).toBe(PAGE_NAME_CY)
     expect(cy.descriptions.potatoes).toBe(cy.descriptions['not-yet-arrived'])
   })
+
+  it.each([
+    ['en', copy, hubEn],
+    ['cy', cy, hubCy]
+  ])(
+    'Should head the %s page before arrival with the name the hub task row uses',
+    (locale, bundle, hub) => {
+      expect(bundle.title, `${locale}: hub row`).toBe(
+        hub.rows.destination.title
+      )
+      expect(bundle.headings.potatoes, `${locale}: potatoes`).toBe(bundle.title)
+      expect(
+        bundle.headings['not-yet-arrived'],
+        `${locale}: not-yet-arrived`
+      ).toBe(bundle.title)
+    }
+  )
 
   it('Should ask where the consignment is once it has arrived', () => {
     expect(copy.headings['already-arrived']).toBe(
