@@ -47,10 +47,9 @@ const json = async (url) => {
   return response.json()
 }
 
-// The minted reference is `{YY}-{XXXXXX}`; the human-facing type code that
-// will prefix it is not yet agreed, so nothing here may name one.
-const REF_PATTERN = /^\d{2}-[A-Z0-9]{6}$/
-const UNKNOWN_REFERENCE = '99-ZZZZZZ'
+// The real adapter receives the agreed plants reference format from the backend.
+const REF_PATTERN = /^GBN-HRP-\d{2}-[0-9A-HJ-KM-NP-TV-Z]{6}$/
+const UNKNOWN_REFERENCE = 'GBN-HRP-99-ZZZZZZ'
 
 const answers = {
   scalarField: VALUE_ONE,
