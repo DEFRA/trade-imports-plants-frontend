@@ -11,6 +11,10 @@ import {
   installHighRiskPlantsJourney
 } from '../../test-support.js'
 import { sections } from '../../flow/flow.js'
+import {
+  POTATO_DAYS_BEFORE_ARRIVAL,
+  PLANTS_WOOD_DAYS_AFTER_ARRIVAL
+} from '../timing-windows.js'
 import { copy } from './copy/copy.en.js'
 import { routes, meta } from './controller.js'
 
@@ -53,6 +57,49 @@ describe('confirmation', () => {
       expect(h.captured.view.context.caption).toBeUndefined()
     }
     expect(await store.get(journeyId)).toEqual(before)
+  })
+
+  it.each([
+    { indicator: 'on-time', late: false },
+    { indicator: 'late', late: true }
+  ])(
+    'Should date the receipt and read the $indicator banner from the stored indicator',
+    async ({ indicator, late }) => {
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, {
+        ...COMPLETE_NOTIFICATION,
+        lateNotificationIndicator: indicator
+      })
+      await store.submit(journeyId)
+      const { submittedAt } = await store.get(journeyId)
+      const h = stubH()
+      await get(journeyRequest(journeyId), h)
+      expect(h.captured.view.context).toMatchObject({
+        notificationDate: new Date(submittedAt).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'Europe/London'
+        }),
+        late,
+        lateRule: copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
+      })
+    }
+  )
+
+  it('Should quote the plants and wood window for a plants consignment', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, {
+      ...COMPLETE_NOTIFICATION,
+      commodityType: 'plants-for-planting',
+      lateNotificationIndicator: 'late'
+    })
+    await store.submit(journeyId)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+    expect(h.captured.view.context.lateRule).toBe(
+      copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL)
+    )
   })
 
   it.each([state.DRAFT, state.AMEND])(

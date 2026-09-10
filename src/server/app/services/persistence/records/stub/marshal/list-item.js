@@ -44,6 +44,12 @@ export const marshalListItem = async (document) => {
     originCountryCode: answers.countryOfOrigin ?? null,
     arrivalDate: isoFromDateParts(answers.arrivalDateAtPort),
     consignorName: await nameOf(answers.consignor),
-    consigneeName: await nameOf(answers.consignee)
+    consigneeName: await nameOf(answers.consignee),
+    // The Late tag beside the dashboard card's status tag (c-030/c-035) reads
+    // this straight from the row; the stored system value, never recomputed.
+    // The row does `Boolean(journey.lateNotificationIndicator)` and the stored
+    // value is the string 'late' or 'on-time' — both truthy — so narrow it to
+    // the boolean here rather than tagging every on-time notification late.
+    lateNotificationIndicator: answers.lateNotificationIndicator === 'late'
   }
 }

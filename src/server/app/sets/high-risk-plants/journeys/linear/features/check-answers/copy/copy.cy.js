@@ -15,6 +15,12 @@ export const copy = {
 
   title: 'Gwiriwch eich atebion',
   change: 'Newid',
+  cancelAmend: {
+    link: 'Canslo’r diwygiad',
+    successTitle: 'Llwyddiant',
+    successBody:
+      'Mae’r diwygiad wedi’i ganslo a’r fersiwn a gyflwynwyd wedi’i hadfer.'
+  },
   notProvided: 'Heb ei ddarparu',
   continue: 'Parhau',
   errors: {

@@ -77,7 +77,14 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       href: (field) => changeHref(current.journey.journeyId, field),
       disableAutoFocus
     }),
-    deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null
+    deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
+    // Ruled c-030: AMEND offers Cancel amendment instead of Delete; the
+    // success banner shows once, after cancel-amend's own redirect.
+    cancelAmendHref:
+      current.journey.status === state.AMEND
+        ? pagePath(current.journey.journeyId, 'cancel-amend')
+        : null,
+    amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }
 

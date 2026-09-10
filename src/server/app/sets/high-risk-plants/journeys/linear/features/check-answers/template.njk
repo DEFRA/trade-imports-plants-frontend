@@ -8,9 +8,22 @@
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 
 {% block journeyContent %}
+  {% if amendmentCancelled %}
+    {{ govukNotificationBanner({
+      type: "success",
+      titleText: copy.cancelAmend.successTitle,
+      text: copy.cancelAmend.successBody,
+      role: "alert"
+    }) }}
+  {% endif %}
   {% include "shared/error-summary.njk" %}
   {{ sectionCaption(caption) }}
   <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% if cancelAmendHref %}
+    <p class="govuk-body">
+      <a class="govuk-link" href="{{ cancelAmendHref }}">{{ copy.cancelAmend.link }}</a>
+    </p>
+  {% endif %}
   {% if lateNotification %}
     {% set lateBody %}
       <h2 class="govuk-notification-banner__heading">{{ copy.late.heading }}</h2>
