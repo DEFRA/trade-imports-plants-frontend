@@ -1,13 +1,12 @@
 # high-risk-plants set and linear journey
 
-The high-risk-plants obligation set. It is **empty**: no obligations, no journey
-pages, no task rows, no flow sections. The engine and the bridge under
-`src/server/app/` are generic and fully present; this set is the only
-thing that carries plant domain content, and it carries none yet.
+The high-risk-plants obligation set and its linear notification journey. The
+set owns plant obligations, collecting pages, task rows and flow sections;
+the engine and bridge under `src/server/app/` remain generic.
 
 Read the generic documentation in [`../../../docs/`](../../../docs/README.md)
-for how the engine works. This file records what is specific to the set being
-empty; the guides and recipes below carry the rules for filling it.
+for how the engine works. The guides and recipes below describe the set's
+conventions and link to implemented features.
 
 ## Run and test
 
@@ -78,14 +77,29 @@ from `test/fixtures/` instead — the engine must not depend on the set.
 
 ## The served surface today
 
-With `allRoutes` empty the service answers `/health`, the auth and
-sign-out routes, and the static assets. There is no `/` — the dashboard
-and the hub are set-owned journey chrome, and neither has been written.
-A 404 on the root is the expected zero-page state, not a failed boot.
+The service serves a notification dashboard at `/`, alongside `/health`,
+authentication, sign-out and static assets. The dashboard lists, searches,
+sorts and paginates notifications, and starts a notification through
+`POST /notifications`.
 
-This passage is the only description of the served surface. The repo
-README and the platform README link here rather than repeat it. Update
-it here when the first page lands.
+Each notification has a task-list hub at `/notifications/{journeyId}`. Its
+seven task rows cover commodities, origin, arrival, destination, consignor,
+identification numbers and consignment contact. The commodities feature has
+a list page and an entry sub-page for adding or editing a line. Scope controls
+which questions apply: for example, potato notifications skip arrival status
+and go straight to arrival details.
+
+The review section contains check answers, declaration and confirmation;
+readiness gates entry to it. Registered actions also support amending,
+cancelling an amendment, copying and deleting notifications. The entry guard
+redirects a notification with neither a started opening run nor committed user
+answers to `commodity-type`, including when its hub is requested directly.
+
+[`features/index.js`](../journeys/linear/features/index.js) registers the
+surface; [`flow/flow.js`](../journeys/linear/flow/flow.js) and
+[`flow/task-rows.js`](../journeys/linear/flow/task-rows.js) define page order and
+hub tasks. This is the detailed served-surface reference linked by the repo
+and platform READMEs.
 
 ## Adding the first obligation is a three-part change
 
@@ -142,22 +156,18 @@ files its own page there or lists it as bare.
 page, not before — a flow-only key widens the recognised answer-key
 surface for a key nothing can yet write.
 
-## Exemplars this documentation still needs
+## Recipe exemplars
 
-Every recipe in this folder normally opens with a "Read these files first"
-list pointing at a real feature. There are no plants features, so each recipe
-carries an `EXEMPLAR PLACEHOLDER` block instead, describing the _shape_ of the
-feature that should become its exemplar. Grep for that marker and close the
-placeholders out as features land:
+Start with the recipe, then read its linked feature files. These are the
+implemented plants examples for each available shape:
 
-| Recipe                                     | Shape of the exemplar it needs                                 |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| [add-a-page.md](add-a-page.md)             | the smallest complete single-field collecting page             |
-| [add-a-field.md](add-a-field.md)           | several fields, conditional scope, service-backed options      |
-| [add-a-section.md](add-a-section.md)       | the first multi-page feature group with one hub task row       |
-| [add-a-collection.md](add-a-collection.md) | a single-page loop, and a batch split with a nested collection |
+| Recipe                                  | Shape                                                                                 | Plants exemplar                                                                                                                                                          |
+| --------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Add a page](add-a-page.md)             | Smallest complete single-field collecting page                                        | [commodity-type](../journeys/linear/features/commodity-type/page.js)                                                                                                     |
+| [Add a field](add-a-field.md)           | Several fields, conditional scope and service-backed options                          | [arrival-details](../journeys/linear/features/arrival-details/controller.js)                                                                                             |
+| [Add a section](add-a-section.md)       | Multi-page feature group with one hub task row                                        | [commodities](../journeys/linear/features/commodities/page.js), with the `commodities` [task row](../journeys/linear/flow/task-rows.js)                                  |
+| [Add a collection](add-a-collection.md) | List page plus entry sub-page, per-instance conditional fields and a collection floor | [commodities list](../journeys/linear/features/commodities/list/list.controller.js) and [details](../journeys/linear/features/commodities/details/details.controller.js) |
 
-Deliberately no feature names. The journey's requirements are not agreed, so
-naming a candidate here would be inventing them. Pick the exemplar from whatever
-the first increments actually build. Nothing under `journeys/linear/features/`
-exists yet, and no recipe should be read as though it did.
+The single-page loop, batch split and nested collection shapes have no plants
+implementation. The [collection recipe](add-a-collection.md) describes those
+patterns; they are not additional served features or local exemplars.

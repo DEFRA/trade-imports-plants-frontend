@@ -7,8 +7,8 @@
 The frontend for the high-risk plants import notification journey. It runs on
 the same obligation and journey platform as the live-animals frontend: a
 journey-agnostic engine under `src/server/app/`, with all journey content in
-the `high-risk-plants` set beneath it. That set is currently empty — the
-journey's requirements have not been agreed yet.
+the `high-risk-plants` set beneath it. The set provides the notification
+journey from commodity selection through declaration and confirmation.
 
 - [Platform documentation](src/server/app/docs/README.md)
 - [High-risk-plants set and journey documentation](src/server/app/sets/high-risk-plants/docs/README.md)
@@ -17,14 +17,13 @@ Run the set's unit suite from the repo root: `npm run test:high-risk-plants`.
 
 ## Current state
 
-The platform is complete. **The high-risk-plants set is empty.** For what the
-service serves in that state, see
-[The served surface today](src/server/app/sets/high-risk-plants/docs/README.md#the-served-surface-today).
-
-The set documentation records what the first page increment has to bring with
-it, including the currently inert journey entry guard. Read
-[Adding the first obligation](src/server/app/sets/high-risk-plants/docs/README.md#adding-the-first-obligation-is-a-three-part-change)
-before writing any of it.
+The high-risk-plants journey is implemented, with a notification dashboard,
+a task-list hub, collecting pages and a review and submission flow. The entry
+guard sends an unstarted notification to the commodity-type question. See
+[The served surface today](src/server/app/sets/high-risk-plants/docs/README.md#the-served-surface-today)
+for the registered routes and tasks, and
+[Recipe exemplars](src/server/app/sets/high-risk-plants/docs/README.md#recipe-exemplars)
+for real features to follow when extending the journey.
 
 Deployed end-to-end tests for this service live in the shared tests repository
 `trade-imports-animals-tests`, as a fourth Playwright project alongside `e2e`,
@@ -237,8 +236,7 @@ else's image.
 `npm run lighthouse` seeds its audit targets from the app's own registered
 routes, then runs Lighthouse CI against them.
 
-The set registers no journey pages yet, so the derived URL list is empty and
-there is nothing to audit until the first page lands. The
+The set registers journey pages, which supply the derived audit URL list. The
 [Lighthouse guide](src/server/app/sets/high-risk-plants/docs/lighthouse.md)
 covers what each page increment adds, the score floors and the contribution
 steps.
