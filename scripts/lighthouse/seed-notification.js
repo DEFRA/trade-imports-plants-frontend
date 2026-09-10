@@ -1,11 +1,13 @@
+import { createRequire } from 'node:module'
 import {
   createPath,
   dashboardPath,
   pagePath
 } from '../../src/server/app/shared/paths.js'
-import { commodityTypePage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/page.js'
-import { commodityDetailsPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/page.js'
-import { originPage } from '../../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/page.js'
+import { seedFields } from '../../fit/seed-fields.js'
+const happyPaths = createRequire(import.meta.url)(
+  '../../src/server/app/sets/high-risk-plants/journeys/linear/flow/fixtures/happy-path.json'
+)
 
 const HTTP_FOUND = 302
 const HTTP_OK = 200
@@ -14,100 +16,29 @@ const DECLARATION_SLUG = 'declaration'
 const CONFIRMATION_SLUG = 'confirmation'
 const DECLARATION_VALUE = 'confirmed'
 
-/** The commodity type each use case is for. The step is what gives a seeded
- * notification a committed user answer, which is what admits it past the entry
- * guard when the audit re-fetches its URLs in a session that never walked the
- * journey. */
-const commodityTypeStep = (commodityType) => ({
-  slug: commodityTypePage.slug,
-  fields: { commodityType }
-})
+// The browser smoke and Lighthouse seed the same five complete use cases.
+export const SEED_SHAPES = happyPaths
 
-/** One commodity line, which the entry sub-page takes in two posts: the
- * category creates the line, and the fields that category asks for are saved
- * against it. Without a line the commodities list has nothing to read back and
- * sends the audit straight on to the entry page. */
-const commodityLineSteps = (category, fields) => [
-  { slug: commodityDetailsPage.slug, fields: { category } },
-  {
-    slug: commodityDetailsPage.slug,
-    fields: { index: '0', category, ...fields }
+const fieldsFor = (step, page) => {
+  const fields = seedFields(step)
+  // The real address book has generated ids; use a rendered choice there.
+  // In stub mode the fixture's named party is available and stays selected.
+  for (const name of ['placeOfDestination', 'consignor', 'contactAddress']) {
+    if (fields[name]) {
+      const choices = page.$(`input[type="radio"][name="${name}"]`)
+      const matching = choices.filter(
+        (index, input) => page.$(input).attr('value') === fields[name]
+      )
+      fields[name] = (matching.length ? matching : choices)
+        .first()
+        .attr('value')
+      if (!fields[name]) {
+        throw new Error(`Seed step ${step.slug} has no address to select`)
+      }
+    }
   }
-]
-
-/** Where the consignment comes from. A prerequisite rather than a page of its
- * own for the audit: countryOfOrigin is enforced at Continue, so every page
- * after origin needs one before a trader could be standing on it. The country
- * has to be one the shape's own categories admit. */
-const originStep = (countryOfOrigin) => ({
-  slug: originPage.slug,
-  fields: { countryOfOrigin }
-})
-
-const POTATO_LINE_FIELDS = {
-  potatoVariety: 'Maris Piper',
-  quantity: '250',
-  potatoIntendedUse: 'Planting'
+  return fields
 }
-
-/** The notification shapes the audit needs, keyed by the name the URL list
- * refers to them by. One shape per blueprint use case, so every conditional
- * page has a notification that answers it. Each page increment adds its own
- * step to the shapes whose use case reaches that page. */
-export const SEED_SHAPES = {
-  warePotatoes: {
-    useCase: 'Ware potatoes from Spain or Poland, notified before arrival',
-    steps: [
-      commodityTypeStep('potatoes'),
-      ...commodityLineSteps('ware-potatoes', POTATO_LINE_FIELDS)
-    ]
-  },
-  warePotatoesLate: {
-    useCase: 'Ware potatoes from Spain or Portugal, notified after arrival',
-    steps: [
-      commodityTypeStep('potatoes'),
-      ...commodityLineSteps('ware-potatoes', POTATO_LINE_FIELDS)
-    ]
-  },
-  seedPotatoes: {
-    useCase:
-      'Seed potatoes from any EU country, so an origin outside the four ware countries',
-    steps: [
-      commodityTypeStep('potatoes'),
-      ...commodityLineSteps('seed-potatoes', POTATO_LINE_FIELDS)
-    ]
-  },
-  plantsForPlanting: {
-    useCase:
-      'Spruce (Picea) from any EU country, with genus, species and EPPO code',
-    steps: [
-      commodityTypeStep('plants-for-planting'),
-      ...commodityLineSteps('plants-for-planting', {
-        genus: 'Picea',
-        species: 'Picea abies',
-        commodityCode: '0602 20 20',
-        quantity: '40',
-        eppoCode: 'PIEAB'
-      }),
-      originStep('FR')
-    ]
-  },
-  woodWithoutBark: {
-    useCase:
-      'Conifer wood from Italy, France, Portugal or Spain, with phytosanitary treatments',
-    steps: [
-      commodityTypeStep('wood-and-cut-trees'),
-      ...commodityLineSteps('conifer-wood-without-bark', {
-        commodityCode: '4403 21 10',
-        quantity: '12',
-        phytosanitaryTreatments: 'Kiln dried (KD)'
-      })
-    ]
-  }
-}
-
-const fieldsFor = (step, page) =>
-  typeof step.fields === 'function' ? step.fields(page) : step.fields
 
 export const journeyIdIn = (location) => {
   const prefix = `${createPath()}/`

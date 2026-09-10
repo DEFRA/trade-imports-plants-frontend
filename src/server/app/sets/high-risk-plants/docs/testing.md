@@ -40,10 +40,12 @@ WCAG 2 A or AA violations.
 `npm run test:fit:journeys` runs the `journeys` Playwright project under `fit/`,
 matching `**/journey-smoke.fit.spec.js`.
 
-`fit/` holds only `sign-in.js` today. There is no `journey-smoke.fit.spec.js`
-and no happy-path fixture, so this project matches nothing. When the journey is
-walkable end to end, add the smoke spec and a
-`journeys/linear/flow/fixtures/happy-path.json` fixture for its helper to drive.
+`fit/journey-smoke.fit.spec.js` walks the five mural use cases from dashboard
+to confirmation using `journeys/linear/flow/fixtures/happy-path.json`. Each
+case creates its own notification and checks its reference, late-banner state
+and confirmation accessibility. Lighthouse uses the same seed shapes. Arrival
+dates are relative to the run date so the late and on-time cases stay stable.
+Run `PORT=3053 npm run test:fit:journeys` when the workspace stack is up.
 
 ## Deployed end-to-end tests
 
