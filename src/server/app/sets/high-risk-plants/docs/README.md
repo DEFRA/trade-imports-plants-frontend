@@ -171,3 +171,17 @@ implemented plants examples for each available shape:
 The single-page loop, batch split and nested collection shapes have no plants
 implementation. The [collection recipe](add-a-collection.md) describes those
 patterns; they are not additional served features or local exemplars.
+
+## Engine sync
+
+Synced the journey-agnostic engine and platform from animals range
+`2ed89aef..dc669de448ec71ea2e3a91b9501f582639226c3e` (remote `main`,
+measured 2026-09-10), excluding `src/server/app/sets/`. The next sync starts
+at `dc669de448ec71ea2e3a91b9501f582639226c3e`.
+
+The port retains the synthetic fixture manifest, plants composition and
+backend contract, and plants date/time and dashboard extensions. Animals
+journey content and its document, commodity-reference and mapper-a services
+remain excluded. Gate metadata now uses `gateType`, `obligationId` and
+`gatedParentGroupId`; implications expose `fulfilmentIndexes` with status on
+the implication. The count invariant is `fulfilmentIndexCountEquals`.

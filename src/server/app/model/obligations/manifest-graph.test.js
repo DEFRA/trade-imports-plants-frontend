@@ -27,7 +27,7 @@ const itemSelector = {
   name: 'itemSelector',
   within: itemGroup
 }
-const topLevelScalar = { id: 'branch-selector', name: 'branchSelector' }
+const topLevelUnindexed = { id: 'branch-selector', name: 'branchSelector' }
 
 const syntheticSet = {
   obligations: [
@@ -35,7 +35,7 @@ const syntheticSet = {
     nestedGroup,
     nestedGatedFieldA,
     itemSelector,
-    topLevelScalar
+    topLevelUnindexed
   ],
   groups: [itemGroup, nestedGroup]
 }
@@ -51,7 +51,7 @@ describe('#manifest-graph', () => {
 
   describe('#ancestorChain', () => {
     it('returns an empty chain for a top-level obligation', () => {
-      expect(ancestorChain(topLevelScalar)).toEqual([])
+      expect(ancestorChain(topLevelUnindexed)).toEqual([])
     })
 
     it('returns the parent group for a direct child', () => {
@@ -72,7 +72,7 @@ describe('#manifest-graph', () => {
     it('is false for a leaf', () => {
       expect(isGroup(nestedGatedFieldA)).toBe(false)
       expect(isGroup(itemSelector)).toBe(false)
-      expect(isGroup(topLevelScalar)).toBe(false)
+      expect(isGroup(topLevelUnindexed)).toBe(false)
     })
   })
 

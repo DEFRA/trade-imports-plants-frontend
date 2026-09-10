@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appliesForCommodity } from './applicability.js'
+import { appliesForCommodity, gateAdmits } from './applicability.js'
 import {
   SELECTOR_ALPHA,
   SELECTOR_BRAVO,
@@ -7,6 +7,8 @@ import {
   SELECTOR_DELTA,
   SELECTOR_ECHO
 } from '../../../../test/fixtures/index.js'
+
+const LISTED_SELECTOR = 'selector-a'
 
 // State-free applicability, pinned against the fixture manifest's gate
 // metadata: an allowlist gate applies inside its list, a complement gate
@@ -66,5 +68,35 @@ describe('#appliesForCommodity', () => {
     expect(appliesForCommodity('no-such-obligation', SELECTOR_ALPHA)).toBe(
       false
     )
+  })
+})
+
+// The manifest carries no complement gate today, so the inversion is pinned
+// against the metadata shape directly rather than through a named obligation.
+describe('#gateAdmits', () => {
+  it('Should admit a value its allowlist holds', () => {
+    expect(
+      gateAdmits(
+        { gateType: 'allowListed', values: [LISTED_SELECTOR] },
+        LISTED_SELECTOR
+      )
+    ).toBe(true)
+    expect(
+      gateAdmits(
+        { gateType: 'allowListed', values: [LISTED_SELECTOR] },
+        'selector-c'
+      )
+    ).toBe(false)
+  })
+
+  it('Should invert for a notInUnionOf complement gate', () => {
+    const gate = { gateType: 'notInUnionOf', values: [LISTED_SELECTOR] }
+    expect(gateAdmits(gate, 'selector-c')).toBe(true)
+    expect(gateAdmits(gate, LISTED_SELECTOR)).toBe(false)
+  })
+
+  it('Should admit nothing without gate metadata', () => {
+    expect(gateAdmits(undefined, LISTED_SELECTOR)).toBe(false)
+    expect(gateAdmits({}, LISTED_SELECTOR)).toBe(false)
   })
 })

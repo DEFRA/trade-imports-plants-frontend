@@ -365,3 +365,7 @@ export const requiredTime = (name, messages) =>
         'string.pattern.base': messages.invalid ?? defaults.time
       })
   )
+
+/** Save-blocking date text without a date-window policy. */
+export const requiredDateText = (name, messages) =>
+  requiredDateTextInRange(name, { messages })

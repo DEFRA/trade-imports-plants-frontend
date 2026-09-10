@@ -178,7 +178,7 @@ export const genus = {
 }
 ```
 
-`allowListed(gate, values, projectionGroup, reasons)` scopes the field to the
+`allowListed(gate, values, gatedParentGroup, reasons)` scopes the field to the
 instances whose gate value is on the allow-list. The **projection group**
 argument is what makes it work at depth:
 

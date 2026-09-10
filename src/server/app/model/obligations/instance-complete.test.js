@@ -55,8 +55,8 @@ const state = ({ fulfilments = {}, obligations = {} } = {}) => ({
   obligations
 })
 
-const impls = (entries) =>
-  Object.fromEntries(entries.map((entry) => [entry.id, entry.impl]))
+const implications = (entries) =>
+  Object.fromEntries(entries.map((entry) => [entry.id, entry.implication]))
 
 describe('#instanceComplete', () => {
   beforeAll(() => {
@@ -75,36 +75,39 @@ describe('#instanceComplete', () => {
         [itemSelector.id]: { [entry1FulfilmentIndex]: 'selectorAlpha' },
         [nestedGatedFieldA.id]: { [entry1Record1FulfilmentIndex]: 'valueOne' }
       },
-      obligations: impls([
+      obligations: implications([
         {
           id: itemGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
         {
           id: nestedGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
         {
           id: itemSelector.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
         {
           id: nestedGatedFieldA.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
-        { id: nestedGatedFieldB.id, impl: { inScope: true, records: [] } }
+        {
+          id: nestedGatedFieldB.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        }
       ])
     })
     expect(
@@ -117,18 +120,30 @@ describe('#instanceComplete', () => {
     // no record for entry1 — the direct-child requirement fires.
     const st = state({
       fulfilments: {},
-      obligations: impls([
+      obligations: implications([
         {
           id: itemGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
-        { id: itemSelector.id, impl: { inScope: true, records: [] } },
-        { id: nestedGroup.id, impl: { inScope: true, records: [] } },
-        { id: nestedGatedFieldA.id, impl: { inScope: true, records: [] } },
-        { id: nestedGatedFieldB.id, impl: { inScope: true, records: [] } }
+        {
+          id: itemSelector.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGroup.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGatedFieldA.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGatedFieldB.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        }
       ])
     })
     expect(instanceComplete(itemGroup, entry1FulfilmentIndex, st)).toBe(false)
@@ -139,40 +154,40 @@ describe('#instanceComplete', () => {
       fulfilments: {
         [itemSelector.id]: { [entry1FulfilmentIndex]: 'selectorAlpha' }
       },
-      obligations: impls([
+      obligations: implications([
         {
           id: itemGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
         {
           id: nestedGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
         {
           id: itemSelector.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
         {
           id: nestedGatedFieldA.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
         {
           id: nestedGatedFieldB.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         }
       ])
@@ -188,18 +203,30 @@ describe('#instanceComplete', () => {
     // either, so nothing blocks.
     const st = state({
       fulfilments: {},
-      obligations: impls([
+      obligations: implications([
         {
           id: itemGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
-        { id: itemSelector.id, impl: { inScope: true, records: [] } },
-        { id: nestedGroup.id, impl: { inScope: true, records: [] } },
-        { id: nestedGatedFieldA.id, impl: { inScope: true, records: [] } },
-        { id: nestedGatedFieldB.id, impl: { inScope: true, records: [] } }
+        {
+          id: itemSelector.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGroup.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGatedFieldA.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGatedFieldB.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        }
       ])
     })
     expect(instanceComplete(nestedGroup, 'entry2.record1', st)).toBe(true)
@@ -210,18 +237,30 @@ describe('#instanceComplete', () => {
     // gated behind inScope, so the missing record is ignored.
     const st = state({
       fulfilments: {},
-      obligations: impls([
+      obligations: implications([
         {
           id: itemGroup.id,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1FulfilmentIndex]
           }
         },
-        { id: itemSelector.id, impl: { inScope: false, records: [] } },
-        { id: nestedGroup.id, impl: { inScope: true, records: [] } },
-        { id: nestedGatedFieldA.id, impl: { inScope: true, records: [] } },
-        { id: nestedGatedFieldB.id, impl: { inScope: true, records: [] } }
+        {
+          id: itemSelector.id,
+          implication: { inScope: false, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGroup.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGatedFieldA.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        },
+        {
+          id: nestedGatedFieldB.id,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        }
       ])
     })
     expect(instanceComplete(itemGroup, entry1FulfilmentIndex, st)).toBe(true)
