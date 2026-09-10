@@ -441,7 +441,7 @@ describe('itemCollection group semantics', () => {
     const result = evaluator.evaluate({})
     expect(result.obligations[itemCollection.id]).toEqual({
       inScope: true,
-      records: []
+      fulfilmentIndexes: []
     })
   })
 
@@ -452,11 +452,7 @@ describe('itemCollection group semantics', () => {
         [ENTRY_DELTA]: SELECTOR_DELTA
       }
     })
-    const ids = new Set(
-      result.obligations[itemCollection.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
-    )
+    const ids = new Set(result.obligations[itemCollection.id].fulfilmentIndexes)
     expect(ids).toEqual(new Set([ENTRY_BRAVO, ENTRY_DELTA]))
   })
 
@@ -467,11 +463,7 @@ describe('itemCollection group semantics', () => {
       [itemSelector.id]: { [ENTRY_BRAVO]: SELECTOR_BRAVO },
       [itemCount.id]: { [ENTRY_DELTA]: 42 }
     })
-    const ids = new Set(
-      result.obligations[itemCollection.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
-    )
+    const ids = new Set(result.obligations[itemCollection.id].fulfilmentIndexes)
     expect(ids).toEqual(new Set([ENTRY_BRAVO, ENTRY_DELTA]))
   })
 })
@@ -552,7 +544,8 @@ describe('itemGatedField (derived-leaf, selector-gated)', () => {
     expect(result.obligations[itemGatedField.id]).toEqual({
       inScope: true,
       reasons: [itemGatedFieldReason],
-      records: [{ fulfilmentIndex: ENTRY_BRAVO, status: 'optional' }]
+      status: 'optional',
+      fulfilmentIndexes: [ENTRY_BRAVO]
     })
   })
 
@@ -564,9 +557,7 @@ describe('itemGatedField (derived-leaf, selector-gated)', () => {
         [ENTRY_ALPHA]: SELECTOR_ALPHA
       }
     })
-    const ids = result.obligations[itemGatedField.id].records.map(
-      (r) => r.fulfilmentIndex
-    )
+    const ids = result.obligations[itemGatedField.id].fulfilmentIndexes
     expect(new Set(ids)).toEqual(new Set([ENTRY_BRAVO, ENTRY_ALPHA]))
   })
 
@@ -623,9 +614,7 @@ describe('itemGatedField (derived-leaf, selector-gated)', () => {
       [ENTRY_ALPHA]: 3,
       [ENTRY_ALPHA_TWO]: 5
     })
-    const ids = result.obligations[itemGatedField.id].records.map(
-      (r) => r.fulfilmentIndex
-    )
+    const ids = result.obligations[itemGatedField.id].fulfilmentIndexes
     expect(new Set(ids)).toEqual(new Set([ENTRY_ALPHA, ENTRY_ALPHA_TWO]))
   })
 })
@@ -691,11 +680,9 @@ describe('a SELECTOR_ALPHA entry trips both the per-entry and the aggregate gate
     const result = evaluator.evaluate({
       [itemSelector.id]: { [ENTRY_ALPHA]: SELECTOR_ALPHA }
     })
-    expect(
-      result.obligations[itemGatedField.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
-    ).toEqual([ENTRY_ALPHA])
+    expect(result.obligations[itemGatedField.id].fulfilmentIndexes).toEqual([
+      ENTRY_ALPHA
+    ])
     expect(result.obligations[aggregateGatedField.id]).toEqual({
       inScope: true,
       status: 'mandatory',
@@ -717,7 +704,7 @@ describe('nestedCollection group semantics', () => {
     })
     expect(result.obligations[nestedCollection.id]).toEqual({
       inScope: true,
-      records: []
+      fulfilmentIndexes: []
     })
   })
 
@@ -730,9 +717,7 @@ describe('nestedCollection group semantics', () => {
       }
     })
     const ids = new Set(
-      result.obligations[nestedCollection.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedCollection.id].fulfilmentIndexes
     )
     expect(ids).toEqual(
       new Set([`${ENTRY_ALPHA}.${RECORD_1}`, `${ENTRY_ALPHA}.${RECORD_2}`])
@@ -752,9 +737,7 @@ describe('nestedCollection group semantics', () => {
       }
     })
     const ids = new Set(
-      result.obligations[nestedCollection.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedCollection.id].fulfilmentIndexes
     )
     expect(ids).toEqual(
       new Set([`${ENTRY_ECHO}.${RECORD_1}`, `${ENTRY_ECHO}.${RECORD_2}`])
@@ -793,9 +776,7 @@ describe('nestedGatedFieldB (allowListed(itemSelector, [SELECTOR_BRAVO]))', () =
       nestedGatedFieldBReason
     ])
     const ids = new Set(
-      result.obligations[nestedGatedFieldB.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedGatedFieldB.id].fulfilmentIndexes
     )
     expect(ids).toEqual(
       new Set([`${ENTRY_BRAVO}.${RECORD_1}`, `${ENTRY_BRAVO}.${RECORD_2}`])
@@ -879,9 +860,7 @@ describe('nestedGatedFieldA (allowListed(itemSelector, [SELECTOR_ALPHA]))', () =
       nestedGatedFieldAReason
     ])
     const ids = new Set(
-      result.obligations[nestedGatedFieldA.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedGatedFieldA.id].fulfilmentIndexes
     )
     expect(ids).toEqual(
       new Set([`${ENTRY_ALPHA}.${RECORD_1}`, `${ENTRY_ALPHA_TWO}.${RECORD_1}`])
@@ -1019,9 +998,9 @@ describe('nestedCompositeBlock (allowListed(itemSelector, [SELECTOR_DELTA]))', (
     expect(result.obligations[nestedCompositeBlock.id].reasons).toEqual([
       nestedCompositeBlockReason
     ])
-    expect(result.obligations[nestedCompositeBlock.id].records).toEqual([
-      { fulfilmentIndex: `${ENTRY_DELTA}.${RECORD_1}`, status: 'optional' }
-    ])
+    expect(
+      result.obligations[nestedCompositeBlock.id].fulfilmentIndexes
+    ).toEqual([`${ENTRY_DELTA}.${RECORD_1}`])
     expect(result.fulfilments[nestedCompositeBlock.id]).toEqual({
       [`${ENTRY_DELTA}.${RECORD_1}`]: nestedValue
     })
@@ -1069,25 +1048,19 @@ describe('mixed entries drive per-entry leaf gating', () => {
       [nestedGatedFieldC.id]: { [`${ENTRY_CHARLIE}.${RECORD_1}`]: VALUE_ONE }
     })
     const fallbackIds = new Set(
-      result.obligations[nestedFallbackFieldA.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedFallbackFieldA.id].fulfilmentIndexes
     )
     expect(fallbackIds).toEqual(
       new Set([`${ENTRY_ECHO}.${RECORD_1}`, `${ENTRY_ECHO_TWO}.${RECORD_1}`])
     )
 
     const gatedAIds = new Set(
-      result.obligations[nestedGatedFieldA.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedGatedFieldA.id].fulfilmentIndexes
     )
     expect(gatedAIds).toEqual(new Set([`${ENTRY_ALPHA}.${RECORD_1}`]))
 
     const gatedCIds = new Set(
-      result.obligations[nestedGatedFieldC.id].records.map(
-        (r) => r.fulfilmentIndex
-      )
+      result.obligations[nestedGatedFieldC.id].fulfilmentIndexes
     )
     expect(gatedCIds).toEqual(new Set([`${ENTRY_CHARLIE}.${RECORD_1}`]))
   })
@@ -1121,7 +1094,8 @@ describe('boundedCollection: no entries at all', () => {
     const result = evaluator.evaluate({})
     expect(result.obligations[obligation.id]).toEqual({
       inScope: true,
-      records: []
+      ...(obligation.status ? { status: obligation.status } : {}),
+      fulfilmentIndexes: []
     })
   })
 })
@@ -1136,7 +1110,7 @@ describe('boundedCollection: the upload-return fields are optional obligations',
     const result = evaluator.evaluate(uploadOnly)
     expect(result.obligations[boundedCollection.id]).toEqual({
       inScope: true,
-      records: [{ fulfilmentIndex: 'd0' }]
+      fulfilmentIndexes: ['d0']
     })
   })
 
@@ -1146,7 +1120,8 @@ describe('boundedCollection: the upload-return fields are optional obligations',
       const result = evaluator.evaluate(uploadOnly)
       expect(result.obligations[obligation.id]).toEqual({
         inScope: true,
-        records: [{ fulfilmentIndex: 'd0', status: 'optional' }]
+        status: 'optional',
+        fulfilmentIndexes: ['d0']
       })
       expect(result.fulfilments[obligation.id]).toEqual(
         uploadOnly[obligation.id]
@@ -1160,7 +1135,8 @@ describe('boundedCollection: the upload-return fields are optional obligations',
       const result = evaluator.evaluate(uploadOnly)
       expect(result.obligations[obligation.id]).toEqual({
         inScope: true,
-        records: [{ fulfilmentIndex: 'd0', status: 'mandatory' }]
+        status: 'mandatory',
+        fulfilmentIndexes: ['d0']
       })
     }
   )
@@ -1175,7 +1151,7 @@ describe('boundedCollection: four metadata fields are mandatory per record', () 
     const result = evaluator.evaluate(withType)
     expect(result.obligations[boundedCollection.id]).toEqual({
       inScope: true,
-      records: [{ fulfilmentIndex: 'd0' }]
+      fulfilmentIndexes: ['d0']
     })
   })
 
@@ -1185,7 +1161,8 @@ describe('boundedCollection: four metadata fields are mandatory per record', () 
       const result = evaluator.evaluate(withType)
       expect(result.obligations[obligation.id]).toEqual({
         inScope: true,
-        records: [{ fulfilmentIndex: 'd0', status: 'mandatory' }]
+        status: 'mandatory',
+        fulfilmentIndexes: ['d0']
       })
     }
   )
@@ -1205,7 +1182,8 @@ describe('boundedCollection: all four filled on one record', () => {
       const result = evaluator.evaluate(stored)
       expect(result.obligations[obligation.id]).toEqual({
         inScope: true,
-        records: [{ fulfilmentIndex: 'd0', status: 'mandatory' }]
+        status: 'mandatory',
+        fulfilmentIndexes: ['d0']
       })
       expect(result.fulfilments[obligation.id]).toEqual(stored[obligation.id])
     }
@@ -1220,10 +1198,8 @@ describe('boundedCollection: a partial record keeps every field owed', () => {
     })
     expect(result.obligations[boundedItemReference.id]).toEqual({
       inScope: true,
-      records: [
-        { fulfilmentIndex: 'd0', status: 'mandatory' },
-        { fulfilmentIndex: 'd1', status: 'mandatory' }
-      ]
+      status: 'mandatory',
+      fulfilmentIndexes: ['d0', 'd1']
     })
     expect(result.fulfilments[boundedItemReference.id]).toEqual({
       d0: 'referenceOne',

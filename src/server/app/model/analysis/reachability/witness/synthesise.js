@@ -9,7 +9,7 @@ import {
  * return a witness classification.
  *
  * @param {object} obligation — manifest entry with `.applyTo` (or not).
- * @returns {{ kind: 'witness', obligationId: string, value: any, projection?: string | null }
+ * @returns {{ kind: 'witness', obligationId: string, value: any, gatedParentGroupId?: string | null }
  *          | { kind: 'trivial' }
  *          | { kind: 'opaque', reason: string }}
  */
@@ -33,26 +33,26 @@ export const synthesiseWitness = (obligation) => {
 }
 
 function synthesiseFromMetadata(meta) {
-  switch (meta.type) {
+  switch (meta.gateType) {
     case 'allowListed':
       // metadata.values IS the allowlist — first entry is a witness.
-      // Include the projection group id (if any) so the fidelity check
+      // Include the gatedParentGroup id (if any) so the fidelity check
       // can seed a synthetic path in `fulfilmentIndexesByObligationId` for
       // depth-N > 1 gates — leaves in a nested collection whose gate value
       // is held one level up. Without a projection path the closure's
-      // `filterAndProject` returns records: [] and `inScope: false`, which
+      // `runGate` returns fulfilmentIndexes: [] and `inScope: false`, which
       // would be a false negative — the gate WOULD open in the real
       // evaluator, which always seeds the nested collection's paths from
       // the records the user created.
       return firstListedValueWitness(
         meta,
         'allowListed metadata has empty values array',
-        { withProjection: true }
+        { withGatedParentGroupId: true }
       )
 
     case 'anyAllowListed':
       // Same shape as allowListed — but anyAllowListed has no
-      // projection group (notification-level aggregate).
+      // gatedParentGroup (notification-level aggregate).
       return firstListedValueWitness(
         meta,
         'anyAllowListed metadata has empty values array'
@@ -62,7 +62,7 @@ function synthesiseFromMetadata(meta) {
       // metadata.value IS the scalar target.
       return {
         kind: WITNESS_KIND.WITNESS,
-        obligationId: meta.obligation,
+        obligationId: meta.obligationId,
         value: meta.value
       }
 
@@ -74,9 +74,8 @@ function synthesiseFromMetadata(meta) {
       // Witness = any value NOT in that union. A stable sentinel that
       // is virtually guaranteed not to collide with real commodity
       // codes; defensively confirmed against the derived union.
-      // Include the projection group id (if any) for depth-N gates —
-      // identificationDetails + description both project onto
-      // unitRecord.
+      // Include the gatedParentGroup id (if any) for depth-N gates,
+      // which project onto that group's fulfilmentIndexes.
       return synthesiseNotInUnionOfWitness(meta)
 
     case 'equalsGate':
@@ -87,7 +86,7 @@ function synthesiseFromMetadata(meta) {
       // needed. Otherwise the value witnesses the whenTrue branch.
       return totalBranchWitnessOrValue(meta, () => ({
         kind: WITNESS_KIND.WITNESS,
-        obligationId: meta.obligation,
+        obligationId: meta.obligationId,
         value: meta.value
       }))
 
@@ -98,7 +97,7 @@ function synthesiseFromMetadata(meta) {
       // convention as branchedGate's `isFilled` synth.
       return totalBranchWitnessOrValue(meta, () => ({
         kind: WITNESS_KIND.WITNESS,
-        obligationId: meta.obligation,
+        obligationId: meta.obligationId,
         value: '__witness__'
       }))
 
@@ -121,7 +120,7 @@ function synthesiseFromMetadata(meta) {
     default:
       return {
         kind: WITNESS_KIND.OPAQUE,
-        reason: `unrecognised helper metadata type '${meta.type}'`
+        reason: `unrecognised helper metadata gateType '${meta.gateType}'`
       }
   }
 }
@@ -219,15 +218,15 @@ function synthesiseNotInUnionOfWitness(meta) {
     }
     return {
       kind: WITNESS_KIND.WITNESS,
-      obligationId: meta.obligation,
+      obligationId: meta.obligationId,
       value: fallback,
-      projection: meta.projection ?? null
+      gatedParentGroupId: meta.gatedParentGroupId ?? null
     }
   }
   return {
     kind: WITNESS_KIND.WITNESS,
-    obligationId: meta.obligation,
+    obligationId: meta.obligationId,
     value: SENTINEL,
-    projection: meta.projection ?? null
+    gatedParentGroupId: meta.gatedParentGroupId ?? null
   }
 }

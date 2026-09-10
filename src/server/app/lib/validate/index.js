@@ -17,6 +17,7 @@ export {
   dateParts,
   dateText,
   dateTextInRange,
+  requiredDateText,
   requiredDateTextInRange,
   requiredTime
 } from './validators.js'

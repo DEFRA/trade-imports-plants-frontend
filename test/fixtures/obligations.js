@@ -36,7 +36,7 @@
  *   nested collection inside a
  *     collection                     `nestedCollection`
  *   per-instance any-of invariant    `nestedCollection.requires.anyOfIds`
- *   record-count invariant           `nestedCollection.requires.recordCountEquals`
+ *   record-count invariant           `nestedCollection.requires.fulfilmentIndexCountEquals`
  *   projected allowlist gate at
  *     depth 2                        `nestedGatedFieldA`…`nestedGatedFieldD`
  *   projected complement gate        `nestedFallbackFieldA` / `…B`
@@ -404,7 +404,7 @@ export const nestedCollection = {
       'fac70000-0000-4000-8000-000000000027' // nestedFallbackFieldB
     ],
     errorCode: 'fixture.nestedCollection.oneFieldRequired',
-    recordCountEquals: {
+    fulfilmentIndexCountEquals: {
       fieldId: itemCount.id,
       errorCode: 'fixture.nestedCollection.countMustMatchItemCount'
     }

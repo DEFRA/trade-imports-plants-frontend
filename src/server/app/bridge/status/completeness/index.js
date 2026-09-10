@@ -3,7 +3,7 @@ import { isCollection } from '../classification/index.js'
 import { facetMemberFilter, facetParent, isFacet } from '../facets.js'
 import { obligationFor } from '../obligation-lookup.js'
 import { structuralOf } from '../structure/index.js'
-import { childRecords } from './records.js'
+import { childFulfilmentIndexes } from './records.js'
 import {
   leafFulfilledForRecord,
   leafInScopeForRecord,
@@ -32,9 +32,18 @@ const collectionSatisfied = (
   if (!obligation) {
     return true
   }
-  const records = childRecords(obligation, parentFulfilmentIndex, state)
-  if (records.length === 0) {
-    return emptyCollectionSatisfiesFloor(collection)
+  const fulfilmentIndexes = childFulfilmentIndexes(
+    obligation,
+    parentFulfilmentIndex,
+    state
+  )
+  if (fulfilmentIndexes.length === 0) {
+    return emptyCollectionSatisfiesFloor(
+      collection,
+      obligation,
+      parentFulfilmentIndex,
+      state
+    )
   }
   const invariantErrors = groupInvariantErrors(obligation, state)
   if (collectionCapExceeded(invariantErrors)) {
@@ -43,10 +52,10 @@ const collectionSatisfied = (
   if (parentCountInvariantViolated(invariantErrors, parentFulfilmentIndex)) {
     return false
   }
-  return records.every((rec) =>
+  return fulfilmentIndexes.every((fulfilmentIndex) =>
     entrySatisfied(
       collection,
-      rec.fulfilmentIndex,
+      fulfilmentIndex,
       memberFilter,
       invariantErrors,
       state

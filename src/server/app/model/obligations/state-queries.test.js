@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
+import { allowListed } from './helpers/index.js'
+
 import { groupInvariantErrors, leafSatisfied } from './state-queries.js'
 
 // Synthetic obligations — the queries can be exercised in isolation,
@@ -16,9 +18,9 @@ function state({ fulfilments = {}, obligations = {} } = {}) {
 
 // Minimal implication builder: mimics what ObligationEvaluator returns
 // for a given set of in-scope obligations + fulfilments.
-function impls(entries) {
+function implications(entries) {
   return Object.fromEntries(
-    entries.map((entry) => [entry.obligation.id, entry.impl])
+    entries.map((entry) => [entry.obligation.id, entry.implication])
   )
 }
 
@@ -41,12 +43,12 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
   it('empty list when no group carries `requires`', () => {
     const groupNoRequires = { ...nestedCollection }
     const st = state({
-      obligations: impls([
+      obligations: implications([
         {
           obligation: nestedCollection,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         }
       ])
@@ -56,8 +58,8 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
 
   it('empty list when the group is out of scope', () => {
     const st = state({
-      obligations: impls([
-        { obligation: nestedCollection, impl: { inScope: false } }
+      obligations: implications([
+        { obligation: nestedCollection, implication: { inScope: false } }
       ])
     })
     expect(groupInvariantErrors(groupWithRequires, st)).toEqual([])
@@ -67,16 +69,16 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
     // A record whose parent selector opens NEITHER nestedGatedFieldA nor
     // nestedGatedFieldB has nothing to satisfy; treat as vacuous.
     const st = state({
-      obligations: impls([
+      obligations: implications([
         {
           obligation: nestedCollection,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
-        { obligation: nestedGatedFieldA, impl: { inScope: false } },
-        { obligation: nestedGatedFieldB, impl: { inScope: false } }
+        { obligation: nestedGatedFieldA, implication: { inScope: false } },
+        { obligation: nestedGatedFieldB, implication: { inScope: false } }
       ])
     })
     expect(groupInvariantErrors(groupWithRequires, st)).toEqual([])
@@ -86,46 +88,36 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
     const st = state({
       // Two in-scope records on entry1; neither has a nestedGatedFieldA
       // or nestedGatedFieldB filled.
-      obligations: impls([
+      obligations: implications([
         {
           obligation: nestedCollection,
-          impl: {
+          implication: {
             inScope: true,
-            records: [
-              { fulfilmentIndex: entry1Record1FulfilmentIndex },
-              { fulfilmentIndex: entry1Record2FulfilmentIndex }
+            fulfilmentIndexes: [
+              entry1Record1FulfilmentIndex,
+              entry1Record2FulfilmentIndex
             ]
           }
         },
         {
           obligation: nestedGatedFieldA,
-          impl: {
+          implication: {
             inScope: true,
-            records: [
-              {
-                fulfilmentIndex: entry1Record1FulfilmentIndex,
-                status: 'optional'
-              },
-              {
-                fulfilmentIndex: entry1Record2FulfilmentIndex,
-                status: 'optional'
-              }
+            status: 'optional',
+            fulfilmentIndexes: [
+              entry1Record1FulfilmentIndex,
+              entry1Record2FulfilmentIndex
             ]
           }
         },
         {
           obligation: nestedGatedFieldB,
-          impl: {
+          implication: {
             inScope: true,
-            records: [
-              {
-                fulfilmentIndex: entry1Record1FulfilmentIndex,
-                status: 'optional'
-              },
-              {
-                fulfilmentIndex: entry1Record2FulfilmentIndex,
-                status: 'optional'
-              }
+            status: 'optional',
+            fulfilmentIndexes: [
+              entry1Record1FulfilmentIndex,
+              entry1Record2FulfilmentIndex
             ]
           }
         }
@@ -147,36 +139,28 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
       fulfilments: {
         [nestedGatedFieldA.id]: { [entry1Record1FulfilmentIndex]: 'valueOne' }
       },
-      obligations: impls([
+      obligations: implications([
         {
           obligation: nestedCollection,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
         {
           obligation: nestedGatedFieldA,
-          impl: {
+          implication: {
             inScope: true,
-            records: [
-              {
-                fulfilmentIndex: entry1Record1FulfilmentIndex,
-                status: 'optional'
-              }
-            ]
+            status: 'optional',
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
         {
           obligation: nestedGatedFieldB,
-          impl: {
+          implication: {
             inScope: true,
-            records: [
-              {
-                fulfilmentIndex: entry1Record1FulfilmentIndex,
-                status: 'optional'
-              }
-            ]
+            status: 'optional',
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         }
       ])
@@ -198,24 +182,20 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
           }
         }
       },
-      obligations: impls([
+      obligations: implications([
         {
           obligation: nestedCollection,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: entry1Record1FulfilmentIndex }]
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         },
         {
           obligation: nestedGatedFieldA,
-          impl: {
+          implication: {
             inScope: true,
-            records: [
-              {
-                fulfilmentIndex: entry1Record1FulfilmentIndex,
-                status: 'optional'
-              }
-            ]
+            status: 'optional',
+            fulfilmentIndexes: [entry1Record1FulfilmentIndex]
           }
         }
       ])
@@ -226,7 +206,7 @@ describe('groupInvariantErrors (requires.anyOf)', () => {
 
 describe('groupInvariantErrors — `requires.minEntries` collection floor', () => {
   // A group carrying a `minEntries` floor emits one collection-scoped
-  // error when records.length is below the floor, so an empty
+  // error when fulfilmentIndexes.length is below the floor, so an empty
   // collection is not vacuously satisfied.
   //
   // The floor is orthogonal to `requires.anyOf` (the per-instance rule):
@@ -242,12 +222,12 @@ describe('groupInvariantErrors — `requires.minEntries` collection floor', () =
     }
   }
 
-  it('emits one collection-scoped MIN_ENTRIES error when records.length is below the floor', () => {
+  it('emits one collection-scoped MIN_ENTRIES error when fulfilmentIndexes.length is below the floor', () => {
     const st = state({
-      obligations: impls([
+      obligations: implications([
         {
           obligation: itemCollectionGroup,
-          impl: { inScope: true, records: [] }
+          implication: { inScope: true, fulfilmentIndexes: [] }
         }
       ])
     })
@@ -263,12 +243,12 @@ describe('groupInvariantErrors — `requires.minEntries` collection floor', () =
     ])
   })
 
-  it('emits no floor error when records.length meets the floor', () => {
+  it('emits no floor error when fulfilmentIndexes.length meets the floor', () => {
     const st = state({
-      obligations: impls([
+      obligations: implications([
         {
           obligation: itemCollectionGroup,
-          impl: { inScope: true, records: [{ fulfilmentIndex: 'entry1' }] }
+          implication: { inScope: true, fulfilmentIndexes: ['entry1'] }
         }
       ])
     })
@@ -280,10 +260,10 @@ describe('groupInvariantErrors — `requires.minEntries` collection floor', () =
     // at all, so the floor doesn't apply either. Symmetric with the
     // `anyOf` early-return.
     const st = state({
-      obligations: impls([
+      obligations: implications([
         {
           obligation: itemCollectionGroup,
-          impl: { inScope: false }
+          implication: { inScope: false }
         }
       ])
     })
@@ -291,11 +271,11 @@ describe('groupInvariantErrors — `requires.minEntries` collection floor', () =
   })
 
   it('composes with `requires.anyOf` — both a floor error and per-instance errors surface', () => {
-    // A group carrying both a floor and an anyOf: with fewer records
-    // than the floor AND unfilled leaves on each present record, the
-    // two rules must co-emit. Here minEntries=2 but only 1 record
-    // exists — expect one MIN_ENTRIES error plus one anyOf error on
-    // the unfilled record.
+    // A group carrying both a floor and an anyOf: with fewer
+    // fulfilmentIndexes than the floor AND unfilled leaves on each
+    // present instance, the two rules must co-emit. Here minEntries=2 but
+    // only 1 fulfilmentIndex exists — expect one MIN_ENTRIES error plus
+    // one anyOf error on the unfilled instance.
     const leafObl = { id: 'leaf', name: 'leaf' }
     const composite = {
       ...itemCollectionGroup,
@@ -306,16 +286,17 @@ describe('groupInvariantErrors — `requires.minEntries` collection floor', () =
       }
     }
     const st = state({
-      obligations: impls([
+      obligations: implications([
         {
           obligation: itemCollectionGroup,
-          impl: { inScope: true, records: [{ fulfilmentIndex: 'entry1' }] }
+          implication: { inScope: true, fulfilmentIndexes: ['entry1'] }
         },
         {
           obligation: leafObl,
-          impl: {
+          implication: {
             inScope: true,
-            records: [{ fulfilmentIndex: 'entry1', status: 'optional' }]
+            status: 'optional',
+            fulfilmentIndexes: ['entry1']
           }
         }
       ])
@@ -363,5 +344,147 @@ describe('#leafSatisfied', () => {
     }
     const st = state({ fulfilments: { [scalar.id]: 'valueOne' } })
     expect(leafSatisfied(scalar, entry1Record1FulfilmentIndex, st)).toBe(false)
+  })
+})
+
+describe('groupInvariantErrors — `requires.allOrNothingOfIds` unindexed field-block', () => {
+  // A field-block invariant over three sibling unindexed obligations —
+  // whichever container the manifest attaches it to. The rule fires once
+  // for the whole group when the block is partially filled; it stays
+  // silent when the block is fully blank or fully filled.
+  const container = { id: 'composite-block', name: 'compositeBlock' }
+  const partOneId = 'partOne'
+  const partTwoId = 'partTwo'
+  const partThreeId = 'partThree'
+  const errorCode = 'fixture.compositeBlock.allOrNothing'
+
+  const blockValue = 'value one'
+
+  const groupWithBlock = {
+    ...container,
+    requires: {
+      allOrNothingOfIds: [partOneId, partTwoId, partThreeId],
+      errorCode
+    }
+  }
+
+  const inScopeGroupState = (fulfilments) =>
+    state({
+      fulfilments,
+      obligations: implications([
+        {
+          obligation: container,
+          implication: { inScope: true, fulfilmentIndexes: [] }
+        }
+      ])
+    })
+
+  it('emits no error when every member of the block is blank (nothing filled)', () => {
+    expect(groupInvariantErrors(groupWithBlock, inScopeGroupState({}))).toEqual(
+      []
+    )
+  })
+
+  it('emits no error when every member of the block is filled (all filled)', () => {
+    const st = inScopeGroupState({
+      [partOneId]: blockValue,
+      [partTwoId]: 'Bristol',
+      [partThreeId]: 'BS1 1AA'
+    })
+    expect(groupInvariantErrors(groupWithBlock, st)).toEqual([])
+  })
+
+  it('emits exactly one error naming every missing member id when partially filled', () => {
+    // partTwo blank string, partThree missing entirely — both count as blank.
+    const st = inScopeGroupState({
+      [partOneId]: blockValue,
+      [partTwoId]: ''
+    })
+    expect(groupInvariantErrors(groupWithBlock, st)).toEqual([
+      {
+        code: errorCode,
+        groupId: container.id,
+        groupName: container.name,
+        missingIds: [partTwoId, partThreeId]
+      }
+    ])
+  })
+
+  it('composes with anyOf on the same group without interfering', () => {
+    // A group that has both an anyOfIds rule (unused because no fulfilmentIndexes
+    // in scope) and an allOrNothing rule — allOrNothing still fires.
+    const combined = {
+      ...container,
+      requires: {
+        allOrNothingOfIds: [partOneId, partTwoId, partThreeId],
+        anyOfIds: ['someLeaf'],
+        errorCode
+      }
+    }
+    const st = inScopeGroupState({
+      [partOneId]: blockValue
+    })
+    const errors = groupInvariantErrors(combined, st)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe(errorCode)
+    expect(errors[0].missingIds).toEqual([partTwoId, partThreeId])
+  })
+})
+
+describe('count invariant parent applicability', () => {
+  const COUNT_MISMATCH = 'fixture.countMismatch'
+  const parent = { id: 'parent', name: 'parent' }
+  const selector = { id: 'selector', within: parent }
+  const count = { id: 'count', within: parent }
+  const group = {
+    id: 'children',
+    name: 'children',
+    within: parent,
+    requires: {
+      fulfilmentIndexCountEquals: {
+        fieldId: count.id,
+        errorCode: COUNT_MISMATCH,
+        applyToParent: allowListed(selector, ['listed'], null)
+      }
+    }
+  }
+  const snapshot = (value) => ({
+    fulfilments: { selector: { entry1: value }, count: { entry1: 2 } },
+    obligations: {
+      parent: { inScope: true, fulfilmentIndexes: ['entry1'] },
+      children: { inScope: true, fulfilmentIndexes: [] }
+    }
+  })
+
+  it('requires children for an admitted parent with no child fulfilments', () => {
+    expect(groupInvariantErrors(group, snapshot('listed'))).toEqual([
+      {
+        code: COUNT_MISMATCH,
+        groupId: group.id,
+        groupName: group.name,
+        fulfilmentIndex: 'entry1',
+        expected: 2,
+        actual: 0
+      }
+    ])
+  })
+
+  it('asks nothing of a parent excluded by the count gate', () => {
+    expect(groupInvariantErrors(group, snapshot('unlisted'))).toEqual([])
+  })
+
+  it('retains the unconditional count contract when no parent gate is supplied', () => {
+    const unconditional = {
+      ...group,
+      requires: {
+        fulfilmentIndexCountEquals: {
+          fieldId: count.id,
+          errorCode: COUNT_MISMATCH
+        }
+      }
+    }
+    expect(
+      groupInvariantErrors(unconditional, snapshot('unlisted'))
+    ).toHaveLength(1)
   })
 })

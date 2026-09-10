@@ -1,12 +1,17 @@
-import { SUBMITTED } from '../../../../../engine/persistence/records.js'
 import { party } from '../../../../address-book/index.js'
+import { SUBMITTED } from '../../../../../engine/persistence/records.js'
 import { mapStatus } from '../status.js'
 
-const nameOf = async (consignmentParty, lookup) => {
+/** SUBMITTED rows show the name frozen at submit; every other status live-resolves
+ * a reference so an in-flight amendment reflects today's address book. */
+const nameOf = async (consignmentParty, lookup, status) => {
   if (!consignmentParty) {
     return null
   }
-  if (consignmentParty.addressId) {
+  if (status === SUBMITTED && consignmentParty.name) {
+    return consignmentParty.name
+  }
+  if (consignmentParty.addressId && status !== SUBMITTED) {
     const record = await lookup(consignmentParty.addressId)
     return record && !record.deleted ? (record.name ?? null) : null
   }
@@ -40,8 +45,8 @@ export const listItemMarshaller = (organisationId) => {
       commodity: notification.commodity ?? null,
       originCountryCode: notification.origin?.countryCode ?? null,
       arrivalDate: notification.transport?.arrivalDate ?? null,
-      consignorName: await nameOf(notification.consignor, lookup),
-      consigneeName: await nameOf(notification.consignee, lookup)
+      consignorName: await nameOf(notification.consignor, lookup, status),
+      consigneeName: await nameOf(notification.consignee, lookup, status)
     }
   }
 }
