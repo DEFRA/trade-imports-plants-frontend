@@ -1,134 +1,132 @@
-import { hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
-import {
-  compose,
-  oneOf,
-  validate
-} from '../../../../../../lib/validate/index.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
-import { addressText } from '../address-book-picker/address-lines.js'
+import { chosenFor, renderPicker } from '../address-book-picker/render.js'
 import { consignmentContactSelectPage as page } from './page.js'
+import { CONTACT_ADDRESS } from './fields.js'
+import { pickerViewModel } from './view-model/index.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-export const meta = { ...page, collects: ['contactAddress'] }
+/**
+ * The contact for the consignment, picked from the organisation's address book.
+ *
+ * The whole page is one form. The search button and the primary are both
+ * submits, told apart by their `action` value. Paging is a GET link; a small
+ * progressive enhancement adds a newly ticked row to those links before the
+ * browser follows them.
+ *
+ * Two things set this picker apart from the destination and consignor pages.
+ * The answer stored is a COPY of the record — its id, name and address — so
+ * the notification carries the contact details as they were when chosen, and
+ * a blank save is allowed: Save and continue with nothing ticked commits
+ * nothing and moves on, leaving the task row not yet started.
+ */
+export const meta = { ...page, collects: [CONTACT_ADDRESS] }
+
 const view = `${TEMPLATES}/features/consignment-contact-select/template`
 
 const copy = copyFor({ en, cy })
 
-const fields = (options) =>
-  compose(
-    // Contact is mandatory as an obligation, but Save and continue with no
-    // selection is allowed — the trader returns to the hub with the task
-    // incomplete. Reject only values that are not in the offered list.
-    oneOf(
-      'contactAddress',
-      options.map((option) => option.id),
-      copy.errors.contactRequired
-    )
-  )
+const FIRST_PAGE = 1
+const SEARCH_ACTION = 'search'
 
-const addressSummary = (address) =>
-  [addressText(address), address.country].filter(Boolean).join(', ')
+const parsePageNumber = (value) => {
+  const number = Number.parseInt(value, 10)
+  return Number.isNaN(number) ? FIRST_PAGE : number
+}
 
-const render = (
-  h,
-  journey,
-  values,
-  options,
-  errors = {},
-  recoverableError = false
-) =>
-  h.view(view, {
-    ...kit.base(copy.title, {
-      backLink: hubPath(journey.journeyId),
-      journey,
-      page,
-      recoverableError
-    }),
+const isSearch = (payload) => payload.action === SEARCH_ACTION
+
+const committedId = (answers) => answers[CONTACT_ADDRESS]?.addressId
+
+const copyOf = (record) => ({
+  addressId: record.id,
+  name: record.name,
+  address: { ...record.address }
+})
+
+// The page asks one question in one voice, so the heading and the description
+// are the page's own copy rather than chosen per notification.
+const render = (request, h, current, pageState) =>
+  renderPicker(request, h, current, pageState, {
+    view,
+    page,
     copy,
-    errors,
-    errorSummary: kit.errorSummary(errors),
-    contactOptions: options.map((option) => ({
-      value: option.id,
-      text: option.name,
-      hint: { text: addressSummary(option.address) },
-      checked: option.id === values.selectedId
-    }))
+    fieldName: CONTACT_ADDRESS,
+    pickerViewModel,
+    heading: copy.title,
+    description: copy.description
   })
 
 const get = async (request, h) => {
-  const { journey, answers } = await state.get(request, h)
-  const orgId = organisationIdOf(request)
-  return render(h, journey, { selectedId: answers.contactAddress?.addressId }, [
-    ...(await addressBook.all(orgId))
-  ])
+  const current = await state.get(request, h)
+  return render(request, h, current, {
+    query: request.query.q ?? '',
+    page: parsePageNumber(request.query.page),
+    selectedId: request.query.selected ?? committedId(current.answers)
+  })
 }
 
 const post = async (request, h) => {
   const payload = request.payload ?? {}
-  const orgId = organisationIdOf(request)
-  const options = await addressBook.all(orgId)
-  const { errors, value } = validate(fields(options), payload)
-  if (errors) {
-    const { journey } = await state.get(request, h)
-    return render(
-      h,
-      journey,
-      { selectedId: payload.contactAddress },
-      options,
-      errors
+  const query = payload.q ?? ''
+  const selectedId = payload[CONTACT_ADDRESS] || payload.selected || ''
+  const current = await state.get(request, h)
+
+  if (isSearch(payload)) {
+    // A new search starts at the first page, whichever page it was run from.
+    return render(request, h, current, {
+      query,
+      page: FIRST_PAGE,
+      selectedId
+    })
+  }
+
+  if (!selectedId) {
+    return h.redirect(await kit.nextTarget(request, page, current.scope))
+  }
+
+  const chosen = await chosenFor(organisationIdOf(request), selectedId)
+  if (!chosen) {
+    return (
+      await render(request, h, current, {
+        query,
+        page: parsePageNumber(payload.page),
+        selectedId: '',
+        error: copy.errors.contactAddress
+      })
     ).code(HTTP_STATUS_BAD_REQUEST)
   }
 
-  const chosen = value.contactAddress
-    ? await addressBook.party(orgId, value.contactAddress)
-    : undefined
-  if (value.contactAddress && (!chosen || chosen.deleted)) {
-    const { journey } = await state.get(request, h)
-    return render(h, journey, { selectedId: value.contactAddress }, options, {
-      contactAddress: copy.errors.contactRequired
-    }).code(HTTP_STATUS_BAD_REQUEST)
-  }
   let committed
   const { failure } = await kit.recoverableSave(
     async () => {
-      committed = chosen
-        ? await state.commit(request, h, {
-            contactAddress: {
-              addressId: chosen.id,
-              name: chosen.name,
-              address: { ...chosen.address }
-            }
-          })
-        : await state.get(request, h)
+      committed = await state.commit(request, h, {
+        [CONTACT_ADDRESS]: copyOf(chosen)
+      })
     },
-    async () => {
-      const { journey } = await state.get(request, h)
-      return render(
-        h,
-        journey,
-        { selectedId: chosen?.id },
-        options,
-        {},
-        true
+    async () =>
+      (
+        await render(request, h, current, {
+          query,
+          page: parsePageNumber(payload.page),
+          selectedId: chosen.id,
+          recoverableError: true
+        })
       ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
-    }
   )
   if (failure) {
     return failure
   }
 
-  const { scope } = committed
-  return h.redirect(await kit.nextTarget(request, page, scope))
+  return h.redirect(await kit.nextTarget(request, page, committed.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

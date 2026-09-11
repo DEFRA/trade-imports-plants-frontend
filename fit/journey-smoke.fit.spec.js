@@ -75,7 +75,7 @@ const fillSteps = {
     }
   },
   'consignment/contact/select': (page, fields, shape) =>
-    chooseRadio(page, shape.partyName)
+    chooseRadio(page, `Select ${shape.partyName}`)
 }
 
 for (const [name, shape] of Object.entries(happyPaths)) {

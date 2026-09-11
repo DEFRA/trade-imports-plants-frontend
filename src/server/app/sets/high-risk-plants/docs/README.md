@@ -84,8 +84,14 @@ sorts and paginates notifications, and starts a notification through
 
 Each notification has a task-list hub at `/notifications/{journeyId}`. Its
 seven task rows cover commodities, origin, arrival, destination, consignor,
-identification numbers and consignment contact. The commodities feature has
-a list page and an entry sub-page for adding or editing a line. Scope controls
+identification numbers and consignment contact. The destination, consignor
+and consignment contact pages are all the same address-book picker — a search
+box over the organisation's book, five rows a page with a radio per row, and
+paging links — sharing its shell through
+`journeys/linear/features/address-book-picker/`; the contact page differs in
+storing a copy of the record it picks and in allowing a blank save. The
+commodities feature has a list page and an entry sub-page for adding or
+editing a line. Scope controls
 which questions apply: for example, potato notifications skip arrival status
 and go straight to arrival details.
 

@@ -150,14 +150,14 @@ describe('GET place-of-destination — the question it asks', () => {
     expect(result.view.context.contentColumnClass).toBe(SURFACES.display)
   })
 
-  it('Should ask potatoes for the intended destination', async () => {
+  it('Should ask potatoes for the place of destination', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
     expect(result.view.context.heading).toBe(copy.headings.potatoes)
     expect(result.view.context.description).toBe(copy.descriptions.potatoes)
   })
 
-  it('Should ask a consignment on its way for the intended destination', async () => {
+  it('Should ask a consignment on its way for the place of destination', async () => {
     const result = await driveHandler(get, {
       seed: plants({ arrivalStatus: NOT_YET_ARRIVED })
     })

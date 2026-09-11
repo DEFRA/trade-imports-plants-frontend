@@ -98,28 +98,6 @@ export const search = async (orgId, { query = '', page = 1 } = {}) => {
     : searchReal(orgId, query, requested)
 }
 
-/** Every address the organisation has saved, unpaginated — for the contact
- * picker, which renders a flat radio list rather than a searchable table. */
-export const all = async (orgId) => {
-  if (isStubMode()) {
-    return [...STUB_BOOK]
-  }
-
-  const first = await client.listAddresses(orgId, { page: 1 })
-  if (first.totalPages <= 1) {
-    return first.records
-  }
-
-  // Page 1 is already in hand, so the rest start at 2.
-  const FIRST_REMAINING_PAGE = 2
-  const rest = await Promise.all(
-    Array.from({ length: first.totalPages - 1 }, (_, index) =>
-      client.listAddresses(orgId, { page: index + FIRST_REMAINING_PAGE })
-    )
-  )
-  return [...first.records, ...rest.flatMap((found) => found.records)]
-}
-
 /** One address by id. Resolves to undefined when the record does not exist for
  * this organisation; a soft-deleted record comes back with `deleted: true` so
  * callers can treat a deletion as "never entered" without mistaking an outage

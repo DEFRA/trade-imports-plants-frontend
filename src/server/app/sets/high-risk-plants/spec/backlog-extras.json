@@ -390,7 +390,7 @@
       "type": "e2e",
       "repo": "repos/trade-imports-animals-tests",
       "title": "Journey-level spec: destination section (picker, label by arrival status)",
-      "detail": "tests/e2e/features/plants/destination.spec.ts with the address-picker page object: search the org address book, paginate at 5, select and see the Selected address inset; heading reads Intended destination for pre-arrival and potatoes, Where is the consignment now for already-arrived; a deleted record renders Not provided on CYA; hub row Completed. Evidence: behaviours address-book-picker, restore-answers-read-sanitiser.",
+      "detail": "tests/e2e/features/plants/destination.spec.ts with the address-picker page object: search the org address book, paginate at 5, select and see the Selected address inset; heading reads Place of destination for pre-arrival and potatoes, Where is the consignment now for already-arrived; a deleted record renders Not provided on CYA; hub row Completed. Evidence: behaviours address-book-picker, restore-answers-read-sanitiser.",
       "milestone": null,
       "gate": null,
       "anchor": {
