@@ -3,12 +3,13 @@ import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
+import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
+import { copy as captionCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
-import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 
 const COMMODITY_TYPE_URL = /\/notifications\/[^/]+\/commodity-type$/
 const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details/
@@ -31,14 +32,56 @@ const WOOD_LINE_FIELDS = {
   phytosanitaryTreatments: 'Heat treatment'
 }
 
+// Records the stub address book holds. Tech Imports is on the first page of
+// results, Copenhagen Exports on the second and Alpine Supplies on the last, so
+// paging can be proved by what is on screen rather than by the link alone.
+const TECH_IMPORTS = 'Tech Imports Ltd'
+const IMPORT_CO = 'Import Co UK'
+const ALPINE = 'Alpine Supplies GmbH'
+const STUB_BOOK_SIZE = 13
+// govukPagination gives each number link a visually hidden "Page " prefix, so
+// that — not the bare number — is the link's accessible name.
+const SECOND_PAGE_LINK = 'Page 2'
+const DENMARK = 'Denmark'
+const COPENHAGEN = 'Copenhagen Exports ApS'
+const MATCHES_NOTHING = 'nothing matches this'
+const NOT_IN_THE_BOOK = 'not-in-this-book'
+
 const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const saveAndContinue = (page) =>
   page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
 
+const saveAndReturn = (page) =>
+  page.getByRole('button', {
+    name: sharedCopy.saveActions.saveAndReturnToHub
+  })
+
+const rowRadio = (page, name) =>
+  page.getByRole('radio', {
+    name: `${copy.selectRowPrefix} ${name}`,
+    exact: true
+  })
+
+const selectedInset = (page, name) =>
+  page.getByText(`${copy.selectedAddressPrefix} ${name}`, { exact: true })
+
+const errorSummaryLink = (page) =>
+  page
+    .getByRole('alert')
+    .getByRole('link', { name: copy.errors.contactAddress })
+
 const contactPathOf = (reference) =>
   `/notifications/${reference}/consignment/contact/select`
+
+const contactRow = (page) =>
+  page.getByRole('listitem').filter({
+    has: page.getByRole('link', {
+      name: hubCopy.rows.contact.title,
+      exact: true
+    })
+  })
 
 const startNotification = async (page) => {
   await page.goto('/')
@@ -47,7 +90,7 @@ const startNotification = async (page) => {
   return new URL(page.url()).pathname.split('/')[JOURNEY_ID_SEGMENT]
 }
 
-const pickCommodityType = async (page, commodityType) => {
+const chooseCommodityType = async (page, commodityType) => {
   await page
     .getByRole('radio', {
       name: commodityTypeCopy.typeLabels[commodityType],
@@ -55,11 +98,6 @@ const pickCommodityType = async (page, commodityType) => {
     })
     .check()
   await saveAndContinue(page).click()
-}
-
-// The first choice, made with no lines saved, carries on to the details page.
-const chooseCommodityType = async (page, commodityType) => {
-  await pickCommodityType(page, commodityType)
   await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
 }
 
@@ -109,111 +147,365 @@ const startAtContact = async (page) => {
   return reference
 }
 
-const contactRow = (page) =>
-  page.getByRole('listitem').filter({
-    has: page.getByRole('link', {
-      name: hubCopy.rows.contact.title,
-      exact: true
-    })
-  })
-
-test.beforeEach(async ({ page }) => {
-  await signIn(page)
-})
-
-test('lists every record with its name and address hint and saves an inline contact', async ({
-  page
-}) => {
-  const reference = await startAtContact(page)
-  await expect(
-    page.getByRole('heading', { name: copy.title, exact: true })
-  ).toBeVisible()
-  await expect(page.getByText(copy.hint, { exact: true })).toBeVisible()
-  await expect(page.getByRole('radio')).toHaveCount(STUB_BOOK.length)
-  for (const record of STUB_BOOK) {
-    await expect(
-      page.getByRole('radio', { name: record.name, exact: true })
-    ).toHaveAccessibleDescription(new RegExp(record.address.postalOrZipCode))
-  }
-  await page
-    .getByRole('radio', { name: STUB_BOOK[0].name, exact: true })
-    .check()
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(HUB_URL)
-  await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
-  await page
-    .getByRole('link', { name: hubCopy.rows.contact.title, exact: true })
-    .click()
-  await expect(page).toHaveURL(PAGE_URL)
-  await page.reload()
-  await expect(
-    page.getByRole('radio', { name: STUB_BOOK[0].name, exact: true })
-  ).toBeChecked()
-  await page
-    .getByRole('radio', { name: STUB_BOOK[1].name, exact: true })
-    .check()
-  await page
-    .getByRole('link', {
-      name: sharedCopy.saveActions.cancelAndReturnToHub,
-      exact: true
-    })
-    .click()
-  await expect(page).toHaveURL(HUB_URL)
-  await page.goto(contactPathOf(reference))
-  await expect(
-    page.getByRole('radio', { name: STUB_BOOK[0].name, exact: true })
-  ).toBeChecked()
-  await backLink(page).click()
-  await expect(page).toHaveURL(HUB_URL)
-})
-
-for (const action of [
-  sharedCopy.saveActions.saveAndContinue,
-  sharedCopy.saveActions.saveAndReturnToHub
-]) {
-  test(`blank contact permits ${action} and leaves the task incomplete`, async ({
-    page
-  }) => {
-    await startAtContact(page)
-    await page.getByRole('button', { name: action, exact: true }).click()
-    await expect(page).toHaveURL(HUB_URL)
-    await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
-  })
-}
-
-test('initial and invalid selection states have no serious accessibility violations', async ({
-  page
-}) => {
-  await startAtContact(page)
-  let results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
-    .analyze()
-  expect(
-    results.violations.filter(({ impact }) =>
-      ['serious', 'critical'].includes(impact)
-    )
-  ).toEqual([])
+// A blank save is allowed on this page, so the refusal has to be provoked with
+// an id the book does not hold.
+const postAnIdNotInTheBook = async (page) => {
   await page
     .getByRole('radio')
     .first()
-    .evaluate((radio) => {
-      radio.value = 'not-in-this-book'
+    .evaluate((input) => {
+      input.value = 'not-in-this-book'
+      input.checked = true
     })
-  await page.getByRole('radio').first().check()
   await saveAndContinue(page).click()
-  const errorLink = page.getByRole('link', {
-    name: copy.errors.contactRequired,
-    exact: true
-  })
-  await expect(errorLink).toBeVisible()
-  await errorLink.click()
-  await expect(page.getByRole('radio').first()).toBeFocused()
-  results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
+}
+
+const expectNoSeriousOrCriticalViolations = async (page, subject) => {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze()
+  const seriousOrCritical = results.violations.filter(({ impact }) =>
+    ['serious', 'critical'].includes(impact)
+  )
+
   expect(
-    results.violations.filter(({ impact }) =>
-      ['serious', 'critical'].includes(impact)
-    )
+    seriousOrCritical,
+    `${subject} has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
   ).toEqual([])
+}
+
+test.describe('consignment-contact-select feature', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('renders the heading, the description and the search box', async ({
+    page
+  }) => {
+    await startAtContact(page)
+
+    await expect(
+      page.getByRole('heading', { name: copy.title, level: 1 })
+    ).toBeVisible()
+    await expect(
+      page.getByText(captionCopy.sections.consignmentParties, { exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page.getByText(copy.description, { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByLabel(copy.search.label, { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByText(copy.search.hint, { exact: true })
+    ).toBeVisible()
+  })
+
+  test('is reachable from the overview contact task row', async ({ page }) => {
+    const reference = await startAtContact(page)
+    await page.goto(`/notifications/${reference}`)
+
+    await page
+      .getByRole('link', { name: hubCopy.rows.contact.title, exact: true })
+      .click()
+
+    await expect(page).toHaveURL(PAGE_URL)
+  })
+
+  test('shows the first page of the organisation address book with its count', async ({
+    page
+  }) => {
+    await startAtContact(page)
+
+    await expect(
+      page.getByText(copy.resultsCaption(PAGE_SIZE, STUB_BOOK_SIZE), {
+        exact: true
+      })
+    ).toBeVisible()
+    await expect(page.getByRole('radio')).toHaveCount(PAGE_SIZE)
+    await expect(rowRadio(page, TECH_IMPORTS)).toBeVisible()
+    await expect(rowRadio(page, ALPINE)).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
+    ).toBeVisible()
+  })
+
+  test('offers the three save controls', async ({ page }) => {
+    await startAtContact(page)
+
+    await expect(saveAndContinue(page)).toBeVisible()
+    await expect(saveAndReturn(page)).toBeVisible()
+    await expect(
+      page.getByRole('link', {
+        name: sharedCopy.saveActions.cancelAndReturnToHub
+      })
+    ).toBeVisible()
+  })
+
+  test('sends Back to the overview', async ({ page }) => {
+    const reference = await startAtContact(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `/notifications/${reference}`
+    )
+    await backLink(page).click()
+    await expect(page).toHaveURL(HUB_URL)
+  })
+
+  test('narrows the results to the search term', async ({ page }) => {
+    await startAtContact(page)
+
+    await page.getByLabel(copy.search.label, { exact: true }).fill(DENMARK)
+    await page.getByRole('button', { name: copy.search.button }).click()
+
+    await expect(rowRadio(page, COPENHAGEN)).toBeVisible()
+    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
+  })
+
+  test('says so rather than showing an empty table when nothing matches', async ({
+    page
+  }) => {
+    await startAtContact(page)
+
+    await page
+      .getByLabel(copy.search.label, { exact: true })
+      .fill(MATCHES_NOTHING)
+    await page.getByRole('button', { name: copy.search.button }).click()
+
+    await expect(page.getByText(copy.noMatches, { exact: true })).toBeVisible()
+  })
+
+  test('keeps a ticked row while the search narrows the results', async ({
+    page
+  }) => {
+    await startAtContact(page)
+
+    await rowRadio(page, TECH_IMPORTS).check()
+    await page.getByLabel(copy.search.label, { exact: true }).fill(DENMARK)
+    await page.getByRole('button', { name: copy.search.button }).click()
+
+    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
+  })
+
+  test('carries a saved address through the paging links', async ({ page }) => {
+    const reference = await startAtContact(page)
+    await rowRadio(page, TECH_IMPORTS).check()
+    await saveAndContinue(page).click()
+    await page.goto(contactPathOf(reference))
+
+    await page
+      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
+      .click()
+
+    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
+    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
+  })
+
+  test('carries a newly ticked address through the paging links', async ({
+    page
+  }) => {
+    await startAtContact(page)
+    await rowRadio(page, TECH_IMPORTS).check()
+
+    await page
+      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
+      .click()
+
+    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
+    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
+  })
+})
+
+test.describe('consignment-contact-select — saving an address', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('saves the chosen address, returns to the overview with the row complete and shows it again on return', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await rowRadio(page, TECH_IMPORTS).check()
+    await saveAndContinue(page).click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
+
+    await page.goto(contactPathOf(reference))
+    await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
+    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
+  })
+
+  test('a row ticked on the second page saves, and re-entering shows it as the selected address', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+    await page
+      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
+      .click()
+    await expect(rowRadio(page, COPENHAGEN)).toBeVisible()
+
+    await rowRadio(page, COPENHAGEN).check()
+    await saveAndContinue(page).click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
+
+    // Re-entering opens on page one of the whole book, where the chosen record
+    // is not rendered — the picker still knows it, and says so in the inset.
+    await page.goto(contactPathOf(reference))
+    await expect(selectedInset(page, COPENHAGEN)).toBeVisible()
+    await expect(rowRadio(page, COPENHAGEN)).toHaveCount(0)
+  })
+
+  test('replaces the address already saved rather than keeping both', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+    await rowRadio(page, TECH_IMPORTS).check()
+    await saveAndContinue(page).click()
+    await page.goto(contactPathOf(reference))
+
+    await rowRadio(page, IMPORT_CO).check()
+    await saveAndContinue(page).click()
+    await page.goto(contactPathOf(reference))
+
+    await expect(rowRadio(page, IMPORT_CO)).toBeChecked()
+    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
+  })
+
+  test('Save and return to overview saves the address and reaches the overview', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await rowRadio(page, TECH_IMPORTS).check()
+    await saveAndReturn(page).click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
+
+    await page.goto(contactPathOf(reference))
+    await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
+  })
+
+  test('Cancel and return to overview reaches the overview without saving', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await rowRadio(page, TECH_IMPORTS).check()
+    await page
+      .getByRole('link', {
+        name: sharedCopy.saveActions.cancelAndReturnToHub
+      })
+      .click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
+
+    await page.goto(contactPathOf(reference))
+    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
+  })
+})
+
+test.describe('consignment-contact-select — a blank save', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  for (const action of [
+    sharedCopy.saveActions.saveAndContinue,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ]) {
+    test(`blank contact permits ${action} and leaves the task not yet started`, async ({
+      page
+    }) => {
+      const reference = await startAtContact(page)
+
+      await page.getByRole('button', { name: action, exact: true }).click()
+
+      await expect(page).toHaveURL(HUB_URL)
+      await expect(contactRow(page)).toContainText(
+        hubCopy.statuses.notYetStarted
+      )
+
+      await page.goto(contactPathOf(reference))
+      await expect(
+        page.getByText(new RegExp(`^${copy.selectedAddressPrefix}`))
+      ).toHaveCount(0)
+      await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
+    })
+  }
+})
+
+test.describe('consignment-contact-select — the answers it refuses', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('rejects an id the address book does not hold, focuses the first row and preserves the search', async ({
+    page
+  }) => {
+    await startAtContact(page)
+    await page.getByLabel(copy.search.label, { exact: true }).fill('Imports')
+
+    await postAnIdNotInTheBook(page)
+
+    await expect(page).toHaveURL(PAGE_URL)
+    await expect(errorSummaryLink(page)).toBeVisible()
+    await expect(
+      page.getByLabel(copy.search.label, { exact: true })
+    ).toHaveValue('Imports')
+    await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
+    await expect(page.getByRole('radio').first()).not.toHaveValue(
+      NOT_IN_THE_BOOK
+    )
+
+    await errorSummaryLink(page).click()
+    await expect(page.getByRole('radio').first()).toBeFocused()
+  })
+
+  test('recovers from the error once an address is chosen', async ({
+    page
+  }) => {
+    await startAtContact(page)
+    await postAnIdNotInTheBook(page)
+    await expect(errorSummaryLink(page)).toBeVisible()
+
+    await rowRadio(page, TECH_IMPORTS).check()
+    await saveAndContinue(page).click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
+  })
+})
+
+test.describe('consignment-contact-select — accessibility', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('has no serious or critical axe violations on the initial render', async ({
+    page
+  }) => {
+    await startAtContact(page)
+    await expect(
+      page.getByRole('heading', { name: copy.title, level: 1 })
+    ).toBeVisible()
+
+    await expectNoSeriousOrCriticalViolations(page, 'Contact initial render')
+  })
+
+  test('has no serious or critical axe violations in the error state', async ({
+    page
+  }) => {
+    await startAtContact(page)
+    await postAnIdNotInTheBook(page)
+    await expect(errorSummaryLink(page)).toBeVisible()
+
+    await expectNoSeriousOrCriticalViolations(page, 'Contact error state')
+  })
 })

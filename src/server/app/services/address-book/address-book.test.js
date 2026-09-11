@@ -292,42 +292,13 @@ describe('#party', () => {
   })
 })
 
-describe('#all', () => {
-  test('Should gather every page for the unpaginated contact list', async () => {
-    realMode()
-    stubFetch(bookOf(60))
-
-    const { all } = await addressBook()
-    const records = await all(ORG)
-
-    expect(records).toHaveLength(60)
-    expect(records.at(-1).id).toBe('record-60')
-  })
-
-  test('Should make a single call when the book fits one page', async () => {
-    const fetched = vi.fn(bookOf(3))
-    realMode()
-    stubFetch(fetched)
-
-    const { all } = await addressBook()
-    await all(ORG)
-
-    expect(fetched).toHaveBeenCalledTimes(1)
-  })
-})
-
 describe('writes', () => {
   test('Should expose no way to add, change or remove a record', async () => {
     // The journey reads the book and never writes to it — creating and
     // maintaining addresses belongs to the INS frontend.
     const book = await addressBook()
 
-    expect(Object.keys(book).sort()).toEqual([
-      'PAGE_SIZE',
-      'all',
-      'party',
-      'search'
-    ])
+    expect(Object.keys(book).sort()).toEqual(['PAGE_SIZE', 'party', 'search'])
   })
 })
 
