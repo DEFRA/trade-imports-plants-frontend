@@ -7,15 +7,20 @@
 // English (live-animals features/addresses/copy/copy.cy.js, the `picker.*`
 // block), and is machine-draft there too — apart from `pagination`, which the
 // animals picker has no counterpart for and which is the dashboard's own Welsh
-// (features/dashboard/copy/copy.cy.js). "cyrchfan arfaethedig" and "ble mae
-// nawr" are reused from the sibling arrival-status/copy/copy.cy.js so the pair
-// of pages stays consistent — machine-draft there too. The headings and the
-// descriptions are machine-draft.
+// (features/dashboard/copy/copy.cy.js). The pre-arrival headings are `title`,
+// so the page is called what the hub task row that leads to it is called.
+// "ble mae nawr" in the already-arrived heading and "cyrchfan arfaethedig" in
+// the already-arrived description are reused from the sibling
+// arrival-status/copy/copy.cy.js so the pair of pages stays consistent —
+// machine-draft there too. The already-arrived heading and the descriptions
+// are machine-draft.
+const PAGE_NAME = 'Man cyrchfan'
+
 export const copy = {
-  title: 'Man cyrchfan',
+  title: PAGE_NAME,
   headings: {
-    potatoes: 'Cyrchfan arfaethedig',
-    'not-yet-arrived': 'Cyrchfan arfaethedig',
+    potatoes: PAGE_NAME,
+    'not-yet-arrived': PAGE_NAME,
     'already-arrived': 'Ble mae’r llwyth nawr?'
   },
   descriptions: {
