@@ -52,7 +52,7 @@ const isSearch = (payload) => payload.action === SEARCH_ACTION
  *
  * Potatoes are never asked whether the consignment has arrived — reg 24A gives
  * them no post-arrival branch — so a notification with no arrival status in
- * scope is asked for the intended destination. Plants and wood take the state
+ * scope is asked for the place of destination. Plants and wood take the state
  * from the arrival-status page; one that has not been answered yet is asked
  * the pre-arrival question, which is the one the journey opens on.
  */

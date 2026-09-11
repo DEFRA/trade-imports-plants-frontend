@@ -924,11 +924,11 @@
           "taskRow": "destination",
           "hubGroup": "arrival-and-destination",
           "runStep": "6",
-          "headingByState": "Intended destination (potatoes, not-yet-arrived) | Where is the consignment now? (already-arrived)",
+          "headingByState": "Place of destination (potatoes, not-yet-arrived) | Where is the consignment now? (already-arrived)",
           "description": "Where the goods will be kept after arrival. A plant health inspector may carry out a spot check here.",
           "storage": "reference { addressId } resolved against the address book on read",
           "saveActions": "three controls",
-          "notes": "Title and titleCy copied verbatim from animals (the picker page title is the party title). First address-book-backed page: reinstates the answers-read sanitiser so a deleted record drops out of fulfilment (skeleton answers-read-sanitiser-unwired) — declared as a restore extra. Picker shape copied from animals party-picker (search, paginated table, Selected address inset). | Ruled at D1-territory-and-timing (d-003, c-006): descriptionByState added mirroring placeOfDestination.input.hintByState; headingByState kept as is; provisional copy, Welsh pair required. | Ruled at D6-chrome-and-journey-shape (d-069, c-034): runStep 6 (was 7).",
+          "notes": "Title and titleCy copied verbatim from animals (the picker page title is the party title). First address-book-backed page: reinstates the answers-read sanitiser so a deleted record drops out of fulfilment (skeleton answers-read-sanitiser-unwired) — declared as a restore extra. Picker shape copied from animals party-picker (search, paginated table, Selected address inset). | Ruled at D1-territory-and-timing (d-003, c-006): descriptionByState added mirroring placeOfDestination.input.hintByState; headingByState kept as is; provisional copy, Welsh pair required. | Ruled at D6-chrome-and-journey-shape (d-069, c-034): runStep 6 (was 7). | Snagging (snag-002): headingByState and placeOfDestination input.labelByState pre-arrival states renamed Place of destination so the h1 matches the title and the destination task row.",
           "descriptionByState": {
             "potatoes": "Where the goods will be kept after arrival. This is where a plant health inspector may carry out a spot check.",
             "not-yet-arrived": "Where the goods will be kept after arrival. This is where a plant health inspector may carry out a spot check.",
@@ -2217,8 +2217,8 @@
         "service": "services/address-book search(orgId, { query, page }) / party(orgId, id)",
         "storage": "reference { addressId } resolved from the address book on every read; a deleted record renders Not provided and raises a CYA error (copied from animals placeOfDestination)",
         "labelByState": {
-          "potatoes": "Intended destination",
-          "not-yet-arrived": "Intended destination",
+          "potatoes": "Place of destination",
+          "not-yet-arrived": "Place of destination",
           "already-arrived": "Where the consignment is now"
         },
         "hintByState": {
