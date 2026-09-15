@@ -92,7 +92,7 @@ describe('#copy', () => {
 
   it.each(ENUMERATED_CONSTRAINTS)(
     'Should name every country the %s constraint allows',
-    (constraintId) => {
+    async (constraintId) => {
       const constraint = originConstraints().find(
         ({ id }) => id === constraintId
       )
@@ -101,7 +101,7 @@ describe('#copy', () => {
         expect(
           copy.errors.narrowing[constraintId],
           `the ${constraintId} narrowing sentence does not name ${code}`
-        ).toContain(originLabel(code))
+        ).toContain(await originLabel(code))
       }
 
       if (copy.guidance[constraintId]) {
@@ -109,7 +109,7 @@ describe('#copy', () => {
           expect(
             copy.guidance[constraintId],
             `the ${constraintId} guidance does not name ${code}`
-          ).toContain(originLabel(code))
+          ).toContain(await originLabel(code))
         }
       }
     }

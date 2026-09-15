@@ -159,8 +159,8 @@ describe('the origin constraints stay inside the service vocabulary', () => {
     ).toEqual([SEED_POTATOES])
   })
 
-  it('Should name only countries the origin block primes', () => {
-    const offered = originCountries().map(({ value }) => value)
+  it('Should name only countries the origin block primes', async () => {
+    const offered = (await originCountries()).map(({ value }) => value)
     for (const constraint of originConstraints()) {
       expect(
         constraint.countries.filter((code) => !offered.includes(code)),
@@ -178,11 +178,11 @@ describe('the origin constraints stay inside the service vocabulary', () => {
     )
   })
 
-  it('Should hold the origin block minus the four non-member states', () => {
+  it('Should hold the origin block minus the four non-member states', async () => {
     const euMemberStates = originConstraints().find(
       (constraint) => constraint.id === 'eu-member-states'
     )
-    const offered = originCountries().map(({ value }) => value)
+    const offered = (await originCountries()).map(({ value }) => value)
 
     expect([...euMemberStates.countries].toSorted()).toEqual(
       offered.filter((code) => !NON_MEMBER_STATES.includes(code)).toSorted()

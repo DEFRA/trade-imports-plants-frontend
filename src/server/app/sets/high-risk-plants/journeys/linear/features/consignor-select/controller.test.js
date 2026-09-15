@@ -9,6 +9,17 @@ import {
   vi
 } from 'vitest'
 
+// Real-mode address-book fetches flow through toRecord → originLabel, which
+// self-loads via a countries fetch. Mock the countries reader so the fetch
+// stub only has to answer address-book URLs.
+vi.mock('../../../../../../services/countries/index.js', () => {
+  const LABELS = { BE: 'Belgium', GB: 'United Kingdom' }
+  return {
+    ensureLoaded: async () => {},
+    originLabel: async (code) => LABELS[code]
+  }
+})
+
 import { config } from '../../../../../../../../config/config.js'
 import { nunjucksConfig } from '../../../../../../../../config/nunjucks/nunjucks.js'
 import { store } from '../../../../../../engine/store.js'

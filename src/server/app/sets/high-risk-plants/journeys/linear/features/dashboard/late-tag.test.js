@@ -40,7 +40,7 @@ describe('dashboard late tag', () => {
 
       const { rows } = await records.list({ journeyIds: [journeyId] })
 
-      expect(toRow(rows[0]).late).toBe(late)
+      expect((await toRow(rows[0])).late).toBe(late)
     }
   )
 })

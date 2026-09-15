@@ -16,6 +16,19 @@ import {
   vi
 } from 'vitest'
 
+// Real-mode address-book resolution flows through the address-book mapper's
+// originLabel, which now self-loads via a countries fetch. Mock the countries
+// reader so the fetch stub only has to answer address-book URLs — otherwise
+// the once-only fetch assertions in this file would double-count a countries
+// load onto the address-book count.
+vi.mock('../../../../../services/countries/index.js', () => {
+  const LABELS = { BE: 'Belgium', GB: 'United Kingdom' }
+  return {
+    ensureLoaded: async () => {},
+    originLabel: async (code) => LABELS[code]
+  }
+})
+
 import { config } from '../../../../../../../config/config.js'
 import { obligationByName } from '../../../../../bridge/obligation-source.js'
 import { journeyRequest } from '../../../../../engine/test-support.js'

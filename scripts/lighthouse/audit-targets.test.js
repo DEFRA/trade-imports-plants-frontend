@@ -420,10 +420,11 @@ describe('#SEED_SHAPES', () => {
     }
   })
 
-  it('Should seed only origin countries the shape’s own lines allow', () => {
+  it('Should seed only origin countries the shape’s own lines allow', async () => {
     // countryOfOrigin is enforced at Continue, so a shape whose use case
     // reaches a page after origin has to answer it — and the answer has to
     // survive the narrowing its own categories impose.
+    const offered = (await originCountries()).map(({ value }) => value)
     for (const [shape, { steps }] of Object.entries(SEED_SHAPES)) {
       for (const step of steps.filter(({ slug }) => slug === ORIGIN_SLUG)) {
         const categories = steps
@@ -431,7 +432,7 @@ describe('#SEED_SHAPES', () => {
           .filter(Boolean)
 
         expect(
-          originCountries().map(({ value }) => value),
+          offered,
           `${shape}: ${step.fields.countryOfOrigin} is not a country the origin page offers`
         ).toContain(step.fields.countryOfOrigin)
 

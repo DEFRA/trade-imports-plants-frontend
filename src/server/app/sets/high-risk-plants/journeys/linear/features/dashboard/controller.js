@@ -72,7 +72,7 @@ export const renderDashboard = async (request, h) => {
     copy,
     startAction: createPath(),
     listAction: dashboardPath(),
-    notificationRows: rows.map(toRow),
+    notificationRows: await Promise.all(rows.map(toRow)),
     resultsLabel: buildPageResultsRangeLabel(
       pagination,
       rows.length,

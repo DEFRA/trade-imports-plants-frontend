@@ -94,7 +94,7 @@ describe('GET origin', () => {
       text: copy.country.placeholder
     })
     expect(result.view.context.countryItems.slice(1)).toEqual(
-      countries.originCountries()
+      await countries.originCountries()
     )
   })
 

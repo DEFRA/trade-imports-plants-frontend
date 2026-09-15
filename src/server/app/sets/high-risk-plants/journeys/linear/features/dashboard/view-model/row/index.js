@@ -13,7 +13,7 @@ import { rowActions } from './actions.js'
  * @param {object} journey - the marshalled list row.
  * @returns {object} the card view model.
  */
-export const toRow = (journey) => {
+export const toRow = async (journey) => {
   const reference = journey.reference ?? journey.journeyId
 
   return {
@@ -22,7 +22,7 @@ export const toRow = (journey) => {
     late: Boolean(journey.lateNotificationIndicator),
     commodity: formatCommodity(journey.commodity),
     origin: journey.originCountryCode
-      ? (countries.originLabel(journey.originCountryCode) ??
+      ? ((await countries.originLabel(journey.originCountryCode)) ??
         journey.originCountryCode)
       : '',
     arrival: formatDisplayDate(journey.arrivalDate),

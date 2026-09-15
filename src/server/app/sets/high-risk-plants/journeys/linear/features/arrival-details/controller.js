@@ -70,15 +70,15 @@ const dateStateOf = (answers, scope) => {
     : NOT_YET_ARRIVED
 }
 
-const portItems = () => [
+const portItems = async () => [
   { value: '', text: copy.placeOfLanding.placeholder },
-  ...ports.portOptions()
+  ...(await ports.portOptions())
 ]
 
-// Built inside POST rather than frozen in a module-level schema: the list is
-// primed at boot, and a schema built at import time would hold whatever the
-// stub knew first.
-const portCodes = () => ports.list().map(({ code }) => code)
+// Built inside POST rather than frozen in a module-level schema: the readers
+// self-load on first use, and a schema built at import time would hold
+// whatever the stub knew first.
+const portCodes = async () => (await ports.list()).map(({ code }) => code)
 
 const dateRule = (bounds) =>
   requiredDateTextInRange(ARRIVAL_DATE, {
@@ -90,19 +90,19 @@ const dateRule = (bounds) =>
     }
   })
 
-const potatoRules = () => [
+const potatoRules = async () => [
   requiredTime(ARRIVAL_TIME, { required: copy.errors.arrivalTime }),
   requiredOneOf(
     PROPOSED_PLACE_OF_LANDING,
-    portCodes(),
+    await portCodes(),
     copy.errors.proposedPlaceOfLanding
   )
 ]
 
-const fields = (scope, bounds) =>
+const fields = async (scope, bounds) =>
   compose(
     dateRule(bounds),
-    ...(asksForPotatoDetails(scope) ? potatoRules() : [])
+    ...(asksForPotatoDetails(scope) ? await potatoRules() : [])
   )
 
 /** The fields the page shows, and only those — a hidden field is never read
@@ -120,7 +120,7 @@ const valuesFrom = (source, scope) => ({
 const boundsFor = (answers, scope) =>
   arrivalBounds(dateStateOf(answers, scope) === ALREADY_ARRIVED)
 
-const render = (h, current, values, options = {}) => {
+const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   const bounds = options.bounds ?? boundsFor(current.answers, current.scope)
   const dateState = dateStateOf(current.answers, current.scope)
@@ -136,7 +136,7 @@ const render = (h, current, values, options = {}) => {
     errors,
     errorSummary: kit.errorSummary(errors),
     showPotatoFields: asksForPotatoDetails(current.scope),
-    portItems: portItems(),
+    portItems: await portItems(),
     dateField: kit.dateField(ARRIVAL_DATE, {
       label: copy.dateLabels[dateState],
       hint: copy.dateHints[dateState],
@@ -164,9 +164,12 @@ const post = async (request, h) => {
   const current = await state.get(request, h)
   const values = valuesFrom(payload, current.scope)
   const bounds = boundsFor(current.answers, current.scope)
-  const { errors, value } = validate(fields(current.scope, bounds), payload)
+  const { errors, value } = validate(
+    await fields(current.scope, bounds),
+    payload
+  )
   if (errors) {
-    return render(h, current, values, { bounds, errors }).code(
+    return (await render(h, current, values, { bounds, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }
@@ -181,7 +184,7 @@ const post = async (request, h) => {
       )
     },
     async () =>
-      render(h, current, values, { bounds, recoverableError: true }).code(
+      (await render(h, current, values, { bounds, recoverableError: true })).code(
         HTTP_STATUS_INTERNAL_SERVER_ERROR
       )
   )
