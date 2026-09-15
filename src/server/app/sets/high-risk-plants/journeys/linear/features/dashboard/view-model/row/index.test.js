@@ -16,8 +16,8 @@ const marshalledRow = {
 }
 
 describe('#toRow', () => {
-  it('Should map every display cell the card renders', () => {
-    expect(toRow(marshalledRow)).toMatchObject({
+  it('Should map every display cell the card renders', async () => {
+    expect(await toRow(marshalledRow)).toMatchObject({
       reference: '26-ABC123',
       commodity: 'Potatoes',
       origin: 'France',
@@ -28,14 +28,14 @@ describe('#toRow', () => {
     })
   })
 
-  it('Should fall back to the raw code for an origin the country list does not name', () => {
-    expect(toRow({ ...marshalledRow, originCountryCode: 'ZZ' }).origin).toBe(
-      'ZZ'
-    )
+  it('Should fall back to the raw code for an origin the country list does not name', async () => {
+    expect(
+      (await toRow({ ...marshalledRow, originCountryCode: 'ZZ' })).origin
+    ).toBe('ZZ')
   })
 
-  it('Should leave an absent origin, consignor or arrival date empty', () => {
-    const row = toRow({
+  it('Should leave an absent origin, consignor or arrival date empty', async () => {
+    const row = await toRow({
       journeyId: '26-ABC123',
       reference: '26-ABC123',
       status: SUBMITTED,
@@ -48,17 +48,17 @@ describe('#toRow', () => {
     expect(row.arrival).toBe('')
   })
 
-  it('Should flag a row as late only when it carries the late indicator', () => {
+  it('Should flag a row as late only when it carries the late indicator', async () => {
     const journey = { journeyId: '26-ABC123', status: DRAFT }
 
-    expect(toRow(journey).late).toBe(false)
-    expect(toRow({ ...journey, lateNotificationIndicator: true }).late).toBe(
-      true
-    )
+    expect((await toRow(journey)).late).toBe(false)
+    expect(
+      (await toRow({ ...journey, lateNotificationIndicator: true })).late
+    ).toBe(true)
   })
 
-  it('Should leave the plants row without a consignee cell', () => {
-    const row = toRow({ journeyId: '26-ABC123', status: DRAFT })
+  it('Should leave the plants row without a consignee cell', async () => {
+    const row = await toRow({ journeyId: '26-ABC123', status: DRAFT })
 
     expect(Object.keys(row)).not.toContain('consignee')
   })
