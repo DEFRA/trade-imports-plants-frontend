@@ -89,7 +89,8 @@ const narrowingErrorFor = (constraints, country) => {
  * @param {object} payload - the raw POST payload.
  * @param {readonly object[]} constraints - the origin constraints the
  * consignment's commodity lines put on it.
- * @returns {object|null} the field errors, or null when the answer stands.
+ * @returns {Promise<object|null>} the field errors, or null when the answer
+ * stands.
  */
 const errorsFor = async (payload, constraints) => {
   const { errors, value } = validate(await membershipRule(), payload)
