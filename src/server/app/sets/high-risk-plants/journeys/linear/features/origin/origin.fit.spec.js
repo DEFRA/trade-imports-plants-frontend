@@ -3,7 +3,11 @@ import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { originCountries } from '../../../../../../services/countries/index.js'
+// The service reader would try to load real reference data when called from
+// the FIT process (which does not set STUB_MODE); the browser-side test
+// only cares about the codes the server actually rendered, and the server
+// runs against the same stub in FIT mode. Read that source directly.
+import { COUNTRY_LABELS } from '../../../../../../services/countries/stub.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
@@ -156,10 +160,7 @@ test.describe('origin feature', () => {
       .locator(`${COUNTRY_SELECT} option`)
       .evaluateAll((options) => options.map((option) => option.value))
 
-    expect(rendered).toEqual([
-      '',
-      ...(await originCountries()).map((country) => country.value)
-    ])
+    expect(rendered).toEqual(['', ...Object.keys(COUNTRY_LABELS)])
   })
 
   test('offers the three save controls', async ({ page }) => {

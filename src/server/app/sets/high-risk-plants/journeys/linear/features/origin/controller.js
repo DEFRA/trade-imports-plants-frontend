@@ -102,7 +102,7 @@ const errorsFor = async (payload, constraints) => {
 
 // The back link is the one thing on this page told by what has been saved: a
 // notification with nothing saved has no overview worth returning to.
-export const originErrors = (current) =>
+export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
 const backLinkFor = (journey, answers) =>
