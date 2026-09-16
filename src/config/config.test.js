@@ -94,4 +94,30 @@ describe('#config', () => {
       expect(freshConfig.get('auth.enabled')).toBe(false)
     })
   })
+
+  describe('auth.cookieName', () => {
+    beforeEach(() => {
+      vi.resetModules()
+    })
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    test('defaults to a service-distinct name in development', async () => {
+      vi.stubEnv('NODE_ENV', 'development')
+
+      const { config: freshConfig } = await import('./config.js')
+
+      expect(freshConfig.get('auth.cookieName')).toBe('plants-sid')
+    })
+
+    test('reads AUTH_SESSION_COOKIE_NAME as the cookie name', async () => {
+      vi.stubEnv('AUTH_SESSION_COOKIE_NAME', 'custom-sid')
+
+      const { config: freshConfig } = await import('./config.js')
+
+      expect(freshConfig.get('auth.cookieName')).toBe('custom-sid')
+    })
+  })
 })
