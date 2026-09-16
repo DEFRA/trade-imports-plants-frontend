@@ -184,9 +184,9 @@ const post = async (request, h) => {
       )
     },
     async () =>
-      (await render(h, current, values, { bounds, recoverableError: true })).code(
-        HTTP_STATUS_INTERNAL_SERVER_ERROR
-      )
+      (
+        await render(h, current, values, { bounds, recoverableError: true })
+      ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
   )
   if (failure) {
     return failure

@@ -158,7 +158,7 @@ test.describe('origin feature', () => {
 
     expect(rendered).toEqual([
       '',
-      ...originCountries().map((country) => country.value)
+      ...(await originCountries()).map((country) => country.value)
     ])
   })
 
