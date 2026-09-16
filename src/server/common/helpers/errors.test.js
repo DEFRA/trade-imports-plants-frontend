@@ -1,9 +1,9 @@
+import Boom from '@hapi/boom'
 import { vi } from 'vitest'
 
 import { catchAll } from './errors.js'
 import { createServer } from '../../server.js'
 import { statusCodes } from '../constants/status-codes.js'
-
 import { mockOidcConfig } from '../test-helpers/mock-oidc-config.js'
 
 vi.mock('../../../auth/get-oidc-config.js', () => ({
@@ -23,6 +23,14 @@ describe('#errors', () => {
         throw new TypeError('programming failure')
       }
     })
+    server.route({
+      method: 'GET',
+      path: '/test/service-unavailable',
+      options: { auth: false },
+      handler: () => {
+        throw Boom.serverUnavailable()
+      }
+    })
     await server.initialize()
   })
 
@@ -39,11 +47,10 @@ describe('#errors', () => {
     expect(result).toEqual(
       expect.stringContaining('Page not found | Import notification service')
     )
-    expect(result).not.toEqual(expect.stringContaining('Prototype'))
     expect(statusCode).toBe(statusCodes.notFound)
   })
 
-  test('Should render an unexpected programming error in promoted chrome without the recoverable banner', async () => {
+  test('Should render an unexpected programming error in the shared layout without the recoverable banner', async () => {
     const { result, statusCode } = await server.inject({
       method: 'GET',
       url: '/test/programming-error'
@@ -57,10 +64,23 @@ describe('#errors', () => {
     )
     expect(result).toEqual(expect.stringContaining('>500</h1>'))
     expect(result).not.toEqual(
+      expect.stringContaining('Try again in a few minutes.')
+    )
+  })
+
+  test('Should serve the shared error page as a 503 when a service behind the page is unavailable', async () => {
+    const { result, statusCode } = await server.inject({
+      method: 'GET',
+      url: '/test/service-unavailable'
+    })
+
+    expect(statusCode).toBe(statusCodes.serviceUnavailable)
+    expect(result).toEqual(
       expect.stringContaining(
-        'Your answers on this page have been saved. Try again in a few minutes.'
+        'Something went wrong | Import notification service'
       )
     )
+    expect(result).toEqual(expect.stringContaining('>503</h1>'))
   })
 })
 
@@ -95,7 +115,6 @@ describe('#catchAll', () => {
       pageTitle,
       heading,
       message: pageTitle,
-      journeyStrip: null,
       recoverableError: false
     })
 
@@ -127,7 +146,10 @@ describe('#catchAll', () => {
     expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
     expect(mockToolkitView).toHaveBeenCalledWith(
       errorPage,
-      expectedContext('Unauthorized', statusCodes.unauthorized)
+      expectedContext(
+        'You need to sign in to view this page',
+        statusCodes.unauthorized
+      )
     )
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.unauthorized)
   })
@@ -138,7 +160,10 @@ describe('#catchAll', () => {
     expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
     expect(mockToolkitView).toHaveBeenCalledWith(
       errorPage,
-      expectedContext('Bad Request', statusCodes.badRequest)
+      expectedContext(
+        'There is a problem with your request',
+        statusCodes.badRequest
+      )
     )
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.badRequest)
   })
