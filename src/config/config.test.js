@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { config } from './config.js'
 
 const originalStubMode = process.env.STUB_MODE
 
@@ -11,6 +12,12 @@ const restoreStubMode = () => {
 }
 
 describe('#config', () => {
+  test('loads TRADE_IMPORTS_INS_FRONTEND_URL with the 3002 default', () => {
+    expect(config.get('tradeImportsInsFrontend.baseUrl')).toBe(
+      'http://localhost:3002'
+    )
+  })
+
   describe('stubMode', () => {
     beforeEach(() => {
       vi.resetModules()
