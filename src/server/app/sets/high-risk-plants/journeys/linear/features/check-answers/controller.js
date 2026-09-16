@@ -49,7 +49,10 @@ const render = async (request, h, current, disableAutoFocus = true) => {
   const parties = await partiesFor(request, source, current.scope)
   const errors = readOnly
     ? {}
-    : { ...originErrors(current), ...outstandingPartyErrors(source, parties) }
+    : {
+        ...(await originErrors(current)),
+        ...outstandingPartyErrors(source, parties)
+      }
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
@@ -72,7 +75,7 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       current.answers.commodityType === 'potatoes'
         ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
-    sections: buildSections(current, parties, readOnly),
+    sections: await buildSections(current, parties, readOnly),
     errorSummary: kit.errorSummary(errors, {
       href: (field) => changeHref(current.journey.journeyId, field),
       disableAutoFocus
@@ -99,7 +102,7 @@ const post = async (request, h) => {
   const source = current.storedAnswers ?? current.answers
   const parties = await partiesFor(request, source, current.scope)
   const errors = {
-    ...originErrors(current),
+    ...(await originErrors(current)),
     ...outstandingPartyErrors(source, parties)
   }
   if (Object.keys(errors).length > 0) {

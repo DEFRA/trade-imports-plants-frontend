@@ -8,6 +8,17 @@ import {
 import { config } from '../../../../../../config/config.js'
 import { records } from './index.js'
 
+// Real-mode party names flow through the address-book mapper's originLabel,
+// which now self-loads via a countries fetch. Mock the countries reader so
+// the fetch mock only has to answer notification and address-book URLs.
+vi.mock('../../../countries/index.js', () => {
+  const LABELS = { CH: 'Switzerland', GB: 'United Kingdom' }
+  return {
+    ensureLoaded: async () => {},
+    originLabel: async (code) => LABELS[code]
+  }
+})
+
 const fetchMocker = createFetchMock(vi)
 fetchMocker.enableMocks()
 

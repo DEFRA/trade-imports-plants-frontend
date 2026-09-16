@@ -97,7 +97,7 @@ const commodityCards = (answers, evaluation, journeyId, readOnly) =>
  * close over them. Assembled once by `buildSections` and passed to each
  * section so the builders stay small and independently readable.
  */
-const sectionContext = (
+const sectionContext = async (
   { journey, answers, scope, evaluation },
   parties,
   readOnly
@@ -105,6 +105,15 @@ const sectionContext = (
   const journeyId = journey.journeyId
   const answerRow = (field, value = answers[field]) =>
     row(journeyId, readOnly, copy.labels[field], value, field)
+  // Pre-resolve the reference-data-backed labels so the section builders can
+  // stay synchronous. The readers self-load; buildSections is the natural
+  // await point since it is already the async gateway to check-answers.
+  const originCountryLabel = await countries.originLabel(
+    answers.countryOfOrigin
+  )
+  const proposedPlaceOfLandingLabel = scope.has('proposedPlaceOfLanding')
+    ? await ports.label(answers.proposedPlaceOfLanding)
+    : undefined
   return {
     answers,
     scope,
@@ -113,6 +122,8 @@ const sectionContext = (
     journeyId,
     readOnly,
     arrivalState: arrivalStateOf(answers, scope),
+    originCountryLabel,
+    proposedPlaceOfLandingLabel,
     answerRow,
     scopedRows: (fields) =>
       fields
@@ -126,7 +137,8 @@ const consignmentSection = ({
   evaluation,
   journeyId,
   readOnly,
-  answerRow
+  answerRow,
+  originCountryLabel
 }) => ({
   heading: copy.sections.consignment,
   cards: [
@@ -134,10 +146,7 @@ const consignmentSection = ({
       title: copy.cards.import,
       rows: [
         answerRow('commodityType', copy.typeLabels[answers.commodityType]),
-        answerRow(
-          'countryOfOrigin',
-          countries.originLabel(answers.countryOfOrigin)
-        )
+        answerRow('countryOfOrigin', originCountryLabel)
       ]
     },
     ...commodityCards(answers, evaluation, journeyId, readOnly)
@@ -151,7 +160,8 @@ const arrivalRows = ({
   journeyId,
   readOnly,
   answerRow,
-  scopedRows
+  scopedRows,
+  proposedPlaceOfLandingLabel
 }) => [
   ...(scope.has('arrivalStatus')
     ? [answerRow('arrivalStatus', copy.statusLabels[answers.arrivalStatus])]
@@ -165,12 +175,7 @@ const arrivalRows = ({
   ),
   ...scopedRows(['arrivalTime']),
   ...(scope.has('proposedPlaceOfLanding')
-    ? [
-        answerRow(
-          'proposedPlaceOfLanding',
-          ports.label(answers.proposedPlaceOfLanding)
-        )
-      ]
+    ? [answerRow('proposedPlaceOfLanding', proposedPlaceOfLandingLabel)]
     : [])
 ]
 
@@ -222,8 +227,8 @@ const partiesSection = ({
   ]
 })
 
-export const buildSections = (journeyState, parties, readOnly) => {
-  const context = sectionContext(journeyState, parties, readOnly)
+export const buildSections = async (journeyState, parties, readOnly) => {
+  const context = await sectionContext(journeyState, parties, readOnly)
   return [
     consignmentSection(context),
     arrivalSection(context),
