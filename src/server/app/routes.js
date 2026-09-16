@@ -43,7 +43,7 @@ import { isStubMode } from '../common/services/mode.js'
 import * as countries from './services/countries/index.js'
 import * as ports from './services/ports/index.js'
 
-export const highRiskPlants = {
+export const serviceRoutes = {
   plugin: {
     name: 'high-risk-plants',
     register: async (server) => {
