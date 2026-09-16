@@ -11,20 +11,20 @@ import { rowActions } from './actions.js'
  * set carries no consignee obligation.
  *
  * @param {object} journey - the marshalled list row.
- * @returns {object} the card view model.
+ * @returns {Promise<object>} the card view model.
  */
-export const toRow = (journey) => {
+export const toRow = async (journey) => {
   const reference = journey.reference ?? journey.journeyId
+  const originLabel = journey.originCountryCode
+    ? await countries.originLabel(journey.originCountryCode)
+    : undefined
 
   return {
     reference,
     status: journeyStrip(journey).status,
     late: Boolean(journey.lateNotificationIndicator),
     commodity: formatCommodity(journey.commodity),
-    origin: journey.originCountryCode
-      ? (countries.originLabel(journey.originCountryCode) ??
-        journey.originCountryCode)
-      : '',
+    origin: originLabel ?? journey.originCountryCode ?? '',
     arrival: formatDisplayDate(journey.arrivalDate),
     consignor: journey.consignorName ?? '',
     created: formatDisplayDate(journey.createdAt),

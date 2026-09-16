@@ -37,15 +37,15 @@ const copy = copyFor({ en, cy })
 
 const COUNTRY_FIELD = 'countryOfOrigin'
 
-const countryValues = () =>
-  countries.originCountries().map(({ value }) => value)
+const countryValues = async () =>
+  (await countries.originCountries()).map(({ value }) => value)
 
 // The list feeds a type-ahead that enhances this select, so it carries only
 // the placeholder and the real countries — a scroll-only list would need a
 // divider rule under the placeholder, a searchable one does not.
-const countryItems = () => [
+const countryItems = async () => [
   { value: '', text: copy.country.placeholder },
-  ...countries.originCountries()
+  ...(await countries.originCountries())
 ]
 
 const categoriesOf = (current) =>
@@ -67,9 +67,13 @@ const guidanceOn = (constraints) =>
     .map((constraint) => copy.guidance[constraint.id])
     .filter((text) => text !== undefined)
 
-const membershipRule = () =>
+const membershipRule = async () =>
   compose(
-    requiredOneOf(COUNTRY_FIELD, countryValues(), copy.errors.countryRequired)
+    requiredOneOf(
+      COUNTRY_FIELD,
+      await countryValues(),
+      copy.errors.countryRequired
+    )
   )
 
 const narrowingErrorFor = (constraints, country) => {
@@ -85,10 +89,11 @@ const narrowingErrorFor = (constraints, country) => {
  * @param {object} payload - the raw POST payload.
  * @param {readonly object[]} constraints - the origin constraints the
  * consignment's commodity lines put on it.
- * @returns {object|null} the field errors, or null when the answer stands.
+ * @returns {Promise<object|null>} the field errors, or null when the answer
+ * stands.
  */
-const errorsFor = (payload, constraints) => {
-  const { errors, value } = validate(membershipRule(), payload)
+const errorsFor = async (payload, constraints) => {
+  const { errors, value } = validate(await membershipRule(), payload)
   if (errors) {
     return errors
   }
@@ -98,7 +103,7 @@ const errorsFor = (payload, constraints) => {
 
 // The back link is the one thing on this page told by what has been saved: a
 // notification with nothing saved has no overview worth returning to.
-export const originErrors = (current) =>
+export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
 const backLinkFor = (journey, answers) =>
@@ -106,7 +111,7 @@ const backLinkFor = (journey, answers) =>
     ? hubPath(journey.journeyId)
     : dashboardPath()
 
-const render = (h, current, values, options = {}) => {
+const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -119,7 +124,7 @@ const render = (h, current, values, options = {}) => {
     values,
     errors,
     errorSummary: kit.errorSummary(errors),
-    countryItems: countryItems(),
+    countryItems: await countryItems(),
     guidance: guidanceOn(options.constraints ?? [])
   })
 }
@@ -139,9 +144,9 @@ const post = async (request, h) => {
   const values = { [COUNTRY_FIELD]: payload[COUNTRY_FIELD] ?? '' }
   const current = await state.get(request, h)
   const constraints = constraintsOn(categoriesOf(current))
-  const errors = errorsFor(payload, constraints)
+  const errors = await errorsFor(payload, constraints)
   if (errors) {
-    return render(h, current, values, { constraints, errors }).code(
+    return (await render(h, current, values, { constraints, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }
@@ -154,10 +159,12 @@ const post = async (request, h) => {
       })
     },
     async () =>
-      render(h, current, values, {
-        constraints,
-        recoverableError: true
-      }).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+      (
+        await render(h, current, values, {
+          constraints,
+          recoverableError: true
+        })
+      ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
   )
   if (failure) {
     return failure
