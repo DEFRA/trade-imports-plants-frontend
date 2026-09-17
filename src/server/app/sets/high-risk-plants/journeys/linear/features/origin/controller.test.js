@@ -128,6 +128,34 @@ describe('GET origin', () => {
   })
 })
 
+// EUDPA-573 investigation pin. A submitted notification's countryOfOrigin
+// can outlast its ISO code in the origin block — an MDM re-release drops
+// the code between submit and amend. The stored value stays; the reader
+// list moves. These tests pin what the GET page does with that.
+describe('GET origin — amend with a stored country the reader no longer offers', () => {
+  beforeAll(installStubs)
+  beforeEach(() => store.clear())
+
+  it('Should carry the stale stored code through to the form values so it renders in the field', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(result.view.context.values).toEqual({
+      countryOfOrigin: UNOFFERED_COUNTRY
+    })
+  })
+
+  it('Should not surface the stale code in the option list, so the select renders unselected', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    const offered = result.view.context.countryItems.map(({ value }) => value)
+    expect(offered).not.toContain(UNOFFERED_COUNTRY)
+  })
+})
+
 describe('GET origin — the ware-potato scope guidance', () => {
   beforeAll(installStubs)
   beforeEach(() => store.clear())

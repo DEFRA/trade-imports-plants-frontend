@@ -229,6 +229,23 @@ describe('#hubGet', () => {
     })
   })
 
+  // EUDPA-573 investigation pin. The completeness roll-up asks
+  // singletonFulfilled — a non-blank check on the fulfilment map — and
+  // does not cross-check the stored code against the current reader
+  // list. A country the origin block used to offer, and no longer does,
+  // still marks the row Completed on the hub after amend.
+  it('Should still complete the origin row when the stored country is no longer offered by the origin block', async () => {
+    const UNOFFERED_COUNTRY = 'ZZ'
+    const { h } = await renderHub({
+      seed: { commodityType: POTATOES, countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    const [, originRow] = h.captured.view.context.groups[0].items
+    expect(originRow.status).toEqual({
+      tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
+    })
+  })
+
   it('Should give the commodities row no hint — no source writes one', async () => {
     const { h } = await renderHub()
 
