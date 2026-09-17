@@ -40,7 +40,7 @@ import { configureSession } from './engine/persistence/session.js'
 import { session } from './services/persistence/session/index.js'
 import { registerJourneyCookie } from './engine/journey.js'
 
-export const highRiskPlants = {
+export const serviceRoutes = {
   plugin: {
     name: 'high-risk-plants',
     register: async (server) => {
