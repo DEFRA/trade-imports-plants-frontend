@@ -50,7 +50,10 @@ const journeyIds = Object.fromEntries(
   Object.keys(SEED_SHAPES).map((shape, index) => [shape, `PHN-26-000${index}`])
 )
 
-const DASHBOARD_PATH = '/'
+// The dashboard's route SHAPE is '/'; Hapi mounts it at the set base, which is
+// the URL Lighthouse actually fetches. The two are not interchangeable here.
+const DASHBOARD_ROUTE_PATH = '/'
+const DASHBOARD_URL_PATH = SET_BASE
 const HUB_PATH = '/notifications/{journeyId}'
 const DELETE_PATH = '/notifications/{journeyId}/delete'
 const CANCEL_AMEND_PATH = '/notifications/{journeyId}/cancel-amend'
@@ -66,7 +69,7 @@ const PLACE_OF_DESTINATION_PATH =
   '/notifications/{journeyId}/destinations/select'
 
 const ROUTES = [
-  { method: 'GET', path: DASHBOARD_PATH },
+  { method: 'GET', path: DASHBOARD_ROUTE_PATH },
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: CONFIRMATION_PATH },
   { method: 'GET', path: CANCEL_AMEND_PATH },
@@ -127,7 +130,7 @@ describe('#auditPaths', () => {
 
     expect(paths).toHaveLength(GET_PATHS.length - SKIPPED_PATH_COUNT)
     expect(paths).not.toContain(
-      `/notifications/${journeyIds.warePotatoes}/uploads/status`
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/uploads/status`
     )
     expect(paths.some((path) => path.includes('{'))).toBe(false)
   })
@@ -137,22 +140,26 @@ describe('#auditPaths', () => {
 
     expect(
       paths.filter((path) => path.includes(journeyIds.woodWithoutBark))
-    ).toEqual([`/notifications/${journeyIds.woodWithoutBark}/treatments`])
+    ).toEqual([
+      `${SET_BASE}/notifications/${journeyIds.woodWithoutBark}/treatments`
+    ])
     expect(
       paths.filter((path) => path.includes(journeyIds.warePotatoesLate))
-    ).toEqual([`/notifications/${journeyIds.warePotatoesLate}/late-reason`])
+    ).toEqual([
+      `${SET_BASE}/notifications/${journeyIds.warePotatoesLate}/late-reason`
+    ])
     expect(
       paths.filter((path) => path.includes(journeyIds.plantsForPlanting))
     ).toEqual([
-      `/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
-      `/notifications/${journeyIds.plantsForPlanting}/consignors/select`
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`
     ])
     expect(
       paths.filter((path) => path.includes(journeyIds.warePotatoes))
     ).toEqual([
-      `/notifications/${journeyIds.warePotatoes}`,
-      `/notifications/${journeyIds.warePotatoes}/origin`,
-      `/notifications/${journeyIds.warePotatoes}/uploads/status`
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/origin`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/uploads/status`
     ])
   })
 
@@ -164,7 +171,7 @@ describe('#auditPaths', () => {
     )
 
     expect(paths).toContain(
-      `/notifications/${journeyIds.warePotatoes}/origin?change=1`
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/origin?change=1`
     )
   })
 
@@ -175,7 +182,7 @@ describe('#auditPaths', () => {
     ]
 
     expect(auditPaths(journeyIds, routes)).toContain(
-      `/notifications/${journeyIds.warePotatoes}/brand-new`
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/brand-new`
     )
   })
 
@@ -189,27 +196,27 @@ describe('#auditPaths', () => {
 
   it('Should audit every page the set registers today', () => {
     expect(auditPaths(journeyIds)).toEqual([
-      `/notifications/${journeyIds.warePotatoes}/declaration`,
-      `/notifications/${journeyIds.warePotatoes}/notification-view`,
-      `/notifications/${journeyIds.warePotatoes}/consignment/contact/select`,
-      `/notifications/${journeyIds.warePotatoes}/identification-numbers`,
-      DASHBOARD_PATH,
-      `/notifications/${journeyIds.warePotatoes}`,
-      `/notifications/${journeyIds.warePotatoes}/delete`,
-      `/notifications/${journeyIds.warePotatoes}/commodity-type`,
-      `/notifications/${journeyIds.warePotatoes}/commodities`,
-      `/notifications/${journeyIds.warePotatoes}/commodities/details`,
-      `/notifications/${journeyIds.warePotatoes}/origin`,
-      `/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/declaration`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/notification-view`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/consignment/contact/select`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/identification-numbers`,
+      DASHBOARD_URL_PATH,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/delete`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/commodity-type`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/commodities`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/commodities/details`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/origin`,
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
       // Audited on the ware-potato default: the date is asked of every
       // commodity type, and potatoes are the shape that also carries the time
       // and the place of landing, so the audit reads the fullest page.
-      `/notifications/${journeyIds.warePotatoes}/arrival-details`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/arrival-details`,
       // Audited on the ware-potato default too: the picker is the same page
       // whichever state it asks its question in, and the ware-potato shape is
       // the one that reaches it without an arrival status.
-      `/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
-      `/notifications/${journeyIds.warePotatoes}/destinations/select`
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/select`
     ])
   })
 })
@@ -240,7 +247,7 @@ describe('#auditableRoutePaths', () => {
       '/notifications/{journeyId}/notification-view',
       '/notifications/{journeyId}/consignment/contact/select',
       '/notifications/{journeyId}/identification-numbers',
-      DASHBOARD_PATH,
+      DASHBOARD_ROUTE_PATH,
       HUB_PATH,
       DELETE_PATH,
       COMMODITY_TYPE_PATH,
