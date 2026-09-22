@@ -147,9 +147,34 @@ const render = async (h, current, values, options = {}) => {
   })
 }
 
+// A stored proposedPlaceOfLanding the current ports reader no longer offers
+// (an MDM re-release dropped it, say) would otherwise render as an unselected
+// select with no explanation, and Save-and-continue would fire the generic
+// proposedPlaceOfLanding copy — the trader cannot tell a stale prior answer
+// from one they never gave. The port question only applies under potatoes
+// (asksForPotatoDetails), so the check is scope-aware: nothing is surfaced
+// for a plants or wood notification where the field is not asked. Stored
+// answers are not mutated — GET only reshapes what the page renders.
 const get = async (request, h) => {
   const current = await state.get(request, h)
-  return render(h, current, valuesFrom(current.answers, current.scope))
+  const values = valuesFrom(current.answers, current.scope)
+  const storedPort = current.answers[PROPOSED_PLACE_OF_LANDING] ?? ''
+  const inScope = asksForPotatoDetails(current.scope)
+  const validPortCodes = inScope ? new Set(await portCodes()) : null
+  const isStalePort =
+    inScope && storedPort !== '' && !validPortCodes.has(storedPort)
+
+  if (isStalePort) {
+    values[PROPOSED_PLACE_OF_LANDING] = ''
+  }
+  const errors = isStalePort
+    ? {
+        [PROPOSED_PLACE_OF_LANDING]:
+          copy.errors.proposedPlaceOfLandingNoLongerAvailable
+      }
+    : {}
+
+  return render(h, current, values, { errors })
 }
 
 // The picker is one text box, so the answer arrives as `d/m/yyyy` text and is
