@@ -239,9 +239,7 @@ describe('GET arrival-details — amend with a stored port the reader no longer 
     })
 
     expect(result.view.context.showPotatoFields).toBe(false)
-    expect(
-      result.view.context.errors.proposedPlaceOfLanding
-    ).toBeUndefined()
+    expect(result.view.context.errors.proposedPlaceOfLanding).toBeUndefined()
   })
 
   it('Should leave the stored port intact — GET only reshapes what the page renders', async () => {
