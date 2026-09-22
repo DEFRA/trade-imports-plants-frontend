@@ -155,8 +155,6 @@ const isPortStale = async (code) => {
   return !offered.has(code)
 }
 
-// Scope-aware: nothing is surfaced under a non-potato commodity where the
-// port question is not asked.
 const get = async (request, h) => {
   const current = await state.get(request, h)
   const values = valuesFrom(current.answers, current.scope)

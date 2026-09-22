@@ -201,10 +201,6 @@ describe('GET arrival-details — the potato-only fields', () => {
   })
 })
 
-// A stored proposedPlaceOfLanding can outlast its code in the ports reader —
-// an MDM re-release drops the code between submit and amend. The port
-// question only applies for potato notifications (asksForPotatoDetails), so
-// the fix has to be scope-aware.
 describe('GET arrival-details — amend with a stored port the reader no longer offers', () => {
   const STALE_PORT = 'GB ZZZ'
 

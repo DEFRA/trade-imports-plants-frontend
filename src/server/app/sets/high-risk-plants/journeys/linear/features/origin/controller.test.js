@@ -128,11 +128,6 @@ describe('GET origin', () => {
   })
 })
 
-// A submitted notification's countryOfOrigin can outlast its ISO code in
-// the origin block — an MDM re-release drops the code between submit and
-// amend. The stored value stays; the reader list moves. GET reshapes what
-// the page renders so the trader sees the change instead of an
-// unexplained unselected select.
 describe('GET origin — amend with a stored country the reader no longer offers', () => {
   beforeAll(installStubs)
   beforeEach(() => store.clear())

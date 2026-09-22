@@ -127,21 +127,12 @@ describe('Check your answers', () => {
     })
   })
 
-  // EUDPA-573 investigation pin. On amend, if MDM has dropped the ISO
-  // code the trader stored on the origin page, `originLabel(code)` returns
-  // undefined. `answerRow` then falls through its default parameter to
-  // `answers.countryOfOrigin`, so the origin row on the summary card
-  // renders the raw ISO code — matching the dashboard card, not the "Not
-  // provided" state a missing party gets. There is no user-facing warning
-  // that the code is no longer offered; the trader sees "ZZ".
   it('Should render the raw ISO code in the origin row when the stored country is no longer offered by the origin block', async () => {
     const UNOFFERED_COUNTRY = 'ZZ'
     const result = await driveHandler(get, {
       seed: { ...COMPLETE_NOTIFICATION, countryOfOrigin: UNOFFERED_COUNTRY }
     })
 
-    // The import card lists commodityType then countryOfOrigin — the
-    // country row is index 1.
     expect(cardsOf(result)[0].rows[1]).toMatchObject({
       value: { text: UNOFFERED_COUNTRY }
     })

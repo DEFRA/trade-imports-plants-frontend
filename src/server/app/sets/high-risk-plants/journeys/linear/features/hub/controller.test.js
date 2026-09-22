@@ -229,11 +229,6 @@ describe('#hubGet', () => {
     })
   })
 
-  // EUDPA-573 investigation pin. The completeness roll-up asks
-  // singletonFulfilled — a non-blank check on the fulfilment map — and
-  // does not cross-check the stored code against the current reader
-  // list. A country the origin block used to offer, and no longer does,
-  // still marks the row Completed on the hub after amend.
   it('Should still complete the origin row when the stored country is no longer offered by the origin block', async () => {
     const UNOFFERED_COUNTRY = 'ZZ'
     const { h } = await renderHub({
