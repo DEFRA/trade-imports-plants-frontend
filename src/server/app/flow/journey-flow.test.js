@@ -2,7 +2,23 @@ import { SET_ID } from '../sets/high-risk-plants/set.js'
 import { describe, expect, it } from 'vitest'
 
 import { flowOnlyKeys } from '../bridge/flow-only-keys.js'
-import { configureJourneyFlow, journeySectionCaption } from './journey-flow.js'
+import {
+  configureJourneyFlow,
+  journeyNextRunTarget,
+  journeySectionCaption
+} from './journey-flow.js'
+
+describe('#journeyNextRunTarget', () => {
+  it('Should ask the configured journey where the run goes next', () => {
+    const nextRunTarget = (stepId, scope, journeyId) =>
+      `${stepId}|${scope}|${journeyId}`
+    configureJourneyFlow(SET_ID, { sections: [], taskRows: [], nextRunTarget })
+
+    expect(journeyNextRunTarget('origin', 'consignment', 'PHN-26-0001')).toBe(
+      'origin|consignment|PHN-26-0001'
+    )
+  })
+})
 
 describe('#journeySectionCaption', () => {
   it('Should render no caption for a journey that configures none', () => {
