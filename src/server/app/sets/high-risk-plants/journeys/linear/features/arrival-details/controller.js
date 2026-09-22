@@ -147,33 +147,31 @@ const render = async (h, current, values, options = {}) => {
   })
 }
 
-// A stored proposedPlaceOfLanding the current ports reader no longer offers
-// (an MDM re-release dropped it, say) would otherwise render as an unselected
-// select with no explanation, and Save-and-continue would fire the generic
-// proposedPlaceOfLanding copy — the trader cannot tell a stale prior answer
-// from one they never gave. The port question only applies under potatoes
-// (asksForPotatoDetails), so the check is scope-aware: nothing is surfaced
-// for a plants or wood notification where the field is not asked. Stored
-// answers are not mutated — GET only reshapes what the page renders.
+const isPortStale = async (code) => {
+  if (!code) {
+    return false
+  }
+  const offered = new Set(await portCodes())
+  return !offered.has(code)
+}
+
+// Scope-aware: nothing is surfaced under a non-potato commodity where the
+// port question is not asked.
 const get = async (request, h) => {
   const current = await state.get(request, h)
   const values = valuesFrom(current.answers, current.scope)
-  const storedPort = current.answers[PROPOSED_PLACE_OF_LANDING] ?? ''
   const inScope = asksForPotatoDetails(current.scope)
-  const validPortCodes = inScope ? new Set(await portCodes()) : null
-  const isStalePort =
-    inScope && storedPort !== '' && !validPortCodes.has(storedPort)
-
-  if (isStalePort) {
+  const stalePort =
+    inScope && (await isPortStale(current.answers[PROPOSED_PLACE_OF_LANDING]))
+  if (stalePort) {
     values[PROPOSED_PLACE_OF_LANDING] = ''
   }
-  const errors = isStalePort
+  const errors = stalePort
     ? {
         [PROPOSED_PLACE_OF_LANDING]:
           copy.errors.proposedPlaceOfLandingNoLongerAvailable
       }
     : {}
-
   return render(h, current, values, { errors })
 }
 

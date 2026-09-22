@@ -129,27 +129,25 @@ const render = async (h, current, values, options = {}) => {
   })
 }
 
-// A stored countryOfOrigin the current countries reader no longer offers (an
-// MDM re-release dropped it, say) would otherwise render as an unselected
-// select with no explanation, and Save-and-continue would fire the generic
-// countryRequired copy — the trader cannot tell a stale prior answer from
-// one they never gave. Detecting the staleness at GET, blanking the value
-// and surfacing a "no longer available" error makes the diagnostic honest;
-// the stored answer itself is not touched.
+const isCountryStale = async (code) => {
+  if (!code) {
+    return false
+  }
+  const offered = new Set(await countryValues())
+  return !offered.has(code)
+}
+
 const get = async (request, h) => {
   const current = await state.get(request, h)
-  const storedCountry = current.answers[COUNTRY_FIELD] ?? ''
-  const validCountryCodes = new Set(await countryValues())
-  const isStaleCountry =
-    storedCountry !== '' && !validCountryCodes.has(storedCountry)
-
+  const stored = current.answers[COUNTRY_FIELD] ?? ''
+  const staleCountry = await isCountryStale(stored)
   return render(
     h,
     current,
-    { [COUNTRY_FIELD]: isStaleCountry ? '' : storedCountry },
+    { [COUNTRY_FIELD]: staleCountry ? '' : stored },
     {
       constraints: constraintsOn(categoriesOf(current)),
-      errors: isStaleCountry
+      errors: staleCountry
         ? { [COUNTRY_FIELD]: copy.errors.countryNoLongerAvailable }
         : {}
     }
