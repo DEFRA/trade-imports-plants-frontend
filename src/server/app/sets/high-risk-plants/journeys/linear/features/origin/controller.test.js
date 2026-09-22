@@ -128,31 +128,49 @@ describe('GET origin', () => {
   })
 })
 
-// EUDPA-573 investigation pin. A submitted notification's countryOfOrigin
-// can outlast its ISO code in the origin block — an MDM re-release drops
-// the code between submit and amend. The stored value stays; the reader
-// list moves. These tests pin what the GET page does with that.
+// A submitted notification's countryOfOrigin can outlast its ISO code in
+// the origin block — an MDM re-release drops the code between submit and
+// amend. The stored value stays; the reader list moves. GET reshapes what
+// the page renders so the trader sees the change instead of an
+// unexplained unselected select.
 describe('GET origin — amend with a stored country the reader no longer offers', () => {
   beforeAll(installStubs)
   beforeEach(() => store.clear())
 
-  it('Should carry the stale stored code through to the form values so it renders in the field', async () => {
+  it('Should blank the country in values so the select renders unselected', async () => {
     const result = await driveHandler(get, {
       seed: { countryOfOrigin: UNOFFERED_COUNTRY }
     })
 
-    expect(result.view.context.values).toEqual({
-      countryOfOrigin: UNOFFERED_COUNTRY
-    })
+    expect(result.view.context.values).toEqual({ countryOfOrigin: '' })
   })
 
-  it('Should not surface the stale code in the option list, so the select renders unselected', async () => {
+  it('Should not surface the stale code in the option list', async () => {
     const result = await driveHandler(get, {
       seed: { countryOfOrigin: UNOFFERED_COUNTRY }
     })
 
     const offered = result.view.context.countryItems.map(({ value }) => value)
     expect(offered).not.toContain(UNOFFERED_COUNTRY)
+  })
+
+  it('Should surface a country-no-longer-available error on the country field', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      'The saved country is no longer available. Select a country from the list.'
+    )
+  })
+
+  it('Should leave the stored country intact — GET only reshapes what the page renders', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(result.before.countryOfOrigin).toBe(UNOFFERED_COUNTRY)
+    expect(result.after.countryOfOrigin).toBe(UNOFFERED_COUNTRY)
   })
 })
 
