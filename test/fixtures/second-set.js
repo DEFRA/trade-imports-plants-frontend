@@ -21,12 +21,15 @@ import {
   configureJourneyFlow,
   journeyEntryGuardTarget
 } from '../../src/server/app/flow/journey-flow.js'
+import { readyForCheckYourAnswers } from '../../src/server/app/flow/section-status.js'
 import { configureObligationSet } from '../../src/server/app/model/obligations/manifest.js'
 import { configureFulfilmentRegistry } from '../../src/server/app/bridge/fulfilment-registry.js'
 import { configureRecords } from '../../src/server/app/engine/persistence/records.js'
 import { configureSession } from '../../src/server/app/engine/persistence/session.js'
 import { configureAnswersForRead } from '../../src/server/app/bridge/answers-read.js'
+import { configureReadyForCheckYourAnswers } from '../../src/server/app/bridge/readiness-config.js'
 import { registerJourneyCookie } from '../../src/server/app/engine/journey.js'
+import { assertSetConfigured } from '../../src/server/app/set-completeness.js'
 import {
   enterSetContext,
   registerSetMount,
@@ -187,8 +190,8 @@ export const routes = [
 /**
  * Mirrors routes-high-risk-plants.js: mount registration, a sandboxed onPreAuth to
  * enter the set context, every seam configured with this set's id, per-set
- * cookies scoped to the set base, a sandboxed entry guard, and routes wrapped
- * so handlers run inside the context.
+ * cookies scoped to the set base, a sandboxed entry guard, routes wrapped so
+ * handlers run inside the context, and the completeness gate as its last act.
  */
 export const secondSet = {
   plugin: {
@@ -214,6 +217,7 @@ export const secondSet = {
           ])
         ])
         configureAnswersForRead(SET_ID, async (_request, answers) => answers)
+        configureReadyForCheckYourAnswers(SET_ID, readyForCheckYourAnswers)
         configureJourneyFlow(SET_ID, {
           sections,
           taskRows: [],
@@ -242,6 +246,10 @@ export const secondSet = {
           { sandbox: 'plugin' }
         )
         server.route(routes.map((route) => routeWithSetContext(SET_ID, route)))
+        // Last act of the registration, exactly as the shipped gateway does it:
+        // this fixture is the co-residency suite's second set, and a seam it
+        // quietly stopped configuring would otherwise be read as a fallback.
+        assertSetConfigured(server, SET_ID)
       })
     }
   }

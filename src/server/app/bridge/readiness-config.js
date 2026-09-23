@@ -11,7 +11,9 @@ import { currentSetId, setKeyed } from '../shared/set-context.js'
 
 const FAIL_CLOSED = () => false
 
-const store = setKeyed('Ready-for-check-your-answers')
+const store = setKeyed('Ready-for-check-your-answers', {
+  configuredBy: 'configureReadyForCheckYourAnswers'
+})
 
 export const configureReadyForCheckYourAnswers = (setId, compute) => {
   store.configure(setId, compute)

@@ -94,40 +94,35 @@ export const routeWithSetContext = (setId, route) => {
   }
 }
 
-// Every per-set store, under the label it was created with. It is what lets
-// `shared/set-completeness.js` ask, at mount time, which seams a set never
-// configured — without each seam module having to export a predicate of its
-// own, and without the check reaching into eight modules' internals.
-const seamStores = new Map()
+/**
+ * The seams a mounted set MUST configure, indexed by label as each seam module
+ * loads. A seam opts in by naming the function that configures it, so the
+ * completeness check at mount reads this rather than a hand-kept list a new
+ * seam could quietly fall out of.
+ *
+ * Seams with a real default — the answers-for-read sanitiser, the flow-only
+ * keys the journey flow forwards — register nothing here: a set that leaves
+ * them alone is correctly configured.
+ */
+const requiredSeams = new Map()
 
 /**
- * The labels of every per-set seam store created so far.
+ * A per-set store for one configuration seam.
  *
- * A seam module that has not been imported has created no store, so its label
- * is absent. Used to catch a required-seam list that has drifted from the
- * labels the engine actually uses.
- *
- * @returns {string[]} the labels, in creation order.
+ * @param {string} label - the seam's name, as it appears in error messages.
+ * @param {object} [options] - seam options.
+ * @param {string} [options.configuredBy] - the configure function a set calls
+ * to fill this seam. Naming it marks the seam required, so a set that mounts
+ * without calling it is rejected at registration.
+ * @returns {{configure: Function, current: Function, has: Function}} the store.
  */
-export const knownSeamLabels = () => [...seamStores.keys()]
-
-/**
- * Whether the seam called `label` holds a configuration for `setId`.
- *
- * Answers false for a label no module has claimed, which is the fail-safe
- * direction: a completeness check then reports the seam as missing rather than
- * passing a set that never configured it.
- *
- * @param {string} label the seam's store label.
- * @param {string} setId the set to ask about.
- * @returns {boolean} true when that set configured that seam.
- */
-export const seamConfiguredFor = (label, setId) =>
-  seamStores.get(label)?.has(setId) ?? false
-
-export const setKeyed = (label) => {
+export const setKeyed = (label, { configuredBy } = {}) => {
   const bySet = new Map()
-  const store = {
+  const has = (setId) => bySet.has(setId)
+  if (configuredBy) {
+    requiredSeams.set(label, { configuredBy, has })
+  }
+  return {
     configure: (setId, value) => bySet.set(setId, value),
     current: () => {
       const setId = currentSetId()
@@ -136,10 +131,22 @@ export const setKeyed = (label) => {
       }
       return bySet.get(setId)
     },
-    has: (setId) => bySet.has(setId)
+    has
   }
-  // Last registration wins: after `vi.resetModules()` a re-imported seam module
-  // holds the live store and the one it replaces is unreachable.
-  seamStores.set(label, store)
-  return store
 }
+
+/** Every required seam's label, in the order the seam modules declared them. */
+export const requiredSeamLabels = () => [...requiredSeams.keys()]
+
+/**
+ * The required seams a set has not configured, each named alongside the call
+ * that would configure it.
+ *
+ * @param {string} setId - the set to check.
+ * @returns {string[]} descriptions such as `journey flow (configureJourneyFlow)`,
+ * empty when the set has configured every required seam.
+ */
+export const unconfiguredSeamsOf = (setId) =>
+  [...requiredSeams]
+    .filter(([, seam]) => !seam.has(setId))
+    .map(([label, { configuredBy }]) => `${label} (${configuredBy})`)
