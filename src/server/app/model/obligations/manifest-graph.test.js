@@ -1,4 +1,4 @@
-import { SET_ID } from '../../sets/high-risk-plants/set.js'
+import { SET_ID } from '../../../../../test/fixtures/index.js'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 
 import { configureObligationSet } from './manifest.js'

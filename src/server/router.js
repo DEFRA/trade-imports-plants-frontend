@@ -5,9 +5,26 @@ import { signout } from './signout/index.js'
 import { serveStaticFiles } from './common/helpers/serve-static-files.js'
 import { config } from '../config/config.js'
 import { highRiskPlants } from './app/routes.js'
-import { SET_BASE as HIGH_RISK_PLANTS_BASE } from './app/sets/high-risk-plants/set.js'
+import { assertSetConfigured } from './app/shared/set-completeness.js'
+import {
+  SET_BASE as HIGH_RISK_PLANTS_BASE,
+  SET_ID as HIGH_RISK_PLANTS_ID
+} from './app/sets/high-risk-plants/set.js'
 
 export const DEFAULT_SET_BASE = HIGH_RISK_PLANTS_BASE
+
+/**
+ * Every set this service mounts, in mount order. Adding one here is the whole
+ * registration: it gets its own prefix and its seams are checked, so neither
+ * can be forgotten separately.
+ */
+const MOUNTED_SETS = Object.freeze([
+  Object.freeze({
+    id: HIGH_RISK_PLANTS_ID,
+    base: HIGH_RISK_PLANTS_BASE,
+    plugin: highRiskPlants
+  })
+])
 
 export const router = {
   plugin: {
@@ -21,9 +38,17 @@ export const router = {
       // Each set mounts under its own prefix, and none at the root. A set at
       // the root would make a link that doubles or drops the prefix still look
       // right for that set, and the mistake would only show up on another set.
-      await server.register(highRiskPlants, {
-        routes: { prefix: HIGH_RISK_PLANTS_BASE }
-      })
+      //
+      // Each is then checked for a seam it never configured. A set that skips
+      // one gets that seam's unconfigured fallback, and the quiet ones — an
+      // empty journey flow, the shared default cookie names — put an empty
+      // dashboard in front of a notifier. Refusing to start says so where the
+      // person deploying can see it. The check lives here rather than in a
+      // gateway so a set cannot opt out of it by forgetting the call.
+      for (const { base, id, plugin } of MOUNTED_SETS) {
+        await server.register(plugin, { routes: { prefix: base } })
+        assertSetConfigured(id)
+      }
 
       // Server-wide, NOT per set. /signout registers happily under a set's
       // prefix and fails only when a user tries to sign out, so it is

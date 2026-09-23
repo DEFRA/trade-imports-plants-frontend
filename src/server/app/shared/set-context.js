@@ -94,9 +94,40 @@ export const routeWithSetContext = (setId, route) => {
   }
 }
 
+// Every per-set store, under the label it was created with. It is what lets
+// `shared/set-completeness.js` ask, at mount time, which seams a set never
+// configured — without each seam module having to export a predicate of its
+// own, and without the check reaching into eight modules' internals.
+const seamStores = new Map()
+
+/**
+ * The labels of every per-set seam store created so far.
+ *
+ * A seam module that has not been imported has created no store, so its label
+ * is absent. Used to catch a required-seam list that has drifted from the
+ * labels the engine actually uses.
+ *
+ * @returns {string[]} the labels, in creation order.
+ */
+export const knownSeamLabels = () => [...seamStores.keys()]
+
+/**
+ * Whether the seam called `label` holds a configuration for `setId`.
+ *
+ * Answers false for a label no module has claimed, which is the fail-safe
+ * direction: a completeness check then reports the seam as missing rather than
+ * passing a set that never configured it.
+ *
+ * @param {string} label the seam's store label.
+ * @param {string} setId the set to ask about.
+ * @returns {boolean} true when that set configured that seam.
+ */
+export const seamConfiguredFor = (label, setId) =>
+  seamStores.get(label)?.has(setId) ?? false
+
 export const setKeyed = (label) => {
   const bySet = new Map()
-  return {
+  const store = {
     configure: (setId, value) => bySet.set(setId, value),
     current: () => {
       const setId = currentSetId()
@@ -107,4 +138,8 @@ export const setKeyed = (label) => {
     },
     has: (setId) => bySet.has(setId)
   }
+  // Last registration wins: after `vi.resetModules()` a re-imported seam module
+  // holds the live store and the one it replaces is unreachable.
+  seamStores.set(label, store)
+  return store
 }
