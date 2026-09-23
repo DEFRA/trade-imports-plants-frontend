@@ -97,13 +97,15 @@ Three consequences follow:
   `/signout` is the live trap: it registers perfectly happily at
   `/<set-id>/signout` and nothing fails until a user tries to sign out.
 - **A server-wide page has no set, so it cannot use `kit.base()`**, which reads
-  the set-keyed journey flow. Use `kit.serverWideBase()`, or `kit.chromeFor()`
-  on a page reached from both — the shared error page. With a single set
-  mounted the sole-set fallback hides the difference; with two, `base()`
-  throws. The same applies to anything else set-owned a server-wide request
-  touches: `activeNavigationItem` in
+  the set-keyed journey flow. Use `kit.serverWideBase()`, or
+  `kit.chromeFor(title, request.path)` on a page reached from both — the shared
+  error page. With a single set mounted the sole-set fallback hides the
+  difference; with two, `base()` throws. The same applies to anything else
+  set-owned a server-wide request touches:
   [`../../../config/nunjucks/context/context.js`](../../../config/nunjucks/context/context.js)
-  asks `hasSetContext()` first for exactly this reason.
+  resolves `homeUrl` and `activeNavigationItem` through `setIdForPath()` for
+  exactly this reason — a path is the only thing left to read once the handler
+  has returned and the view is being marshalled.
 
 The resulting mount table with two sets in the tree:
 
@@ -152,13 +154,16 @@ name the set without importing the whole composition root.
 
 Create `sets/<set-id>/` with its obligations manifest, its journey config, its
 flow modules and its features, following the `high-risk-plants` tree. Its cookie
-names must be its own — all three of them:
+names must be its own — all three of them. The prefix is the camelCase form of
+the kebab-case `<set-id>` from step 1, so `high-risk-plants` gives
+`highRiskPlantsKnownJourneys`. The shipped values are in
+[`../sets/high-risk-plants/journeys/linear/config.js`](../sets/high-risk-plants/journeys/linear/config.js):
 
 ```js
 export const SESSION_COOKIE_NAMES = {
-  knownJourneys: '<setId>KnownJourneys',
-  openingRun: '<setId>OpeningRun',
-  flowOnlyAnswers: '<setId>FlowOnlyAnswers'
+  knownJourneys: 'highRiskPlantsKnownJourneys',
+  openingRun: 'highRiskPlantsOpeningRun',
+  flowOnlyAnswers: 'highRiskPlantsFlowOnlyAnswers'
 }
 ```
 
@@ -191,12 +196,13 @@ await server.register(yourSet, { routes: { prefix: YOUR_SET_BASE } })
 Leave the server-wide routes where they are. Do not move `/` — it stays a 302
 to `DEFAULT_SET_BASE`.
 
-## 6. Widen the dependency rules
+## 6. Check the dependency rules
 
-`routes-<set-id>.js` is matched by the existing
-`^src/server/app/routes-[a-z0-9-]+\.js$` entry in the
-`routes-is-the-gateway` allowlist in `.dependency-cruiser.cjs`, so no change is
-needed for a conventionally named gateway. Run `npm run lint:arch` and leave
+`routes-<set-id>.js` is matched by the existing `routes-[a-z0-9-]+\.js`
+alternatives in both rules that name the gateways in `.dependency-cruiser.cjs` —
+`routes-is-the-gateway`, which lets a gateway import `sets/**`, and
+`sets-not-l1`, which stops a set importing a gateway back. A conventionally
+named gateway needs no change to either. Run `npm run lint:arch` and leave
 `.dependency-cruiser-known-violations.json` untouched.
 
 ## 7. Prove it
@@ -217,7 +223,36 @@ The second set in those suites is `test/fixtures/second-set.js`, a fixture
 rather than a real journey. If you are adding a real set, the fixture stays:
 the suites are about the platform, not about any one set.
 
-## 8. Move the tests with the URLs
+Do **not** register your set in `test/fixtures/index.js`, which the vitest
+global setup (`test/setup-obligation-set.js`) calls. That file mounts exactly
+one set, and the whole unit suite leans on that: with one mount,
+`shared/set-context.js`'s `soleSetId()` fallback resolves `currentSetId()` for a
+test that never enters a request's context. A second mount there retires the
+fallback and makes `currentSetId()` throw across the suite.
+
+Your set's own unit tests mount their set and enter its context themselves, the
+way [`../co-residency.test.js`](../co-residency.test.js) does —
+`registerSetMount(SET_ID, SET_BASE)` in the suite, then `withSetContext(SET_ID,
+...)` around anything that resolves set-owned configuration.
+
+## 8. Add the set to the test matrix
+
+Two config files name each set's directories literally, so a new set has to be
+added to both by hand:
+
+- `playwright.config.js` — a per-set project whose `testDir` is that set's
+  features directory (today
+  `./src/server/app/sets/high-risk-plants/journeys/linear/features`). Skip it
+  and Playwright never discovers your set's `.fit.spec.js` files, so the suite
+  goes green having run none of them.
+- `vitest.config.js` — a per-set `exclude` entry for that set's
+  `**/*.fit.spec.js`. Skip it and vitest tries to run the Playwright specs as
+  unit tests, and the unit suite fails on `test` not being defined.
+
+`webpack.config.js` needs nothing: the client bundle is built from
+`src/client/`, which every set shares.
+
+## 9. Move the tests with the URLs
 
 A new set does not move existing URLs, but adding the FIRST prefix to a set did
 — and any change to a set's mount does. The `trade-imports-animals-tests`

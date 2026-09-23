@@ -47,10 +47,15 @@ import {
 } from '../../src/server/app/shared/paths.js'
 import { session } from '../../src/server/app/engine/persistence/session.js'
 import { obligations as obligationsOf } from '../../src/server/app/model/obligations/manifest.js'
+import { base } from '../../src/server/app/shared/kit.js'
 import { session as sessionStub } from '../../src/server/app/services/persistence/session/stub.js'
 
 export const SET_ID = 'sundry-goods'
 export const SET_BASE = `/${SET_ID}`
+
+/** Named so it cannot collide with any high-risk-plants feature name — the
+ * point a per-set registry assertion turns on. */
+export const FEATURE_NAME = 'sundry-details'
 
 export const SESSION_COOKIE_NAMES = Object.freeze({
   knownJourneys: 'sundryGoodsKnownJourneys',
@@ -134,6 +139,12 @@ const createRecordsStub = () => {
 
 export const records = createRecordsStub()
 
+/** A route shape whose handler renders a real Nunjucks view, so the marshal
+ * step — which runs after the handler has returned — has to resolve this set
+ * for itself. Every other route here echoes JSON and never reaches a template. */
+export const RENDERED_ROUTE_PATH = '/rendered'
+export const RENDERED_TITLE = 'Sundry goods rendered'
+
 /** Reports which set answered, and with whose configuration — the two facts
  * every co-residency assertion turns on. */
 const whoAnswered = () => ({
@@ -184,6 +195,17 @@ export const routes = [
       await session.addKnownJourney(request, h, journey.journeyId)
       return h.redirect(pagePath(journey.journeyId, detailsPage.slug))
     }
+  },
+  {
+    method: 'GET',
+    path: RENDERED_ROUTE_PATH,
+    options: { auth: false },
+    handler: (_request, h) =>
+      h.view('shared/error', {
+        ...base(RENDERED_TITLE),
+        heading: RENDERED_TITLE,
+        message: dashboardPath()
+      })
   }
 ]
 
@@ -209,7 +231,7 @@ export const secondSet = {
         )
         configureObligationSet(SET_ID, { obligations, groups })
         configureFulfilmentRegistry(SET_ID, [
-          feature('details', [
+          feature(FEATURE_NAME, [
             scalar({
               field: shipmentReference.name,
               obligation: shipmentReference

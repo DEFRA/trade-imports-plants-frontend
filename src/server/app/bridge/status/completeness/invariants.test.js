@@ -1,5 +1,5 @@
 import { SET_ID } from '../../../sets/high-risk-plants/set.js'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import { configureObligationSet } from '../../../model/obligations/manifest.js'
 import {
@@ -83,9 +83,9 @@ describe('#emptyCollectionSatisfiesFloor', () => {
     })
   })
 
-  afterAll(() => {
-    configureObligationSet(SET_ID, undefined)
-  })
+  // No teardown: vitest isolates module state per test file, and configuring
+  // the set back to `undefined` would leave it "configured" to undefined —
+  // turning manifest.js's named "not configured" error into a TypeError.
 
   it('Should hold the floor open where the collection asks for no entry at all', () => {
     expect(

@@ -63,6 +63,7 @@ describe('context and cache', () => {
           getAssetPath: expect.any(Function),
           serviceName: 'Plants',
           serviceUrl: '/',
+          homeUrl: SET_BASE,
           authEnabled: true,
           staleActionRejected: false,
           activeNavigationItem: 'dashboard',
@@ -74,6 +75,20 @@ describe('context and cache', () => {
         const result = await contextImport.context({ path: '/auth/sign-out' })
 
         expect(result.activeNavigationItem).toBeNull()
+      })
+
+      test('Should send the home link to the root from outside every set', async () => {
+        const result = await contextImport.context({ path: '/auth/sign-out' })
+
+        expect(result.homeUrl).toBe('/')
+      })
+
+      test('Should send the home link to the set whose mount the path falls under', async () => {
+        const result = await contextImport.context({
+          path: `${SET_BASE}/notifications/abc-123/origin`
+        })
+
+        expect(result.homeUrl).toBe(SET_BASE)
       })
 
       test('Should describe the signed-in user from their session', async () => {
@@ -185,6 +200,7 @@ describe('context and cache', () => {
           getAssetPath: expect.any(Function),
           serviceName: 'Plants',
           serviceUrl: '/',
+          homeUrl: SET_BASE,
           authEnabled: true,
           staleActionRejected: false,
           activeNavigationItem: 'dashboard',

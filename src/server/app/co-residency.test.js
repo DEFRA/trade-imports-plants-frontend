@@ -27,9 +27,11 @@ import {
   enterSetContext,
   mountedSetIds,
   registerSetMount,
+  setContextExtension,
   withSetContext
 } from './shared/set-context.js'
 import { obligations } from './model/obligations/manifest.js'
+import { fulfilmentRegistry } from './bridge/fulfilment-registry.js'
 import { journeySections } from './flow/journey-flow.js'
 import { dashboardPath } from './shared/paths.js'
 import {
@@ -38,7 +40,10 @@ import {
 } from './sets/high-risk-plants/set.js'
 import { SESSION_COOKIE_NAMES as PLANTS_COOKIES } from './sets/high-risk-plants/journeys/linear/config.js'
 import {
+  FEATURE_NAME as SECOND_SET_FEATURE,
   GUARDED_JOURNEY_ID,
+  RENDERED_ROUTE_PATH as SECOND_SET_RENDERED_PATH,
+  RENDERED_TITLE as SECOND_SET_RENDERED_TITLE,
   SESSION_COOKIE_NAMES as SECOND_SET_COOKIES,
   SET_BASE as SECOND_SET_BASE,
   SET_ID as SECOND_SET,
@@ -135,8 +140,11 @@ beforeAll(async () => {
   // working: no set may sit at the root.
   await server.register(secondSet, { routes: { prefix: SECOND_SET_BASE } })
   await server.register(foreignRealm)
-  // The shared error page and the sign-in error page are reached from outside
-  // every set, so the server-wide surface has to render them without one.
+  // The two server-wide extensions server.js registers, in the same order: the
+  // set context resolved from the path before routing, then the shared error
+  // page. Without the first, an unrouted path under a set's mount has no set at
+  // all — no route matched, so no set's own onPreAuth ran.
+  server.ext(setContextExtension)
   server.ext('onPreResponse', catchAll)
   server.route({
     method: 'GET',
@@ -231,6 +239,22 @@ describe('co-residency — each set answers with its own configuration', () => {
     expect(plantsSections).not.toEqual(secondSetSections)
   })
 
+  it('Should give each set its own fulfilment registry', async () => {
+    const plantsFeatures = await withSetContext(HIGH_RISK_PLANTS, () =>
+      fulfilmentRegistry.features.map(({ name }) => name)
+    )
+    const secondSetFeatures = await withSetContext(SECOND_SET, () =>
+      fulfilmentRegistry.features.map(({ name }) => name)
+    )
+
+    expect(secondSetFeatures).toEqual([SECOND_SET_FEATURE])
+    // Stated as disjoint rather than as a literal list: the plants set is still
+    // gaining features, and a list here would have to be retyped on each one
+    // without saying anything more than this does.
+    expect(plantsFeatures.length).toBeGreaterThan(1)
+    expect(plantsFeatures).not.toContain(SECOND_SET_FEATURE)
+  })
+
   it('Should build every link inside the request’s own set', async () => {
     const plantsBase = await withSetContext(HIGH_RISK_PLANTS, () =>
       dashboardPath()
@@ -241,6 +265,45 @@ describe('co-residency — each set answers with its own configuration', () => {
 
     expect(plantsBase).toBe(PLANTS_BASE)
     expect(secondSetBase).toBe(SECOND_SET_BASE)
+  })
+})
+
+describe('co-residency — the render path resolves the request’s set', () => {
+  it('Should render a second set’s view with that set’s own layout values', async () => {
+    const response = await server.inject(
+      `${SECOND_SET_BASE}${SECOND_SET_RENDERED_PATH}`
+    )
+
+    expect(response.statusCode).toBe(200)
+    // The view is marshalled after the handler returns. These two values come
+    // from the set's own configuration — its journey layout and its mount — so
+    // a render that resolved the wrong set could not produce both.
+    expect(response.result).toContain(SECOND_SET_RENDERED_TITLE)
+    expect(response.result).toContain(`href="${SECOND_SET_BASE}"`)
+    expect(response.result).not.toContain(`href="${PLANTS_BASE}"`)
+  })
+
+  it.each([
+    ['inside a set', `${PLANTS_BASE}/no-such-page`],
+    ['outside every set', '/no-such-page']
+  ])(
+    'Should answer an unrouted path %s with 404 rather than 500',
+    async (_where, url) => {
+      // The error page renders the shared chrome. Resolving it through the
+      // sole-set fallback throws with several sets mounted, which turns the 404
+      // the user should see into a 500.
+      const response = await server.inject(url)
+
+      expect(response.statusCode).toBe(404)
+    }
+  )
+
+  it('Should give a 404 under a set’s mount that set’s own home link', async () => {
+    const response = await server.inject(`${PLANTS_BASE}/no-such-page`)
+
+    // Not `/`: the set is resolved from the path, because no route matched and
+    // so no set's own extension ran.
+    expect(response.result).toContain(`href="${PLANTS_BASE}"`)
   })
 })
 

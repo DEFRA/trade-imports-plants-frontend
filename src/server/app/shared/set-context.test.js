@@ -103,6 +103,79 @@ describe('#currentSetBase', () => {
   })
 })
 
+describe('#setIdForPath', () => {
+  const twoSets = async () => {
+    const module = await freshModule()
+    module.registerSetMount(PLANTS, PLANTS_BASE)
+    module.registerSetMount(SECOND_SET, SECOND_SET_BASE)
+    return module
+  }
+
+  it('Should answer the set whose mount the path falls under', async () => {
+    const { setIdForPath } = await twoSets()
+
+    expect(setIdForPath(PLANTS_BASE)).toBe(PLANTS)
+    expect(setIdForPath(`${PLANTS_BASE}/notifications/GBP-1`)).toBe(PLANTS)
+    expect(setIdForPath(`${SECOND_SET_BASE}/details`)).toBe(SECOND_SET)
+  })
+
+  it('Should answer nothing for a path outside every mount', async () => {
+    const { setIdForPath } = await twoSets()
+
+    expect(setIdForPath('/health')).toBeUndefined()
+    expect(setIdForPath('/signout')).toBeUndefined()
+    expect(setIdForPath('/auth/sign-out')).toBeUndefined()
+    expect(setIdForPath('/no-such-page')).toBeUndefined()
+  })
+
+  it('Should not treat a longer sibling name as being under the mount', async () => {
+    const { setIdForPath } = await twoSets()
+
+    expect(setIdForPath(`${PLANTS_BASE}-archive/notifications`)).toBeUndefined()
+  })
+
+  it('Should prefer the longest matching mount over the first registered', async () => {
+    const { registerSetMount, setIdForPath } = await twoSets()
+    registerSetMount('nested', `${PLANTS_BASE}/nested`)
+
+    expect(setIdForPath(`${PLANTS_BASE}/nested/page`)).toBe('nested')
+  })
+
+  it('Should answer nothing when there is no path to read', async () => {
+    const { setIdForPath } = await twoSets()
+
+    expect(setIdForPath(undefined)).toBeUndefined()
+  })
+})
+
+describe('#setContextExtension', () => {
+  it('Should enter the set the request path falls under, before routing', async () => {
+    const { currentSetId, registerSetMount, setContextExtension } =
+      await freshModule()
+    registerSetMount(PLANTS, PLANTS_BASE)
+    registerSetMount(SECOND_SET, SECOND_SET_BASE)
+    const h = { continue: Symbol('continue') }
+
+    expect(setContextExtension.type).toBe('onRequest')
+    expect(
+      setContextExtension.method({ path: `${SECOND_SET_BASE}/details` }, h)
+    ).toBe(h.continue)
+    expect(currentSetId()).toBe(SECOND_SET)
+  })
+
+  it('Should leave a path outside every mount without a set', async () => {
+    const { currentSetId, registerSetMount, setContextExtension } =
+      await freshModule()
+    registerSetMount(PLANTS, PLANTS_BASE)
+    registerSetMount(SECOND_SET, SECOND_SET_BASE)
+    const h = { continue: Symbol('continue') }
+
+    setContextExtension.method({ path: '/health' }, h)
+
+    expect(() => currentSetId()).toThrow('No set context')
+  })
+})
+
 describe('#enterSetContext', () => {
   it('Should make a set active for the rest of the surrounding context', async () => {
     const { currentSetId, enterSetContext, registerSetMount, withSetContext } =
@@ -196,6 +269,55 @@ describe('#routeWithSetContext', () => {
 
     expect(first.method({}, {})).toBe(SECOND_SET)
     expect(second({}, {})).toBe(SECOND_SET)
+  })
+
+  it('Should run a handler declared as options.handler inside its own set', async () => {
+    const { currentSetId, registerSetMount, routeWithSetContext } =
+      await freshModule()
+    registerSetMount(PLANTS, PLANTS_BASE)
+    registerSetMount(SECOND_SET, SECOND_SET_BASE)
+
+    const route = routeWithSetContext(SECOND_SET, {
+      method: 'GET',
+      path: '/probe',
+      options: { handler: () => currentSetId() }
+    })
+
+    expect(route.options.handler({}, {})).toBe(SECOND_SET)
+  })
+
+  it('Should run every options.pre entry inside its own set', async () => {
+    const { currentSetId, registerSetMount, routeWithSetContext } =
+      await freshModule()
+    registerSetMount(PLANTS, PLANTS_BASE)
+    registerSetMount(SECOND_SET, SECOND_SET_BASE)
+
+    const route = routeWithSetContext(SECOND_SET, {
+      method: 'GET',
+      path: '/probe',
+      handler: () => null,
+      options: {
+        pre: [{ assign: 'seen', method: () => currentSetId() }]
+      }
+    })
+
+    expect(route.options.pre[0].assign).toBe('seen')
+    expect(route.options.pre[0].method({}, {})).toBe(SECOND_SET)
+  })
+
+  it('Should leave a route that declares its handler in options without a stray top-level one', async () => {
+    const { registerSetMount, routeWithSetContext } = await freshModule()
+    registerSetMount(PLANTS, PLANTS_BASE)
+
+    // A `handler: undefined` alongside `options.handler` is a route with two
+    // handlers as far as Hapi is concerned, and it refuses the registration.
+    const route = routeWithSetContext(PLANTS, {
+      method: 'GET',
+      path: '/probe',
+      options: { handler: () => null }
+    })
+
+    expect(Object.hasOwn(route, 'handler')).toBe(false)
   })
 
   it('Should keep the other options an extension entry carries', async () => {
