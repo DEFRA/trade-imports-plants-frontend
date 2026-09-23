@@ -1,3 +1,9 @@
+import {
+  BASE,
+  journeyIdFromPage,
+  setPath,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -15,15 +21,18 @@ const save = (page) =>
     name: sharedCopy.saveActions.saveAndContinue,
     exact: true
   })
-const cyaUrl = /\/notification-view$/
+const CYA_PATTERN = '/notifications/[^/]+/notification-view$'
+const cyaUrl = setUrl(CYA_PATTERN)
+/** A rendered `href` is the path the template wrote, not a whole URL. */
+const cyaHref = setPath(CYA_PATTERN)
 const VARIETY = 'Maris Piper'
 const contactName = 'Tech Imports Ltd'
 
 const startNotification = async (page) => {
-  await page.goto('/')
+  await page.goto(BASE)
   await page.getByRole('button', { name: dashboardCopy.startButton }).click()
   await expect(page).toHaveURL(/\/commodity-type$/)
-  const reference = new URL(page.url()).pathname.split('/')[2]
+  const reference = journeyIdFromPage(page)
   await page
     .getByRole('radio', { name: copy.typeLabels.potatoes, exact: true })
     .check()
@@ -94,7 +103,9 @@ const completeNotification = async (page, late = false) => {
   await save(page).click()
   // The opening run stops at the hub once every prerequisite section is
   // answered but the review gate itself needs a manual visit.
-  await expect(page).toHaveURL(new RegExp(`/notifications/${reference}$`))
+  await expect(page).toHaveURL(
+    new RegExp(`${BASE}/notifications/${reference}$`)
+  )
   await page
     .getByRole('link', { name: 'Check and submit', exact: true })
     .click()
@@ -128,21 +139,21 @@ test.beforeEach(async ({ page }) => {
     .getByRole('button', { name: declarationCopy.continueButton, exact: true })
     .click()
   await expect(page).toHaveURL(/\/confirmation$/)
-  await page.goto('/')
+  await page.goto(BASE)
   await page
     .getByRole('button', {
       name: `Amend notification ${reference}`,
       exact: true
     })
     .click()
-  await page.goto(`/notifications/${reference}/identification-numbers`)
+  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
   await page
     .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
       exact: true
     })
     .fill('DiscardMe99')
   await save(page).click()
-  await page.goto('/')
+  await page.goto(BASE)
   await page
     .getByRole('link', {
       name: `${dashboardCopy.actions.cancelAmend} (${reference})`,
@@ -164,10 +175,10 @@ test('renders accessible confirmation copy, actions and a bare heading', async (
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: cancelCopy.noLink })
-  ).toHaveAttribute('href', cyaUrl)
+  ).toHaveAttribute('href', cyaHref)
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-  ).toHaveAttribute('href', cyaUrl)
+  ).toHaveAttribute('href', cyaHref)
   await expect(page.locator('.govuk-caption-l')).toHaveCount(0)
   await assertAccessible(page)
 })

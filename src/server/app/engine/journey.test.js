@@ -6,7 +6,10 @@ import {
   amendJourney,
   listKnownJourneys,
   replaceJourneyFulfilment,
-  SESSION_COOKIES,
+  flowOnlyAnswersCookie,
+  knownJourneysCookie,
+  openingRunCookie,
+  registerJourneyCookie,
   softDeleteJourney,
   startJourney
 } from './journey.js'
@@ -24,6 +27,8 @@ import {
 import { obligationSet } from '../model/obligations/manifest.js'
 import {
   FLOW_ONLY_KEY,
+  SET_BASE,
+  SET_ID,
   VALUE_ONE,
   VALUE_TWO
 } from '../../../../test/fixtures/index.js'
@@ -32,7 +37,7 @@ const { scalarField } = obligationSet()
 
 const requestFor = (journeyId, knownJourneyIds) => ({
   params: journeyId ? { journeyId } : {},
-  state: { [SESSION_COOKIES.knownJourneys]: knownJourneyIds },
+  state: { [knownJourneysCookie()]: knownJourneyIds },
   headers: {},
   auth: {
     isAuthenticated: true,
@@ -43,9 +48,9 @@ const requestFor = (journeyId, knownJourneyIds) => ({
 
 describe('#currentJourney', () => {
   beforeEach(async () => {
-    configureRecords(recordsStub)
-    configureSession(sessionStub)
-    configureReadyForCheckYourAnswers(() => false)
+    configureRecords(SET_ID, recordsStub)
+    configureSession(SET_ID, sessionStub)
+    configureReadyForCheckYourAnswers(SET_ID, () => false)
     await store.clear()
   })
 
@@ -54,14 +59,12 @@ describe('#currentJourney', () => {
     const journey = await startJourney(requestFor(undefined, []), h)
 
     expect(await store.has(journey.journeyId)).toBe(true)
-    expect(h.cookies[SESSION_COOKIES.knownJourneys]).toEqual([
-      journey.journeyId
-    ])
+    expect(h.cookies[knownJourneysCookie()]).toEqual([journey.journeyId])
   })
 
   it('Should forward the authenticated actor to records.create on startJourney', async () => {
     const create = vi.fn(recordsStub.create)
-    configureRecords({ ...recordsStub, create })
+    configureRecords(SET_ID, { ...recordsStub, create })
     const h = recordingH()
 
     await startJourney(requestFor(undefined, []), h)
@@ -101,8 +104,8 @@ describe('#currentJourney', () => {
     }
     const requestA = requestFor(journeyA.journeyId, known)
     const requestB = requestFor(journeyB.journeyId, known)
-    requestA.state[SESSION_COOKIES.flowOnlyAnswers] = flowOnly
-    requestB.state[SESSION_COOKIES.flowOnlyAnswers] = flowOnly
+    requestA.state[flowOnlyAnswersCookie()] = flowOnly
+    requestB.state[flowOnlyAnswersCookie()] = flowOnly
 
     const viewA = await get(requestA, recordingH())
     const viewB = await get(requestB, recordingH())
@@ -150,9 +153,7 @@ describe('#currentJourney', () => {
     const loaded = await currentJourney(requestFor(journey.journeyId, []), h)
 
     expect(loaded.journeyId).toBe(journey.journeyId)
-    expect(h.cookies[SESSION_COOKIES.knownJourneys]).toContain(
-      journey.journeyId
-    )
+    expect(h.cookies[knownJourneysCookie()]).toContain(journey.journeyId)
   })
 
   it('Should cancel amendment only for a session-known journey', async () => {
@@ -161,7 +162,7 @@ describe('#currentJourney', () => {
       status: 'submitted',
       fulfilment: {}
     }))
-    configureRecords({ ...recordsStub, cancelAmend })
+    configureRecords(SET_ID, { ...recordsStub, cancelAmend })
     const journeyId = 'journey-abc123'
     const request = requestFor(journeyId, [journeyId])
 
@@ -183,7 +184,7 @@ describe('#currentJourney', () => {
     const journey = await store.create()
     await recordsStub.finalise(journey.journeyId)
     const amend = vi.fn(recordsStub.amend)
-    configureRecords({ ...recordsStub, amend })
+    configureRecords(SET_ID, { ...recordsStub, amend })
     const request = requestFor(journey.journeyId, [journey.journeyId])
 
     const editable = await amendJourney(
@@ -202,7 +203,7 @@ describe('#currentJourney', () => {
       status: 'draft',
       fulfilment: {}
     }))
-    configureRecords({ ...recordsStub, copy })
+    configureRecords(SET_ID, { ...recordsStub, copy })
     const sourceId = 'journey-source'
     const request = requestFor(sourceId, [sourceId])
     const h = recordingH()
@@ -212,7 +213,7 @@ describe('#currentJourney', () => {
     const [args] = copy.mock.calls
     expect(args).toEqual([sourceId, 'copy-key-123', authenticatedActor])
     expect(copied.status).toBe('draft')
-    expect(h.cookies[SESSION_COOKIES.knownJourneys]).toEqual([
+    expect(h.cookies[knownJourneysCookie()]).toEqual([
       sourceId,
       copied.journeyId
     ])
@@ -234,7 +235,7 @@ describe('#currentJourney', () => {
       status: 'deleted',
       fulfilment: {}
     }))
-    configureRecords({ ...recordsStub, softDelete })
+    configureRecords(SET_ID, { ...recordsStub, softDelete })
     const journeyId = 'journey-delete'
     const request = requestFor(journeyId, [journeyId])
 
@@ -257,7 +258,7 @@ describe('#currentJourney', () => {
     // The backend resolves each row's referenced parties against the address
     // book, which scopes on the organisation — so the read has to say which.
     const list = vi.fn(async () => ({ rows: [], page: 1, totalPages: 0 }))
-    configureRecords({ ...recordsStub, list })
+    configureRecords(SET_ID, { ...recordsStub, list })
     const journeyId = 'journey-list01'
 
     await listKnownJourneys(requestFor(journeyId, [journeyId]), { page: 2 })
@@ -272,7 +273,7 @@ describe('#currentJourney', () => {
     // before there is a session. No organisation means no journeys — and no
     // call, because the backend would rightly reject one.
     const list = vi.fn(async () => ({ rows: [], page: 1, totalPages: 0 }))
-    configureRecords({ ...recordsStub, list })
+    configureRecords(SET_ID, { ...recordsStub, list })
 
     const listed = await listKnownJourneys(
       { state: {}, headers: {}, app: {} },
@@ -286,9 +287,9 @@ describe('#currentJourney', () => {
 
 describe('#replaceJourneyFulfilment', () => {
   beforeEach(async () => {
-    configureRecords(recordsStub)
-    configureSession(sessionStub)
-    configureReadyForCheckYourAnswers(() => false)
+    configureRecords(SET_ID, recordsStub)
+    configureSession(SET_ID, sessionStub)
+    configureReadyForCheckYourAnswers(SET_ID, () => false)
     await store.clear()
   })
 
@@ -304,7 +305,7 @@ describe('#replaceJourneyFulfilment', () => {
         fulfilment
       }
     })
-    configureRecords({ ...recordsStub, replaceFulfilment })
+    configureRecords(SET_ID, { ...recordsStub, replaceFulfilment })
     const request = requestFor(journeyId, [journeyId])
     request.payload = { concurrencyToken: '4' }
 
@@ -315,5 +316,35 @@ describe('#replaceJourneyFulfilment', () => {
     // from the memo, which must now carry the freshly-saved value (5), not
     // the pre-save one (4).
     expect(tokensSeen).toEqual([4, 5])
+  })
+})
+
+describe('#registerJourneyCookie', () => {
+  /** Records what Hapi would have been told to register. */
+  const recordingServer = () => {
+    const states = {}
+    return { states, state: (name, options) => (states[name] = options) }
+  }
+
+  it('Should scope every journey cookie to the set’s registered mount', () => {
+    configureSession(SET_ID, sessionStub)
+    const server = recordingServer()
+
+    registerJourneyCookie(server)
+
+    expect(Object.keys(server.states).toSorted()).toEqual(
+      [
+        knownJourneysCookie(),
+        openingRunCookie(),
+        flowOnlyAnswersCookie()
+      ].toSorted()
+    )
+    // The path comes from the registered mount, so a cookie cannot be
+    // registered at the root or under another set's prefix.
+    for (const [name, options] of Object.entries(server.states)) {
+      expect(options.path, `${name} is not scoped to the set base`).toBe(
+        SET_BASE
+      )
+    }
   })
 })

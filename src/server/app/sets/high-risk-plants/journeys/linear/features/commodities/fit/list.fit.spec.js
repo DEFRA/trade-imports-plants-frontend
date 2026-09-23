@@ -1,3 +1,8 @@
+import {
+  BASE,
+  journeyIdFromPage,
+  setUrl
+} from '../../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../../fit/sign-in.js'
@@ -8,13 +13,14 @@ import { copy as typeCopy } from '../../commodity-type/copy/copy.en.js'
 import { copy } from '../copy/copy.en.js'
 import { expectNoSeriousOrCriticalViolations } from './axe.js'
 
-const COMMODITY_TYPE_URL = /\/notifications\/[^/]+\/commodity-type$/
-const DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details$/
-const DETAILS_EDIT_URL =
-  /\/notifications\/[^/]+\/commodities\/details\?index=\d+$/
-const LIST_URL = /\/notifications\/[^/]+\/commodities$/
-const REMOVED_URL = /\/notifications\/[^/]+\/commodities\?removed=\d+$/
-const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
+const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
+const DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details$')
+const DETAILS_EDIT_URL = setUrl(
+  '/notifications/[^/]+/commodities/details\\?index=\\d+$'
+)
+const LIST_URL = setUrl('/notifications/[^/]+/commodities$')
+const REMOVED_URL = setUrl('/notifications/[^/]+/commodities\\?removed=\\d+$')
+const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
 
 const POTATOES = 'potatoes'
 const WOOD = 'wood-and-cut-trees'
@@ -22,7 +28,6 @@ const SEED_POTATOES = 'seed-potatoes'
 const WARE_POTATOES = 'ware-potatoes'
 const MARIS_PIPER = 'Maris Piper'
 const KING_EDWARD = 'King Edward'
-const HUB_PATH_SEGMENTS = 3
 
 const saveAndContinue = (page) =>
   page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
@@ -30,15 +35,16 @@ const saveAndContinue = (page) =>
 const fieldNamed = (page, field) =>
   page.getByLabel(copy.details.fields[field].label, { exact: true })
 
-const hubUrlOf = (page) =>
-  new URL(page.url()).pathname.split('/').slice(0, HUB_PATH_SEGMENTS).join('/')
+// Built from the set base and the journey id rather than by slicing path
+// segments, which shifts silently when the mount prefix changes.
+const hubUrlOf = (page) => `${BASE}/notifications/${journeyIdFromPage(page)}`
 
 const commodityTypeUrlOf = (page) => `${hubUrlOf(page)}/commodity-type`
 
 const listUrlOf = (page) => `${hubUrlOf(page)}/commodities`
 
 const startAtDetails = async (page, commodityType) => {
-  await page.goto('/')
+  await page.goto(BASE)
   await page.getByRole('button', { name: dashboardCopy.startButton }).click()
   await expect(page).toHaveURL(COMMODITY_TYPE_URL)
   await page
