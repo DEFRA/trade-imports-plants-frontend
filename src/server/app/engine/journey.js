@@ -3,8 +3,10 @@ import {
   flowOnlyAnswersCookie,
   knownJourneysCookie,
   openingRunCookie,
-  session
+  session,
+  sessionConfiguredFor
 } from './persistence/session.js'
+import { currentSetBase, currentSetId } from '../shared/set-context.js'
 import { AMEND, DRAFT, records, SUBMITTED } from './persistence/records.js'
 import { buildActor } from '../../common/helpers/actor-helpers.js'
 import { organisationIdOf } from '../../common/helpers/organisation-id.js'
@@ -20,13 +22,21 @@ export {
  * another set's dashboard. Moving these off `/` invalidates existing browser
  * sessions, which is the intended one-off cost of splitting the namespace.
  *
- * The names come from the configured session seam rather than from a second
- * argument, so the registered cookies and the ones the session reads cannot
- * drift apart. Call it inside the set's context, after `configureSession`.
+ * Both the path and the names come from the active set — the mount it
+ * registered and the session seam it configured — rather than from arguments,
+ * so what is registered cannot drift from what the set actually uses. Call it
+ * inside the set's context, after `registerSetMount` and `configureSession`.
  */
-export const registerJourneyCookie = (server, { base }) => {
+export const registerJourneyCookie = (server) => {
+  const setId = currentSetId()
+  if (!sessionConfiguredFor(setId)) {
+    throw new Error(
+      `Session not configured for set "${setId}" — call configureSession before registerJourneyCookie`
+    )
+  }
+
   const cookieOptions = Object.freeze({
-    path: base,
+    path: currentSetBase(),
     ttl: null,
     encoding: 'base64json',
     isSecure: false,

@@ -309,20 +309,22 @@ describe('#reportName', () => {
   it('Should name a report after its route, without the seeded journey id', () => {
     expect(
       reportName(
-        `${ORIGIN}/notifications/${journeyIds.warePotatoes}/uploads/status`,
+        `${ORIGIN}${SET_BASE}/notifications/${journeyIds.warePotatoes}/uploads/status`,
         journeyIds
       )
     ).toBe('notifications_uploads_status')
   })
 
   it('Should name the report for the service start page', () => {
-    expect(reportName(`${ORIGIN}/`, journeyIds)).toBe('home')
+    // The set's dashboard IS the start page, so its mount prefix must come
+    // back off: leaked, this would be named after the set instead.
+    expect(reportName(`${ORIGIN}${SET_BASE}`, journeyIds)).toBe('home')
   })
 
   it('Should drop the query string a route needs to render', () => {
     expect(
       reportName(
-        `${ORIGIN}/notifications/${journeyIds.warePotatoes}/origin?change=1`,
+        `${ORIGIN}${SET_BASE}/notifications/${journeyIds.warePotatoes}/origin?change=1`,
         journeyIds
       )
     ).toBe('notifications_origin')

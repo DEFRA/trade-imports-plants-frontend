@@ -8,7 +8,7 @@ export const load = async ({ journeyId } = {}) => {
   if (journeyId == null) {
     return undefined
   }
-  const journey = journeys.get(journeyId)
+  const journey = journeys().get(journeyId)
   return journey ? structuredClone(marshal(journey)) : undefined
 }
 
@@ -20,7 +20,7 @@ export const list = async ({
 } = {}) => {
   const resolvedPage = validPage(page)
   const documents = journeyIds
-    .map((journeyId) => journeys.get(journeyId))
+    .map((journeyId) => journeys().get(journeyId))
     .filter((journey) => journey && journey.status !== DELETED)
     .filter((journey) => !referenceNumber || journey.id === referenceNumber)
   const rows = (await Promise.all(documents.map(marshalListItem))).sort(
@@ -40,5 +40,5 @@ export const list = async ({
 }
 
 export const has = async (journeyId) => {
-  return journeys.has(journeyId)
+  return journeys().has(journeyId)
 }

@@ -15,18 +15,18 @@ export const create = async () => {
     submittedAt: null,
     fulfilment: []
   }
-  journeys.set(document.id, document)
+  journeys().set(document.id, document)
   return structuredClone(marshal(document))
 }
 
 export const copy = async (journeyId, idempotencyKey) => {
   const dedupeKey = `${journeyId}\u0000${idempotencyKey}`
-  const existingCopyId = copiesBySourceAndKey.get(dedupeKey)
+  const existingCopyId = copiesBySourceAndKey().get(dedupeKey)
   if (existingCopyId) {
-    return structuredClone(marshal(journeys.get(existingCopyId)))
+    return structuredClone(marshal(journeys().get(existingCopyId)))
   }
 
-  const source = journeys.get(journeyId)
+  const source = journeys().get(journeyId)
   if (!source) {
     throw new Error(`Unknown journey "${journeyId}"`)
   }
@@ -45,7 +45,7 @@ export const copy = async (journeyId, idempotencyKey) => {
     submittedAt: null,
     fulfilment: structuredClone(source.fulfilment)
   }
-  journeys.set(document.id, document)
-  copiesBySourceAndKey.set(dedupeKey, document.id)
+  journeys().set(document.id, document)
+  copiesBySourceAndKey().set(dedupeKey, document.id)
   return structuredClone(marshal(document))
 }

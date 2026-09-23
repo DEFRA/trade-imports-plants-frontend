@@ -92,12 +92,14 @@ describe('#currentSetBase', () => {
     )
   })
 
-  it('Should give an active set with no registered mount an empty base', async () => {
+  it('Should refuse an active set with no registered mount', async () => {
     const { currentSetBase, registerSetMount, withSetContext } =
       await freshModule()
     registerSetMount(PLANTS, PLANTS_BASE)
 
-    expect(withSetContext('never-mounted', () => currentSetBase())).toBe('')
+    expect(() =>
+      withSetContext('never-mounted', () => currentSetBase())
+    ).toThrow(/has no registered mount/)
   })
 })
 

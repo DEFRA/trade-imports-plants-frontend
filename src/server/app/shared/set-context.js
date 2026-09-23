@@ -14,6 +14,19 @@ export const mountedSetIds = () => [...mounts.keys()]
 
 const soleSetId = () => (mounts.size === 1 ? [...mounts.keys()][0] : undefined)
 
+/**
+ * Whether a set can be resolved at all.
+ *
+ * A server-wide route — the root redirect, `/signout`, the sign-in error page,
+ * the shared error page reached from outside every set — belongs to no set, so
+ * anything set-owned has no answer for it. Ask this before reaching for a set
+ * rather than catching the throw.
+ *
+ * @returns {boolean} true when `currentSetId()` would answer.
+ */
+export const hasSetContext = () =>
+  (storage.getStore()?.setId ?? soleSetId()) !== undefined
+
 export const currentSetId = () => {
   const id = storage.getStore()?.setId ?? soleSetId()
   if (!id) {
@@ -31,10 +44,14 @@ export const currentSetId = () => {
   return id
 }
 
-export const currentSetBase = () =>
-  // Defensive default only: registered sets never have an empty prefix;
-  // `''` means an active set id has no registered mount, not a root-mounted set.
-  mounts.get(currentSetId()) ?? ''
+export const currentSetBase = () => {
+  const setId = currentSetId()
+  const base = mounts.get(setId)
+  if (base === undefined) {
+    throw new Error(`Set "${setId}" has no registered mount`)
+  }
+  return base
+}
 
 export const withSetContext = (setId, fn) => storage.run({ setId }, fn)
 

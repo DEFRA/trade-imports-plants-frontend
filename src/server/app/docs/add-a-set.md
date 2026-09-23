@@ -45,11 +45,11 @@ mounted and only surfaces when a second arrives, which is why each is pinned by
 **1. Every `configure*` seam takes the set id first.** Each stores its value
 per set behind `setKeyed`, and each read accessor resolves through
 `currentSetId()`. A seam that kept one module-level variable would let the
-second registration overwrite the first. The nine seams are
+second registration overwrite the first. The eight seams are
 `configureObligationSet`, `configureFulfilmentRegistry`,
-`configureFlowOnlyKeys`, `configureAnswersForRead`,
-`configureReadyForCheckYourAnswers`, `configureJourneyFlow`, `buildDispatch`,
-`configureRecords` and `configureSession`.
+`configureAnswersForRead`, `configureReadyForCheckYourAnswers`,
+`configureJourneyFlow`, `buildDispatch`, `configureRecords` and
+`configureSession`.
 
 **2. A request resolves its set from the owning plugin realm, never from the
 URL.** Each gateway installs an `onPreAuth` extension that calls
@@ -85,7 +85,7 @@ Two reasons, and they are the whole argument:
   produce the same correct-looking string for that set and stay hidden until
   somebody opened another set.
 
-Two consequences follow:
+Three consequences follow:
 
 - **`/` belongs to no set.** It is a server-wide 302 — never a 301 — to
   `DEFAULT_SET_BASE`, declared with `server.route` in
@@ -96,6 +96,14 @@ Two consequences follow:
   server-wide.** They must never sit inside a prefixed `server.register` call.
   `/signout` is the live trap: it registers perfectly happily at
   `/<set-id>/signout` and nothing fails until a user tries to sign out.
+- **A server-wide page has no set, so it cannot use `kit.base()`**, which reads
+  the set-keyed journey flow. Use `kit.serverWideBase()`, or `kit.chromeFor()`
+  on a page reached from both — the shared error page. With a single set
+  mounted the sole-set fallback hides the difference; with two, `base()`
+  throws. The same applies to anything else set-owned a server-wide request
+  touches: `activeNavigationItem` in
+  [`../../../config/nunjucks/context/context.js`](../../../config/nunjucks/context/context.js)
+  asks `hasSetContext()` first for exactly this reason.
 
 The resulting mount table with two sets in the tree:
 
@@ -161,15 +169,16 @@ Two sets sharing a cookie name would share the draft list behind it.
 Create `routes-<set-id>.js` following
 [`../routes-high-risk-plants.js`](../routes-high-risk-plants.js) exactly: register the
 mount, open the set context, install the sandboxed `onPreAuth`, configure every
-seam this set uses with `SET_ID` first, register the journey cookies against
-`SET_BASE`, install the sandboxed entry guard, and wrap every route.
+seam this set uses with `SET_ID` first, register the journey cookies, install
+the sandboxed entry guard, and wrap every route.
 
 Then re-export it from [`../routes.js`](../routes.js), which is only a barrel.
 
-`registerJourneyCookie(server, { base: SET_BASE })` takes no cookie names: it
-reads them back from the configured session seam, so the cookies Hapi registers
-and the cookies the session reads cannot drift apart. Call it after
-`configureSession`.
+`registerJourneyCookie(server)` takes neither a base nor cookie names: it reads
+the path back from the registered mount and the names back from the configured
+session seam, so the cookies Hapi registers and the ones the set actually uses
+cannot drift apart. Call it inside the set context, after `registerSetMount`
+and `configureSession` — it throws if the session seam is not configured yet.
 
 ## 5. Mount it
 

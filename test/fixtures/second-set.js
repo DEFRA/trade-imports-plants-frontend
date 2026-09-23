@@ -6,7 +6,7 @@
  * real set would mean shipping a journey nobody asked for. This fixture is the
  * smallest thing that satisfies every configure* seam and mounts under its own
  * prefix, so the co-residency and tripwire suites can register it alongside
- * live-animals.
+ * high-risk-plants.
  *
  * Its routes deliberately echo the configuration they resolve rather than
  * render anything. A test asserting "this route saw its own set's obligations"
@@ -39,8 +39,10 @@ import {
   dashboardRoutePath,
   hubRoutePath,
   pagePath,
-  pageRoutePath
+  pageRoutePath,
+  setBase
 } from '../../src/server/app/shared/paths.js'
+import { session } from '../../src/server/app/engine/persistence/session.js'
 import { obligations as obligationsOf } from '../../src/server/app/model/obligations/manifest.js'
 import { session as sessionStub } from '../../src/server/app/services/persistence/session/stub.js'
 
@@ -69,6 +71,23 @@ export const dispatchPages = [
 ]
 
 const sections = [{ id: 'details', pages: [detailsPage] }]
+
+/** The one journey id this set's guard turns away, mirroring the shipped set's
+ * deep-link guard without needing a journey's worth of state. */
+export const GUARDED_JOURNEY_ID = 'SUN-GUARDED'
+
+/**
+ * A guard that reads THIS set's configuration — `setBase()` resolves through
+ * the active set — on every request, so a gateway that forgot to re-enter its
+ * context around the guard fails here rather than quietly passing.
+ * `async () => null` would not.
+ */
+const entryGuardTarget = async (request) => {
+  const base = setBase()
+  return request.params?.journeyId === GUARDED_JOURNEY_ID
+    ? `${base}/notifications/${GUARDED_JOURNEY_ID}`
+    : null
+}
 
 /** The set's own in-memory records store, so nothing is shared with any other
  * set by accident — the point most of these tests are making. */
@@ -153,15 +172,20 @@ export const routes = [
     method: 'POST',
     path: createRoutePath(),
     options: { auth: false },
-    handler: async (_request, h) => {
+    // Writes the known-journey cookie through the session seam, the way the
+    // shipped gateway's `startJourney` does, so the response carries a
+    // Set-Cookie a browser (and the cookie jar in co-residency.test.js) can
+    // read back.
+    handler: async (request, h) => {
       const journey = await records.create()
+      await session.addKnownJourney(request, h, journey.journeyId)
       return h.redirect(pagePath(journey.journeyId, detailsPage.slug))
     }
   }
 ]
 
 /**
- * Mirrors routes-live-animals.js: mount registration, a sandboxed onPreAuth to
+ * Mirrors routes-high-risk-plants.js: mount registration, a sandboxed onPreAuth to
  * enter the set context, every seam configured with this set's id, per-set
  * cookies scoped to the set base, a sandboxed entry guard, and routes wrapped
  * so handlers run inside the context.
@@ -196,17 +220,23 @@ export const secondSet = {
           rowStatus: () => 'notStarted',
           nextRunTarget: () => null,
           flowOnlyKeys: [],
-          entryGuardTarget: async () => null,
+          entryGuardTarget,
           layout: 'shared/layout.njk'
         })
         buildDispatch(SET_ID, dispatchPages)
         configureRecords(SET_ID, records)
         configureSession(SET_ID, sessionStub, SESSION_COOKIE_NAMES)
-        registerJourneyCookie(server, { base: SET_BASE })
+        registerJourneyCookie(server)
         server.ext(
           'onPreHandler',
           async (request, h) => {
-            const target = await journeyEntryGuardTarget(request, h)
+            // Wrapped, not left to the onPreAuth above: authentication crosses
+            // an async boundary in between, and `enterWith` does not always
+            // survive it. Bare, this resolves only by the sole-set fallback and
+            // throws the moment a second set mounts.
+            const target = await withSetContext(SET_ID, () =>
+              journeyEntryGuardTarget(request, h)
+            )
             return target ? h.redirect(target).takeover() : h.continue
           },
           { sandbox: 'plugin' }

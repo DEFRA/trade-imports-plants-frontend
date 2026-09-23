@@ -1,6 +1,7 @@
 import {
   BASE,
-  journeyIdFromPage
+  journeyIdFromPage,
+  setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
@@ -16,14 +17,15 @@ import { copy } from './copy/copy.en.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 
-const COMMODITY_TYPE_URL = /\/notifications\/[^/]+\/commodity-type$/
-const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details/
-const COMMODITY_LIST_URL = /\/notifications\/[^/]+\/commodities$/
-const COMMODITY_REMOVED_URL =
-  /\/notifications\/[^/]+\/commodities\?removed=\d+$/
-const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
-const HUB_URL = /\/notifications\/[^/]+$/
-const PAGE_URL = /\/notifications\/[^/]+\/identification-numbers/
+const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
+const COMMODITY_DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details')
+const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
+const COMMODITY_REMOVED_URL = setUrl(
+  '/notifications/[^/]+/commodities\\?removed=\\d+$'
+)
+const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
+const HUB_URL = setUrl('/notifications/[^/]+$')
+const PAGE_URL = setUrl('/notifications/[^/]+/identification-numbers')
 
 const COUNTRY_INPUT = 'input#countryOfOrigin'
 

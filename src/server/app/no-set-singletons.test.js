@@ -18,6 +18,10 @@ import { describe, expect, it } from 'vitest'
 
 const APP_DIR = path.dirname(fileURLToPath(import.meta.url))
 
+/** A set id no gateway and no fixture configures, so the seams it reaches for
+ * are genuinely unconfigured. */
+const UNCONFIGURED_SET = 'never-configured'
+
 /** Comments are stripped before matching: a gateway that explains the sandbox
  * option in prose would otherwise be counted as using it. */
 const withoutComments = (source) =>
@@ -40,7 +44,6 @@ const gatewayFiles = () =>
 const SEAMS = [
   'configureObligationSet',
   'configureFulfilmentRegistry',
-  'configureFlowOnlyKeys',
   'configureAnswersForRead',
   'configureReadyForCheckYourAnswers',
   'configureJourneyFlow',
@@ -55,10 +58,12 @@ describe('no set singletons — every gateway is keyed by its set', () => {
   })
 
   it.each(SEAMS)('Should pass the set id first to %s', (seam) => {
+    let totalCalls = 0
     for (const { name, source } of gatewayFiles()) {
       const calls = [
         ...source.matchAll(new RegExp(`\\b${seam}\\(([^,)]*)`, 'g'))
       ]
+      totalCalls += calls.length
       for (const [, firstArgument] of calls) {
         expect(
           firstArgument.trim(),
@@ -66,6 +71,10 @@ describe('no set singletons — every gateway is keyed by its set', () => {
         ).toBe('SET_ID')
       }
     }
+
+    // Without this a seam no gateway calls passes with nothing asserted, so a
+    // seam renamed out of every gateway would leave the tripwire green.
+    expect(totalCalls, `no gateway calls ${seam}`).toBeGreaterThan(0)
   })
 
   it('Should sandbox every lifecycle extension a gateway registers', () => {
@@ -112,12 +121,13 @@ describe('no set singletons — every gateway is keyed by its set', () => {
     }
   })
 
-  it('Should scope its journey cookies to its own base', () => {
+  it('Should register its journey cookies through the set-scoped seam', () => {
     for (const { name, source } of gatewayFiles()) {
-      expect(
-        source,
-        `${name} registers journey cookies without its set base`
-      ).toContain('registerJourneyCookie(server, { base: SET_BASE })')
+      // The path comes from the registered mount, not from an argument, so a
+      // gateway cannot scope its cookies to anything but its own base.
+      expect(source, `${name} never registers its journey cookies`).toContain(
+        'registerJourneyCookie(server)'
+      )
     }
   })
 })
@@ -134,5 +144,21 @@ describe('no set singletons — the set base is derived, never spelled out', () 
 
     expect(SET_BASE).not.toBe('')
     expect(SET_BASE).not.toBe('/')
+  })
+})
+
+describe('no set singletons — cookies are registered after the session seam', () => {
+  it('Should refuse to register journey cookies for a set whose session is unconfigured', async () => {
+    const { registerJourneyCookie } = await import('./engine/journey.js')
+    const { withSetContext } = await import('./shared/set-context.js')
+    // The cookie names come from the configured session seam, so registering
+    // before it is configured would silently register the default names.
+    expect(() =>
+      withSetContext(UNCONFIGURED_SET, () =>
+        registerJourneyCookie({ state: () => {} })
+      )
+    ).toThrow(
+      `Session not configured for set "${UNCONFIGURED_SET}" — call configureSession before registerJourneyCookie`
+    )
   })
 })
