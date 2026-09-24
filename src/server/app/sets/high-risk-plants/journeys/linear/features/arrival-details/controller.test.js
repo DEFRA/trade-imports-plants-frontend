@@ -1,3 +1,4 @@
+import { SET_ID } from '../../../../set.js'
 import {
   afterEach,
   beforeAll,
@@ -52,8 +53,8 @@ const potatoPayload = (overrides = {}) => ({
 })
 
 const installStubs = () => {
-  configureRecords(recordsStub)
-  configureSession(sessionStub)
+  configureRecords(SET_ID, recordsStub)
+  configureSession(SET_ID, sessionStub)
   installHighRiskPlantsJourney()
 }
 
@@ -198,6 +199,53 @@ describe('GET arrival-details — the potato-only fields', () => {
 
     expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     expect(result.view.context.errorSummary).toBeNull()
+  })
+})
+
+describe('GET arrival-details — amend with a stored port the reader no longer offers', () => {
+  const STALE_PORT = 'GB ZZZ'
+
+  beforeAll(installStubs)
+  beforeEach(() => store.clear())
+
+  it('Should blank the port in values so the select renders unselected under potatoes', async () => {
+    const result = await driveHandler(get, {
+      seed: potatoes({ proposedPlaceOfLanding: STALE_PORT })
+    })
+
+    expect(result.view.context.showPotatoFields).toBe(true)
+    expect(result.view.context.values.proposedPlaceOfLanding).toBe('')
+    expect(
+      result.view.context.portItems.find((item) => item.value === STALE_PORT)
+    ).toBeUndefined()
+  })
+
+  it('Should surface a port-no-longer-available error on the port field under potatoes', async () => {
+    const result = await driveHandler(get, {
+      seed: potatoes({ proposedPlaceOfLanding: STALE_PORT })
+    })
+
+    expect(result.view.context.errors.proposedPlaceOfLanding).toBe(
+      'The saved port of landing is no longer available. Select a port from the list.'
+    )
+  })
+
+  it('Should surface no port error under a non-potato commodity where the field is not asked', async () => {
+    const result = await driveHandler(get, {
+      seed: plants({ proposedPlaceOfLanding: STALE_PORT })
+    })
+
+    expect(result.view.context.showPotatoFields).toBe(false)
+    expect(result.view.context.errors.proposedPlaceOfLanding).toBeUndefined()
+  })
+
+  it('Should leave the stored port intact — GET only reshapes what the page renders', async () => {
+    const result = await driveHandler(get, {
+      seed: potatoes({ proposedPlaceOfLanding: STALE_PORT })
+    })
+
+    expect(result.before.proposedPlaceOfLanding).toBe(STALE_PORT)
+    expect(result.after.proposedPlaceOfLanding).toBe(STALE_PORT)
   })
 })
 
@@ -414,7 +462,7 @@ describe('POST arrival-details — accepted answers', () => {
 
 describe('POST arrival-details — save failures', () => {
   beforeAll(() => {
-    configureSession(sessionStub)
+    configureSession(SET_ID, sessionStub)
     installHighRiskPlantsJourney()
   })
 
@@ -431,13 +479,13 @@ describe('POST arrival-details — save failures', () => {
   })
 
   afterEach(() => {
-    configureRecords(recordsStub)
+    configureRecords(SET_ID, recordsStub)
     vi.unstubAllGlobals()
   })
 
   const failingOnControllerCommit = (failure) => {
     let replaceCalls = 0
-    configureRecords({
+    configureRecords(SET_ID, {
       ...recordsStub,
       replaceFulfilment: (...args) => {
         replaceCalls += 1

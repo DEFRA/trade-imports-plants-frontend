@@ -1,5 +1,5 @@
 import { store } from './store.js'
-import { SESSION_COOKIES } from './journey.js'
+import { knownJourneysCookie } from './journey.js'
 
 // Mirrors what plugins/auth.js puts on credentials after sign-in: the raw
 // `currentRelationshipId` claim, plus the `organisationId` it is mapped to.
@@ -17,6 +17,14 @@ export const authenticatedActor = Object.freeze({
   displayName: 'Andrew Farmer',
   organisationId: '5900001'
 })
+
+export const registerTestSessionAuth = (server) => {
+  server.auth.scheme('test-session', () => ({
+    authenticate: (_request, h) =>
+      h.authenticated({ credentials: authenticatedCredentials })
+  }))
+  server.auth.strategy('session', 'test-session')
+}
 
 const stubResponse = (payload) => ({
   payload,
@@ -59,7 +67,7 @@ export const journeyRequest = (journeyId, overrides = {}) => ({
   ...overrides,
   params: { journeyId, ...overrides.params },
   state: {
-    [SESSION_COOKIES.knownJourneys]: [journeyId],
+    [knownJourneysCookie()]: [journeyId],
     ...overrides.state
   }
 })

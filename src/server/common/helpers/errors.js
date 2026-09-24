@@ -1,5 +1,5 @@
 import { statusCodes } from '../constants/status-codes.js'
-import { base, sharedCopy } from '../../app/shared/kit.js'
+import { chromeFor, sharedCopy } from '../../app/shared/kit.js'
 
 const ERROR_PAGE_COPY_KEY = {
   [statusCodes.notFound]: 'notFound',
@@ -27,7 +27,7 @@ export function catchAll(request, h) {
 
   return h
     .view('shared/error', {
-      ...base(errorMessage),
+      ...chromeFor(errorMessage, request.path),
       heading: statusCode,
       message: errorMessage
     })

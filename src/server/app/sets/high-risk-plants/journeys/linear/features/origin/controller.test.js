@@ -1,3 +1,4 @@
+import { SET_BASE, SET_ID } from '../../../../set.js'
 import {
   afterEach,
   beforeAll,
@@ -60,8 +61,8 @@ const consignmentOf = (commodityType, ...lines) => ({
 })
 
 const installStubs = () => {
-  configureRecords(recordsStub)
-  configureSession(sessionStub)
+  configureRecords(SET_ID, recordsStub)
+  configureSession(SET_ID, sessionStub)
   installHighRiskPlantsJourney()
 }
 
@@ -116,7 +117,7 @@ describe('GET origin', () => {
   it('Should send Back to the dashboard while nothing is committed', async () => {
     const result = await driveHandler(get)
 
-    expect(result.view.context.backLink).toBe('/')
+    expect(result.view.context.backLink).toBe(SET_BASE)
   })
 
   it('Should send Back to the overview once the notification has an answer', async () => {
@@ -125,6 +126,47 @@ describe('GET origin', () => {
     })
 
     expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+  })
+})
+
+describe('GET origin — amend with a stored country the reader no longer offers', () => {
+  beforeAll(installStubs)
+  beforeEach(() => store.clear())
+
+  it('Should blank the country in values so the select renders unselected', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(result.view.context.values).toEqual({ countryOfOrigin: '' })
+  })
+
+  it('Should not surface the stale code in the option list', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    const offered = result.view.context.countryItems.map(({ value }) => value)
+    expect(offered).not.toContain(UNOFFERED_COUNTRY)
+  })
+
+  it('Should surface a country-no-longer-available error on the country field', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      'The saved country is no longer available. Select a country from the list.'
+    )
+  })
+
+  it('Should leave the stored country intact — GET only reshapes what the page renders', async () => {
+    const result = await driveHandler(get, {
+      seed: { countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(result.before.countryOfOrigin).toBe(UNOFFERED_COUNTRY)
+    expect(result.after.countryOfOrigin).toBe(UNOFFERED_COUNTRY)
   })
 })
 
@@ -326,7 +368,7 @@ describe('POST origin — an accepted answer', () => {
 
 describe('POST origin — save failures', () => {
   beforeAll(() => {
-    configureSession(sessionStub)
+    configureSession(SET_ID, sessionStub)
     installHighRiskPlantsJourney()
   })
 
@@ -343,13 +385,13 @@ describe('POST origin — save failures', () => {
   })
 
   afterEach(() => {
-    configureRecords(recordsStub)
+    configureRecords(SET_ID, recordsStub)
     vi.unstubAllGlobals()
   })
 
   const failingOnControllerCommit = (failure) => {
     let replaceCalls = 0
-    configureRecords({
+    configureRecords(SET_ID, {
       ...recordsStub,
       replaceFulfilment: (...args) => {
         replaceCalls += 1

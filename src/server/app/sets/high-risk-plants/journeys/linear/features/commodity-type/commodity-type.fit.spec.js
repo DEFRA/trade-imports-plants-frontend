@@ -1,3 +1,8 @@
+import {
+  BASE,
+  journeyIdFromPage,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
@@ -13,13 +18,14 @@ import {
 } from '../timing-windows.js'
 import { copy } from './copy/copy.en.js'
 
-const HUB_URL = /\/notifications\/[^/]+$/
-const PAGE_URL = /\/notifications\/[^/]+\/commodity-type$/
+const HUB_URL = setUrl('/notifications/[^/]+$')
+const PAGE_URL = setUrl('/notifications/[^/]+/commodity-type$')
 // The opening run goes on to the commodities list, and a consignment with no
 // line goes straight on to the entry sub-page.
-const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details$/
+const COMMODITY_DETAILS_URL = setUrl(
+  '/notifications/[^/]+/commodities/details$'
+)
 const TYPE_INPUT_SELECTOR = 'input[name="commodityType"]'
-const HUB_PATH_SEGMENTS = 3
 
 const HINT_DAYS = {
   potatoes: POTATO_DAYS_BEFORE_ARRIVAL,
@@ -37,13 +43,12 @@ const saveAndContinue = (page) =>
   page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
 
 const startAtCommodityType = async (page) => {
-  await page.goto('/')
+  await page.goto(BASE)
   await page.getByRole('button', { name: dashboardCopy.startButton }).click()
   await expect(page).toHaveURL(PAGE_URL)
 }
 
-const hubPathOf = (page) =>
-  new URL(page.url()).pathname.split('/').slice(0, HUB_PATH_SEGMENTS).join('/')
+const hubPathOf = (page) => `${BASE}/notifications/${journeyIdFromPage(page)}`
 
 const expectNoSeriousOrCriticalViolations = async (page, subject) => {
   const results = await new AxeBuilder({ page })
@@ -130,7 +135,7 @@ test.describe('commodity-type feature', () => {
   test('sends Back to the dashboard while the notification has no answer', async ({
     page
   }) => {
-    await expect(backLink(page)).toHaveAttribute('href', '/')
+    await expect(backLink(page)).toHaveAttribute('href', BASE)
   })
 
   test('saves a choice, goes on to the commodities and shows it again on return', async ({
