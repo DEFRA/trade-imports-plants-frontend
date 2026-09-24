@@ -225,6 +225,62 @@ describe('POST commodity-type — an accepted answer', () => {
   })
 })
 
+describe('POST commodity-type — arrival answers purged when scope changes', () => {
+  beforeAll(() => {
+    configureRecords(SET_ID, recordsStub)
+    configureSession(SET_ID, sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
+
+  it('Changing to potatoes clears the arrival-status answer', async () => {
+    const result = await driveHandler(post, {
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: 'FR',
+        commodityLines: [
+          {
+            category: 'plants-for-planting',
+            genus: 'Quercus',
+            species: 'Quercus robur',
+            commodityCode: '0602 20 20',
+            quantity: '120',
+            eppoCode: 'QUERO'
+          }
+        ],
+        arrivalStatus: 'already-arrived'
+      },
+      payload: { commodityType: POTATOES }
+    })
+
+    expect(result.after.commodityType).toBe(POTATOES)
+    expect(result.after.arrivalStatus).toBeUndefined()
+  })
+
+  it('Changing away from potatoes clears the time and place of landing', async () => {
+    const result = await driveHandler(post, {
+      seed: {
+        ...COMPLETE_POTATO_CONSIGNMENT,
+        countryOfOrigin: 'FR',
+        arrivalDate: { day: '27', month: '3', year: '2026' },
+        arrivalTime: '14:30',
+        proposedPlaceOfLanding: 'GB DVR'
+      },
+      payload: { commodityType: PLANTS_FOR_PLANTING }
+    })
+
+    expect(result.after.commodityType).toBe(PLANTS_FOR_PLANTING)
+    // arrivalDate applies to every commodity type; only potato-only fields purge.
+    expect(result.after.arrivalDate).toEqual({
+      day: '27',
+      month: '3',
+      year: '2026'
+    })
+    expect(result.after.arrivalTime).toBeUndefined()
+    expect(result.after.proposedPlaceOfLanding).toBeUndefined()
+  })
+})
+
 describe('POST commodity-type — changing the type of a consignment with lines', () => {
   beforeAll(() => {
     configureRecords(SET_ID, recordsStub)
