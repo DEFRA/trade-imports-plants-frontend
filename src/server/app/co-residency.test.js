@@ -3,8 +3,6 @@
  *
  * This is the suite EUDPA-619 exists to satisfy, so it boots the PRODUCTION
  * router rather than hand-rolling the composition it is meant to be checking.
- * A hand-rolled boot would assert against the test's own wiring: prefixing
- * /signout in router.js, or dropping the / redirect, would leave it green.
  *
  * The second set is a test fixture (test/fixtures/second-set.js) rather than a
  * real journey. Co-residency is a property of the platform, and shipping a
@@ -51,6 +49,7 @@ import {
   secondSet
 } from '../../../test/fixtures/second-set.js'
 import { configureRecords, records } from './engine/persistence/records.js'
+import { registerTestSessionAuth } from './engine/test-support.js'
 import { records as shippedRecords } from './services/persistence/records/index.js'
 import { commodityTypePage } from './sets/high-risk-plants/journeys/linear/features/commodity-type/page.js'
 
@@ -134,6 +133,7 @@ beforeAll(async () => {
       files: { relativeTo: path.resolve(config.get('root'), '.public') }
     }
   })
+  registerTestSessionAuth(server)
   await server.register([nunjucksConfig, router])
   // Mounted the way router.js mounts high-risk-plants. Registering a set without
   // its prefix collides with the root redirect, which is the namespace split
@@ -185,8 +185,7 @@ describe('co-residency — two sets mounted in one process', () => {
       SIGN_IN_OIDC_PATH,
       '/favicon.ico',
       '/health',
-      '/public/{param*}',
-      '/signout'
+      '/public/{param*}'
     ])
   })
 
@@ -514,16 +513,6 @@ describe('co-residency — the server-wide surface stays server-wide', () => {
     expect(response.statusCode).toBe(200)
   })
 
-  it('Should serve /signout outside every set prefix', () => {
-    const paths = server.table().map((route) => route.path)
-
-    // /signout registers perfectly happily at /high-risk-plants/signout and fails
-    // only when a user tries to sign out, so it is pinned rather than trusted.
-    expect(paths).toContain('/signout')
-    expect(paths).not.toContain(`${PLANTS_BASE}/signout`)
-    expect(paths).not.toContain(`${SECOND_SET_BASE}/signout`)
-  })
-
   it('Should serve static assets unprefixed', () => {
     const paths = server.table().map((route) => route.path)
 
@@ -574,6 +563,13 @@ describe('co-residency — the real composition root', () => {
         true
       )
     }
+  })
+
+  it('Should serve /auth/sign-out outside every set prefix', () => {
+    const paths = realServer.table().map((route) => route.path)
+
+    expect(paths).toContain('/auth/sign-out')
+    expect(paths).not.toContain(`${PLANTS_BASE}/auth/sign-out`)
   })
 
   it('Should mount the default set under its prefix in the real server', () => {
