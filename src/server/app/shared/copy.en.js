@@ -2,8 +2,7 @@
  * Shared chrome copy — the only copy that legitimately lives outside a
  * feature folder: the layout (service name, service navigation,
  * back link, error title prefix), the unauthorised page, error-summary
- * title, the recoverable-error banner, the error page's messages,
- * save-actions buttons and journey-strip tags. Every view reaches
+ * title, save-actions buttons and journey-strip tags. Every view reaches
  * it as `sharedCopy` (via `kit.base`, or passed directly by the controllers
  * that build their view models without it).
  */

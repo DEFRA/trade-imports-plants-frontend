@@ -45,11 +45,6 @@ const soleSetId = () => (mounts.size === 1 ? [...mounts.keys()][0] : undefined)
 /**
  * Whether a set can be resolved at all.
  *
- * A server-wide route — the root redirect, the `/auth/*` routes, the sign-in
- * error page, the shared error page reached from outside every set — belongs
- * to no set, so anything set-owned has no answer for it. Ask this before
- * reaching for a set rather than catching the throw.
- *
  * @returns {boolean} true when `currentSetId()` would answer.
  */
 export const hasSetContext = () =>

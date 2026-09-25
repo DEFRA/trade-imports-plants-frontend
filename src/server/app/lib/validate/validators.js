@@ -89,20 +89,6 @@ export const requiredMaxText = (name, max, messages) =>
       })
   )
 
-/**
- * Save-blocking email address with a length cap. One primitive for the same
- * reason as `requiredMaxText`: a shape rule on its own allows the empty
- * string, and composing it onto a required rule would let blank pass. The
- * length rule runs before the shape rule, so an over-long value that is also
- * malformed is told about its length.
- * @param {string} name
- * @param {number} max
- * @param {object} messages
- * @param {string} messages.required - Shown when the value is blank or absent.
- * @param {string} [messages.maxLength] - Shown when the value is over the cap.
- * @param {string} messages.format - Shown when the value is not an email
- * address.
- */
 export const requiredEmail = (name, max, messages) =>
   single(
     name,
