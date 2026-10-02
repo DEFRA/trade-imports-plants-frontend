@@ -7,6 +7,7 @@ import {
 } from '../../../../../../lib/http-status.js'
 import {
   compose,
+  formatMomentAsLongDay,
   requiredOneOf,
   validate
 } from '../../../../../../lib/validate/index.js'
@@ -25,14 +26,6 @@ const fields = compose(
   requiredOneOf('declaration', ['confirmed'], copy.errors.declarationRequired)
 )
 
-const dateText = (value) =>
-  new Date(value).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Europe/London'
-  })
-
 const render = (
   request,
   h,
@@ -49,7 +42,7 @@ const render = (
       recoverableError
     }),
     copy,
-    submissionDate: dateText(requestClock(request)),
+    submissionDate: formatMomentAsLongDay(new Date(requestClock(request))),
     values,
     errors,
     errorSummary: kit.errorSummary(errors)

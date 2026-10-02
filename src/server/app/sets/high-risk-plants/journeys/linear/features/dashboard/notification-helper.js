@@ -1,6 +1,8 @@
-import { format, isValid, parseISO } from 'date-fns'
-
-const LIST_DATE_FORMAT = 'd MMM yyyy'
+import {
+  formatCalendarDate,
+  formatMomentAsDay,
+  parseInstant
+} from '../../../../../../lib/validate/index.js'
 
 export const DEFAULT_NOTIFICATION_SORT = 'arrivalDate,desc'
 
@@ -13,14 +15,24 @@ export const NOTIFICATION_SORT_OPTIONS = [
   'createdAt,asc'
 ]
 
-export const formatDisplayDate = (value) => {
-  if (!value) {
-    return ''
-  }
-
-  const date = typeof value === 'string' ? parseISO(value) : value
-  return isValid(date) ? format(date, LIST_DATE_FORMAT) : ''
+const displayDate = (value, formatter) => {
+  const date = parseInstant(value)
+  return date ? formatter(date) : ''
 }
+
+/**
+ * A day the user chose — an arrival date.
+ * @param {string|Date} value
+ */
+export const formatDisplayCalendarDate = (value) =>
+  displayDate(value, formatCalendarDate)
+
+/**
+ * A moment that happened — created, submitted — as the UK day it fell on.
+ * @param {string|Date} value
+ */
+export const formatDisplayMoment = (value) =>
+  displayDate(value, formatMomentAsDay)
 
 const commodityDisplayValue = (commodity) =>
   commodity.name ?? commodity.text ?? commodity.category ?? commodity.genus

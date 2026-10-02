@@ -1,5 +1,5 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
 import { configureRecords } from '../../../../../../engine/persistence/records.js'
@@ -85,6 +85,26 @@ describe('confirmation', () => {
         late,
         lateRule: copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
       })
+    }
+  )
+
+  it.each([
+    { submittedAt: '2026-10-01T23:29:00Z', expected: '2 October 2026' },
+    { submittedAt: '2026-01-15T23:29:00Z', expected: '15 January 2026' }
+  ])(
+    'Should date a submission at $submittedAt as $expected, the UK day',
+    async ({ submittedAt, expected }) => {
+      vi.useFakeTimers({ toFake: ['Date'], now: new Date(submittedAt) })
+      try {
+        const { journeyId } = await store.create()
+        await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+        await store.submit(journeyId)
+        const h = stubH()
+        await get(journeyRequest(journeyId), h)
+        expect(h.captured.view.context.notificationDate).toBe(expected)
+      } finally {
+        vi.useRealTimers()
+      }
     }
   )
 
