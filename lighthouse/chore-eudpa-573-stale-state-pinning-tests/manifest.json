@@ -1,0 +1,197 @@
+[
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/declaration",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_declaration.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_declaration.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/notification-view",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_notification_view.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_notification_view.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/consignment/contact/select",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_consignment_contact_select.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_consignment_contact_select.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/identification-numbers",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_identification_numbers.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_identification_numbers.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/home.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/home.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/delete",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_delete.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_delete.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/commodity-type",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_commodity_type.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_commodity_type.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/commodities",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_commodities.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_commodities.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/commodities/details",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_commodities_details.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_commodities_details.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/origin",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_origin.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_origin.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-DZA3QP/arrival-status",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_arrival_status.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_arrival_status.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/arrival-details",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_arrival_details.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_arrival_details.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-DZA3QP/consignors/select",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_consignors_select.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_consignors_select.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  },
+  {
+    "url": "http://localhost:3003/notifications/GBN-HRP-26-G1A1VK/destinations/select",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_destinations_select.report.html",
+    "jsonPath": "/home/runner/work/trade-imports-plants-frontend/trade-imports-plants-frontend/frontend/lighthouse-report/notifications_destinations_select.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 0.9,
+      "agentic-browsing": 1
+    }
+  }
+]
