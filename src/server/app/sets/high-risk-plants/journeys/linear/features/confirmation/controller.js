@@ -6,6 +6,10 @@ import {
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
+import {
+  formatMomentAsLongDay,
+  parseInstant
+} from '../../../../../../lib/validate/index.js'
 import { TEMPLATES } from '../../config.js'
 import { confirmationPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -18,16 +22,6 @@ import {
 export const meta = { ...page, collects: [] }
 const copy = copyFor({ en, cy })
 
-// Matches the declaration page's own dateText: submittedAt is a UTC instant,
-// shown in the Europe/London civil date the service reports against.
-const dateText = (value) =>
-  new Date(value).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Europe/London'
-  })
-
 const get = async (request, h) => {
   const { journey, answers } = await state.get(request, h)
   if (journey.status !== state.SUBMITTED) {
@@ -37,7 +31,7 @@ const get = async (request, h) => {
     ...kit.base(copy.title, { journey, page }),
     copy,
     reference: journey.journeyId,
-    notificationDate: dateText(journey.submittedAt),
+    notificationDate: formatMomentAsLongDay(parseInstant(journey.submittedAt)),
     // The stored value committed at first finalise, never recomputed here
     // from submittedAt (c-030).
     late: answers.lateNotificationIndicator === 'late',

@@ -1,6 +1,8 @@
 import { SET_BASE } from '../../../../set.js'
 import { describe, expect, it } from 'vitest'
 
+import { runInZone } from '../../../../../../../common/test-helpers/run-in-zone.js'
+import { SERVICE_TIME_ZONE } from '../../../../../../lib/validate/index.js'
 import {
   buildDashboardListQueryString,
   buildPageResultsRange,
@@ -8,7 +10,8 @@ import {
   buildPaginationLinks,
   DEFAULT_NOTIFICATION_SORT,
   formatCommodity,
-  formatDisplayDate,
+  formatDisplayCalendarDate,
+  formatDisplayMoment,
   NOTIFICATION_SORT_OPTIONS,
   normalizePageNumber,
   parseNotificationSort
@@ -210,14 +213,41 @@ describe('#buildPageResultsRangeLabel', () => {
   })
 })
 
-describe('#formatDisplayDate', () => {
+describe('#formatDisplayCalendarDate', () => {
   it('Should format an ISO date for the list', () => {
-    expect(formatDisplayDate('2026-03-05')).toBe('5 Mar 2026')
+    expect(formatDisplayCalendarDate('2026-03-05')).toBe('5 Mar 2026')
+  })
+
+  it('Should keep the chosen day in a Europe/London process', () => {
+    runInZone(SERVICE_TIME_ZONE, () => {
+      expect(formatDisplayCalendarDate('2026-07-21')).toBe('21 Jul 2026')
+    })
   })
 
   it('Should answer an empty string for a missing or unparseable value', () => {
-    expect(formatDisplayDate(null)).toBe('')
-    expect(formatDisplayDate('not-a-date')).toBe('')
+    expect(formatDisplayCalendarDate(null)).toBe('')
+    expect(formatDisplayCalendarDate('not-a-date')).toBe('')
+  })
+})
+
+describe('#formatDisplayMoment', () => {
+  it('Should date a moment in the first hour of a BST day on the UK day', () => {
+    expect(formatDisplayMoment('2026-10-01T23:29:00Z')).toBe('2 Oct 2026')
+  })
+
+  it('Should date a late-evening GMT moment on the same day', () => {
+    expect(formatDisplayMoment('2026-01-15T23:29:00Z')).toBe('15 Jan 2026')
+  })
+
+  it('Should date a backend timestamp with no zone on the UK day in a Europe/London process', () => {
+    runInZone(SERVICE_TIME_ZONE, () => {
+      expect(formatDisplayMoment('2026-10-01T23:29:00')).toBe('2 Oct 2026')
+    })
+  })
+
+  it('Should answer an empty string for a missing or unparseable value', () => {
+    expect(formatDisplayMoment(null)).toBe('')
+    expect(formatDisplayMoment('not-a-date')).toBe('')
   })
 })
 

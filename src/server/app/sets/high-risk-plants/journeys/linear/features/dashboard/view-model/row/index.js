@@ -2,7 +2,8 @@ import { journeyStrip } from '../../../../../../../../shared/kit.js'
 import * as countries from '../../../../../../../../services/countries/index.js'
 import {
   formatCommodity,
-  formatDisplayDate
+  formatDisplayCalendarDate,
+  formatDisplayMoment
 } from '../../notification-helper.js'
 import { rowActions } from './actions.js'
 
@@ -25,10 +26,10 @@ export const toRow = async (journey) => {
     late: Boolean(journey.lateNotificationIndicator),
     commodity: formatCommodity(journey.commodity),
     origin: originLabel ?? journey.originCountryCode ?? '',
-    arrival: formatDisplayDate(journey.arrivalDate),
+    arrival: formatDisplayCalendarDate(journey.arrivalDate),
     consignor: journey.consignorName ?? '',
-    created: formatDisplayDate(journey.createdAt),
-    submitted: formatDisplayDate(journey.submittedAt),
+    created: formatDisplayMoment(journey.createdAt),
+    submitted: formatDisplayMoment(journey.submittedAt),
     actions: rowActions(journey, reference)
   }
 }
