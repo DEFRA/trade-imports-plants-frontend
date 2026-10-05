@@ -124,6 +124,18 @@ export const formatDateText = (date) =>
   `${date.getUTCDate()}/${date.getUTCMonth() + 1}/${date.getUTCFullYear()}`
 
 /**
+ * @param {string} text - An ISO 8601 date or date-time, with or without a zone.
+ * @returns {string} The same value with a zone: UTC wherever none was given.
+ */
+const labelAsUtc = (text) => {
+  const [, time] = text.split(TIME_DELIMITER)
+  if (time === undefined) {
+    return `${text}T00:00:00Z`
+  }
+  return ZONE_DESIGNATOR.test(time) ? text : `${text}Z`
+}
+
+/**
  * Reads a wire value as the instant it stands for, whatever the process zone.
  *
  * The plants backend stamps `created` and `submittedAt` as `LocalDateTime` on a
@@ -143,13 +155,7 @@ export const parseInstant = (value) => {
   if (value instanceof Date) {
     return isValid(value) ? value : null
   }
-  const text = String(value)
-  const [, time] = text.split(TIME_DELIMITER)
-  const labelled =
-    time === undefined
-      ? `${text}T00:00:00Z`
-      : `${text}${ZONE_DESIGNATOR.test(time) ? '' : 'Z'}`
-  const date = parseISO(labelled)
+  const date = parseISO(labelAsUtc(String(value)))
   return isValid(date) ? date : null
 }
 
