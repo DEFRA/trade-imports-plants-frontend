@@ -52,25 +52,23 @@
   }
 }
 
-.notification-list {
-  &__card-row {
-    margin-top: 0;
-    margin-bottom: govuk-spacing(3);
+.notification-list__card-row {
+  margin-top: 0;
+  margin-bottom: govuk-spacing(3);
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+  &:last-child {
+    margin-bottom: 0;
+  }
 
-    dt {
-      @include govuk-font($size: 16, $weight: bold);
-      margin-bottom: govuk-spacing(1);
-    }
+  dt {
+    @include govuk-font($size: 16, $weight: bold);
+    margin-bottom: govuk-spacing(1);
+  }
 
-    dd {
-      @include govuk-font($size: 19);
-      @include govuk-text-break-word;
-      margin: 0;
-    }
+  dd {
+    @include govuk-font($size: 19);
+    @include govuk-text-break-word;
+    margin: 0;
   }
 }
 
