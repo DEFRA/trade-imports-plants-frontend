@@ -1,10 +1,14 @@
-import neostandard from 'neostandard'
+import path from 'node:path'
+import { includeIgnoreFile } from 'eslint/config'
+import { neostandard } from 'neostandard'
 import sonarjs from 'eslint-plugin-sonarjs'
 
 export default [
+  // neostandard 0.14 scopes `ignores` to its own layers, so gitignored
+  // output (.public, coverage, playwright-report) needs a global ignore
+  includeIgnoreFile(path.join(import.meta.dirname, '.gitignore')),
   ...neostandard({
     env: ['node', 'vitest'],
-    ignores: [...neostandard.resolveIgnoresFromGitignore()],
     noJsx: true,
     noStyle: true
   }),
