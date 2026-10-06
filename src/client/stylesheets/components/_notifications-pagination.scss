@@ -12,16 +12,19 @@
     flex-direction: column;
   }
 
-  &__link {
-    display: inline-block;
-    text-decoration: none;
+}
 
-    &:hover .notifications-pagination__page,
-    &:focus .notifications-pagination__page {
-      text-decoration-thickness: max(3px, 0.1875rem, 0.12em);
-    }
+.notifications-pagination__link {
+  display: inline-block;
+  text-decoration: none;
+
+  &:hover .notifications-pagination__page,
+  &:focus .notifications-pagination__page {
+    text-decoration-thickness: max(3px, 0.1875rem, 0.12em);
   }
+}
 
+.notifications-pagination {
   &__label {
     display: block;
     @include govuk-font($size: 19, $weight: bold);
