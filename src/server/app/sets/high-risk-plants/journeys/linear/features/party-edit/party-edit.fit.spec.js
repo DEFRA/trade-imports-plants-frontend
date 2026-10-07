@@ -116,9 +116,9 @@ test.describe('edit a copied address', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: copy.title })
     ).toBeVisible()
-    await expect(page.locator('span.govuk-caption-l')).toHaveText(
-      pickerCopy.parties.contactAddress.title
-    )
+    await expect(
+      page.getByText(pickerCopy.parties.contactAddress.title, { exact: true })
+    ).toBeVisible()
     await expect(page.getByLabel(copy.fields.name)).toHaveValue(TECH_IMPORTS)
     await expect(page.getByLabel(copy.fields.county)).toBeVisible()
     await expect(page.getByLabel(copy.fields.countryCode)).toHaveValue('GB')
