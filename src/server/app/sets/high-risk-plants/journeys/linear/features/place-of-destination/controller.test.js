@@ -261,7 +261,9 @@ describe('GET place-of-destination — the address book it offers', () => {
     })
 
     expect(checkedId(result)).toBe(TECH_IMPORTS)
-    expect(result.view.context.picker.selected.name).toBe('Tech Imports Ltd')
+    expect(result.view.context.picker.tickedRecord.name).toBe(
+      'Tech Imports Ltd'
+    )
   })
 
   it('Should carry a selection the query string names over the stored one', async () => {
@@ -282,7 +284,7 @@ describe('GET place-of-destination — the address book it offers', () => {
       seed: potatoes({ placeOfDestination: pickedFrom(NOT_IN_THE_BOOK) })
     })
 
-    expect(result.view.context.picker.selected).toBeUndefined()
+    expect(result.view.context.picker.tickedRecord).toBeUndefined()
     expect(checkedId(result)).toBeUndefined()
   })
 })
@@ -445,7 +447,7 @@ describe('place-of-destination — a destination the organisation has deleted', 
       seed: potatoes({ placeOfDestination: pickedFrom(DELETED_ID) })
     })
 
-    expect(result.view.context.picker.selected).toBeUndefined()
+    expect(result.view.context.picker.tickedRecord).toBeUndefined()
     expect(checkedId(result)).toBeUndefined()
   })
 
@@ -542,7 +544,7 @@ describe('GET place-of-destination — the address this notification holds', () 
       seed: potatoes({ placeOfDestination: copied(TECH_IMPORTS) })
     })
 
-    expect(result.view.context.currentAddress).toMatchObject({
+    expect(result.view.context.heldCopy).toMatchObject({
       title: 'Current place of destination',
       name: 'Tech Imports Ltd',
       editHref: `${hubPath(result.journeyId)}/destinations/edit?return=destinations%2Fselect`

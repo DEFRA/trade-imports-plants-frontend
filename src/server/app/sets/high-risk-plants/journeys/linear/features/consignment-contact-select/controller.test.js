@@ -229,7 +229,7 @@ describe('GET contact — the address book it offers', () => {
     })
 
     expect(checkedId(result)).toBe(TECH_IMPORTS)
-    expect(result.view.context.picker.selected.name).toBe(TECH_IMPORTS_NAME)
+    expect(result.view.context.picker.tickedRecord.name).toBe(TECH_IMPORTS_NAME)
   })
 
   it('Should carry a selection the query string names over the stored one', async () => {
@@ -251,7 +251,7 @@ describe('GET contact — the address book it offers', () => {
       seed: plants({ contactAddress: pickedFrom(NOT_IN_THE_BOOK) })
     })
 
-    expect(result.view.context.picker.selected).toBeUndefined()
+    expect(result.view.context.picker.tickedRecord).toBeUndefined()
     expect(checkedId(result)).toBeUndefined()
   })
 })
@@ -461,7 +461,7 @@ describe('contact — a record the organisation has deleted', () => {
       seed: plants({ contactAddress: pickedFrom(DELETED_ID) })
     })
 
-    expect(result.view.context.picker.selected).toBeUndefined()
+    expect(result.view.context.picker.tickedRecord).toBeUndefined()
     expect(checkedId(result)).toBeUndefined()
   })
 
@@ -563,7 +563,7 @@ describe('POST contact — accepted answers', () => {
       seed: plants({ contactAddress: copied(TECH_IMPORTS) })
     })
 
-    expect(result.view.context.currentAddress).toMatchObject({
+    expect(result.view.context.heldCopy).toMatchObject({
       title: 'Current contact address',
       name: TECH_IMPORTS_NAME,
       editHref: `${hubPath(result.journeyId)}/consignment/contact/edit?return=consignment%2Fcontact%2Fselect`

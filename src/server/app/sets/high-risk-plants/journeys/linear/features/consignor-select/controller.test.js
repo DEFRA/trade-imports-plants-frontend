@@ -225,7 +225,9 @@ describe('GET consignor-select — the address book it offers', () => {
     })
 
     expect(checkedId(result)).toBe(TECH_IMPORTS)
-    expect(result.view.context.picker.selected.name).toBe('Tech Imports Ltd')
+    expect(result.view.context.picker.tickedRecord.name).toBe(
+      'Tech Imports Ltd'
+    )
   })
 
   it('Should carry a selection the query string names over the stored one', async () => {
@@ -246,7 +248,7 @@ describe('GET consignor-select — the address book it offers', () => {
       seed: plants({ consignor: pickedFrom(NOT_IN_THE_BOOK) })
     })
 
-    expect(result.view.context.picker.selected).toBeUndefined()
+    expect(result.view.context.picker.tickedRecord).toBeUndefined()
     expect(checkedId(result)).toBeUndefined()
   })
 })
@@ -407,7 +409,7 @@ describe('consignor-select — a consignor the organisation has deleted', () => 
       seed: plants({ consignor: pickedFrom(DELETED_ID) })
     })
 
-    expect(result.view.context.picker.selected).toBeUndefined()
+    expect(result.view.context.picker.tickedRecord).toBeUndefined()
     expect(checkedId(result)).toBeUndefined()
   })
 
@@ -507,7 +509,7 @@ describe('GET consignor-select — the address this notification holds', () => {
       query: { change: '1' }
     })
 
-    expect(result.view.context.currentAddress).toEqual({
+    expect(result.view.context.heldCopy).toEqual({
       title: 'Current consignor or exporter',
       name: EDITED_NAME,
       summary: '18 Dockside Road, London, E14 9GE, United Kingdom',
@@ -519,7 +521,7 @@ describe('GET consignor-select — the address this notification holds', () => {
   it('Should show no current address before one is picked', async () => {
     const result = await driveHandler(get, { seed: plants() })
 
-    expect(result.view.context.currentAddress).toBeNull()
+    expect(result.view.context.heldCopy).toBeNull()
   })
 })
 

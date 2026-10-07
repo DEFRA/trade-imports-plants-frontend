@@ -24,8 +24,7 @@ export const chosenFor = async (orgId, selectedId) => {
   return record && !record.deleted ? record : undefined
 }
 
-/** The copy held for the role, which an edit can make differ from the ticked record. */
-const currentAddressOf = async (request, current, fieldName) => {
+const heldCopyOf = async (request, current, fieldName) => {
   const partyDisplayValues = await toDisplayParty(current.answers[fieldName])
   if (!partyDisplayValues) {
     return null
@@ -86,10 +85,10 @@ export const renderPicker = async (
 ) => {
   const orgId = organisationIdOf(request)
   const found = await addressBook.search(orgId, { query, page: pageNumber })
-  const selected = await chosenFor(orgId, selectedId)
+  const tickedRecord = await chosenFor(orgId, selectedId)
   // A record that no longer resolves must not travel as "Selected address" or
   // in the paging links, so it counts as no selection here too.
-  const effectiveSelectedId = selected ? selectedId : ''
+  const effectiveSelectedId = tickedRecord ? selectedId : ''
 
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -102,13 +101,13 @@ export const renderPicker = async (
     copy,
     heading,
     description,
-    currentAddress: await currentAddressOf(request, current, fieldName),
+    heldCopy: await heldCopyOf(request, current, fieldName),
     errorSummary: kit.errorSummary(error ? { [fieldName]: error } : undefined, {
       href: () => (found.results.length > 0 ? `#${fieldName}` : '#q')
     }),
     picker: pickerViewModel(
       current.journey.journeyId,
-      { query, selectedId: effectiveSelectedId, error, found, selected },
+      { query, selectedId: effectiveSelectedId, error, found, tickedRecord },
       copy
     )
   })
