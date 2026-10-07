@@ -73,7 +73,7 @@ collide; `npm run test:fit:ci` does this for you.
 This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), is the
-composition seam that wires all ten. The unit suite installs a synthetic journey-neutral fixture
+composition seam that wires all nine. The unit suite installs a synthetic journey-neutral fixture
 from `test/fixtures/` instead — the engine must not depend on the set.
 
 ## The served surface today
