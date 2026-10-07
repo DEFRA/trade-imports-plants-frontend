@@ -10,6 +10,9 @@ import { copy as cy } from '../copy/copy.cy.js'
 import { row, readOnlyRow } from './rows/summary-row.js'
 import { changeAction, editableActions } from './rows/change-link.js'
 import { dateText } from './rows/value-text.js'
+import { CYA_SLUG } from '../../../../../../../shared/kit.js'
+import { partyOf } from '../../../parties/index.js'
+import { partyEditHref } from '../../party-edit/edit-href.js'
 import { copy as arrivalEn } from '../../arrival-details/copy/copy.en.js'
 import { copy as arrivalCy } from '../../arrival-details/copy/copy.cy.js'
 import { copy as destinationEn } from '../../place-of-destination/copy/copy.en.js'
@@ -46,9 +49,23 @@ const IDENTIFIERS = [
   'consignmentNumber'
 ]
 
+/** Change picks a different address; Edit details changes the copy this
+ * notification holds, so it is offered only once there is one. */
+const partyActions = (field, title, party, journeyId) => {
+  const actions = changeAction(journeyId, field, title)
+  if (party) {
+    actions.items.push({
+      href: partyEditHref(journeyId, partyOf(field), CYA_SLUG),
+      text: copy.editDetails,
+      visuallyHiddenText: title
+    })
+  }
+  return actions
+}
+
 const partyCard = (field, title, party, journeyId, readOnly) => ({
   title,
-  ...editableActions(readOnly, changeAction(journeyId, field, title)),
+  ...editableActions(readOnly, partyActions(field, title, party, journeyId)),
   rows: [
     readOnlyRow(copy.labels.name, party?.name),
     readOnlyRow(

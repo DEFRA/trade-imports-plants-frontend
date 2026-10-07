@@ -14,6 +14,7 @@ export const copy = {
 
   title: 'Check your answers',
   change: 'Change',
+  editDetails: 'Edit details',
   cancelAmend: {
     link: 'Cancel amendment',
     successTitle: 'Success',
@@ -24,8 +25,10 @@ export const copy = {
   continue: 'Continue',
   errors: {
     parties: {
-      consignor: 'Select an address for the consignor',
-      placeOfDestination: 'Select an address for the place of destination'
+      consignor: 'Correct the address details for the consignor or exporter',
+      placeOfDestination:
+        'Correct the address details for the place of destination',
+      contactAddress: 'Correct the contact address details for this consignment'
     }
   },
   submit: {

@@ -15,6 +15,8 @@
   <h1 class="govuk-heading-l">{{ heading }}</h1>
   <p class="govuk-body">{{ description }}</p>
 
+  {% include "high-risk-plants/journeys/linear/features/address-book-picker/current-address.njk" %}
+
   <form method="post" novalidate data-module="app-address-book-picker">
     <input type="hidden" name="crumb" value="{{ crumb }}" />
     <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />

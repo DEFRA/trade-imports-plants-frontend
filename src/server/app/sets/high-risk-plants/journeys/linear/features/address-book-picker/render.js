@@ -2,10 +2,18 @@ import { hubPath } from '../../../../../../shared/paths.js'
 import * as kit from '../../../../../../shared/kit.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
+import { copyFor } from '../../../../../../shared/copy.js'
+import { partyOf } from '../../parties/index.js'
+import { toDisplayParty } from '../../parties/picked-party.js'
+import { partyEditHref } from '../party-edit/edit-href.js'
+import { copy as en } from './copy/copy.en.js'
+import { copy as cy } from './copy/copy.cy.js'
+import { addressText } from './address-lines.js'
+
+const cardCopy = copyFor({ en, cy })
 
 /** A selection resolves only to a record the book still holds: a missing or
- * soft-deleted id is treated as no selection, the same way a stored reference
- * to a deleted record reads as never entered. An outage is not that — the
+ * soft-deleted id is treated as no selection. An outage is not that — the
  * address book throws and the throw propagates, because an unavailable service
  * must never be indistinguishable from a deletion. */
 export const chosenFor = async (orgId, selectedId) => {
@@ -14,6 +22,27 @@ export const chosenFor = async (orgId, selectedId) => {
   }
   const record = await addressBook.party(orgId, selectedId)
   return record && !record.deleted ? record : undefined
+}
+
+/** The address this notification holds for the role, which may have been
+ * edited since it was picked, with the link that edits it. */
+const currentAddressOf = async (request, current, fieldName) => {
+  const display = await toDisplayParty(current.answers[fieldName])
+  if (!display) {
+    return null
+  }
+  const party = partyOf(fieldName)
+  return {
+    title: party.current,
+    name: display.name,
+    summary: [addressText(display.address), display.address.country]
+      .filter(Boolean)
+      .join(', '),
+    editDetails: cardCopy.editDetails,
+    editHref: partyEditHref(current.journey.journeyId, party, party.slug, {
+      change: kit.changeContext(request)
+    })
+  }
 }
 
 /**
@@ -53,8 +82,8 @@ export const renderPicker = async (
   const orgId = organisationIdOf(request)
   const found = await addressBook.search(orgId, { query, page: pageNumber })
   const selected = await chosenFor(orgId, selectedId)
-  // A reference that no longer resolves must not travel as "Selected address"
-  // or in the paging links, so it counts as no selection here too.
+  // A record that no longer resolves must not travel as "Selected address" or
+  // in the paging links, so it counts as no selection here too.
   const effectiveSelectedId = selected ? selectedId : ''
 
   return h.view(view, {
@@ -68,6 +97,7 @@ export const renderPicker = async (
     copy,
     heading,
     description,
+    currentAddress: await currentAddressOf(request, current, fieldName),
     errorSummary: kit.errorSummary(error ? { [fieldName]: error } : undefined, {
       href: () => (found.results.length > 0 ? `#${fieldName}` : '#q')
     }),

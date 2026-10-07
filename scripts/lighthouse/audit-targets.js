@@ -50,7 +50,8 @@ export const FILLED_BY = new Map([
   // asked of plants and wood alone, so the audit reads the page on a plants
   // notification rather than one that never sees it.
   ['/notifications/{journeyId}/arrival-status', 'plantsForPlanting'],
-  ['/notifications/{journeyId}/consignors/select', 'plantsForPlanting']
+  ['/notifications/{journeyId}/consignors/select', 'plantsForPlanting'],
+  ['/notifications/{journeyId}/consignors/edit', 'plantsForPlanting']
 ])
 
 /** Query strings a route needs before it will render rather than redirect.

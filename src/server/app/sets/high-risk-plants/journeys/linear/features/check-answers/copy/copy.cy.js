@@ -15,6 +15,7 @@ export const copy = {
 
   title: 'Gwiriwch eich atebion',
   change: 'Newid',
+  editDetails: 'Golygu manylion',
   cancelAmend: {
     link: 'Canslo’r diwygiad',
     successTitle: 'Llwyddiant',
@@ -25,8 +26,11 @@ export const copy = {
   continue: 'Parhau',
   errors: {
     parties: {
-      consignor: 'Dewiswch gyfeiriad ar gyfer yr anfonwr',
-      placeOfDestination: 'Dewiswch gyfeiriad ar gyfer y man cyrchfan'
+      consignor: 'Cywirwch fanylion y cyfeiriad ar gyfer yr anfonwr',
+      placeOfDestination:
+        'Cywirwch fanylion y cyfeiriad ar gyfer y man cyrchfan',
+      contactAddress:
+        'Cywirwch fanylion y cyfeiriad cyswllt ar gyfer y llwyth hwn'
     }
   },
   submit: {
