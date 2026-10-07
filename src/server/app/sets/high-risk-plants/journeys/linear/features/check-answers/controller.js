@@ -24,15 +24,17 @@ export const meta = { ...page, collects: [] }
 const view = `${TEMPLATES}/features/check-answers/template`
 const copy = copyFor({ en, cy })
 
-const partiesFor = async ({ answers, scope }) => {
-  const parties = {}
+const partyDisplayValuesFor = async ({ answers, scope }) => {
+  const partyDisplayValuesById = {}
   for (const { id } of PARTIES) {
-    const party = scope.has(id) ? await toDisplayParty(answers[id]) : undefined
-    if (party) {
-      parties[id] = party
+    const partyDisplayValues = scope.has(id)
+      ? await toDisplayParty(answers[id])
+      : undefined
+    if (partyDisplayValues) {
+      partyDisplayValuesById[id] = partyDisplayValues
     }
   }
-  return parties
+  return partyDisplayValuesById
 }
 
 /** Party errors are keyed `party:<id>` so their summary entries link to the
@@ -61,7 +63,7 @@ const summaryErrors = ({ answerErrors, partyErrors }) => ({
 
 const render = async (request, h, current, disableAutoFocus = true) => {
   const readOnly = current.journey.status === state.SUBMITTED
-  const parties = await partiesFor(current)
+  const partyDisplayValuesById = await partyDisplayValuesFor(current)
   const errors = readOnly ? {} : summaryErrors(await reviewErrors(current))
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -85,7 +87,7 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       current.answers.commodityType === 'potatoes'
         ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
-    sections: await buildSections(current, parties, readOnly),
+    sections: await buildSections(current, partyDisplayValuesById, readOnly),
     errorSummary: kit.errorSummary(errors, {
       href: summaryHref(current.journey.journeyId),
       disableAutoFocus

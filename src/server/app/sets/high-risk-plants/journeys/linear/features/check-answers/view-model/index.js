@@ -49,11 +49,12 @@ const IDENTIFIERS = [
   'consignmentNumber'
 ]
 
-const partyActions = (field, title, party, journeyId) => {
+const partyActions = (field, title, partyDisplayValues, journeyId) => {
   const actions = changeAction(journeyId, field, title)
-  if (party) {
+  if (partyDisplayValues) {
+    const partyRegistryEntry = partyOf(field)
     actions.items.push({
-      href: partyEditHref(journeyId, partyOf(field), CYA_SLUG),
+      href: partyEditHref(journeyId, partyRegistryEntry, CYA_SLUG),
       text: copy.editDetails,
       visuallyHiddenText: title
     })
@@ -61,20 +62,32 @@ const partyActions = (field, title, party, journeyId) => {
   return actions
 }
 
-const partyCard = (field, title, party, journeyId, readOnly) => ({
+const partyCard = (field, title, partyDisplayValues, journeyId, readOnly) => ({
   title,
-  ...editableActions(readOnly, partyActions(field, title, party, journeyId)),
+  ...editableActions(
+    readOnly,
+    partyActions(field, title, partyDisplayValues, journeyId)
+  ),
   rows: [
-    readOnlyRow(copy.labels.name, party?.name),
+    readOnlyRow(copy.labels.name, partyDisplayValues?.name),
     readOnlyRow(
       copy.labels.address,
-      party &&
-        [addressText(party.address), party.address?.country]
+      partyDisplayValues &&
+        [
+          addressText(partyDisplayValues.address),
+          partyDisplayValues.address?.country
+        ]
           .filter(Boolean)
           .join(', ')
     ),
-    readOnlyRow(copy.labels.telephoneNumber, party?.address?.telephoneNumber),
-    readOnlyRow(copy.labels.emailAddress, party?.address?.emailAddress)
+    readOnlyRow(
+      copy.labels.telephoneNumber,
+      partyDisplayValues?.address?.telephoneNumber
+    ),
+    readOnlyRow(
+      copy.labels.emailAddress,
+      partyDisplayValues?.address?.emailAddress
+    )
   ]
 })
 
@@ -114,7 +127,7 @@ const commodityCards = (answers, evaluation, journeyId, readOnly) =>
  */
 const sectionContext = async (
   { journey, answers, scope, evaluation },
-  parties,
+  partyDisplayValuesById,
   readOnly
 ) => {
   const journeyId = journey.journeyId
@@ -133,7 +146,7 @@ const sectionContext = async (
     answers,
     scope,
     evaluation,
-    parties,
+    partyDisplayValuesById,
     journeyId,
     readOnly,
     arrivalState: arrivalStateOf(answers, scope),
@@ -195,7 +208,7 @@ const arrivalRows = ({
 ]
 
 const arrivalSection = (context) => {
-  const { arrivalState, parties, journeyId, readOnly } = context
+  const { arrivalState, partyDisplayValuesById, journeyId, readOnly } = context
   return {
     heading: copy.sections.arrival,
     cards: [
@@ -203,7 +216,7 @@ const arrivalSection = (context) => {
       partyCard(
         'placeOfDestination',
         destinationCopy.headings[arrivalState],
-        parties.placeOfDestination,
+        partyDisplayValuesById.placeOfDestination,
         journeyId,
         readOnly
       )
@@ -213,7 +226,7 @@ const arrivalSection = (context) => {
 
 const partiesSection = ({
   scope,
-  parties,
+  partyDisplayValuesById,
   journeyId,
   readOnly,
   scopedRows
@@ -225,7 +238,7 @@ const partiesSection = ({
           partyCard(
             'consignor',
             copy.cards.consignor,
-            parties.consignor,
+            partyDisplayValuesById.consignor,
             journeyId,
             readOnly
           )
@@ -235,15 +248,23 @@ const partiesSection = ({
     partyCard(
       'contactAddress',
       copy.cards.contact,
-      parties.contactAddress,
+      partyDisplayValuesById.contactAddress,
       journeyId,
       readOnly
     )
   ]
 })
 
-export const buildSections = async (journeyState, parties, readOnly) => {
-  const context = await sectionContext(journeyState, parties, readOnly)
+export const buildSections = async (
+  journeyState,
+  partyDisplayValuesById,
+  readOnly
+) => {
+  const context = await sectionContext(
+    journeyState,
+    partyDisplayValuesById,
+    readOnly
+  )
   return [
     consignmentSection(context),
     arrivalSection(context),

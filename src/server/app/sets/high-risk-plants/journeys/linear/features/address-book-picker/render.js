@@ -26,21 +26,27 @@ export const chosenFor = async (orgId, selectedId) => {
 
 /** The copy held for the role, which an edit can make differ from the ticked record. */
 const currentAddressOf = async (request, current, fieldName) => {
-  const display = await toDisplayParty(current.answers[fieldName])
-  if (!display) {
+  const partyDisplayValues = await toDisplayParty(current.answers[fieldName])
+  if (!partyDisplayValues) {
     return null
   }
-  const party = partyOf(fieldName)
+  const partyRegistryEntry = partyOf(fieldName)
   return {
-    title: party.current,
-    name: display.name,
-    summary: [addressText(display.address), display.address.country]
+    title: partyRegistryEntry.current,
+    name: partyDisplayValues.name,
+    summary: [
+      addressText(partyDisplayValues.address),
+      partyDisplayValues.address.country
+    ]
       .filter(Boolean)
       .join(', '),
     editDetails: cardCopy.editDetails,
-    editHref: partyEditHref(current.journey.journeyId, party, party.slug, {
-      change: kit.changeContext(request)
-    })
+    editHref: partyEditHref(
+      current.journey.journeyId,
+      partyRegistryEntry,
+      partyRegistryEntry.slug,
+      { change: kit.changeContext(request) }
+    )
   }
 }
 
