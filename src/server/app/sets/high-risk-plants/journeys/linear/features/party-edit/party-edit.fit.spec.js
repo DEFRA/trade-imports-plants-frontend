@@ -32,6 +32,7 @@ const WOOD_LINE_FIELDS = {
 }
 
 const TECH_IMPORTS = 'Tech Imports Ltd'
+const TECH_IMPORTS_POSTCODE = 'E14 9GE'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const CURRENT_CONTACT = pickerCopy.parties.contactAddress.current
 
@@ -137,6 +138,7 @@ test.describe('edit a copied address', () => {
   test('shows the address-book message for a field that breaks the rules, and saves nothing', async ({
     page
   }) => {
+    await page.getByLabel(copy.fields.name).fill(EDITED_NAME)
     await page.getByLabel(copy.fields.postcode).fill('')
     await page.getByRole('button', { name: copy.save }).click()
 
@@ -146,6 +148,13 @@ test.describe('edit a copied address', () => {
     await expect(link).toBeVisible()
     await link.click()
     await expect(page.getByLabel(copy.fields.postcode)).toBeFocused()
+
+    await page.goto(
+      `${BASE}/notifications/${journeyIdFromPage(page)}/consignment/contact/select`
+    )
+    await expect(currentContactCard(page)).toContainText(TECH_IMPORTS)
+    await expect(currentContactCard(page)).toContainText(TECH_IMPORTS_POSTCODE)
+    await expect(currentContactCard(page)).not.toContainText(EDITED_NAME)
   })
 
   test('cancel leaves the copy as it was', async ({ page }) => {
