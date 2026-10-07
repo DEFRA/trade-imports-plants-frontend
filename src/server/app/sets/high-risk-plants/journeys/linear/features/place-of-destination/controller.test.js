@@ -69,7 +69,6 @@ const MATCHES_NOTHING = 'nothing matches this'
 
 const potatoes = (answers = {}) => ({ commodityType: POTATOES, ...answers })
 
-/** The copy the picker commits for a stub-book record. */
 const copied = (id) =>
   answerForPickedParty(STUB_BOOK.find((record) => record.id === id))
 

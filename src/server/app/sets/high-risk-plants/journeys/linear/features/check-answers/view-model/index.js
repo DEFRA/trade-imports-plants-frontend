@@ -49,8 +49,6 @@ const IDENTIFIERS = [
   'consignmentNumber'
 ]
 
-/** Change picks a different address; Edit details changes the copy this
- * notification holds, so it is offered only once there is one. */
 const partyActions = (field, title, party, journeyId) => {
   const actions = changeAction(journeyId, field, title)
   if (party) {

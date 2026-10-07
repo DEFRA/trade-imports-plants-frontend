@@ -84,8 +84,6 @@ const saveOrigin = async (page, reference) => {
   await saveAndContinue(page).click()
 }
 
-/** Picks Tech Imports as the contact, reopens the picker and follows the
- * current contact card's Edit details link. */
 const openContactEdit = async (page) => {
   const reference = await startNotification(page)
   await addWoodLine(page)

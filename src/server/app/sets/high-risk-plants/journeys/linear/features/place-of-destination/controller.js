@@ -28,8 +28,7 @@ import { copy as cy } from './copy/copy.cy.js'
  * picker needs no client JavaScript at all.
  *
  * The answer stored is a copy of the chosen record, so a later edit or
- * deletion in the address book does not change the notification. Saving with
- * nothing ticked keeps a copy already held.
+ * deletion in the address book does not change the notification.
  */
 export const meta = { ...page, collects: [PLACE_OF_DESTINATION] }
 

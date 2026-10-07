@@ -220,8 +220,6 @@ describe('#auditPaths', () => {
       // the one that reaches it without an arrival status.
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/select`,
-      // The edit pages render once the seed has picked each party's address;
-      // the consignor is asked of plants and wood alone, as on its picker.
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/edit`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/edit`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/consignment/contact/edit`

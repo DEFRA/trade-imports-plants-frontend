@@ -68,9 +68,7 @@ const render = async (
 const valuesFrom = (payload = {}) =>
   Object.fromEntries(FIELDS.map((field) => [field, payload[field] ?? '']))
 
-/** Only a copy the picker made can be edited, and only while the role is
- * asked: a consignor dropped by a change of commodity type has nothing to
- * edit. */
+/** A consignor dropped by a change of commodity type has nothing to edit. */
 const editable = ({ answers, scope }, party) =>
   scope.has(party.id) && Boolean(answers[party.id])
 

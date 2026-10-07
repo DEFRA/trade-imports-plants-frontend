@@ -16,7 +16,7 @@ export const replaceFulfilment = async (
 
   const snapshot = structuredClone(fulfilment ?? {})
   // Body carries both the notification-shape fields (via the mapper) and the
-  // opaque fulfilments payload. The actor rides alongside.
+  // opaque fulfilments payload.
   const body = {
     notification: {
       referenceNumber: journeyId,

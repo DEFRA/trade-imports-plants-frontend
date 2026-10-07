@@ -71,7 +71,6 @@ const plants = (answers = {}) => ({
   ...answers
 })
 
-/** The copy the picker commits for a stub-book record. */
 const copied = (id) =>
   answerForPickedParty(STUB_BOOK.find((record) => record.id === id))
 

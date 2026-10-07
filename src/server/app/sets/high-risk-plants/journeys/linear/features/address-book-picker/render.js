@@ -24,8 +24,7 @@ export const chosenFor = async (orgId, selectedId) => {
   return record && !record.deleted ? record : undefined
 }
 
-/** The address this notification holds for the role, which may have been
- * edited since it was picked, with the link that edits it. */
+/** The copy held for the role, which an edit can make differ from the ticked record. */
 const currentAddressOf = async (request, current, fieldName) => {
   const display = await toDisplayParty(current.answers[fieldName])
   if (!display) {

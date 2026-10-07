@@ -84,7 +84,6 @@ export const addressBookCountries = async () => {
   ]
 }
 
-/** Falls back to the code. */
 export const addressBookCountryName = async (code) =>
   (await addressBookCountries()).find((option) => option.code === code)?.name ??
   code
