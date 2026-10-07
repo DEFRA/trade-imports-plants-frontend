@@ -24,21 +24,17 @@ const readViewOf = async (request, journey) => {
   const flowOnlyAnswers = flowOnlyAnswersFrom(
     await session.flowOnlyAnswers(request, journey.journeyId)
   )
-  const assembled = assembleRequestView(
+  const { evaluation, answers, scope } = assembleRequestView(
     journey.fulfilment,
     undefined,
     flowOnlyAnswers
   )
-  const { answers } = assembled
-  // Nothing rewrites answers on read, so `storedAnswers` is the same object as
-  // `answers`; it stays on the view because validators still read it by name.
   return {
     journey,
     fulfilment: journey.fulfilment,
-    evaluation: assembled.evaluation,
+    evaluation,
     answers,
-    storedAnswers: answers,
-    scope: assembled.scope,
+    scope,
     flowOnlyAnswers
   }
 }
