@@ -10,6 +10,7 @@ import {
 
 const COUNTRY_CODES = ['GB', 'FR']
 const ENTER_A_COUNTRY = 'Enter a country'
+const ENTER_A_VALID_COUNTRY = 'Enter a valid country'
 
 const VALID = {
   name: 'Astra Rosales',
@@ -76,7 +77,9 @@ describe('#addressRules — the INS address book rules', () => {
   })
 
   it('Should reject a country not in the list', () => {
-    expect(errorsFor({ countryCode: 'ZZ' }).countryCode).toBe(ENTER_A_COUNTRY)
+    expect(errorsFor({ countryCode: 'ZZ' }).countryCode).toBe(
+      ENTER_A_VALID_COUNTRY
+    )
   })
 })
 
@@ -119,7 +122,7 @@ describe('#partyFieldErrors', () => {
       )
     ).toEqual({
       postcode: 'Enter a postcode',
-      countryCode: ENTER_A_COUNTRY
+      countryCode: ENTER_A_VALID_COUNTRY
     })
   })
 })

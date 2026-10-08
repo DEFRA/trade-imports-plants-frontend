@@ -425,7 +425,7 @@ describe('Check your answers — copied addresses', () => {
       destination.rows.find(({ key }) => key.text === label)
 
     expect(rowFor(copy.labels.address).value.html).toBe(
-      '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a country</p>' +
+      '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
         '18 Dockside Road, London, E14 9GE, United Kingdom'
     )
     expect(rowFor(copy.labels.emailAddress).value.html).toContain(

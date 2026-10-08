@@ -41,7 +41,8 @@ export const copy = {
       maxLength: (max) => `Postcode must be ${max} characters or fewer`
     },
     countryCode: {
-      required: 'Enter a country'
+      required: 'Enter a country',
+      unknown: 'Enter a valid country'
     },
     phone: {
       required: 'Enter a telephone number',

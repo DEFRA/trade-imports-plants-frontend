@@ -49,7 +49,10 @@ export const addressRules = (countryCodes) =>
     requiredTextRule('townOrCity'),
     optionalTextRule('county'),
     requiredTextRule('postcode'),
-    requiredOneOf('countryCode', countryCodes, errors.countryCode.required),
+    requiredOneOf('countryCode', countryCodes, {
+      required: errors.countryCode.required,
+      unknown: errors.countryCode.unknown
+    }),
     requiredTextRule('phone'),
     requiredEmail('email', maxLengthOf('email'), {
       required: errors.email.required,

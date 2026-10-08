@@ -41,7 +41,8 @@ export const copy = {
       maxLength: (max) => `Rhaid i’r cod post fod yn ${max} nod neu lai`
     },
     countryCode: {
-      required: 'Rhowch wlad'
+      required: 'Rhowch wlad',
+      unknown: 'Rhowch wlad ddilys'
     },
     phone: {
       required: 'Rhowch rif ffôn',
