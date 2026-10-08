@@ -1,10 +1,20 @@
 import { originErrors } from '../origin/controller.js'
-import { invalidPartyErrors } from './view-model/invalid-parties.js'
+import {
+  invalidPartyErrors,
+  invalidPartyFields
+} from './view-model/invalid-parties.js'
 
-export const reviewErrors = async (current) => ({
-  answerErrors: (await originErrors(current)) ?? {},
-  partyErrors: await invalidPartyErrors(current.answers, current.scope)
-})
+export const reviewErrors = async (current) => {
+  const partyFieldErrorsById = await invalidPartyFields(
+    current.answers,
+    current.scope
+  )
+  return {
+    answerErrors: (await originErrors(current)) ?? {},
+    partyErrors: invalidPartyErrors(partyFieldErrorsById),
+    partyFieldErrorsById
+  }
+}
 
 const hasAny = (errors) => Object.keys(errors).length > 0
 

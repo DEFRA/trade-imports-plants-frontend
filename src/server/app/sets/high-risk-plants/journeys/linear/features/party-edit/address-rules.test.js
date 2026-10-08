@@ -4,11 +4,12 @@ import { validate } from '../../../../../../lib/validate/index.js'
 import {
   addressRules,
   formValuesOf,
-  isValidParty,
+  partyFieldErrors,
   partyFrom
 } from './address-rules.js'
 
 const COUNTRY_CODES = ['GB', 'FR']
+const ENTER_A_COUNTRY = 'Enter a country'
 
 const VALID = {
   name: 'Astra Rosales',
@@ -35,7 +36,7 @@ describe('#addressRules — the INS address book rules', () => {
     ['addressLine1', 'Enter address line 1'],
     ['townOrCity', 'Enter a town or city'],
     ['postcode', 'Enter a postcode'],
-    ['countryCode', 'Enter a country'],
+    ['countryCode', ENTER_A_COUNTRY],
     ['phone', 'Enter a telephone number'],
     ['email', 'Enter an email address']
   ])('Should require %s', (field, message) => {
@@ -75,7 +76,7 @@ describe('#addressRules — the INS address book rules', () => {
   })
 
   it('Should reject a country not in the list', () => {
-    expect(errorsFor({ countryCode: 'ZZ' }).countryCode).toBe('Enter a country')
+    expect(errorsFor({ countryCode: 'ZZ' }).countryCode).toBe(ENTER_A_COUNTRY)
   })
 })
 
@@ -105,14 +106,20 @@ describe('#formValuesOf and #partyFrom', () => {
   })
 })
 
-describe('#isValidParty', () => {
-  it('Should pass a stored copy that meets every rule', () => {
-    expect(isValidParty(partyFrom(VALID), COUNTRY_CODES)).toBe(true)
+describe('#partyFieldErrors', () => {
+  it('Should find nothing wrong with a stored copy that meets every rule', () => {
+    expect(partyFieldErrors(partyFrom(VALID), COUNTRY_CODES)).toEqual({})
   })
 
-  it('Should fail a stored copy missing a required field', () => {
+  it('Should name each field that breaks a rule, with its message', () => {
     expect(
-      isValidParty(partyFrom({ ...VALID, postcode: '' }), COUNTRY_CODES)
-    ).toBe(false)
+      partyFieldErrors(
+        partyFrom({ ...VALID, postcode: '', countryCode: 'United Kingdom' }),
+        COUNTRY_CODES
+      )
+    ).toEqual({
+      postcode: 'Enter a postcode',
+      countryCode: ENTER_A_COUNTRY
+    })
   })
 })

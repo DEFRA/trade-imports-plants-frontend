@@ -405,6 +405,60 @@ describe('Check your answers — copied addresses', () => {
     })
   })
 
+  it('Should mark the row holding each field that breaks the rules, still showing the copy', async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      placeOfDestination: {
+        ...COMPLETE_NOTIFICATION.placeOfDestination,
+        email: 'not-an-email',
+        address: {
+          ...COMPLETE_NOTIFICATION.placeOfDestination.address,
+          countryCode: 'United Kingdom'
+        }
+      }
+    }
+    const result = await driveHandler(get, { seed })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    const rowFor = (label) =>
+      destination.rows.find(({ key }) => key.text === label)
+
+    expect(rowFor(copy.labels.address).value.html).toBe(
+      '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a country</p>' +
+        '18 Dockside Road, London, E14 9GE, United Kingdom'
+    )
+    expect(rowFor(copy.labels.emailAddress).value.html).toContain(
+      'Enter an email address in the correct format</p>not-an-email'
+    )
+    expect(rowFor(copy.labels.name).value).toEqual({
+      text: 'Tech Imports Ltd'
+    })
+    expect(rowFor(copy.labels.telephoneNumber).value).toEqual({
+      text: '01632 960000'
+    })
+  })
+
+  it('Should escape a copied value shown under its error', async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      contactAddress: {
+        ...COMPLETE_NOTIFICATION.contactAddress,
+        email: '<b>x</b>'
+      }
+    }
+    const result = await driveHandler(get, { seed })
+    const contact = cardsOf(result).find(
+      ({ title }) => title === copy.cards.contact
+    )
+    const email = contact.rows.find(
+      ({ key }) => key.text === copy.labels.emailAddress
+    )
+
+    expect(email.value.html).toContain('&lt;b&gt;x&lt;/b&gt;')
+    expect(email.value.html).not.toContain('<b>')
+  })
+
   it('Should render an unanswered destination without a party error', async () => {
     const seed = { ...COMPLETE_NOTIFICATION }
     delete seed.placeOfDestination

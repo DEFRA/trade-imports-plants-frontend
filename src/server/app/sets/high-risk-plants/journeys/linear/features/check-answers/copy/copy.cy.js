@@ -16,6 +16,7 @@ export const copy = {
   title: 'Gwiriwch eich atebion',
   change: 'Newid',
   editDetails: 'Golygu manylion',
+  errorPrefix: 'Gwall:',
   cancelAmend: {
     link: 'Canslo’r diwygiad',
     successTitle: 'Llwyddiant',

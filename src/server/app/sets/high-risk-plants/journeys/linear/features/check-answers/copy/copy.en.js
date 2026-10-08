@@ -15,6 +15,7 @@ export const copy = {
   title: 'Check your answers',
   change: 'Change',
   editDetails: 'Edit details',
+  errorPrefix: 'Error:',
   cancelAmend: {
     link: 'Cancel amendment',
     successTitle: 'Success',

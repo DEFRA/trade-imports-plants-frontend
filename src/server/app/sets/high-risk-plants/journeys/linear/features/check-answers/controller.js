@@ -64,7 +64,8 @@ const summaryErrors = ({ answerErrors, partyErrors }) => ({
 const render = async (request, h, current, disableAutoFocus = true) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
-  const errors = readOnly ? {} : summaryErrors(await reviewErrors(current))
+  const reviewed = readOnly ? null : await reviewErrors(current)
+  const errors = reviewed ? summaryErrors(reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
@@ -87,7 +88,9 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       current.answers.commodityType === 'potatoes'
         ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
-    sections: await buildSections(current, partyDisplayValuesById, readOnly),
+    sections: await buildSections(current, partyDisplayValuesById, readOnly, {
+      partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
+    }),
     errorSummary: kit.errorSummary(errors, {
       href: summaryHref(current.journey.journeyId),
       disableAutoFocus

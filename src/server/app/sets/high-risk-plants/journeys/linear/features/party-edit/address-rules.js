@@ -84,5 +84,7 @@ export const partyFrom = (values) => ({
   }
 })
 
-export const isValidParty = (party, countryCodes) =>
-  validate(addressRules(countryCodes), formValuesOf(party)).errors === null
+/** Each field of a copied party that breaks the address book's rules, with its
+ * message; empty when the copy is valid. */
+export const partyFieldErrors = (party, countryCodes) =>
+  validate(addressRules(countryCodes), formValuesOf(party)).errors ?? {}
