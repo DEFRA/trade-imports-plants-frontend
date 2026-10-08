@@ -206,6 +206,25 @@ describe('#requiredOneOf — save-blocking value domain', () => {
       itemSelector: SELECTOR_REQUIRED_MESSAGE
     })
   })
+
+  it('Should tell a value outside the domain from a blank one when given two messages', () => {
+    const unknownMessage = 'Select a listed option'
+    const twoMessages = requiredOneOf(
+      'itemSelector',
+      [SELECTOR_ALPHA, SELECTOR_BRAVO],
+      { required: SELECTOR_REQUIRED_MESSAGE, unknown: unknownMessage }
+    )
+
+    expect(run(twoMessages, { itemSelector: '' }).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+    expect(run(twoMessages, {}).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+    expect(run(twoMessages, { itemSelector: 'gold-plated' }).errors).toEqual({
+      itemSelector: unknownMessage
+    })
+  })
 })
 
 describe('#integerInRange — bounds', () => {

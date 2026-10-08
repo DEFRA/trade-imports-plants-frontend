@@ -1,10 +1,12 @@
 import Boom from '@hapi/boom'
-import { COUNTRY_LABELS } from './stub.js'
+import { ADDRESS_BOOK_COUNTRY_LABELS, COUNTRY_LABELS } from './stub.js'
 import { fetchCountries } from './client.js'
 import { isStubMode } from '../../../common/services/mode.js'
 
 let labels = { ...COUNTRY_LABELS }
 let loaded = false
+let addressBookLabels = { ...ADDRESS_BOOK_COUNTRY_LABELS }
+let addressBookLoaded = false
 
 /** Load the country list from the reference-data service, once. Called
  * implicitly by every reader — the readers self-load on first use rather than
@@ -51,6 +53,40 @@ export const addressCountries = async () => {
   await ensureLoaded()
   return [UNITED_KINGDOM, ...Object.values(labels)]
 }
+
+/** Kept apart from `ensureLoaded` so the origin readers keep the narrower SPS
+ * list; the address book validates against the unfiltered one. */
+const ensureAddressBookCountriesLoaded = async () => {
+  if (isStubMode() || addressBookLoaded) {
+    return
+  }
+  try {
+    const countries = await fetchCountries()
+    addressBookLabels = Object.fromEntries(
+      countries.map(({ code, name }) => [code, name])
+    )
+    addressBookLoaded = true
+  } catch (err) {
+    throw Boom.serverUnavailable('Reference data unavailable', {
+      dataset: 'countries',
+      cause: err
+    })
+  }
+}
+
+export const addressBookCountries = async () => {
+  await ensureAddressBookCountriesLoaded()
+  return [
+    { code: UNITED_KINGDOM_CODE, name: UNITED_KINGDOM },
+    ...Object.entries(addressBookLabels)
+      .filter(([code]) => code !== UNITED_KINGDOM_CODE)
+      .map(([code, name]) => ({ code, name }))
+  ]
+}
+
+export const addressBookCountryName = async (code) =>
+  (await addressBookCountries()).find((option) => option.code === code)?.name ??
+  code
 
 /** The ISO code for a country's display name (cv-011).
  *

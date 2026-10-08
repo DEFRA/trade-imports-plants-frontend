@@ -64,6 +64,7 @@ const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
 const CONSIGNOR_PATH = '/notifications/{journeyId}/consignors/select'
+const CONSIGNOR_EDIT_PATH = '/notifications/{journeyId}/consignors/edit'
 const ARRIVAL_DETAILS_PATH = '/notifications/{journeyId}/arrival-details'
 const PLACE_OF_DESTINATION_PATH =
   '/notifications/{journeyId}/destinations/select'
@@ -76,6 +77,7 @@ const ROUTES = [
   { method: 'GET', path: ORIGIN_PATH },
   { method: 'GET', path: ARRIVAL_STATUS_PATH },
   { method: 'GET', path: CONSIGNOR_PATH },
+  { method: 'GET', path: CONSIGNOR_EDIT_PATH },
   { method: 'GET', path: '/notifications/{journeyId}/treatments' },
   { method: 'GET', path: '/notifications/{journeyId}/late-reason' },
   { method: 'GET', path: '/notifications/{journeyId}/uploads/status' },
@@ -152,7 +154,8 @@ describe('#auditPaths', () => {
       paths.filter((path) => path.includes(journeyIds.plantsForPlanting))
     ).toEqual([
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
-      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/edit`
     ])
     expect(
       paths.filter((path) => path.includes(journeyIds.warePotatoes))
@@ -216,7 +219,10 @@ describe('#auditPaths', () => {
       // whichever state it asks its question in, and the ware-potato shape is
       // the one that reaches it without an arrival status.
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
-      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/select`
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/select`,
+      `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/edit`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/edit`,
+      `${SET_BASE}/notifications/${journeyIds.warePotatoes}/consignment/contact/edit`
     ])
   })
 })
@@ -257,7 +263,10 @@ describe('#auditableRoutePaths', () => {
       ARRIVAL_STATUS_PATH,
       ARRIVAL_DETAILS_PATH,
       CONSIGNOR_PATH,
-      PLACE_OF_DESTINATION_PATH
+      PLACE_OF_DESTINATION_PATH,
+      CONSIGNOR_EDIT_PATH,
+      '/notifications/{journeyId}/destinations/edit',
+      '/notifications/{journeyId}/consignment/contact/edit'
     ])
   })
 })

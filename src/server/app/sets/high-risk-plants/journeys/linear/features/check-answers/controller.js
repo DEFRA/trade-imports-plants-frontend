@@ -3,16 +3,16 @@ import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
-import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
 import { changeHref } from './view-model/rows/change-link.js'
-import { outstandingPartyErrors } from './view-model/outstanding-parties.js'
-import { originErrors } from '../origin/controller.js'
+import { reviewErrors } from './refusal.js'
+import { PARTIES, partyOf } from '../../parties/index.js'
+import { toDisplayParty } from '../../parties/picked-party.js'
+import { partyEditHref } from '../party-edit/edit-href.js'
 
 import { lateness, requestClock } from '../review/lateness.js'
 import {
@@ -24,35 +24,48 @@ export const meta = { ...page, collects: [] }
 const view = `${TEMPLATES}/features/check-answers/template`
 const copy = copyFor({ en, cy })
 
-const partiesFor = async (request, source, scope) => {
-  const parties = {}
-  for (const field of ['placeOfDestination', 'consignor', 'contactAddress']) {
-    const saved = source[field]
-    if (!scope.has(field) || !saved) {
-      continue
-    }
-    const party = saved.addressId
-      ? await addressBook.party(organisationIdOf(request), saved.addressId)
-      : saved
-    if (party && !party.deleted) {
-      parties[field] = party
+const partyDisplayValuesFor = async ({ answers, scope }) => {
+  const partyDisplayValuesById = {}
+  for (const { id } of PARTIES) {
+    const partyDisplayValues = scope.has(id)
+      ? await toDisplayParty(answers[id])
+      : undefined
+    if (partyDisplayValues) {
+      partyDisplayValuesById[id] = partyDisplayValues
     }
   }
-  return parties
+  return partyDisplayValuesById
 }
+
+/** Party errors are keyed `party:<id>` so their summary entries link to the
+ * page that edits the copied address, returning here, rather than to the
+ * picker a Change link opens. */
+const PARTY_KEY_PREFIX = 'party:'
+
+const summaryHref = (journeyId) => (key) =>
+  key.startsWith(PARTY_KEY_PREFIX)
+    ? partyEditHref(
+        journeyId,
+        partyOf(key.slice(PARTY_KEY_PREFIX.length)),
+        kit.CYA_SLUG
+      )
+    : changeHref(journeyId, key)
+
+const summaryErrors = ({ answerErrors, partyErrors }) => ({
+  ...answerErrors,
+  ...Object.fromEntries(
+    Object.entries(partyErrors).map(([id, text]) => [
+      `${PARTY_KEY_PREFIX}${id}`,
+      text
+    ])
+  )
+})
 
 const render = async (request, h, current, disableAutoFocus = true) => {
   const readOnly = current.journey.status === state.SUBMITTED
-  // The sanitiser drops unresolved references that this page must name in errors.
-  // Use stored answers for those errors; the rest of the page uses sanitised answers.
-  const source = current.storedAnswers ?? current.answers
-  const parties = await partiesFor(request, source, current.scope)
-  const errors = readOnly
-    ? {}
-    : {
-        ...(await originErrors(current)),
-        ...outstandingPartyErrors(source, parties)
-      }
+  const partyDisplayValuesById = await partyDisplayValuesFor(current)
+  const reviewed = readOnly ? null : await reviewErrors(current)
+  const errors = reviewed ? summaryErrors(reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
@@ -75,9 +88,11 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       current.answers.commodityType === 'potatoes'
         ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
-    sections: await buildSections(current, parties, readOnly),
+    sections: await buildSections(current, partyDisplayValuesById, readOnly, {
+      partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
+    }),
     errorSummary: kit.errorSummary(errors, {
-      href: (field) => changeHref(current.journey.journeyId, field),
+      href: summaryHref(current.journey.journeyId),
       disableAutoFocus
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
@@ -99,12 +114,7 @@ const post = async (request, h) => {
   if (current.journey.status === state.SUBMITTED) {
     return h.redirect(pagePath(current.journey.journeyId, page.slug))
   }
-  const source = current.storedAnswers ?? current.answers
-  const parties = await partiesFor(request, source, current.scope)
-  const errors = {
-    ...(await originErrors(current)),
-    ...outstandingPartyErrors(source, parties)
-  }
+  const errors = summaryErrors(await reviewErrors(current))
   if (Object.keys(errors).length > 0) {
     return (await render(request, h, current, false)).code(
       HTTP_STATUS_BAD_REQUEST
