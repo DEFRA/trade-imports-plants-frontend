@@ -68,8 +68,8 @@ export const COMPLETE_NOTIFICATION = Object.freeze({
     name: 'Tech Imports Ltd',
     address: Object.freeze({
       country: 'United Kingdom',
-      telephoneNumber: '01234567890',
-      emailAddress: 'contact@example.com'
+      phone: '01234567890',
+      email: 'contact@example.com'
     })
   }),
   producerIdentificationNumber: 'P123',

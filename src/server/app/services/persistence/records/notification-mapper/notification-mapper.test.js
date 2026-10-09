@@ -19,8 +19,8 @@ describe('notification projection', () => {
             addressId: 'tech-imports-ltd',
             name: 'Tech Imports Ltd',
             address: {
-              telephoneNumber: '01234567890',
-              emailAddress: 'contact@example.com'
+              phone: '01234567890',
+              email: 'contact@example.com'
             }
           },
           '26c11d80-6b9c-4211-9fad-1e47046658cb': 'ID_123',

@@ -694,12 +694,12 @@
         "addressLine2",
         "townOrCity",
         "county",
-        "postalOrZipCode",
+        "postcode",
         "country",
-        "telephoneNumber",
-        "emailAddress"
+        "phone",
+        "email"
       ],
-      "detail": "Copied from animals (same members, no sharing): the address-form storage shape used by privateTransporter and the address-book record shape the party pickers resolve (nameOrOrganisationName | addressLine1 | addressLine2 (optional) | townOrCity | county (optional) | postalOrZipCode | country | telephoneNumber | emailAddress; max lengths 255/255/255/100/100/12/-/20/254). Plants usages (consignor, placeOfDestination) reference it through fieldGroupRef and resolve records from the org-scoped address book as animals does. Provenance: live-animals src/server/app/sets/live-animals/obligations/sections/transport.js:50 and services/address-book."
+      "detail": "Copied from animals (same members, no sharing): the address-form storage shape used by privateTransporter and the address-book record shape the party pickers resolve (nameOrOrganisationName | addressLine1 | addressLine2 (optional) | townOrCity | county (optional) | postcode | country | phone | email; max lengths 255/255/255/100/100/12/-/20/254). Plants usages (consignor, placeOfDestination) reference it through fieldGroupRef and resolve records from the org-scoped address book as animals does. Provenance: live-animals src/server/app/sets/live-animals/obligations/sections/transport.js:50 and services/address-book."
     }
   },
   "sections": [
@@ -1013,7 +1013,7 @@
           "hubGroup": "consignment-parties",
           "runStep": "9",
           "saveActions": "three controls",
-          "notes": "copied from animals contact: flat radios over every address-book record (name + address hint), inline copy on save, blank allowed at page level with the hub row left In progress. Same id and slug as animals. | Ruled at D4-parties-and-contact (d-013, c-025): Only page of the contact task row (c-025): the inline copy carries address.telephoneNumber and address.emailAddress from the record, so the Check your answers Contact card renders name, address lines, country, telephone number and email address. | Ruled at D6-chrome-and-journey-shape (d-069, c-034): runStep 9 (was 10) — the last run step; the run then lands on the hub (contact-details deleted under c-025)."
+          "notes": "copied from animals contact: flat radios over every address-book record (name + address hint), inline copy on save, blank allowed at page level with the hub row left In progress. Same id and slug as animals. | Ruled at D4-parties-and-contact (d-013, c-025): Only page of the contact task row (c-025): the inline copy carries address.phone and address.email from the record, so the Check your answers Contact card renders name, address lines, country, telephone number and email address. | Ruled at D6-chrome-and-journey-shape (d-069, c-034): runStep 9 (was 10) — the last run step; the run then lands on the hub (contact-details deleted under c-025)."
         }
       ]
     },
@@ -2545,12 +2545,12 @@
       "mandate": {
         "required": true
       },
-      "mandateRaw": "Common Data (if needed): Name of person making entry; Contact number; Contact address; Contact email — I need to provide nominated contact details for my consignment so that relevant parties can be informed about inspection activity and related updates. One address-book pick copies all four inline (the record carries name, address, telephoneNumber, emailAddress; phone and email are mandatory on the address-book API). NNS-UN-040 makes the contact needed.",
+      "mandateRaw": "Common Data (if needed): Name of person making entry; Contact number; Contact address; Contact email — I need to provide nominated contact details for my consignment so that relevant parties can be informed about inspection activity and related updates. One address-book pick copies all four inline (the record carries name, address, phone, email; phone and email are mandatory on the address-book API). NNS-UN-040 makes the contact needed.",
       "input": {
         "widget": "radios",
         "widgetDetail": "flat radio per address-book record (all(orgId), unpaginated); text = name; hint = address lines + country; pre-checked by addressId — copied from animals contactAddress",
         "service": "services/address-book all(orgId) / party(orgId, id)",
-        "storage": "inline copy { addressId, name, address } where address includes telephoneNumber and emailAddress (copied from animals — later address-book edits do not reach it)"
+        "storage": "inline copy { addressId, name, address } where address includes phone and email (copied from animals — later address-book edits do not reach it)"
       },
       "label": "Contact address for consignment",
       "labelCy": "Cyfeiriad cyswllt ar gyfer y llwyth",
@@ -2591,7 +2591,7 @@
         "obligation": "contactAddress",
         "page": "consignment-contact-select"
       },
-      "notes": "copied from animals contact/contactAddress: label, labelCy, hint, hintCy, error copy, widget, storage, validation verbatim. Covers 'Name of person making entry' (the record name) and 'Contact address' from Common Data; number and email are the two plants-only obligations on the next page (c-025). | Ruled at D4-parties-and-contact (d-012, c-003), superseding the sentence \"Covers 'Name of person making entry' (the record name) and 'Contact address' from Common Data; number and email are the two plants-only obligations on the next page (c-025).\": Ruled c-003: this one pick is the mandated Common Data contact. The inline copy carries name, address, telephoneNumber and emailAddress from the record (address-book AddressRequest.java makes phone and email @NotBlank; plants services/address-book/client.js toRecord folds them into address; stub/from-row.js matches), so Common Data items 1-4 are all satisfied here and nothing is typed separately. Reading item 1 as the signed-in user is parked under standing ruling 2 (users and notifier identity out of phase). | Ruled at D4-parties-and-contact (d-013, c-025): Ruled c-025: no second contact page. The inline copy's address block carries telephoneNumber and emailAddress from the record, so number and email are read from this answer, never typed; Check your answers shows them. Name of person making entry = the picked record name in this pass; the signed-in user is attributed by sign-in (written-notification-attributable) and the alternative reading is parked (behaviour name-of-person-making-entry). conflicts kept as [c-003, c-025]."
+      "notes": "copied from animals contact/contactAddress: label, labelCy, hint, hintCy, error copy, widget, storage, validation verbatim. Covers 'Name of person making entry' (the record name) and 'Contact address' from Common Data; number and email are the two plants-only obligations on the next page (c-025). | Ruled at D4-parties-and-contact (d-012, c-003), superseding the sentence \"Covers 'Name of person making entry' (the record name) and 'Contact address' from Common Data; number and email are the two plants-only obligations on the next page (c-025).\": Ruled c-003: this one pick is the mandated Common Data contact. The inline copy carries name, address, phone and email from the record (address-book AddressRequest.java makes phone and email @NotBlank; plants services/address-book/client.js toRecord folds them into address; stub/from-row.js matches), so Common Data items 1-4 are all satisfied here and nothing is typed separately. Reading item 1 as the signed-in user is parked under standing ruling 2 (users and notifier identity out of phase). | Ruled at D4-parties-and-contact (d-013, c-025): Ruled c-025: no second contact page. The inline copy's address block carries phone and email from the record, so number and email are read from this answer, never typed; Check your answers shows them. Name of person making entry = the picked record name in this pass; the signed-in user is attributed by sign-in (written-notification-attributable) and the alternative reading is parked (behaviour name-of-person-making-entry). conflicts kept as [c-003, c-025]."
     },
     {
       "id": "declaration",
