@@ -27,6 +27,15 @@ export const copy = {
     parties: {
       consignor: 'Dewiswch gyfeiriad ar gyfer yr anfonwr',
       placeOfDestination: 'Dewiswch gyfeiriad ar gyfer y man cyrchfan'
+    },
+    rows: {
+      commodities: 'Cwblhewch beth rydych chi’n ei fewnforio',
+      origin: 'Cwblhewch o ble mae’r llwyth hwn yn dod',
+      arrival: 'Cwblhewch y manylion cyrraedd',
+      destination: 'Cwblhewch y man cyrchfan',
+      consignor: 'Cwblhewch yr anfonwr neu’r allforiwr',
+      identificationNumbers: 'Cwblhewch y rhifau adnabod',
+      contact: 'Cwblhewch y cyfeiriad cyswllt ar gyfer y llwyth'
     }
   },
   submit: {

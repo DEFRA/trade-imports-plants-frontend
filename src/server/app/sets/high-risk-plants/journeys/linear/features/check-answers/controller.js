@@ -12,6 +12,12 @@ import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
 import { changeHref } from './view-model/rows/change-link.js'
 import { outstandingPartyErrors } from './view-model/outstanding-parties.js'
+import {
+  outstandingRowErrors,
+  outstandingRowHref,
+  ROW_KEY_PREFIX
+} from './view-model/outstanding-rows.js'
+import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import { originErrors } from '../origin/controller.js'
 
 import { lateness, requestClock } from '../review/lateness.js'
@@ -41,18 +47,32 @@ const partiesFor = async (request, source, scope) => {
   return parties
 }
 
+/** Every reason the notification cannot go on: origin and removed-party errors
+ * first, then one entry per task row still to complete. A row already named by
+ * a field or party error is not named twice. The sanitiser drops unresolved
+ * references that the page must name, so the party errors read the stored
+ * answers; the rest of the page uses sanitised answers. */
+const continueErrors = async (current, source, parties) => {
+  const fieldErrors = {
+    ...(await originErrors(current)),
+    ...outstandingPartyErrors(source, parties)
+  }
+  return {
+    ...fieldErrors,
+    ...outstandingRowErrors(current, Object.keys(fieldErrors))
+  }
+}
+
+const errorHref = (current, key) =>
+  key.startsWith(ROW_KEY_PREFIX)
+    ? outstandingRowHref(key, current.scope, current.journey.journeyId)
+    : changeHref(current.journey.journeyId, key)
+
 const render = async (request, h, current, disableAutoFocus = true) => {
   const readOnly = current.journey.status === state.SUBMITTED
-  // The sanitiser drops unresolved references that this page must name in errors.
-  // Use stored answers for those errors; the rest of the page uses sanitised answers.
   const source = current.storedAnswers ?? current.answers
   const parties = await partiesFor(request, source, current.scope)
-  const errors = readOnly
-    ? {}
-    : {
-        ...(await originErrors(current)),
-        ...outstandingPartyErrors(source, parties)
-      }
+  const errors = readOnly ? {} : await continueErrors(current, source, parties)
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
@@ -77,7 +97,7 @@ const render = async (request, h, current, disableAutoFocus = true) => {
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
     sections: await buildSections(current, parties, readOnly),
     errorSummary: kit.errorSummary(errors, {
-      href: (field) => changeHref(current.journey.journeyId, field),
+      href: (key) => errorHref(current, key),
       disableAutoFocus
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
@@ -91,8 +111,10 @@ const render = async (request, h, current, disableAutoFocus = true) => {
   })
 }
 
-const get = async (request, h) =>
-  render(request, h, await state.get(request, h))
+const get = async (request, h) => {
+  await completeOpeningRun(request, h, request.params.journeyId)
+  return render(request, h, await state.get(request, h))
+}
 
 const post = async (request, h) => {
   const current = await state.get(request, h)
@@ -101,17 +123,14 @@ const post = async (request, h) => {
   }
   const source = current.storedAnswers ?? current.answers
   const parties = await partiesFor(request, source, current.scope)
-  const errors = {
-    ...(await originErrors(current)),
-    ...outstandingPartyErrors(source, parties)
-  }
-  if (Object.keys(errors).length > 0) {
+  const errors = await continueErrors(current, source, parties)
+  if (
+    Object.keys(errors).length > 0 ||
+    !current.scope.readyForCheckYourAnswers
+  ) {
     return (await render(request, h, current, false)).code(
       HTTP_STATUS_BAD_REQUEST
     )
-  }
-  if (!current.scope.readyForCheckYourAnswers) {
-    return h.redirect(hubPath(current.journey.journeyId))
   }
   return h.redirect(await kit.nextTarget(request, page, current.scope))
 }

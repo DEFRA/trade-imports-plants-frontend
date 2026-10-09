@@ -8,9 +8,15 @@ import {
   it,
   vi
 } from 'vitest'
+import { configureAnswersForRead } from '../../../../../../bridge/answers-read.js'
+import { withoutUnresolvedPartyRefs } from '../../parties/index.js'
 import { store } from '../../../../../../engine/store.js'
 import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
+import {
+  configureSession,
+  openingRunCookie
+} from '../../../../../../engine/persistence/session.js'
+import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
@@ -44,6 +50,12 @@ const get = routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf({ routes })
 const cardsOf = (result) =>
   result.view.context.sections.flatMap((section) => section.cards)
+const removedDestinationErrors = (result) => [
+  {
+    text: copy.errors.parties.placeOfDestination,
+    href: changeHref(result.journeyId, 'placeOfDestination')
+  }
+]
 const invalidOrigin = {
   ...COMPLETE_NOTIFICATION,
   commodityLines: [
@@ -52,6 +64,7 @@ const invalidOrigin = {
 }
 
 beforeAll(() => {
+  configureAnswersForRead(SET_ID, withoutUnresolvedPartyRefs)
   configureRecords(SET_ID, recordsStub)
   configureSession(SET_ID, sessionStub)
   installHighRiskPlantsJourney()
@@ -126,10 +139,9 @@ describe('Check your answers', () => {
     expect(
       destination.rows.every(({ value }) => value.text === copy.notProvided)
     ).toBe(true)
-    expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.parties.placeOfDestination,
-      href: changeHref(result.journeyId, 'placeOfDestination')
-    })
+    expect(result.view.context.errorSummary.errorList).toEqual(
+      removedDestinationErrors(result)
+    )
   })
 
   it('Should render the raw ISO code in the origin row when the stored country is no longer offered by the origin block', async () => {
@@ -148,10 +160,9 @@ describe('Check your answers', () => {
     const result = await driveHandler(post, { seed: COMPLETE_NOTIFICATION })
     expect(result.response.statusCode).toBe(400)
     expect(result.response.redirect).toBeUndefined()
-    expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.parties.placeOfDestination,
-      href: changeHref(result.journeyId, 'placeOfDestination')
-    })
+    expect(result.view.context.errorSummary.errorList).toEqual(
+      removedDestinationErrors(result)
+    )
   })
 
   it('Should render an unanswered destination without a party error', async () => {
@@ -164,7 +175,13 @@ describe('Check your answers', () => {
     expect(
       destination.rows.every(({ value }) => value.text === copy.notProvided)
     ).toBe(true)
-    expect(result.view.context.errorSummary).toBeNull()
+    expect(result.view.context.errorSummary.errorList).not.toContainEqual(
+      expect.objectContaining({ text: copy.errors.parties.placeOfDestination })
+    )
+    expect(result.view.context.errorSummary.errorList).toContainEqual({
+      text: copy.errors.rows.destination,
+      href: `${SET_BASE}/notifications/${result.journeyId}/destinations/select?change=1`
+    })
   })
 
   it.each([
@@ -229,12 +246,20 @@ describe('Check your answers', () => {
     }
   })
 
-  it('Should return an incomplete notification to Overview', async () => {
+  it('Should refuse Continue on an incomplete notification, naming what is outstanding', async () => {
     const result = await driveHandler(post, {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
     })
-    expect(result.response.redirect).toBe(
-      `${SET_BASE}/notifications/${result.journeyId}`
+    expect(result.response.statusCode).toBe(400)
+    expect(result.response.redirect).toBeUndefined()
+    expect(result.view.context.errorSummary.disableAutoFocus).toBe(false)
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toEqual(
+      expect.arrayContaining([
+        copy.errors.rows.destination,
+        copy.errors.rows.contact
+      ])
     )
   })
 
@@ -254,6 +279,55 @@ describe('Check your answers', () => {
     }
     expect(await post(request, h)).toEqual({
       redirect: `${SET_BASE}/notifications/${journey.journeyId}/notification-view`
+    })
+  })
+})
+
+describe('Check your answers — outstanding tasks and the opening run', () => {
+  it('Should name every outstanding task on an incomplete notification, linking to its page with the change context', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
+    })
+    const base = `${SET_BASE}/notifications/${result.journeyId}`
+    expect(result.view.context.errorSummary.errorList).toEqual(
+      expect.arrayContaining([
+        {
+          text: copy.errors.rows.commodities,
+          href: `${base}/commodity-type?change=1`
+        },
+        {
+          text: copy.errors.rows.destination,
+          href: `${base}/destinations/select?change=1`
+        },
+        {
+          text: copy.errors.rows.contact,
+          href: `${base}/consignment/contact/select?change=1`
+        }
+      ])
+    )
+    expect(result.view.context.errorSummary.errorList).not.toContainEqual(
+      expect.objectContaining({ text: copy.errors.rows.origin })
+    )
+  })
+
+  it('Should complete the opening run when check your answers is shown', async () => {
+    const journey = await store.create()
+    await store.seedAnswers(journey.journeyId, COMPLETE_NOTIFICATION)
+    const cookies = {}
+    const h = {
+      ...stubH(),
+      state: (name, value) => {
+        cookies[name] = value
+      }
+    }
+    await get(
+      journeyRequest(journey.journeyId, {
+        state: { [openingRunCookie()]: { [journey.journeyId]: RUN_ACTIVE } }
+      }),
+      h
+    )
+    expect(cookies[openingRunCookie()]).toEqual({
+      [journey.journeyId]: RUN_COMPLETE
     })
   })
 })

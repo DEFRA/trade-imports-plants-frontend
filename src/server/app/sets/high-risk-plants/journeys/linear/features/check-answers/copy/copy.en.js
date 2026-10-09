@@ -26,6 +26,15 @@ export const copy = {
     parties: {
       consignor: 'Select an address for the consignor',
       placeOfDestination: 'Select an address for the place of destination'
+    },
+    rows: {
+      commodities: 'Complete what you are importing',
+      origin: 'Complete where this consignment is coming from',
+      arrival: 'Complete arrival details',
+      destination: 'Complete place of destination',
+      consignor: 'Complete consignor or exporter',
+      identificationNumbers: 'Complete identification numbers',
+      contact: 'Complete contact address for consignment'
     }
   },
   submit: {

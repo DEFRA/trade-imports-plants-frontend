@@ -90,14 +90,20 @@ landed with the hub increment.
 ## Opening run and entry guard
 
 [`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds six steps, commodity-type, commodities, origin,
-arrival-status, arrival-details then place-of-destination: the opening run opens
-on the entry question, goes on to the consignment's commodities, asks where they
-come from, asks whether they have arrived, then when, and closes on where the
-consignment is going. Place-of-destination is asked of every commodity type —
-the `placeOfDestination` obligation carries no `applyTo` — and with no later step
-after it `nextRunTarget` falls through to the hub, whose GET marks the run
-complete. An unknown step id still returns `null`. The entry sub-page is not a
+`RUN_STEPS` holds nine answer steps, commodity-type, commodities, origin,
+arrival-status, arrival-details, place-of-destination, consignor-select,
+identification-numbers then consignment-contact-select, and then check your
+answers. The run opens on the entry question, goes on to the consignment's
+commodities, asks where they come from, asks whether they have arrived, then
+when, asks where the consignment is going, who sends it, its identification
+numbers and the contact address, and closes on check your answers. Check your
+answers carries its derived gate, so the run ends there, complete or not, once
+the commodity type and origin are answered; its GET marks the run complete (the
+hub's GET still does too), shows the unfinished notification and names every
+outstanding task. Continue there re-shows the page with those tasks named while
+anything is outstanding, and only the declaration and confirmation wait for a
+complete notification. With no later step `nextRunTarget` falls through to the
+hub. An unknown step id still returns `null`. The entry sub-page is not a
 step — the list page sends a trader with no lines there and takes them back. The
 arrival-status step is skipped for potatoes, whose notification is never asked
 the question: its target is `null` while the answer is out of scope, and the run
