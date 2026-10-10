@@ -236,6 +236,18 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(page.getByText(copy.placeOfLanding.hint)).toBeVisible()
   })
 
+  test('sets every potato arrival question in the medium label size', async ({
+    page
+  }) => {
+    await startAtPotatoDetails(page)
+
+    for (const id of ['arrivalDate', 'arrivalTime', 'proposedPlaceOfLanding']) {
+      await expect(page.locator(`label[for="${id}"]`)).toHaveClass(
+        /govuk-label--m/
+      )
+    }
+  })
+
   test('offers the ports the reference-data service holds', async ({
     page
   }) => {
@@ -321,6 +333,9 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(
       page.getByLabel(copy.dateLabels[NOT_YET_ARRIVED], { exact: true })
     ).toBeVisible()
+    await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
+      /govuk-label--m/
+    )
   })
 
   test('asks when the consignment first arrived once it is here', async ({
@@ -331,6 +346,9 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(
       page.getByLabel(copy.dateLabels[ALREADY_ARRIVED], { exact: true })
     ).toBeVisible()
+    await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
+      /govuk-label--m/
+    )
   })
 
   test('asks for no time and no place of landing', async ({ page }) => {

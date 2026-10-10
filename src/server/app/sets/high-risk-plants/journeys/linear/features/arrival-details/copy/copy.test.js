@@ -73,10 +73,16 @@ describe('#copy', () => {
   it('Should carry the place-of-landing group the spec authored', () => {
     expect(copy.placeOfLanding).toEqual({
       label: 'Proposed place of landing',
-      hint: 'Where the potatoes will enter Great Britain. Start typing to search by port name or code.',
+      hint: 'Select where the potatoes will enter Great Britain. Start typing to search by port or airport name or code.',
       placeholder: 'Select a place of landing',
       noResults: 'No ports found'
     })
+  })
+
+  it('Should hint the place of landing in Welsh as the English does', () => {
+    expect(cy.placeOfLanding.hint).toBe(
+      'Dewiswch ble bydd y tatws yn dod i mewn i Brydain Fawr. Dechreuwch deipio i chwilio yn ôl enw neu god y porthladd neu’r maes awyr.'
+    )
   })
 
   it('Should carry the title the animals service already uses', () => {
