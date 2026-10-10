@@ -111,7 +111,9 @@
     {{ saveActions(
       hubHref,
       { text: sharedCopy.saveActions.saveAndContinue, name: "action", value: "save" },
-      sharedCopy.saveActions
+      sharedCopy.saveActions,
+      amend = amendFormActions if amending else none,
+      hubExitWhileAmending = false
     ) }}
   </form>
 {% endblock %}
