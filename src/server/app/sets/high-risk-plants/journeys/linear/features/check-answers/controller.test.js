@@ -386,9 +386,11 @@ describe('Check your answers lateness', () => {
     expect(submitted.captured.view.context).toMatchObject({
       readOnly: true,
       deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`,
-      cancelAmendHref: null,
       amendmentCancelled: false
     })
+    expect(
+      submitted.captured.view.context.journeyStrip.cancelAmend
+    ).toBeUndefined()
     const cancelled = stubH()
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),
@@ -404,9 +406,11 @@ describe('Check your answers lateness', () => {
     expect(amending.captured.view.context).toMatchObject({
       readOnly: false,
       deleteHref: null,
-      cancelAmendHref: `${SET_BASE}/notifications/${journeyId}/cancel-amend`,
       amendmentCancelled: false
     })
+    expect(amending.captured.view.context.journeyStrip.cancelAmend.href).toBe(
+      `${SET_BASE}/notifications/${journeyId}/cancel-amend`
+    )
   })
 
   it('Should show no error summary on an incomplete amend review', async () => {

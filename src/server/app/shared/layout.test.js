@@ -140,6 +140,44 @@ describe('alpha phase banner', () => {
   })
 })
 
+describe('journey strip', () => {
+  const status = { text: 'Amend', classes: 'govuk-tag--yellow' }
+  const cancelAmend = { href: '/x/cancel-amend', text: 'Cancel amend' }
+
+  it('Should show Cancel amend as a link beside the tag and reference while amending', () => {
+    const $ = load(
+      renderLayout(
+        { isAuthenticated: true },
+        { journeyStrip: { reference: 'R', status, cancelAmend } }
+      )
+    )
+    const link = $('.app-journey-strip a.govuk-link')
+
+    expect($('.app-journey-strip .govuk-tag').text().trim()).toBe('Amend')
+    expect($('.app-journey-strip').text()).toContain('R')
+    expect(link).toHaveLength(1)
+    expect(link.text()).toBe('Cancel amend')
+    expect(link.attr('href')).toBe('/x/cancel-amend')
+  })
+
+  it('Should show no link in the strip without a Cancel amend control', () => {
+    const $ = load(
+      renderLayout(
+        { isAuthenticated: true },
+        {
+          journeyStrip: {
+            reference: 'R',
+            status: { text: 'Draft', classes: 'govuk-tag--blue' }
+          }
+        }
+      )
+    )
+
+    expect($('.app-journey-strip')).toHaveLength(1)
+    expect($('.app-journey-strip a')).toHaveLength(0)
+  })
+})
+
 describe('breadcrumbs', () => {
   it('Should render no breadcrumb trail, as Design release 1 has none', () => {
     const html = renderLayout(
