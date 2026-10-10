@@ -338,6 +338,7 @@ Cover:
 - preservation of entered values on error
 - every error-summary link moving focus to its control
 - back, Save and return to overview, Cancel and Change navigation as applicable
+- on an overview-linked page, `amend = amendFormActions if amending else none` on `saveActions`, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending = false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment.
 - conditional scope, skip and purge behaviour
 - the check-answers rows and Change links
 

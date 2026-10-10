@@ -36,7 +36,7 @@ import {
   nextInSection
 } from '../../../../../../flow/navigation.js'
 import { sectionGatePasses } from '../../../../../../flow/gates.js'
-import { makeScope } from '../../../../../../engine/index.js'
+import { AMEND, makeScope } from '../../../../../../engine/index.js'
 import { sections } from '../../flow/flow.js'
 import { meta, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
@@ -407,6 +407,28 @@ describe('Check your answers lateness', () => {
       cancelAmendHref: `${SET_BASE}/notifications/${journeyId}/cancel-amend`,
       amendmentCancelled: false
     })
+  })
+
+  it('Should show no error summary on an incomplete amend review', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, {})
+    await store.submit(journeyId)
+    await recordsStub.amend(journeyId)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+    expect(h.captured.view.context.errorSummary).toBeNull()
+  })
+
+  it('Should keep an incomplete amend on the review without an error', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, {})
+    await store.submit(journeyId)
+    await recordsStub.amend(journeyId)
+    const response = await post(journeyRequest(journeyId), stubH())
+    expect(response).toEqual({
+      redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
+    })
+    expect((await store.get(journeyId)).status).toBe(AMEND)
   })
 
   it('Should let unexpected address-book errors escape', async () => {

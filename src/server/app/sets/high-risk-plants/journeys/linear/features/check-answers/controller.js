@@ -72,7 +72,11 @@ const render = async (request, h, current, disableAutoFocus = true) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const source = current.storedAnswers ?? current.answers
   const parties = await partiesFor(request, source, current.scope)
-  const errors = readOnly ? {} : await continueErrors(current, source, parties)
+  // c-201: an amend review holds Continue silently, so it names nothing in error.
+  const holdsSilently = readOnly || current.journey.status === state.AMEND
+  const errors = holdsSilently
+    ? {}
+    : await continueErrors(current, source, parties)
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
@@ -128,6 +132,9 @@ const post = async (request, h) => {
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
   ) {
+    if (current.journey.status === state.AMEND) {
+      return h.redirect(pagePath(current.journey.journeyId, page.slug))
+    }
     return (await render(request, h, current, false)).code(
       HTTP_STATUS_BAD_REQUEST
     )

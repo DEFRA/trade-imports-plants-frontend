@@ -217,6 +217,7 @@ export const base = (
     homeUrl: dashboardPath(),
     hubHref: hasJourney ? hubPath(journeyId) : undefined,
     journeyStrip: journeyStrip(journey),
+    amending: journey?.status === AMEND,
     concurrencyToken: journey?.concurrencyToken ?? null,
     sharedCopy,
     recoverableError,

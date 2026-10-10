@@ -5,6 +5,7 @@ import {
   itemDetailPage,
   itemsPage
 } from '../../../../test/fixtures/index.js'
+import { AMEND, DRAFT, SUBMITTED } from '../engine/index.js'
 import { base, dateField, isHubExit } from './kit.js'
 
 describe('#isHubExit — the Save and return to overview submit', () => {
@@ -71,5 +72,16 @@ describe('#dateField — MoJ date-picker view model', () => {
     const field = dateField('exitDate', { label: 'Exit date' })
 
     expect(field.formGroup).toBeUndefined()
+  })
+})
+
+describe('#base — amending', () => {
+  it('Should be true only for a journey being amended', () => {
+    expect(base('title', { journey: { status: AMEND } }).amending).toBe(true)
+    expect(base('title', { journey: { status: DRAFT } }).amending).toBe(false)
+    expect(base('title', { journey: { status: SUBMITTED } }).amending).toBe(
+      false
+    )
+    expect(base('title').amending).toBe(false)
   })
 })
