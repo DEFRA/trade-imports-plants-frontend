@@ -396,7 +396,7 @@ describe('dashboard row actions', () => {
 
     const [row] = h.captured.view.context.notificationRows
     expect(row.status).toEqual({
-      text: 'Amending',
+      text: 'Amend',
       classes: 'govuk-tag--yellow'
     })
     expect(textOf(row)).toEqual([
