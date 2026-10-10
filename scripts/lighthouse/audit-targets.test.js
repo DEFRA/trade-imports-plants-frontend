@@ -70,6 +70,7 @@ const PLACE_OF_DESTINATION_PATH =
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_ROUTE_PATH },
+  { method: 'GET', path: '/start' },
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: CONFIRMATION_PATH },
   { method: 'GET', path: CANCEL_AMEND_PATH },
@@ -89,8 +90,8 @@ const GET_PATHS = ROUTES.filter(({ method }) => method === 'GET').map(
 const SKIPPED_PATH = '/notifications/{journeyId}/uploads/status'
 const TREATMENTS_PATH = '/notifications/{journeyId}/treatments'
 const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
-// The temporary uploads/status entry and both lifecycle-only pages.
-const SKIPPED_PATH_COUNT = 3
+// The temporary uploads/status entry, both lifecycle-only pages and the start entry.
+const SKIPPED_PATH_COUNT = 4
 
 /** The three maps are empty until pages land, so a test registers the entries
  * it needs for its own length and takes them back out again. */
