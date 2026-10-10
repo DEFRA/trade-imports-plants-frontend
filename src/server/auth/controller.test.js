@@ -171,7 +171,7 @@ describe('#authController', () => {
     expect(statusCode).toBe(statusCodes.ok)
     expect(payload).toContain(sharedEn.unauthorised.heading)
     expect(payload).toContain(
-      `${sharedEn.unauthorised.title} | ${sharedEn.layout.serviceName}`
+      `${sharedEn.unauthorised.title} - ${sharedEn.layout.serviceName} - ${sharedEn.layout.govukSuffix}`
     )
     expect(headers['set-cookie'] ?? []).not.toContainEqual(
       expect.stringContaining('sid=')

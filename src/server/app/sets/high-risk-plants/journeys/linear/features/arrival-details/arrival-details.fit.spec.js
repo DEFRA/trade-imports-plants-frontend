@@ -18,6 +18,7 @@ import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
+import { portsOfEntry } from '../../../../../../services/_capture/fixtures.js'
 import { copy } from './copy/copy.en.js'
 
 const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
@@ -50,7 +51,8 @@ const FRANCE = 'France'
 const A_DATE = '27/3/2026'
 const A_PAST_DATE = '1/1/2020'
 const A_TIME = '14:30'
-const DOVER = 'Port of Dover (GB DVR)'
+const DOVER = 'Port of Dover - GB DVR'
+const DOVER_CODE = 'GB DVR'
 
 const WARE_POTATO_LINE_FIELDS = {
   potatoVariety: 'Maris Piper',
@@ -236,6 +238,18 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(page.getByText(copy.placeOfLanding.hint)).toBeVisible()
   })
 
+  test('sets every potato arrival question in the medium label size', async ({
+    page
+  }) => {
+    await startAtPotatoDetails(page)
+
+    for (const id of ['arrivalDate', 'arrivalTime', 'proposedPlaceOfLanding']) {
+      await expect(page.locator(`label[for="${id}"]`)).toHaveClass(
+        /govuk-label--m/
+      )
+    }
+  })
+
   test('offers the ports the reference-data service holds', async ({
     page
   }) => {
@@ -244,6 +258,20 @@ test.describe('arrival-details — a potato notification', () => {
     await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
 
     await expect(page.locator(PORT_INPUT)).toHaveValue(DOVER)
+  })
+
+  test('offers every place of landing as its port name and code', async ({
+    page
+  }) => {
+    await startAtPotatoDetails(page)
+
+    const options = await page
+      .locator(`${PORT_SELECT} option`)
+      .evaluateAll((nodes) => nodes.map((node) => node.textContent))
+
+    expect(options.slice(1)).toEqual(
+      portsOfEntry.map(({ name, code }) => `${name} - ${code}`)
+    )
   })
 
   test('saves all three answers, reaches the destination and shows them again on return', async ({
@@ -262,6 +290,7 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_DATE)
     await expect(page.locator(TIME_INPUT)).toHaveValue(A_TIME)
     await expect(page.locator(PORT_INPUT)).toHaveValue(DOVER)
+    await expect(page.locator(PORT_SELECT)).toHaveValue(DOVER_CODE)
   })
 
   test('completes the arrival row on the overview', async ({ page }) => {
@@ -308,6 +337,42 @@ test.describe('arrival-details — a potato notification', () => {
   })
 })
 
+test.describe('arrival-details — without JavaScript', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('the place of landing is a labelled native select whose options read name and code, and it saves the port code', async ({
+    page,
+    browser
+  }) => {
+    const reference = await startAtPotatoDetails(page)
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      storageState: await page.context().storageState()
+    })
+    const noJs = await context.newPage()
+
+    await noJs.goto(arrivalDetailsPathOf(reference))
+    const select = noJs.getByLabel(copy.placeOfLanding.label, { exact: true })
+    await expect(select).toHaveAttribute('name', 'proposedPlaceOfLanding')
+    await expect(select).toHaveJSProperty('tagName', 'SELECT')
+    await expect(
+      noJs.locator(`${PORT_SELECT} option[value="${DOVER_CODE}"]`)
+    ).toHaveText(DOVER)
+
+    await noJs.locator(DATE_INPUT).fill(A_DATE)
+    await noJs.locator(TIME_INPUT).fill(A_TIME)
+    await select.selectOption(DOVER_CODE)
+    await saveAndContinue(noJs).click()
+    await expect(noJs).toHaveURL(DESTINATION_URL)
+
+    await noJs.goto(arrivalDetailsPathOf(reference))
+    await expect(select).toHaveValue(DOVER_CODE)
+    await context.close()
+  })
+})
+
 test.describe('arrival-details — the question a plants notification is asked', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -321,6 +386,9 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(
       page.getByLabel(copy.dateLabels[NOT_YET_ARRIVED], { exact: true })
     ).toBeVisible()
+    await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
+      /govuk-label--m/
+    )
   })
 
   test('asks when the consignment first arrived once it is here', async ({
@@ -331,6 +399,9 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(
       page.getByLabel(copy.dateLabels[ALREADY_ARRIVED], { exact: true })
     ).toBeVisible()
+    await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
+      /govuk-label--m/
+    )
   })
 
   test('asks for no time and no place of landing', async ({ page }) => {

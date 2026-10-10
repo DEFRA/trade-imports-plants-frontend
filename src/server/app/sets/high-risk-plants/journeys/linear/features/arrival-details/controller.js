@@ -142,7 +142,8 @@ const render = async (h, current, values, options = {}) => {
       hint: copy.dateHints[dateState],
       value: values[ARRIVAL_DATE],
       error: errors[ARRIVAL_DATE],
-      maxDate: bounds.maxText
+      maxDate: bounds.maxText,
+      labelClasses: 'govuk-label--m'
     })
   })
 }
@@ -187,7 +188,8 @@ const post = async (request, h) => {
   const bounds = boundsFor(current.answers, current.scope)
   const { errors, value } = validate(
     await fields(current.scope, bounds),
-    payload
+    payload,
+    { allowMissing: kit.isHubExit(request) }
   )
   if (errors) {
     return (await render(h, current, values, { bounds, errors })).code(
