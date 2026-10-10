@@ -5,7 +5,21 @@ import {
   itemDetailPage,
   itemsPage
 } from '../../../../test/fixtures/index.js'
-import { base, dateField } from './kit.js'
+import { base, dateField, isHubExit } from './kit.js'
+
+describe('#isHubExit — the Save and return to overview submit', () => {
+  const params = { journeyId: 'journey-1' }
+
+  it('Should be true only for the named hub exit', () => {
+    expect(isHubExit({ payload: { exit: 'hub' }, params })).toBe(true)
+  })
+
+  it('Should be false with no payload, no exit or another exit', () => {
+    expect(isHubExit({ params })).toBe(false)
+    expect(isHubExit({ payload: {}, params })).toBe(false)
+    expect(isHubExit({ payload: { exit: 'other' }, params })).toBe(false)
+  })
+})
 
 describe('#base — the section caption the installed journey names', () => {
   it('Should carry the caption of a page the journey captions', () => {

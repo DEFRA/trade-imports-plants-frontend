@@ -89,13 +89,25 @@ const narrowingErrorFor = (constraints, country) => {
  * @param {object} payload - the raw POST payload.
  * @param {readonly object[]} constraints - the origin constraints the
  * consignment's commodity lines put on it.
+ * @param {object} [options]
+ * @param {boolean} [options.allowMissing] - a blank country is not refused
+ * (the 'Save and return to overview' reading).
  * @returns {Promise<object|null>} the field errors, or null when the answer
  * stands.
  */
-const errorsFor = async (payload, constraints) => {
-  const { errors, value } = validate(await membershipRule(), payload)
+const errorsFor = async (
+  payload,
+  constraints,
+  { allowMissing = false } = {}
+) => {
+  const { errors, value } = validate(await membershipRule(), payload, {
+    allowMissing
+  })
   if (errors) {
     return errors
+  }
+  if (!value[COUNTRY_FIELD]) {
+    return null
   }
   const narrowing = narrowingErrorFor(constraints, value[COUNTRY_FIELD])
   return narrowing ? { [COUNTRY_FIELD]: narrowing } : null
@@ -159,7 +171,9 @@ const post = async (request, h) => {
   const values = { [COUNTRY_FIELD]: payload[COUNTRY_FIELD] ?? '' }
   const current = await state.get(request, h)
   const constraints = constraintsOn(categoriesOf(current))
-  const errors = await errorsFor(payload, constraints)
+  const errors = await errorsFor(payload, constraints, {
+    allowMissing: kit.isHubExit(request)
+  })
   if (errors) {
     return (await render(h, current, values, { constraints, errors })).code(
       HTTP_STATUS_BAD_REQUEST
