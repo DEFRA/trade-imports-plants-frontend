@@ -178,7 +178,7 @@ describe('GET arrival-details — the potato-only fields', () => {
     })
     expect(ports).toContainEqual({
       value: DOVER,
-      text: 'Port of Dover (GB DVR)'
+      text: 'Port of Dover - GB DVR'
     })
   })
 

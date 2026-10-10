@@ -70,7 +70,7 @@ const completeNotification = async (page, late = false) => {
   await page.getByLabel(arrivalCopy.time.label, { exact: true }).fill('14:30')
   await page.getByRole('combobox').fill('Dover')
   await page
-    .getByRole('option', { name: 'Port of Dover (GB DVR)', exact: true })
+    .getByRole('option', { name: 'Port of Dover - GB DVR', exact: true })
     .click()
   await save(page).click()
   await expect(page).toHaveURL(/\/destinations\/select$/)
