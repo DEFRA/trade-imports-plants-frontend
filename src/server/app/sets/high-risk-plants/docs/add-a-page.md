@@ -188,7 +188,9 @@ owner to silence coverage.
 Import the page identity into
 [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js). Put it in the
 right `sections` entry, or add the first section. Its position controls
-`nextInSection()` and strictly-earlier prerequisites.
+strictly-earlier prerequisites and where Save and continue goes outside the
+opening run (`nextInTaskRow()`: the next page of the section only when it is in
+the same task row).
 
 Import it into
 [`journeys/linear/flow/task-rows.js`](../journeys/linear/flow/task-rows.js). Put
@@ -336,6 +338,7 @@ Cover:
 - preservation of entered values on error
 - every error-summary link moving focus to its control
 - back, Save and return to overview, Cancel and Change navigation as applicable
+- on an overview-linked page, `amend = amendFormActions if amending else none` on `saveActions`, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending = false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment.
 - conditional scope, skip and purge behaviour
 - the check-answers rows and Change links
 

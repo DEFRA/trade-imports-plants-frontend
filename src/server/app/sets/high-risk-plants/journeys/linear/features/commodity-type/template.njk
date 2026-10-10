@@ -33,6 +33,6 @@
       items: typeOptions
     }) }}
 
-    {{ saveActions(hubHref, copy = sharedCopy.saveActions) }}
+    {{ saveActions(hubHref, copy = sharedCopy.saveActions, amend = amendFormActions if amending else none) }}
   </form>
 {% endblock %}
