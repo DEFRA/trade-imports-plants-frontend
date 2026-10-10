@@ -13,8 +13,8 @@ export const copy = {
   title: 'Origin of the import',
   country: {
     label: 'Country of origin',
-    hint: 'Start typing to search for a country.',
     placeholder: 'Select a country',
+    searchPlaceholder: 'Search for a country',
     noResults: 'No countries found'
   },
   guidance: {
