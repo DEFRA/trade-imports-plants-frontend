@@ -82,6 +82,13 @@ describe('service-navigation copy', () => {
   })
 })
 
+describe('page-title copy', () => {
+  it('Should close every page title with the GOV.UK brand word in both locales', () => {
+    expect(sharedEn.layout.govukSuffix).toBe('GOV.UK')
+    expect(sharedCy.layout.govukSuffix).toBe('GOV.UK')
+  })
+})
+
 describe('error-page copy', () => {
   it('Should carry one message per status the catch-all names, and the fallback', () => {
     expect(sharedEn.errorPage).toEqual({

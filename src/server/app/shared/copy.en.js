@@ -2,6 +2,7 @@ export const copy = {
   layout: {
     serviceName: 'Import notification service',
     errorTitlePrefix: 'Error: ',
+    govukSuffix: 'GOV.UK',
     back: 'Back',
     phaseBanner: {
       tag: 'Alpha',

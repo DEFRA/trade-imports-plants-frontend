@@ -239,3 +239,33 @@ describe('kit surfaces', () => {
     )
   })
 })
+
+describe('page title', () => {
+  const titleOf = (html) => load(html)('head title').text()
+  const { serviceName, govukSuffix, errorTitlePrefix } = sharedCopy.layout
+
+  it('Should join the page name, the service name and GOV.UK with hyphens', () => {
+    expect(titleOf(renderLayout({ isAuthenticated: true }))).toBe(
+      `Create an import notification - ${serviceName} - ${govukSuffix}`
+    )
+  })
+
+  it('Should keep the error prefix in front of the whole title', () => {
+    const html = renderLayout(
+      { isAuthenticated: true },
+      {
+        errorSummary: [
+          { text: 'Select what you are importing', href: '#commodityType' }
+        ]
+      }
+    )
+
+    expect(titleOf(html)).toBe(
+      `${errorTitlePrefix}Create an import notification - ${serviceName} - ${govukSuffix}`
+    )
+  })
+
+  it('Should not separate the title with a pipe', () => {
+    expect(titleOf(renderLayout({ isAuthenticated: true }))).not.toContain('|')
+  })
+})
