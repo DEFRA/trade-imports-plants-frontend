@@ -162,7 +162,8 @@ describe('ports service — stub mode', () => {
     const ports = await import('./ports/index.js')
     expect(await ports.list()).toContainEqual({
       code: 'GB ABD',
-      name: 'Aberdeen Harbour'
+      name: 'Aberdeen Harbour',
+      type: 'seaport'
     })
   })
 })
