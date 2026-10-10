@@ -1,7 +1,7 @@
 import { dashboardPath, hubPath, pagePath, pageRoutePath } from './paths.js'
 import { setIdForPath, withSetContext } from './set-context.js'
 import { AMEND, DELETED, DRAFT, SUBMITTED } from '../engine/index.js'
-import { nextInSection } from '../flow/navigation.js'
+import { nextInTaskRow } from '../flow/navigation.js'
 import {
   journeyLayout,
   journeyNextRunTarget,
@@ -123,7 +123,7 @@ export const nextTarget = async (request, page, scope) =>
   exitTarget(
     request,
     (await runTarget(request, page.id, scope)) ??
-      nextInSection(page.id, scope, request.params.journeyId)
+      nextInTaskRow(page.id, scope, request.params.journeyId)
   )
 
 /**

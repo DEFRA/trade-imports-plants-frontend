@@ -25,7 +25,8 @@ flow section is a navigation sequence:
 }
 ```
 
-Array order is journey order. It controls `nextInSection()` and, through the
+Array order is journey order. It controls, within one task row, where Save and
+continue goes outside the opening run (`nextInTaskRow()`), and, through the
 section's place among the other sections, the strictly-earlier continue
 prerequisites.
 
@@ -33,7 +34,7 @@ A page reached from another page rather than by continuing past one needs a
 section of its own, which is why `commodityDetails` is separate. The
 commodities list page's Continue leaves the commodity section; the entry
 sub-page is opened from the list and sends the trader back to it. Had the two
-shared a section, `nextInSection` would send that Continue into the entry page
+shared a section, the save fallback would send that Continue into the entry page
 instead. Its own section still gives it the commodity-type prerequisite every
 page after the entry question carries.
 
@@ -73,6 +74,12 @@ is reachable and links it to the first of them whose gate passes
 (`rowGatePasses` and `rowEntry`), so the page a notification is asked first has
 to lead the row; the commodity entry sub-page is in its row because its data
 belongs to that task, not because the hub ever links there.
+
+Outside the opening run Save and continue moves on only to a later page of the
+same section that is also in the same task row — commodity type to the
+commodities list, arrival status to the arrival details — and otherwise returns
+to the hub, so consignor returns to the hub rather than going on to
+identification numbers, which has a row of its own.
 
 Row status defaults to the union of each page's `collects` — that is what
 `rowParts()` computes, and `rowStatus()` feeds to `statusOf()`. `parts` narrows

@@ -188,7 +188,9 @@ owner to silence coverage.
 Import the page identity into
 [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js). Put it in the
 right `sections` entry, or add the first section. Its position controls
-`nextInSection()` and strictly-earlier prerequisites.
+strictly-earlier prerequisites and where Save and continue goes outside the
+opening run (`nextInTaskRow()`: the next page of the section only when it is in
+the same task row).
 
 Import it into
 [`journeys/linear/flow/task-rows.js`](../journeys/linear/flow/task-rows.js). Put
