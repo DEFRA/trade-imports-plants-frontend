@@ -160,7 +160,7 @@
       "id": "select-and-autocomplete-widgets",
       "source": "live-animals",
       "status": "adopted",
-      "detail": "Long lists that need type-ahead (countryOfOrigin, genus, proposedPlaceOfLanding) use appAccessibleAutocomplete over a select with showAllValues and a noResults message, listing only a placeholder plus the real options; short fixed lists (commodityType, category, arrivalStatus) are govukRadios with per-option hints. Countries store ISO alpha-2 codes; ports display as {name} ({code}) with value = code; genus stores the SI spelling as the code until a reference service assigns ids. The accessible-autocomplete component already ships under common/components in the plants engine. Source: live-animals select-and-autocomplete-widgets (origin/template.njk:18); skeleton templates-and-nunjucks-roots."
+      "detail": "Long lists that need type-ahead (countryOfOrigin, genus, proposedPlaceOfLanding) use appAccessibleAutocomplete over a select with showAllValues and a noResults message, listing only a placeholder plus the real options; short fixed lists (commodityType, category, arrivalStatus) are govukRadios with per-option hints. Countries store ISO alpha-2 codes; port options read {name} - {code} with value = code (the check-answers row keeps {name} ({code})); genus stores the SI spelling as the code until a reference service assigns ids. The accessible-autocomplete component already ships under common/components in the plants engine. Source: live-animals select-and-autocomplete-widgets (origin/template.njk:18); skeleton templates-and-nunjucks-roots."
     },
     {
       "id": "layout-chrome",
