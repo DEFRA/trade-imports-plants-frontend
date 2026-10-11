@@ -1,4 +1,8 @@
-import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import {
+  dashboardPath,
+  hubPath,
+  pagePath
+} from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
@@ -79,6 +83,42 @@ const endButtonHrefs = ({ status, journeyId }) => ({
     status === state.AMEND ? pagePath(journeyId, kit.CANCEL_AMEND_SLUG) : null
 })
 
+// A UTC instant shown as the Europe/London civil date.
+const submittedDateText = (submittedAt) =>
+  submittedAt
+    ? copy.viewHeader.dateSubmitted(
+        new Date(submittedAt).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'Europe/London'
+        })
+      )
+    : null
+
+const viewHeaderOf = (journey) => ({
+  reference: journey.journeyId,
+  status: kit.journeyStrip(journey).status,
+  dateSubmitted: submittedDateText(journey.submittedAt)
+})
+
+/** A submitted notification's view is titled and headed by its reference, with
+ * no status bar and Back to the notification list; a draft and an amendment
+ * keep Check your answers, the status bar and Back to Overview. */
+const chromeOf = (journey, readOnly) => {
+  const chrome = kit.base(readOnly ? journey.journeyId : copy.title, {
+    journey,
+    page,
+    backLink: readOnly ? dashboardPath() : hubPath(journey.journeyId),
+    offerCancelAmend: false
+  })
+  return {
+    ...chrome,
+    journeyStrip: readOnly ? null : chrome.journeyStrip,
+    viewHeader: readOnly ? viewHeaderOf(journey) : null
+  }
+}
+
 const render = async (
   request,
   h,
@@ -96,12 +136,7 @@ const render = async (
     ? {}
     : await continueErrors(current, source, parties)
   return h.view(view, {
-    ...kit.base(copy.title, {
-      journey: current.journey,
-      page,
-      backLink: hubPath(current.journey.journeyId),
-      offerCancelAmend: false
-    }),
+    ...chromeOf(current.journey, readOnly),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
     readOnly,
@@ -130,9 +165,20 @@ const render = async (
   })
 }
 
+const renderOrList = async (request, h) => {
+  try {
+    return await render(request, h, await state.get(request, h))
+  } catch (error) {
+    if (state.isJourneyNotFound(error)) {
+      return h.redirect(dashboardPath())
+    }
+    throw error
+  }
+}
+
 const get = async (request, h) => {
   await completeOpeningRun(request, h, request.params.journeyId)
-  return render(request, h, await state.get(request, h))
+  return renderOrList(request, h)
 }
 
 const post = async (request, h) => {

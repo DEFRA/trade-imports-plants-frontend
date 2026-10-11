@@ -1,6 +1,7 @@
 {% extends "shared/layout.njk" %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
 {% from "shared/section-caption.njk" import sectionCaption %}
 {% from "shared/save-actions.njk" import saveActions %}
 
@@ -18,7 +19,15 @@
   {% endif %}
   {% include "shared/error-summary.njk" %}
   {{ sectionCaption(caption) }}
-  <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% if viewHeader %}
+    <div class="govuk-!-margin-bottom-6">
+      <h1 class="govuk-heading-l govuk-!-display-inline-block govuk-!-margin-right-2 govuk-!-margin-bottom-2">{{ viewHeader.reference }}</h1>
+      {{ govukTag({ text: viewHeader.status.text, classes: viewHeader.status.classes }) }}
+      {% if viewHeader.dateSubmitted %}<p class="govuk-body govuk-!-margin-bottom-0">{{ viewHeader.dateSubmitted }}</p>{% endif %}
+    </div>
+  {% else %}
+    <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% endif %}
   {% if lateNotification %}
     {% set lateBody %}
       <h2 class="govuk-notification-banner__heading">{{ copy.late.heading }}</h2>

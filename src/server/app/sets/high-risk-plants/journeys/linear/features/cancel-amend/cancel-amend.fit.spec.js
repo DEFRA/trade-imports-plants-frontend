@@ -315,9 +315,12 @@ test.describe('without JavaScript', () => {
     await noJs.getByRole('button', { name: cancelCopy.confirmButton }).click()
 
     await expect(noJs).toHaveURL(/\/notification-view\?cancelled=1$/)
-    await expect(strip(noJs).locator(TAG)).toHaveText(
-      sharedCopy.journeyStrip.submitted
-    )
+    await expect(
+      noJs
+        .getByRole('main')
+        .getByText(sharedCopy.journeyStrip.submitted, { exact: true })
+    ).toBeVisible()
+    await expect(strip(noJs)).toHaveCount(0)
     await context.close()
   })
 })

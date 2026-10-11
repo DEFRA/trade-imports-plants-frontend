@@ -11,6 +11,7 @@ import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as commodityCopy } from '../commodities/copy/copy.en.js'
 import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as idsCopy } from '../identification-numbers/copy/copy.en.js'
+import { copy as declarationCopy } from '../declaration/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
 const save = (page) =>
@@ -269,4 +270,59 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   await assertAccessible(page)
   await error.click()
   await expect(page).toHaveURL(/\/origin\?change=1$/)
+})
+
+const submitNotification = async (page) => {
+  const reference = await completeNotification(page)
+  await page.getByRole('button', { name: copy.continue, exact: true }).click()
+  await page
+    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
+    .check()
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  await expect(page).toHaveURL(/\/confirmation$/)
+  return reference
+}
+
+test("a submitted notification's view is headed by its reference with a Submitted tag and the date submitted, titled by its reference, with Back to the notification list", async ({
+  page
+}) => {
+  const reference = await submitNotification(page)
+
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: reference, exact: true })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: copy.title, level: 1 })
+  ).toHaveCount(0)
+  const tag = page
+    .getByRole('main')
+    .getByText(sharedCopy.journeyStrip.submitted, { exact: true })
+  await expect(tag).toHaveClass(/govuk-tag--green/)
+  await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+  await expect(page).toHaveTitle(
+    `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
+  )
+  await expect(
+    page.getByText(/^Date submitted: \d{1,2} [A-Z][a-z]+ \d{4}$/)
+  ).toBeVisible()
+  await assertAccessible(page)
+
+  await page.getByRole('link', { name: 'Back', exact: true }).click()
+
+  await expect(page).toHaveURL(setUrl('/?$'))
+  await expect(
+    page.getByRole('heading', { level: 1, name: dashboardCopy.title })
+  ).toBeVisible()
+})
+
+test('opening the view of a notification that does not exist goes to the notification list', async ({
+  page
+}) => {
+  await page.goto(`${BASE}/notifications/GBN-HRP-00-000000/notification-view`)
+
+  await expect(page).toHaveURL(setUrl('/?$'))
 })

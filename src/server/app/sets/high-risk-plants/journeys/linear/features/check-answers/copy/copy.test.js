@@ -20,6 +20,12 @@ describe('checkAnswers copy module', () => {
     expect(copy.late.plantsAndWood(9)).toContain('9 days after')
   })
 
+  it('Should interpolate the date submitted', () => {
+    expect(copy.viewHeader.dateSubmitted('22 July 2026')).toBe(
+      'Date submitted: 22 July 2026'
+    )
+  })
+
   it('Should have a non-empty string or function at every leaf', () => {
     for (const { path, value } of leaves(copy)) {
       expect(isCopyLeaf(value), `${path} must be copy`).toBe(true)

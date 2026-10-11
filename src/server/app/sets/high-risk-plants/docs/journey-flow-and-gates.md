@@ -136,6 +136,9 @@ the call — and redirects on any target it returns. The guard:
   session (`openingRunStarted`, true for both `RUN_ACTIVE` and `RUN_COMPLETE`),
   or when the journey carries committed user answers
   (`hasCommittedNotificationAnswers`)
+- admits a request for a notification it cannot find, leaving the page to answer
+  it — the review page sends it to the notification list, every other page
+  answers not found
 - sends anything else — a deep link to an id this session never created and that
   holds no answers — to the entry page
 

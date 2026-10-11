@@ -230,7 +230,7 @@ test('submits an on-time notification without a late banner', async ({
   ).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { name: reference, level: 1, exact: true })
   ).toBeVisible()
   await expect(
     page.getByRole('heading', { name: copy.late.heading })

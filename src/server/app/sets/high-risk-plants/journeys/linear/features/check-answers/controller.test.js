@@ -426,6 +426,51 @@ describe('Check your answers lateness', () => {
     }
   )
 
+  it("Should head a submitted notification's read-only view with its reference, a Submitted tag and the date submitted, with Back to the notification list", async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-21T23:30:00Z'))
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+      await store.submit(journeyId)
+      const h = stubH()
+      await get(journeyRequest(journeyId), h)
+
+      expect(h.captured.view.context).toMatchObject({
+        pageTitle: journeyId,
+        viewHeader: {
+          reference: journeyId,
+          status: { text: 'Submitted', classes: 'govuk-tag--green' },
+          dateSubmitted: 'Date submitted: 22 July 2026'
+        },
+        journeyStrip: null,
+        backLink: SET_BASE
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('Should keep Check your answers, the status bar and Back to Overview on a draft', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+
+    const { context } = h.captured.view
+    expect(context.pageTitle).toBe(copy.title)
+    expect(context.viewHeader).toBeNull()
+    expect(context.journeyStrip).not.toBeNull()
+    expect(context.backLink).toBe(`${SET_BASE}/notifications/${journeyId}`)
+  })
+
+  it('Should send a notification that cannot be found to the notification list', async () => {
+    const h = stubH()
+    const response = await get(journeyRequest('GBN-HRP-00-000000'), h)
+
+    expect(response.redirect).toBe(SET_BASE)
+  })
+
   it('Should offer Cancel amendment only while amending, and the banner only after cancelling', async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
@@ -438,9 +483,7 @@ describe('Check your answers lateness', () => {
       cancelAmendHref: null,
       amendmentCancelled: false
     })
-    expect(
-      submitted.captured.view.context.journeyStrip.cancelAmend
-    ).toBeUndefined()
+    expect(submitted.captured.view.context.journeyStrip).toBeNull()
     const cancelled = stubH()
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),

@@ -28,6 +28,7 @@ import {
 
 const ENTRY_SLUG = commodityTypePage.slug
 const OTHER_JOURNEY_ID = 'HRP-9999'
+const VIEW_SLUG = 'notification-view'
 
 const openingRunState = (record) => ({
   [openingRunCookie()]: record
@@ -74,7 +75,7 @@ describe('#guardedJourneyPath', () => {
 
   it('Should guard the overview and every journey page beyond the entry page', () => {
     expect(guardedJourneyPath(hubPath('j-1'))).toBe(true)
-    expect(guardedJourneyPath(pagePath('j-1', 'notification-view'))).toBe(true)
+    expect(guardedJourneyPath(pagePath('j-1', VIEW_SLUG))).toBe(true)
   })
 })
 
@@ -120,6 +121,14 @@ describe('#entryGuardTarget', () => {
     ).resolves.toBeNull()
   })
 
+  it('Should leave a notification it cannot find to the page it asked for', async () => {
+    const missing = 'GBN-HRP-00-000000'
+
+    expect(
+      await guardOn(missing, { path: pagePath(missing, VIEW_SLUG) })
+    ).toBeNull()
+  })
+
   it('Should redirect a journey with neither a run record nor answers to the entry page', async () => {
     const journeyId = await freshJourney()
 
@@ -131,7 +140,7 @@ describe('#entryGuardTarget', () => {
 
     expect(
       await guardOn(journeyId, {
-        path: pagePath(journeyId, 'notification-view')
+        path: pagePath(journeyId, VIEW_SLUG)
       })
     ).toBe(pagePath(journeyId, ENTRY_SLUG))
   })

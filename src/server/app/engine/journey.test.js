@@ -3,6 +3,7 @@ import {
   cancelAmendJourney,
   copyJourney,
   currentJourney,
+  isJourneyNotFound,
   amendJourney,
   listKnownJourneys,
   replaceJourneyFulfilment,
@@ -346,5 +347,26 @@ describe('#registerJourneyCookie', () => {
         SET_BASE
       )
     }
+  })
+})
+
+describe('#isJourneyNotFound', () => {
+  beforeEach(async () => {
+    configureRecords(SET_ID, recordsStub)
+    configureSession(SET_ID, sessionStub)
+    await store.clear()
+  })
+
+  it('Should recognise the not-found a missing notification raises, and nothing else', async () => {
+    const missing = await currentJourney(
+      requestFor('unknown', []),
+      recordingH()
+    ).catch((error) => error)
+
+    expect(isJourneyNotFound(missing)).toBe(true)
+    expect(isJourneyNotFound(new Error('boom'))).toBe(false)
+    expect(
+      isJourneyNotFound({ isBoom: true, output: { statusCode: 500 } })
+    ).toBe(false)
   })
 })

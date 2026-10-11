@@ -14,6 +14,7 @@ export const copy = {
   },
 
   title: 'Gwiriwch eich atebion',
+  viewHeader: { dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}` },
   change: 'Newid',
   cancelAmend: {
     button: 'Canslo diwygio',

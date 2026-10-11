@@ -13,6 +13,7 @@ export const copy = {
   },
 
   title: 'Check your answers',
+  viewHeader: { dateSubmitted: (date) => `Date submitted: ${date}` },
   change: 'Change',
   cancelAmend: {
     button: 'Cancel amend',
