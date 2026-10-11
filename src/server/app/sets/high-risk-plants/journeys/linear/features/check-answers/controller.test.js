@@ -435,6 +435,7 @@ describe('Check your answers lateness', () => {
     expect(submitted.captured.view.context).toMatchObject({
       readOnly: true,
       deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`,
+      cancelAmendHref: null,
       amendmentCancelled: false
     })
     expect(
@@ -455,11 +456,12 @@ describe('Check your answers lateness', () => {
     expect(amending.captured.view.context).toMatchObject({
       readOnly: false,
       deleteHref: null,
+      cancelAmendHref: `${SET_BASE}/notifications/${journeyId}/cancel-amend`,
       amendmentCancelled: false
     })
-    expect(amending.captured.view.context.journeyStrip.cancelAmend.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/cancel-amend`
-    )
+    expect(
+      amending.captured.view.context.journeyStrip.cancelAmend
+    ).toBeUndefined()
   })
 
   it('Should show no error summary on an incomplete amend review', async () => {
@@ -472,16 +474,30 @@ describe('Check your answers lateness', () => {
     expect(h.captured.view.context.errorSummary).toBeNull()
   })
 
-  it('Should keep an incomplete amend on the review without an error', async () => {
+  it('Should refuse an incomplete amend and name what is missing', async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, {})
     await store.submit(journeyId)
     await recordsStub.amend(journeyId)
-    const response = await post(journeyRequest(journeyId), stubH())
-    expect(response).toEqual({
-      redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
-    })
+    const h = stubH()
+    const response = await post(journeyRequest(journeyId), h)
+    expect(response.statusCode).toBe(400)
+    expect(response.redirect).toBeUndefined()
+    expect(
+      h.captured.view.context.errorSummary.errorList.length
+    ).toBeGreaterThan(0)
     expect((await store.get(journeyId)).status).toBe(AMEND)
+  })
+
+  it("Should offer delete on a draft's check answers", async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+    expect(h.captured.view.context.deleteHref).toBe(
+      `${SET_BASE}/notifications/${journeyId}/delete`
+    )
+    expect(h.captured.view.context.cancelAmendHref).toBeNull()
   })
 
   it('Should let unexpected address-book errors escape', async () => {

@@ -24,6 +24,9 @@ const cancelAmendLink = (page) =>
     exact: true
   })
 
+const cancelAmendButton = (page) =>
+  page.getByRole('button', { name: copy.cancelAmend.button, exact: true })
+
 const save = (page) =>
   page.getByRole('button', {
     name: sharedCopy.saveActions.saveAndContinue,
@@ -218,17 +221,68 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
   await expect(strip(page).locator(TAG)).toHaveText(
     sharedCopy.journeyStrip.amend
   )
-  await expect(cancelAmendLink(page)).toBeVisible()
+  await expect(cancelAmendButton(page)).toBeVisible()
+  await expect(cancelAmendLink(page)).toHaveCount(0)
 })
 
-test('Overview and review offer Cancel amend while amending', async ({
+test('Overview offers Cancel amend in the status bar and the review offers it as a button beside Continue, with no delete', async ({
   page
 }) => {
   const reference = journeyIdFromPage(page)
-  for (const path of ['', '/notification-view']) {
-    await page.goto(`${BASE}/notifications/${reference}${path}`)
-    await expect(cancelAmendLink(page)).toBeVisible()
-  }
+  await page.goto(`${BASE}/notifications/${reference}`)
+  await expect(cancelAmendLink(page)).toBeVisible()
+
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+  await expect(cancelAmendButton(page)).toBeVisible()
+  await expect(cancelAmendButton(page)).toHaveClass(/govuk-button--secondary/)
+  await expect(cancelAmendButton(page)).toHaveAttribute(
+    'href',
+    /\/cancel-amend$/
+  )
+  await expect(cancelAmendLink(page)).toHaveCount(0)
+  await expect(page.getByText(copy.delete, { exact: true })).toHaveCount(0)
+})
+
+test('Cancel amend on the review opens the confirmation page', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  await cancelAmendButton(page).click()
+
+  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(
+    page.getByRole('heading', { name: cancelCopy.title, level: 1 })
+  ).toBeVisible()
+})
+
+test('Continue on an incomplete amendment is refused and names what is missing', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  await page.goto(`${BASE}/notifications/${reference}/arrival-details`)
+  await page
+    .getByLabel(arrivalCopy.dateLabels.potatoes, { exact: true })
+    .fill('')
+  await page
+    .getByRole('button', {
+      name: sharedCopy.saveActions.saveAndReturnToHub,
+      exact: true
+    })
+    .click()
+
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+  await expect(
+    page.getByRole('heading', { name: sharedCopy.errorSummary.title })
+  ).toHaveCount(0)
+
+  await page.getByRole('button', { name: copy.continue, exact: true }).click()
+
+  await expect(page).toHaveURL(cyaUrl)
+  await expect(
+    page.getByRole('link', { name: copy.errors.rows.arrival })
+  ).toBeVisible()
 })
 
 test('Cancel amend on the Overview opens the confirmation page', async ({

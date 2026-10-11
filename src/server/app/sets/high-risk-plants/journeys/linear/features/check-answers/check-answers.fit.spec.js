@@ -184,11 +184,24 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   )
 })
 
-test('offers Back, Save and return, and Cancel to Overview', async ({
+test('offers Back, Delete notification, Save and return, and Cancel to Overview', async ({
   page
 }) => {
   const reference = await completeNotification(page)
   const hub = `${BASE}/notifications/${reference}`
+  const deleteButton = page.getByRole('button', {
+    name: copy.delete,
+    exact: true
+  })
+  await expect(deleteButton).toBeVisible()
+  await expect(deleteButton).toHaveClass(/govuk-button--warning/)
+  await expect(deleteButton).toHaveAttribute('href', /\/delete$/)
+  await expect(
+    page
+      .locator('.govuk-button-group')
+      .filter({ has: page.getByRole('button', { name: copy.continue }) })
+      .locator('> :nth-child(2)')
+  ).toHaveText(copy.delete)
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveAttribute('href', hub)
@@ -205,6 +218,16 @@ test('offers Back, Save and return, and Cancel to Overview', async ({
     })
     .click()
   await expect(page).toHaveURL(new RegExp(`${hub}$`))
+})
+
+test("Delete notification on a draft's check answers opens the delete page", async ({
+  page
+}) => {
+  await completeNotification(page)
+
+  await page.getByRole('button', { name: copy.delete, exact: true }).click()
+
+  await expect(page).toHaveURL(/\/delete$/)
 })
 
 test('rechecks a saved origin after a commodity change and exposes an accessible correction link', async ({

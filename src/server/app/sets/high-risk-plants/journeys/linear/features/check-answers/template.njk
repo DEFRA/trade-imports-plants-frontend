@@ -43,10 +43,17 @@
     {% endif %}
     <h2 class="govuk-heading-m">{{ copy.submit.heading }}</h2>
     <p class="govuk-body">{{ copy.submit.body }}</p>
+    {% if cancelAmendHref %}
+      {% set besidePrimary = [{ text: copy.cancelAmend.button, href: cancelAmendHref, classes: "govuk-button--secondary" }] %}
+    {% elif deleteHref %}
+      {% set besidePrimary = [{ text: copy.delete, href: deleteHref, classes: "govuk-button--warning" }] %}
+    {% else %}
+      {% set besidePrimary = [] %}
+    {% endif %}
     <form method="post" novalidate>
       <input type="hidden" name="crumb" value="{{ crumb }}" />
       <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
-      {{ saveActions(hubHref, primary = { text: copy.continue }, copy = sharedCopy.saveActions) }}
+      {{ saveActions(hubHref, primary = { text: copy.continue }, copy = sharedCopy.saveActions, besidePrimary = besidePrimary) }}
     </form>
   {% endif %}
 {% endblock %}

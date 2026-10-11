@@ -17,8 +17,11 @@
    to overview", with no cancel link. Each save button carries its own
    `formaction`, so no new field is posted. A page reached from another page
    (`showReturnControls = false`) or a picker (`hubExitWhileAmending = false`)
-   ends with the first two only. #}
-{% macro saveActions(hubHref, primary, copy, showReturnControls = true, amend = none, hubExitWhileAmending = true) %}
+   ends with the first two only.
+
+   Check answers passes `besidePrimary`, a list of `govukButton` parameters for
+   the review's own buttons, which stand straight after the primary. #}
+{% macro saveActions(hubHref, primary, copy, showReturnControls = true, amend = none, hubExitWhileAmending = true, besidePrimary = []) %}
   <div class="govuk-button-group">
     {% if amend %}
       {{ govukButton({
@@ -39,6 +42,7 @@
       {% endif %}
     {% else %}
       {{ govukButton(primary or { text: copy.saveAndContinue }) }}
+      {% for button in besidePrimary %}{{ govukButton(button) }}{% endfor %}
       {% if showReturnControls %}
         {{ govukButton({
           text: copy.saveAndReturnToHub,

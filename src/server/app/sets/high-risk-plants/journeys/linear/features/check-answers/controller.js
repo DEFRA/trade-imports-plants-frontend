@@ -68,12 +68,30 @@ const errorHref = (current, key) =>
     ? outstandingRowHref(key, current.scope, current.journey.journeyId)
     : changeHref(current.journey.journeyId, key)
 
-const render = async (request, h, current, disableAutoFocus = true) => {
+/** Delete stands on a draft and a submitted review, Cancel amend only while
+ * amending. */
+const endButtonHrefs = ({ status, journeyId }) => ({
+  deleteHref:
+    status === state.SUBMITTED || status === state.DRAFT
+      ? pagePath(journeyId, 'delete')
+      : null,
+  cancelAmendHref:
+    status === state.AMEND ? pagePath(journeyId, kit.CANCEL_AMEND_SLUG) : null
+})
+
+const render = async (
+  request,
+  h,
+  current,
+  disableAutoFocus = true,
+  refused = false
+) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const source = current.storedAnswers ?? current.answers
   const parties = await partiesFor(request, source, current.scope)
-  // c-201: an amend review holds Continue silently, so it names nothing in error.
-  const holdsSilently = readOnly || current.journey.status === state.AMEND
+  // c-201: an amendment opens with no errors; c-136: Continue refused shows them.
+  const holdsSilently =
+    readOnly || (current.journey.status === state.AMEND && !refused)
   const errors = holdsSilently
     ? {}
     : await continueErrors(current, source, parties)
@@ -81,7 +99,8 @@ const render = async (request, h, current, disableAutoFocus = true) => {
     ...kit.base(copy.title, {
       journey: current.journey,
       page,
-      backLink: hubPath(current.journey.journeyId)
+      backLink: hubPath(current.journey.journeyId),
+      offerCancelAmend: false
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
@@ -104,7 +123,7 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       href: (key) => errorHref(current, key),
       disableAutoFocus
     }),
-    deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
+    ...endButtonHrefs(current.journey),
     // Ruled c-030: the success banner shows once, after cancel-amend's own
     // redirect.
     amendmentCancelled: readOnly && request.query.cancelled === '1'
@@ -128,10 +147,7 @@ const post = async (request, h) => {
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
   ) {
-    if (current.journey.status === state.AMEND) {
-      return h.redirect(pagePath(current.journey.journeyId, page.slug))
-    }
-    return (await render(request, h, current, false)).code(
+    return (await render(request, h, current, false, true)).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }

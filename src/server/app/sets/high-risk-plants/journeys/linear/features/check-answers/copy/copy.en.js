@@ -15,6 +15,7 @@ export const copy = {
   title: 'Check your answers',
   change: 'Change',
   cancelAmend: {
+    button: 'Cancel amend',
     successTitle: 'Success',
     successBody:
       'The amendment has been cancelled and the submitted version restored.'
