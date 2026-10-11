@@ -11,6 +11,7 @@ export const copy = {
     serviceNavigation: {
       menuButton: 'Menu',
       dashboard: 'Dashboard',
+      templates: 'Templates',
       addressBook: 'Address book',
       manageAccount: 'Manage account',
       logOut: 'Log out'

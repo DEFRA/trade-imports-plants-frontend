@@ -49,6 +49,16 @@ const resolveSession = (request, sessionId) => {
 const insAddressBookUrl = () =>
   `${config.get('tradeImportsInsFrontend.baseUrl').replace(/\/$/, '')}/address-book`
 
+/**
+ * The Manage templates link. Plants has no templates of its own (c-307); Manage
+ * templates is the animals frontend's live-animals page, and the link is
+ * browser-visible.
+ *
+ * @returns {string} the absolute URL of Manage templates.
+ */
+const animalsTemplatesUrl = () =>
+  `${config.get('tradeImportsAnimalsFrontend.baseUrl').replace(/\/$/, '')}/live-animals/templates`
+
 async function context(request) {
   if (!webpackManifest) {
     try {
@@ -81,6 +91,7 @@ async function context(request) {
     activeNavigationItem: setId
       ? withSetContext(setId, () => activeNavigationItem(request.path))
       : null,
+    templatesUrl: animalsTemplatesUrl(),
     addressBookUrl: insAddressBookUrl(),
     userSession: authData
       ? {
