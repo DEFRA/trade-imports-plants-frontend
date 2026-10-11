@@ -62,6 +62,11 @@ describe('#copy', () => {
     expect(cy.rows.destination).toEqual({ title: 'Man cyrchfan' })
   })
 
+  it('Should name the task list region in both locales', () => {
+    expect(copy.taskListLabel).toBe('Notification tasklist')
+    expect(cy.taskListLabel).toBe('Rhestr dasgau’r hysbysiad')
+  })
+
   it('Should hold only the rows the journey has landed', () => {
     expect(Object.keys(copy.rows)).toEqual([
       'review',
