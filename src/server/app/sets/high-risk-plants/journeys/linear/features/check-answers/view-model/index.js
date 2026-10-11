@@ -4,10 +4,10 @@ import * as countries from '../../../../../../../services/countries/index.js'
 import * as ports from '../../../../../../../services/ports/index.js'
 import { lineFieldsFor } from '../../../../../services/commodities/index.js'
 import { detailsHref } from '../../commodities/links.js'
-import { addressText } from '../../address-book-picker/address-lines.js'
+import { addressLines } from '../../address-book-picker/address-lines.js'
 import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
-import { row, readOnlyRow } from './rows/summary-row.js'
+import { row, readOnlyRow, readOnlyLinesRow } from './rows/summary-row.js'
 import { changeAction, editableActions } from './rows/change-link.js'
 import { dateText } from './rows/value-text.js'
 import { copy as arrivalEn } from '../../arrival-details/copy/copy.en.js'
@@ -46,20 +46,17 @@ const IDENTIFIERS = [
   'consignmentNumber'
 ]
 
+const partyAddressLines = (party) =>
+  party
+    ? [...addressLines(party.address), party.address?.country].filter(Boolean)
+    : []
+
 const partyCard = (field, title, party, journeyId, readOnly) => ({
   title,
   ...editableActions(readOnly, changeAction(journeyId, field, title)),
   rows: [
     readOnlyRow(copy.labels.name, party?.name),
-    readOnlyRow(
-      copy.labels.address,
-      party &&
-        [addressText(party.address), party.address?.country]
-          .filter(Boolean)
-          .join(', ')
-    ),
-    readOnlyRow(copy.labels.telephoneNumber, party?.address?.telephoneNumber),
-    readOnlyRow(copy.labels.emailAddress, party?.address?.emailAddress)
+    readOnlyLinesRow(copy.labels.address, partyAddressLines(party))
   ]
 })
 

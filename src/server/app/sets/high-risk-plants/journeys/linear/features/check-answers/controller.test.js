@@ -108,12 +108,25 @@ describe('Check your answers', () => {
       'Planting'
     ])
     const contact = cards.find(({ title }) => title === copy.cards.contact)
-    expect(contact.rows.map(({ value }) => value.text)).toEqual([
-      'Tech Imports Ltd',
-      '18 Dockside Road, London, E14 9GE, United Kingdom',
-      '01632 960000',
-      'tech-imports-ltd@example.com'
-    ])
+    const nameAndAddress = [
+      [copy.labels.name, 'Tech Imports Ltd'],
+      [
+        copy.labels.address,
+        '18 Dockside Road<br>London<br>E14 9GE<br>United Kingdom'
+      ]
+    ]
+    expect(
+      contact.rows.map(({ key, value }) => [key.text, value.text ?? value.html])
+    ).toEqual(nameAndAddress)
+    const destination = cards.find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(
+      destination.rows.map(({ key, value }) => [
+        key.text,
+        value.text ?? value.html
+      ])
+    ).toEqual(nameAndAddress)
     expect(result.after).toEqual(COMPLETE_NOTIFICATION)
   })
 
@@ -128,20 +141,6 @@ describe('Check your answers', () => {
       copy.labels.arrivalStatus,
       arrivalCopy.dateLabels['not-yet-arrived']
     ])
-  })
-
-  it('Should render Not provided for a removed address-book reference', async () => {
-    vi.spyOn(addressBook, 'party').mockResolvedValue(undefined)
-    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
-    const destination = cardsOf(result).find(
-      ({ title }) => title === destinationCopy.headings.potatoes
-    )
-    expect(
-      destination.rows.every(({ value }) => value.text === copy.notProvided)
-    ).toBe(true)
-    expect(result.view.context.errorSummary.errorList).toEqual(
-      removedDestinationErrors(result)
-    )
   })
 
   it('Should render the raw ISO code in the origin row when the stored country is no longer offered by the origin block', async () => {
@@ -163,25 +162,6 @@ describe('Check your answers', () => {
     expect(result.view.context.errorSummary.errorList).toEqual(
       removedDestinationErrors(result)
     )
-  })
-
-  it('Should render an unanswered destination without a party error', async () => {
-    const seed = { ...COMPLETE_NOTIFICATION }
-    delete seed.placeOfDestination
-    const result = await driveHandler(get, { seed })
-    const destination = cardsOf(result).find(
-      ({ title }) => title === destinationCopy.headings.potatoes
-    )
-    expect(
-      destination.rows.every(({ value }) => value.text === copy.notProvided)
-    ).toBe(true)
-    expect(result.view.context.errorSummary.errorList).not.toContainEqual(
-      expect.objectContaining({ text: copy.errors.parties.placeOfDestination })
-    )
-    expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.rows.destination,
-      href: `${SET_BASE}/notifications/${result.journeyId}/destinations/select?change=1`
-    })
   })
 
   it.each([
@@ -279,6 +259,75 @@ describe('Check your answers', () => {
     }
     expect(await post(request, h)).toEqual({
       redirect: `${SET_BASE}/notifications/${journey.journeyId}/notification-view`
+    })
+  })
+})
+
+describe('Check your answers party cards', () => {
+  it('Should show the consignor card as name and address lines only for plants', async () => {
+    const result = await driveHandler(get, {
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: 'FR',
+        consignor: { addressId: 'tech-imports-ltd' }
+      }
+    })
+    const consignor = cardsOf(result).find(
+      ({ title }) => title === copy.cards.consignor
+    )
+    expect(consignor.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
+    expect(consignor.rows[1].value.html).toBe(
+      '18 Dockside Road<br>London<br>E14 9GE<br>United Kingdom'
+    )
+  })
+
+  it("Should escape markup in a party's address lines", async () => {
+    vi.spyOn(addressBook, 'party').mockResolvedValue({
+      name: 'A & B',
+      address: { addressLine1: '<b>1</b> Lane', country: 'France' }
+    })
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(destination.rows[1].value.html).toBe(
+      '&lt;b&gt;1&lt;/b&gt; Lane<br>France'
+    )
+  })
+
+  it('Should render Not provided for a removed address-book reference', async () => {
+    vi.spyOn(addressBook, 'party').mockResolvedValue(undefined)
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(
+      destination.rows.every(({ value }) => value.text === copy.notProvided)
+    ).toBe(true)
+    expect(result.view.context.errorSummary.errorList).toEqual(
+      removedDestinationErrors(result)
+    )
+  })
+
+  it('Should render an unanswered destination without a party error', async () => {
+    const seed = { ...COMPLETE_NOTIFICATION }
+    delete seed.placeOfDestination
+    const result = await driveHandler(get, { seed })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(
+      destination.rows.every(({ value }) => value.text === copy.notProvided)
+    ).toBe(true)
+    expect(result.view.context.errorSummary.errorList).not.toContainEqual(
+      expect.objectContaining({ text: copy.errors.parties.placeOfDestination })
+    )
+    expect(result.view.context.errorSummary.errorList).toContainEqual({
+      text: copy.errors.rows.destination,
+      href: `${SET_BASE}/notifications/${result.journeyId}/destinations/select?change=1`
     })
   })
 })

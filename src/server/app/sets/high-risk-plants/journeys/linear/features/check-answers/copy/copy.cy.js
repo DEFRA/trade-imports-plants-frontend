@@ -63,8 +63,6 @@ export const copy = {
     proposedPlaceOfLanding: 'Man glanio',
     name: 'Enw',
     address: 'Cyfeiriad',
-    telephoneNumber: 'Rhif ffôn',
-    emailAddress: 'Cyfeiriad e-bost',
     genus: 'Genws',
     species: 'Rhywogaeth',
     commodityCode: 'Cod nwyddau',

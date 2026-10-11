@@ -134,7 +134,26 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   await expect(page.getByText(VARIETY, { exact: true })).toBeVisible()
   await expect(
     page.getByText('tech-imports-ltd@example.com', { exact: true })
-  ).toHaveCount(2)
+  ).toHaveCount(0)
+  const contactCard = page.locator('.govuk-summary-card').filter({
+    has: page.getByRole('heading', { name: copy.cards.contact, exact: true })
+  })
+  await expect(contactCard.getByRole('term')).toHaveText([
+    copy.labels.name,
+    copy.labels.address
+  ])
+  await expect(
+    contactCard
+      .locator('.govuk-summary-list__row', {
+        has: page
+          .getByRole('term')
+          .and(page.getByText(copy.labels.address, { exact: true }))
+      })
+      .locator('.govuk-summary-list__value')
+  ).toHaveJSProperty(
+    'innerText',
+    '18 Dockside Road\nLondon\nE14 9GE\nUnited Kingdom'
+  )
   await assertAccessible(page)
   await page
     .getByRole('link', {
