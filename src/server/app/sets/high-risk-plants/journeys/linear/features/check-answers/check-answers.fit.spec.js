@@ -198,6 +198,12 @@ test('offers Back, Delete notification, Save and return, and Cancel to Overview'
   await expect(deleteButton).toHaveClass(/govuk-button--warning/)
   await expect(deleteButton).toHaveAttribute('href', /\/delete$/)
   await expect(
+    page.getByRole('button', { name: copy.viewHeader.amend })
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('region', { name: copy.importReferences.heading })
+  ).toHaveCount(0)
+  await expect(
     page
       .locator('.govuk-button-group')
       .filter({ has: page.getByRole('button', { name: copy.continue }) })
@@ -317,6 +323,71 @@ test("a submitted notification's view is headed by its reference with a Submitte
   await expect(
     page.getByRole('heading', { level: 1, name: dashboardCopy.title })
   ).toBeVisible()
+})
+
+test("a submitted notification's view offers Amend this notification and a red Delete notification in its header, and no Copy as new", async ({
+  page
+}) => {
+  const reference = await submitNotification(page)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  const group = page.locator('.govuk-button-group').filter({
+    has: page.getByRole('button', { name: copy.viewHeader.amend, exact: true })
+  })
+  await expect(group.getByRole('button')).toHaveText([
+    copy.viewHeader.amend,
+    copy.delete
+  ])
+  await expect(
+    page.getByRole('button', { name: copy.delete, exact: true })
+  ).toHaveCount(1)
+  await expect(page.getByRole('button', { name: 'Copy as new' })).toHaveCount(0)
+
+  await expect(
+    page.getByRole('button', { name: copy.viewHeader.amend, exact: true })
+  ).not.toHaveClass(/govuk-button--(secondary|warning)/)
+  await page
+    .getByRole('button', { name: copy.viewHeader.amend, exact: true })
+    .click()
+
+  await expect(page).toHaveURL(
+    new RegExp(`${BASE}/notifications/${reference}$`)
+  )
+  await expect(
+    page.getByRole('main').getByText(sharedCopy.journeyStrip.amend, {
+      exact: true
+    })
+  ).toBeVisible()
+})
+
+test("a submitted notification's view shows its notification reference as plain text without JavaScript, with no customs document code and no Copy button", async ({
+  page,
+  browser
+}) => {
+  const reference = await submitNotification(page)
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState()
+  })
+  const noJs = await context.newPage()
+
+  await noJs.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  const region = noJs.getByRole('region', {
+    name: copy.importReferences.heading
+  })
+  await expect(region).toContainText(copy.importReferences.warning)
+  await expect(
+    region
+      .getByRole('term')
+      .filter({ hasText: copy.importReferences.notificationReference })
+      .locator('..')
+      .getByRole('definition')
+  ).toHaveText(reference)
+  await expect(noJs.getByText('Customs document code')).toHaveCount(0)
+  await expect(region.getByRole('button')).toHaveCount(0)
+
+  await context.close()
 })
 
 test('opening the view of a notification that does not exist goes to the notification list', async ({

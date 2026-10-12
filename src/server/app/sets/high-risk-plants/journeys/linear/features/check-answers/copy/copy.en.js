@@ -13,7 +13,17 @@ export const copy = {
   },
 
   title: 'Check your answers',
-  viewHeader: { dateSubmitted: (date) => `Date submitted: ${date}` },
+  viewHeader: {
+    dateSubmitted: (date) => `Date submitted: ${date}`,
+    amend: 'Amend this notification'
+  },
+  importReferences: {
+    heading: 'Import reference numbers',
+    warning:
+      'You must use the correct reference and code on the customs declaration or your consignment will be delayed.',
+    warningIcon: 'Warning',
+    notificationReference: 'Notification reference'
+  },
   change: 'Change',
   cancelAmend: {
     button: 'Cancel amend',

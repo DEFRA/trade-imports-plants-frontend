@@ -441,7 +441,17 @@ describe('Check your answers lateness', () => {
         viewHeader: {
           reference: journeyId,
           status: { text: 'Submitted', classes: 'govuk-tag--green' },
-          dateSubmitted: 'Date submitted: 22 July 2026'
+          dateSubmitted: 'Date submitted: 22 July 2026',
+          actions: {
+            amendHref: `${SET_BASE}/notifications/${journeyId}/amend`,
+            deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`
+          },
+          importReferences: [
+            {
+              key: { text: 'Notification reference' },
+              value: { text: journeyId }
+            }
+          ]
         },
         journeyStrip: null,
         backLink: SET_BASE
@@ -479,7 +489,7 @@ describe('Check your answers lateness', () => {
     await get(journeyRequest(journeyId), submitted)
     expect(submitted.captured.view.context).toMatchObject({
       readOnly: true,
-      deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`,
+      deleteHref: null,
       cancelAmendHref: null,
       amendmentCancelled: false
     })

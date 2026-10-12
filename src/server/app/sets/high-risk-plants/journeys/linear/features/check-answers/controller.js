@@ -72,13 +72,10 @@ const errorHref = (current, key) =>
     ? outstandingRowHref(key, current.scope, current.journey.journeyId)
     : changeHref(current.journey.journeyId, key)
 
-/** Delete stands on a draft and a submitted review, Cancel amend only while
- * amending. */
+/** Delete stands at the foot of a draft's review only; a submitted view carries
+ * it in its header. Cancel amend only while amending. */
 const endButtonHrefs = ({ status, journeyId }) => ({
-  deleteHref:
-    status === state.SUBMITTED || status === state.DRAFT
-      ? pagePath(journeyId, 'delete')
-      : null,
+  deleteHref: status === state.DRAFT ? pagePath(journeyId, 'delete') : null,
   cancelAmendHref:
     status === state.AMEND ? pagePath(journeyId, kit.CANCEL_AMEND_SLUG) : null
 })
@@ -99,7 +96,20 @@ const submittedDateText = (submittedAt) =>
 const viewHeaderOf = (journey) => ({
   reference: journey.journeyId,
   status: kit.journeyStrip(journey).status,
-  dateSubmitted: submittedDateText(journey.submittedAt)
+  dateSubmitted: submittedDateText(journey.submittedAt),
+  actions: {
+    amendHref:
+      journey.status === state.SUBMITTED
+        ? pagePath(journey.journeyId, 'amend')
+        : null,
+    deleteHref: pagePath(journey.journeyId, 'delete')
+  },
+  importReferences: [
+    {
+      key: { text: copy.importReferences.notificationReference },
+      value: { text: journey.journeyId }
+    }
+  ]
 })
 
 /** A submitted notification's view is titled and headed by its reference, with

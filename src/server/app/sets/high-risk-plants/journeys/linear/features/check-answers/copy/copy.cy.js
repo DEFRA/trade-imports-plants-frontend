@@ -14,7 +14,17 @@ export const copy = {
   },
 
   title: 'Gwiriwch eich atebion',
-  viewHeader: { dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}` },
+  viewHeader: {
+    dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}`,
+    amend: 'Diwygio’r hysbysiad hwn'
+  },
+  importReferences: {
+    heading: 'Cyfeirnodau mewnforio',
+    warning:
+      'Rhaid i chi ddefnyddio’r cyfeirnod a’r cod cywir ar y datganiad tollau neu bydd oedi i’ch llwyth.',
+    warningIcon: 'Rhybudd',
+    notificationReference: 'Cyfeirnod yr hysbysiad'
+  },
   change: 'Newid',
   cancelAmend: {
     button: 'Canslo diwygio',
