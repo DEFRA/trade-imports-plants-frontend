@@ -18,6 +18,12 @@ describe('#config', () => {
     )
   })
 
+  test('loads TRADE_IMPORTS_ANIMALS_FRONTEND_URL with the 3000 default', () => {
+    expect(config.get('tradeImportsAnimalsFrontend.baseUrl')).toBe(
+      'http://localhost:3000'
+    )
+  })
+
   describe('stubMode', () => {
     beforeEach(() => {
       vi.resetModules()

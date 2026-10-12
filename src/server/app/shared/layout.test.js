@@ -11,6 +11,7 @@ const environment = nunjucksConfig.options.compileOptions.environment
 const PHASE_BANNER = 'govuk-phase-banner'
 const BREADCRUMBS = 'govuk-breadcrumbs'
 const ADDRESS_BOOK_URL = 'http://ins.test/address-book'
+const TEMPLATES_URL = 'http://animals.test/live-animals/templates'
 
 // `homeUrl` comes from the view model, the way kit.base() supplies it, so the
 // rendered chrome carries the set's own prefix rather than a bare `/`.
@@ -20,6 +21,7 @@ const renderLayout = (userSession, context = {}) =>
     sharedCopy,
     userSession,
     addressBookUrl: ADDRESS_BOOK_URL,
+    templatesUrl: TEMPLATES_URL,
     homeUrl: SET_BASE,
     getAssetPath: (asset) => `/assets/${asset}`,
     ...context
@@ -27,6 +29,9 @@ const renderLayout = (userSession, context = {}) =>
 
 const NAVIGATION_LIST = 'govuk-service-navigation__list'
 const ACTIVE_ITEM = 'govuk-service-navigation__item--active'
+const ARIA_CURRENT = 'aria-current'
+const ACTIVE_FALLBACK = '.govuk-service-navigation__active-fallback'
+const TEMPLATES_LINK = `a[href="${TEMPLATES_URL}"]`
 const { serviceNavigation } = sharedCopy.layout
 
 describe('service navigation', () => {
@@ -36,20 +41,22 @@ describe('service navigation', () => {
     email: 'sam@example.test'
   }
 
-  it('Should offer the four Design release 1 items on a signed-in page', () => {
+  it('Should offer the five Design release 2.1 items on a signed-in page', () => {
     const $ = load(renderLayout(signedIn))
     const items = $('.govuk-service-navigation__item')
     const links = items.find('a')
 
-    expect(items).toHaveLength(4)
+    expect(items).toHaveLength(5)
     expect(links.map((_, a) => $(a).text().trim()).get()).toEqual([
       serviceNavigation.dashboard,
+      serviceNavigation.templates,
       serviceNavigation.addressBook,
       serviceNavigation.manageAccount,
       serviceNavigation.logOut
     ])
     expect(links.map((_, a) => $(a).attr('href')).get()).toEqual([
       SET_BASE,
+      TEMPLATES_URL,
       ADDRESS_BOOK_URL,
       '#',
       '/auth/sign-out'
@@ -74,9 +81,27 @@ describe('service navigation', () => {
 
     expect($('.govuk-service-navigation__item--active')).toHaveLength(1)
     expect($('[aria-current="true"]')).toHaveLength(1)
-    expect($('.govuk-service-navigation__active-fallback').text()).toBe(
-      serviceNavigation.dashboard
+    expect($(ACTIVE_FALLBACK).text()).toBe(serviceNavigation.dashboard)
+  })
+
+  it('Should never mark the Templates item active, as no templates page is served here', () => {
+    const $ = load(
+      renderLayout(signedIn, { activeNavigationItem: 'dashboard' })
     )
+
+    expect($(ACTIVE_FALLBACK).text()).toBe(serviceNavigation.dashboard)
+    expect($(TEMPLATES_LINK).attr(ARIA_CURRENT)).toBeUndefined()
+  })
+
+  it('Should not mark the Templates item active even when asked for the templates section', () => {
+    const $ = load(
+      renderLayout(signedIn, { activeNavigationItem: 'templates' })
+    )
+
+    expect($('.govuk-service-navigation__item--active')).toHaveLength(0)
+    expect($(ACTIVE_FALLBACK)).toHaveLength(0)
+    expect($('[aria-current]')).toHaveLength(0)
+    expect($(TEMPLATES_LINK).attr(ARIA_CURRENT)).toBeUndefined()
   })
 
   it('Should mark nothing active outside any navigation section', () => {
@@ -104,6 +129,7 @@ describe('service navigation', () => {
     expect(html).not.toContain(NAVIGATION_LIST)
     expect(html).not.toContain('href="/auth/sign-out"')
     expect(html).not.toContain(serviceNavigation.logOut)
+    expect(html).not.toContain(serviceNavigation.templates)
   })
 })
 
