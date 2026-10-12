@@ -443,7 +443,11 @@ test.describe('consignment-contact-select — the end of the opening run', () =>
 
     await expect(page).toHaveURL(CHECK_ANSWERS_URL)
     await expect(
-      page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
+      page.getByRole('heading', {
+        level: 1,
+        name: journeyIdFromPage(page),
+        exact: true
+      })
     ).toBeVisible()
     await expect(
       page

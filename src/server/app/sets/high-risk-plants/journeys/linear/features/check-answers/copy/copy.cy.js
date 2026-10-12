@@ -15,6 +15,7 @@ export const copy = {
 
   title: 'Gwiriwch eich atebion',
   viewHeader: {
+    dateCreated: (date) => `Dyddiad creu: ${date}`,
     dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}`,
     amend: 'Diwygio’r hysbysiad hwn'
   },

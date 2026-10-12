@@ -122,7 +122,7 @@ test('renders saved answers, scoped cards and accessible Change links that retur
 }) => {
   const reference = await completeNotification(page)
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { level: 1, name: reference, exact: true })
   ).toBeVisible()
   for (const heading of Object.values(copy.sections)) {
     await expect(
@@ -185,7 +185,7 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   )
 })
 
-test('offers Back, Delete notification, Save and return, and Cancel to Overview', async ({
+test('offers Back, Save and return and Cancel to Overview, with Delete notification in its header and not beside Continue', async ({
   page
 }) => {
   const reference = await completeNotification(page)
@@ -194,6 +194,7 @@ test('offers Back, Delete notification, Save and return, and Cancel to Overview'
     name: copy.delete,
     exact: true
   })
+  await expect(deleteButton).toHaveCount(1)
   await expect(deleteButton).toBeVisible()
   await expect(deleteButton).toHaveClass(/govuk-button--warning/)
   await expect(deleteButton).toHaveAttribute('href', /\/delete$/)
@@ -202,13 +203,13 @@ test('offers Back, Delete notification, Save and return, and Cancel to Overview'
   ).toHaveCount(0)
   await expect(
     page.getByRole('region', { name: copy.importReferences.heading })
-  ).toHaveCount(0)
+  ).toBeVisible()
   await expect(
     page
       .locator('.govuk-button-group')
       .filter({ has: page.getByRole('button', { name: copy.continue }) })
-      .locator('> :nth-child(2)')
-  ).toHaveText(copy.delete)
+      .getByRole('button', { name: copy.delete })
+  ).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveAttribute('href', hub)
@@ -225,6 +226,55 @@ test('offers Back, Delete notification, Save and return, and Cancel to Overview'
     })
     .click()
   await expect(page).toHaveURL(new RegExp(`${hub}$`))
+})
+
+test("a draft's check answers is headed by its reference with a Draft tag and the date created, titled by its reference, with no status bar and no Copy as new, keeping its Change links and Continue", async ({
+  page
+}) => {
+  const reference = await completeNotification(page)
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: reference, exact: true })
+  ).toBeVisible()
+  await expect(
+    page
+      .getByRole('main')
+      .getByText(sharedCopy.journeyStrip.draft, { exact: true })
+  ).toHaveClass(/govuk-tag--blue/)
+  await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+  await expect(page).toHaveTitle(
+    `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
+  )
+  await expect(
+    page.getByText(/^Date created: \d{1,2} [A-Z][a-z]+ \d{4}$/)
+  ).toBeVisible()
+  await expect(
+    page
+      .getByRole('region', { name: copy.importReferences.heading })
+      .getByRole('definition')
+      .first()
+  ).toHaveText(reference)
+  await expect(
+    page.getByRole('region', { name: copy.importReferences.heading })
+  ).toContainText(copy.importReferences.warning)
+  await expect(page.getByText('Customs document code')).toHaveCount(0)
+  await expect(
+    page
+      .getByRole('region', { name: copy.importReferences.heading })
+      .getByRole('button')
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('button', {
+      name: sharedCopy.notificationActions.copy.text
+    })
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: /^Change/ }).first()
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: copy.continue, exact: true })
+  ).toBeVisible()
+  await assertAccessible(page)
 })
 
 test("Delete notification on a draft's check answers opens the delete page", async ({

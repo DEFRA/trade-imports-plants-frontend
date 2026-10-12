@@ -8,6 +8,8 @@
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 
+{% macro headerDelete(text, href) %}{{ govukButton({ text: text, href: href, classes: "govuk-button--warning" }) }}{% endmacro %}
+
 {% block journeyContent %}
   {% if amendmentCancelled %}
     {{ govukNotificationBanner({
@@ -24,19 +26,18 @@
       <h1 class="govuk-heading-l govuk-!-display-inline-block govuk-!-margin-right-2 govuk-!-margin-bottom-2">{{ viewHeader.reference }}</h1>
       {{ govukTag({ text: viewHeader.status.text, classes: viewHeader.status.classes }) }}
       {% if viewHeader.dateSubmitted %}<p class="govuk-body govuk-!-margin-bottom-0">{{ viewHeader.dateSubmitted }}</p>{% endif %}
-      <form method="post" action="{{ viewHeader.actions.amendHref }}" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}" />
-        <div class="govuk-button-group govuk-!-margin-top-4">
-          {% if viewHeader.actions.amendHref %}
+      {% if viewHeader.dateCreated %}<p class="govuk-body govuk-!-margin-bottom-0">{{ viewHeader.dateCreated }}</p>{% endif %}
+      {% if viewHeader.actions.amendHref %}
+        <form method="post" action="{{ viewHeader.actions.amendHref }}" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
+          <div class="govuk-button-group govuk-!-margin-top-4">
             {{ govukButton({ text: copy.viewHeader.amend }) }}
-          {% endif %}
-          {{ govukButton({
-            text: copy.delete,
-            href: viewHeader.actions.deleteHref,
-            classes: "govuk-button--warning"
-          }) }}
-        </div>
-      </form>
+            {{ headerDelete(copy.delete, viewHeader.actions.deleteHref) }}
+          </div>
+        </form>
+      {% else %}
+        <div class="govuk-button-group govuk-!-margin-top-4">{{ headerDelete(copy.delete, viewHeader.actions.deleteHref) }}</div>
+      {% endif %}
       <section class="govuk-!-margin-bottom-6" aria-labelledby="import-reference-numbers">
         <h2 class="govuk-heading-m" id="import-reference-numbers">{{ copy.importReferences.heading }}</h2>
         {{ govukWarningText({
@@ -73,8 +74,6 @@
     <p class="govuk-body">{{ copy.submit.body }}</p>
     {% if cancelAmendHref %}
       {% set besidePrimary = [{ text: copy.cancelAmend.button, href: cancelAmendHref, classes: "govuk-button--secondary" }] %}
-    {% elif deleteHref %}
-      {% set besidePrimary = [{ text: copy.delete, href: deleteHref, classes: "govuk-button--warning" }] %}
     {% else %}
       {% set besidePrimary = [] %}
     {% endif %}

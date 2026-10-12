@@ -102,7 +102,11 @@ for (const [name, shape] of Object.entries(happyPaths)) {
 
     await expect(page).toHaveURL(/\/notification-view$/)
     await expect(
-      page.getByRole('heading', { name: reviewCopy.title, level: 1 })
+      page.getByRole('heading', {
+        level: 1,
+        name: reference,
+        exact: true
+      })
     ).toBeVisible()
     await page
       .getByRole('button', { name: reviewCopy.continue, exact: true })

@@ -77,7 +77,7 @@ describe('Check your answers', () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(meta.collects).toEqual([])
     expect(result.view.context).toMatchObject({
-      pageTitle: copy.title,
+      pageTitle: result.journeyId,
       readOnly: false,
       backLink: `${SET_BASE}/notifications/${result.journeyId}`,
       copy
@@ -381,6 +381,79 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
   })
 })
 
+describe('Check your answers — headed draft and unheaded amendment', () => {
+  it("Should head a draft's check answers with its reference, a Draft tag and the date created, with no status bar, and Back to Overview", async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-21T23:30:00Z'))
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+      const h = stubH()
+      await get(journeyRequest(journeyId), h)
+
+      expect(h.captured.view.context).toMatchObject({
+        pageTitle: journeyId,
+        viewHeader: {
+          reference: journeyId,
+          status: { text: 'Draft', classes: 'govuk-tag--blue' },
+          dateCreated: 'Date created: 22 July 2026',
+          dateSubmitted: null,
+          actions: {
+            amendHref: null,
+            deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`
+          },
+          importReferences: [
+            {
+              key: { text: 'Notification reference' },
+              value: { text: journeyId }
+            }
+          ]
+        },
+        journeyStrip: null,
+        backLink: `${SET_BASE}/notifications/${journeyId}`
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('Should leave out Date created for a draft with no created date', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    const load = recordsStub.load
+    vi.spyOn(recordsStub, 'load').mockImplementation(async (...args) => ({
+      ...(await load(...args)),
+      createdAt: null
+    }))
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+
+    expect(h.captured.view.context.viewHeader).toMatchObject({
+      reference: journeyId,
+      status: { text: 'Draft', classes: 'govuk-tag--blue' },
+      dateCreated: null,
+      dateSubmitted: null,
+      actions: {
+        deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`
+      }
+    })
+  })
+
+  it("Should keep an amendment's check answers titled Check your answers with the status bar", async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    await recordsStub.amend(journeyId)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+
+    const { context } = h.captured.view
+    expect(context.pageTitle).toBe(copy.title)
+    expect(context.viewHeader).toBeNull()
+    expect(context.journeyStrip).not.toBeNull()
+  })
+})
+
 describe('Check your answers lateness', () => {
   it('Should warn using the request clock without writing lateness on draft GET', async () => {
     const journey = await store.create()
@@ -461,19 +534,6 @@ describe('Check your answers lateness', () => {
     }
   })
 
-  it('Should keep Check your answers, the status bar and Back to Overview on a draft', async () => {
-    const { journeyId } = await store.create()
-    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
-    const h = stubH()
-    await get(journeyRequest(journeyId), h)
-
-    const { context } = h.captured.view
-    expect(context.pageTitle).toBe(copy.title)
-    expect(context.viewHeader).toBeNull()
-    expect(context.journeyStrip).not.toBeNull()
-    expect(context.backLink).toBe(`${SET_BASE}/notifications/${journeyId}`)
-  })
-
   it('Should send a notification that cannot be found to the notification list', async () => {
     const h = stubH()
     const response = await get(journeyRequest('GBN-HRP-00-000000'), h)
@@ -489,7 +549,6 @@ describe('Check your answers lateness', () => {
     await get(journeyRequest(journeyId), submitted)
     expect(submitted.captured.view.context).toMatchObject({
       readOnly: true,
-      deleteHref: null,
       cancelAmendHref: null,
       amendmentCancelled: false
     })
@@ -508,7 +567,6 @@ describe('Check your answers lateness', () => {
     )
     expect(amending.captured.view.context).toMatchObject({
       readOnly: false,
-      deleteHref: null,
       cancelAmendHref: `${SET_BASE}/notifications/${journeyId}/cancel-amend`,
       amendmentCancelled: false
     })
@@ -542,14 +600,15 @@ describe('Check your answers lateness', () => {
     expect((await store.get(journeyId)).status).toBe(AMEND)
   })
 
-  it("Should offer delete on a draft's check answers", async () => {
+  it("Should offer delete in a draft's header and not at its foot", async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
     const h = stubH()
     await get(journeyRequest(journeyId), h)
-    expect(h.captured.view.context.deleteHref).toBe(
+    expect(h.captured.view.context.viewHeader.actions.deleteHref).toBe(
       `${SET_BASE}/notifications/${journeyId}/delete`
     )
+    expect(h.captured.view.context).not.toHaveProperty('deleteHref')
     expect(h.captured.view.context.cancelAmendHref).toBeNull()
   })
 

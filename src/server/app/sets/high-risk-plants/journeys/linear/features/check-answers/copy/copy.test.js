@@ -26,6 +26,12 @@ describe('checkAnswers copy module', () => {
     )
   })
 
+  it('Should interpolate the date created', () => {
+    expect(copy.viewHeader.dateCreated('22 July 2026')).toBe(
+      'Date created: 22 July 2026'
+    )
+  })
+
   it('Should have a non-empty string or function at every leaf', () => {
     for (const { path, value } of leaves(copy)) {
       expect(isCopyLeaf(value), `${path} must be copy`).toBe(true)
@@ -47,7 +53,7 @@ describe('GET checkAnswers — copy reaches the view', () => {
     ).handler
     const result = await driveHandler(get)
     expect(result.view.context.copy).toBe(copy)
-    expect(result.view.context.pageTitle).toBe(copy.title)
+    expect(result.view.context.pageTitle).toBe(result.journeyId)
     expect(result.view.context.sharedCopy.saveActions.saveAndContinue).toBe(
       'Save and continue'
     )

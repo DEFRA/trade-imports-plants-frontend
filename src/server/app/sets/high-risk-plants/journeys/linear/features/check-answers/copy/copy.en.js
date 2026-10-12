@@ -14,6 +14,7 @@ export const copy = {
 
   title: 'Check your answers',
   viewHeader: {
+    dateCreated: (date) => `Date created: ${date}`,
     dateSubmitted: (date) => `Date submitted: ${date}`,
     amend: 'Amend this notification'
   },

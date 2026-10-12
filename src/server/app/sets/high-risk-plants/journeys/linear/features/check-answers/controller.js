@@ -72,31 +72,37 @@ const errorHref = (current, key) =>
     ? outstandingRowHref(key, current.scope, current.journey.journeyId)
     : changeHref(current.journey.journeyId, key)
 
-/** Delete stands at the foot of a draft's review only; a submitted view carries
- * it in its header. Cancel amend only while amending. */
+/** Cancel amend stands at the foot only while amending; Delete is in the header
+ * of a draft's and a submitted notification's view. */
 const endButtonHrefs = ({ status, journeyId }) => ({
-  deleteHref: status === state.DRAFT ? pagePath(journeyId, 'delete') : null,
   cancelAmendHref:
     status === state.AMEND ? pagePath(journeyId, kit.CANCEL_AMEND_SLUG) : null
 })
 
 // A UTC instant shown as the Europe/London civil date.
+const longDateText = (iso) =>
+  new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/London'
+  })
+
 const submittedDateText = (submittedAt) =>
-  submittedAt
-    ? copy.viewHeader.dateSubmitted(
-        new Date(submittedAt).toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          timeZone: 'Europe/London'
-        })
-      )
-    : null
+  submittedAt ? copy.viewHeader.dateSubmitted(longDateText(submittedAt)) : null
+
+const createdDateText = (createdAt) =>
+  createdAt ? copy.viewHeader.dateCreated(longDateText(createdAt)) : null
 
 const viewHeaderOf = (journey) => ({
   reference: journey.journeyId,
   status: kit.journeyStrip(journey).status,
-  dateSubmitted: submittedDateText(journey.submittedAt),
+  dateCreated:
+    journey.status === state.DRAFT ? createdDateText(journey.createdAt) : null,
+  dateSubmitted:
+    journey.status === state.DRAFT
+      ? null
+      : submittedDateText(journey.submittedAt),
   actions: {
     amendHref:
       journey.status === state.SUBMITTED
@@ -112,11 +118,13 @@ const viewHeaderOf = (journey) => ({
   ]
 })
 
-/** A submitted notification's view is titled and headed by its reference, with
- * no status bar and Back to the notification list; a draft and an amendment
- * keep Check your answers, the status bar and Back to Overview. */
+/** A submitted notification's view and a draft's check answers are titled and
+ * headed by the reference, with no status bar; a submitted view's Back goes to
+ * the notification list, a draft's and an amendment's to Overview; an amendment
+ * keeps Check your answers and the status bar. */
 const chromeOf = (journey, readOnly) => {
-  const chrome = kit.base(readOnly ? journey.journeyId : copy.title, {
+  const headed = readOnly || journey.status === state.DRAFT
+  const chrome = kit.base(headed ? journey.journeyId : copy.title, {
     journey,
     page,
     backLink: readOnly ? dashboardPath() : hubPath(journey.journeyId),
@@ -124,8 +132,8 @@ const chromeOf = (journey, readOnly) => {
   })
   return {
     ...chrome,
-    journeyStrip: readOnly ? null : chrome.journeyStrip,
-    viewHeader: readOnly ? viewHeaderOf(journey) : null
+    journeyStrip: headed ? null : chrome.journeyStrip,
+    viewHeader: headed ? viewHeaderOf(journey) : null
   }
 }
 
