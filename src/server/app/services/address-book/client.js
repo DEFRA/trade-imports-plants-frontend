@@ -1,5 +1,5 @@
 import { getTraceId } from '@defra/hapi-tracing'
-import { originLabel } from '../countries/index.js'
+import { addressBookCountryName } from '../countries/index.js'
 import { HTTP_STATUS_NOT_FOUND } from '../../lib/http-status.js'
 import { BackendRequestError } from '../persistence/records/errors.js'
 
@@ -57,7 +57,8 @@ const toRecord = async (operator) => ({
     townOrCity: operator.townOrCity,
     county: operator.county,
     postcode: operator.postcode,
-    country: (await originLabel(operator.countryCode)) ?? operator.countryCode,
+    countryCode: operator.countryCode,
+    country: await addressBookCountryName(operator.countryCode),
     // Contact details sit inside the address block, which is where the journey
     // has always read them from.
     phone: operator.phone,
