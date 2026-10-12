@@ -12,6 +12,7 @@ import {
 import { config } from '../../../config/config.js'
 import { nunjucksConfig } from '../../../config/nunjucks/nunjucks.js'
 import { createServer } from '../../server.js'
+import { statusCodes } from '../../common/constants/status-codes.js'
 import { mockOidcConfig } from '../../common/test-helpers/mock-oidc-config.js'
 import { authenticatedCredentials } from '../engine/test-support.js'
 import { copy as sharedCopy } from '../shared/copy.en.js'
@@ -56,9 +57,7 @@ describe('page maturity banner in the layout', () => {
 
       expect(banner.find(TAG)).toHaveLength(1)
       expect(normalised(banner.text())).toBe(`Alpha ${SERVICE_SENTENCE}`)
-      expect(banner.html()).toBe(
-        load(renderLayout({ pageMaturity: null }))(PHASE_BANNER).html()
-      )
+      expect(environment.render('page-maturity/banner.njk', {})).toBe('')
     })
   })
 
@@ -144,5 +143,18 @@ describe('page maturity banner on a served page', () => {
 
     expect($(PHASE_BANNER).find(TAG)).toHaveLength(1)
     expect($(PHASE_BANNER).text()).not.toContain(copy.levels.exploring.tag)
+  })
+
+  it('Should show only the Alpha tag on the not found page of a listed route', async () => {
+    const response = await server.inject({
+      method: 'GET',
+      url: `${SET_BASE}/notifications/no-such-notification/origin`,
+      auth: { strategy: 'session', credentials: authenticatedCredentials }
+    })
+    const $ = load(response.result)
+
+    expect(response.statusCode).toBe(statusCodes.notFound)
+    expect($(PHASE_BANNER).find(TAG)).toHaveLength(1)
+    expect($(PHASE_BANNER).text()).not.toContain(copy.levels.detailing.text)
   })
 })

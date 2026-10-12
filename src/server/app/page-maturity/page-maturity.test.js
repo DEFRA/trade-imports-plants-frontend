@@ -66,6 +66,15 @@ describe('#pageMaturityContext', () => {
     expect(pageMaturityContext(requestFor(LISTED_ROUTE))).toEqual({})
   })
 
+  it('Should return nothing when the error page is rendered on a listed route', () => {
+    expect(
+      pageMaturityContext({
+        ...requestFor(LISTED_ROUTE),
+        response: { source: { template: 'shared/error' } }
+      })
+    ).toEqual({})
+  })
+
   it('Should return nothing for a request with no route', () => {
     expect(pageMaturityContext({})).toEqual({})
   })
