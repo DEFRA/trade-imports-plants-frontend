@@ -51,10 +51,11 @@ const normalised = (text) => text.replace(/\s+/g, ' ').trim()
 
 describe('page maturity banner in the layout', () => {
   describe('when the page has no level', () => {
-    it('Should show the Alpha banner exactly as before', () => {
+    it('Should show one Alpha phase banner exactly as before', () => {
       const $ = load(renderLayout())
       const banner = $(PHASE_BANNER)
 
+      expect(banner).toHaveLength(1)
       expect(banner.find(TAG)).toHaveLength(1)
       expect(normalised(banner.text())).toBe(`Alpha ${SERVICE_SENTENCE}`)
       expect(environment.render('page-maturity/banner.njk', {})).toBe('')
@@ -62,43 +63,50 @@ describe('page maturity banner in the layout', () => {
   })
 
   describe('when the page has a level', () => {
-    it('Should add the level tag after the Alpha tag, followed by its line', () => {
-      const $ = load(renderLayout({ pageMaturity: exploring }))
-      const tags = $(PHASE_BANNER).find(TAG)
+    const levelBannerOf = () =>
+      load(renderLayout({ pageMaturity: exploring }))(PHASE_BANNER)
 
-      expect(tags).toHaveLength(2)
-      expect($(tags[0]).text().trim()).toBe('Alpha')
-      expect($(tags[1]).text().trim()).toBe(copy.levels.exploring.tag)
-      expect($(tags[1]).hasClass(TAG_CLASSES.exploring)).toBe(true)
-      expect(normalised($(PHASE_BANNER).text())).toMatch(
-        new RegExp(
-          `${copy.levels.exploring.tag} ${copy.levels.exploring.text}$`
-        )
+    it('Should add a second phase banner for the level, after the Alpha one', () => {
+      const banners = levelBannerOf()
+      const alpha = banners.eq(0)
+      const level = banners.eq(1)
+      const levelTag = level.find(TAG)
+
+      expect(banners).toHaveLength(2)
+      expect(normalised(alpha.text())).toBe(`Alpha ${SERVICE_SENTENCE}`)
+      expect(levelTag).toHaveLength(1)
+      expect(levelTag.text().trim()).toBe(copy.levels.exploring.tag)
+      expect(levelTag.hasClass(TAG_CLASSES.exploring)).toBe(true)
+      expect(levelTag.hasClass('govuk-phase-banner__content__tag')).toBe(true)
+      expect(normalised(level.text())).toBe(
+        `${copy.levels.exploring.tag} ${copy.hiddenPrefix} ${copy.levels.exploring.text}`
       )
     })
 
+    it('Should leave no line break or spacing utilities in the level row', () => {
+      const level = levelBannerOf().eq(1)
+
+      expect(level.find('br')).toHaveLength(0)
+      expect(level.html()).not.toContain('govuk-!-margin')
+    })
+
     it('Should keep exactly one link, the feedback email', () => {
-      const $ = load(renderLayout({ pageMaturity: exploring }))
-      const links = $(PHASE_BANNER).find('a')
+      const links = levelBannerOf().find('a')
 
       expect(links).toHaveLength(1)
       expect(links.attr('href')).toMatch(/^mailto:/)
     })
 
-    it('Should put the hidden prefix before the level tag for screen readers', () => {
-      const $ = load(renderLayout({ pageMaturity: exploring }))
-      const hidden = $(PHASE_BANNER).find('.govuk-visually-hidden')
+    it('Should put the hidden prefix for screen readers in the level row', () => {
+      const hidden = levelBannerOf().eq(1).find('.govuk-visually-hidden')
 
       expect(hidden.text()).toBe(copy.hiddenPrefix)
-      expect(hidden.nextAll(TAG).first().text().trim()).toBe(
-        copy.levels.exploring.tag
-      )
     })
 
-    it('Should keep the service sentence', () => {
-      const $ = load(renderLayout({ pageMaturity: exploring }))
-
-      expect(normalised($(PHASE_BANNER).text())).toContain(SERVICE_SENTENCE)
+    it('Should keep the service sentence in the Alpha row', () => {
+      expect(normalised(levelBannerOf().eq(0).text())).toContain(
+        SERVICE_SENTENCE
+      )
     })
   })
 })
@@ -132,6 +140,7 @@ describe('page maturity banner on a served page', () => {
     const $ = await getDashboard()
     const tags = $(PHASE_BANNER).find(TAG)
 
+    expect($(PHASE_BANNER)).toHaveLength(2)
     expect(tags).toHaveLength(2)
     expect($(tags[1]).text().trim()).toBe(copy.levels.exploring.tag)
   })
