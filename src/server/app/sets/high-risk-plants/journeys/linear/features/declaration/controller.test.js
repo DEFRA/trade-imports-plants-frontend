@@ -73,6 +73,15 @@ describe('declaration', () => {
       copy
     })
     expect(h.captured.view.context.caption).toBeUndefined()
+    expect(h.captured.view.context.journeyStrip).toBeNull()
+  })
+
+  it("Should draw no status strip on an amendment's declaration", async () => {
+    const { request, h, id } = await setup()
+    await store.submit(id)
+    await recordsStub.amend(id)
+    await get(request, h)
+    expect(h.captured.view.context.journeyStrip).toBeNull()
   })
 
   it.each(['', 'no', ['confirmed', 'no']])(

@@ -48,6 +48,7 @@ const render = (
       page,
       recoverableError
     }),
+    journeyStrip: null,
     copy,
     submissionDate: dateText(requestClock(request)),
     values,

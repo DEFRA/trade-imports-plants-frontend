@@ -7,6 +7,7 @@ export const copy = {
     'Rwy’n deall y gall yr awdurdod iechyd planhigion perthnasol (APHA, y Comisiwn Coedwigaeth neu Lywodraeth yr Alban) gynnal hapwiriad ar y llwyth hwn, heb rybudd ymlaen llaw, yn ei gyrchfan neu lle mae’n cael ei gadw ar hyn o bryd.',
     'Rwy’n deall y gall methu â hysbysu, hysbysu’n hwyr neu roi manylion anghywir gael ei drin fel diffyg cydymffurfio.'
   ],
+  declarationLegend: 'Cadarnhad y datganiad',
   declarationLabel:
     'Rwy’n cadarnhau fy mod wedi adolygu’r datganiad hwn a’m bod yn cydymffurfio ag ef, a bod yr wybodaeth a gyflwynwyd yn yr hysbysiad hwn yn wir ac yn gywir.',
   dateOfDeclaration: 'Dyddiad y datganiad:',
