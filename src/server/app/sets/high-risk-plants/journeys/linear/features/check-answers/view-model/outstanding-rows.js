@@ -1,10 +1,6 @@
 import { copyFor } from '../../../../../../../shared/copy.js'
 import { rowEntry } from '../../../../../../../flow/navigation.js'
-import {
-  FULFILLED,
-  NA,
-  OPTIONAL
-} from '../../../../../../../bridge/status/index.js'
+import { rowReady } from '../../../../../../../flow/section-status.js'
 import {
   rowParts,
   rowStatus,
@@ -19,10 +15,8 @@ const copy = copyFor({ en, cy })
 
 export const ROW_KEY_PREFIX = 'row:'
 
-const READY_STATUSES = [FULFILLED, NA, OPTIONAL]
-
 const rowOutstanding = (row, { answers, scope, evaluation }) =>
-  !READY_STATUSES.includes(rowStatus(row, answers, scope.inScope, evaluation))
+  !rowReady(rowStatus(row, answers, scope.inScope, evaluation))
 
 /**
  * One error per task row that is not yet ready, in task-row order, keyed
