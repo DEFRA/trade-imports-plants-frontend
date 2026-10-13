@@ -17,7 +17,6 @@ export const copy = {
   editDetails: 'Edit details',
   errorPrefix: 'Error:',
   cancelAmend: {
-    link: 'Cancel amendment',
     successTitle: 'Success',
     successBody:
       'The amendment has been cancelled and the submitted version restored.'
@@ -30,6 +29,15 @@ export const copy = {
       placeOfDestination:
         'Correct the address details for the place of destination',
       contactAddress: 'Correct the contact address details for this consignment'
+    },
+    cards: {
+      importDetails: 'Complete import details',
+      commodities: 'Complete commodity details',
+      arrivalDetails: 'Complete arrival details',
+      placeOfDestination: 'Complete place of destination',
+      consignor: 'Complete consignor or exporter',
+      identificationNumbers: 'Complete identification numbers',
+      contact: 'Complete contact'
     }
   },
   submit: {

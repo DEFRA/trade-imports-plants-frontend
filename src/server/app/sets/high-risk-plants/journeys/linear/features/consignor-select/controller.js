@@ -45,9 +45,11 @@ const isSearch = (payload) => payload.action === SEARCH_ACTION
 const committedId = (answers) => answers[CONSIGNOR]?.pickedFromId
 
 // An edited copy has no source record to tick, so a save with nothing ticked
-// must not lose it.
-const keepsHeldCopy = (selectedId, answers) =>
-  !selectedId && Boolean(answers[CONSIGNOR])
+// must not lose it. 'Save and return to overview' with nothing ticked leaves
+// without refusing, as every other overview-linked page does
+// (docs/validation.md).
+const leavesUnchanged = (request, selectedId, answers) =>
+  !selectedId && (Boolean(answers[CONSIGNOR]) || kit.isHubExit(request))
 
 // The page asks one question in one voice, so the heading and the description
 // are the page's own copy rather than chosen per notification.
@@ -93,7 +95,7 @@ const post = async (request, h) => {
     })
   }
 
-  if (keepsHeldCopy(selectedId, current.answers)) {
+  if (leavesUnchanged(request, selectedId, current.answers)) {
     return h.redirect(await kit.nextTarget(request, page, current.scope))
   }
 

@@ -92,6 +92,7 @@ export const renderPicker = async (
 
   return h.view(view, {
     ...kit.base(copy.title, {
+      request,
       backLink: hubPath(current.journey.journeyId),
       journey: current.journey,
       page,
