@@ -1,5 +1,6 @@
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
+import { records } from './persistence/records.js'
 
 // Mirrors what plugins/auth.js puts on credentials after sign-in: the raw
 // `currentRelationshipId` claim, plus the `organisationId` it is mapped to.
@@ -88,12 +89,18 @@ export const recordingH = () => {
   }
 }
 
+/** Seeds a journey, runs one handler against it and reports the answers before
+ * and after. `amend` submits the journey and opens an amendment first. */
 export const driveHandler = async (
   handler,
-  { payload = {}, seed = {}, params = {}, query = {} } = {}
+  { payload = {}, seed = {}, params = {}, query = {}, amend = false } = {}
 ) => {
   const journey = await store.create()
   await store.seedAnswers(journey.journeyId, seed)
+  if (amend) {
+    await store.submit(journey.journeyId)
+    await records.amend(journey.journeyId)
+  }
   const h = stubH()
   const response = await handler(
     journeyRequest(journey.journeyId, { payload, params, query }),
