@@ -20,7 +20,7 @@ import { SET_BASE } from '../sets/high-risk-plants/set.js'
 import { copy } from './copy/copy.en.js'
 import { BANNER_CLASSES, LEVELS, TAG_CLASSES } from './levels.js'
 
-vi.mock('../../auth/get-oidc-config.js', () => ({
+vi.mock('../../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
 }))
 

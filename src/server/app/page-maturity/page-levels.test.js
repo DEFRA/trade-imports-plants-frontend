@@ -6,7 +6,7 @@ import { LEVELS } from './levels.js'
 import { PAGE_LEVELS, SECTION_LEVELS } from './page-levels.js'
 import { isInSection } from './page-maturity.js'
 
-vi.mock('../../auth/get-oidc-config.js', () => ({
+vi.mock('../../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
 }))
 
