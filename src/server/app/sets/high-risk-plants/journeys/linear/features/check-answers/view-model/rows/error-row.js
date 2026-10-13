@@ -1,7 +1,7 @@
 import { copyFor } from '../../../../../../../../shared/copy.js'
 import { copy as en } from '../../copy/copy.en.js'
 import { copy as cy } from '../../copy/copy.cy.js'
-import { readOnlyRow } from './summary-row.js'
+import { readOnlyLinesRow, readOnlyRow } from './summary-row.js'
 import { valueText } from './value-text.js'
 
 const copy = copyFor({ en, cy })
@@ -31,5 +31,21 @@ export const errorRow = (key, value, messages) =>
         value: {
           html:
             messages.map(errorMarkup).join('') + escapeHtml(valueText(value))
+        }
+      }
+
+/** A read-only multi-line row, one line per line, that shows above its value
+ * each rule the value breaks. */
+export const errorLinesRow = (key, lines, messages) =>
+  messages.length === 0
+    ? readOnlyLinesRow(key, lines)
+    : {
+        key: { text: key },
+        value: {
+          html:
+            messages.map(errorMarkup).join('') +
+            (lines.length > 0
+              ? lines.map(escapeHtml).join('<br>')
+              : escapeHtml(valueText(undefined)))
         }
       }

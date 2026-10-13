@@ -72,6 +72,7 @@ describe('context and cache', () => {
           authEnabled: true,
           staleActionRejected: false,
           activeNavigationItem: 'dashboard',
+          templatesUrl: 'http://localhost:3000/live-animals/templates',
           addressBookUrl: 'http://localhost:3002/address-book',
           userSession: { isAuthenticated: false }
         })
@@ -248,6 +249,7 @@ describe('context and cache', () => {
           authEnabled: true,
           staleActionRejected: false,
           activeNavigationItem: 'dashboard',
+          templatesUrl: 'http://localhost:3000/live-animals/templates',
           addressBookUrl: 'http://localhost:3002/address-book',
           userSession: { isAuthenticated: false }
         })
@@ -340,5 +342,36 @@ describe('When the configured INS base URL has a trailing slash', () => {
     const mockRequest = { path: '/' }
     const contextResult = await contextImport.context(mockRequest)
     expect(contextResult.addressBookUrl).toBe('http://ins.test/address-book')
+  })
+})
+
+describe('When the configured animals base URL has a trailing slash', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    mockReadFileSync.mockReset()
+    mockLoggerError.mockReset()
+  })
+  test('Should strip a trailing slash from the configured animals base URL', async () => {
+    vi.doMock('../../config.js', async (importOriginal) => {
+      const mod = await importOriginal()
+      const originalGet = mod.config.get.bind(mod.config)
+      vi.spyOn(mod.config, 'get').mockImplementation((key) => {
+        if (key === 'tradeImportsAnimalsFrontend.baseUrl') {
+          return 'http://animals.test/'
+        }
+        return originalGet(key)
+      })
+      return mod
+    })
+    const contextImport = await import('./context.js')
+    mockReadFileSync.mockReturnValue(`{
+      "application.js": "javascripts/application.js",
+      "stylesheets/application.scss": "stylesheets/application.css"
+    }`)
+    const mockRequest = { path: '/' }
+    const contextResult = await contextImport.context(mockRequest)
+    expect(contextResult.templatesUrl).toBe(
+      'http://animals.test/live-animals/templates'
+    )
   })
 })

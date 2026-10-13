@@ -3,11 +3,13 @@
  *
  * `groups` holds one caption per numbered task-list group; `rows` holds the
  * title and hint of each task row, and each section's first page increment
- * adds its own row here.
+ * adds its own row here. `taskListLabel` names the task list region for
+ * assistive technology; it is never shown.
  */
 export const copy = {
   title: 'Overview',
   returnToDashboard: 'Return to dashboard',
+  taskListLabel: 'Notification tasklist',
   statuses: {
     completed: 'Completed',
     optional: 'Optional',

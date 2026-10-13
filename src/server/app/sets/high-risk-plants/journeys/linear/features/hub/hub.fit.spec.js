@@ -178,6 +178,35 @@ test.describe('overview hub feature', () => {
     }
   })
 
+  test('puts each numbered group in a region named by its heading, inside one Notification tasklist region, with no visible task list heading', async ({
+    page
+  }) => {
+    await startNotification(page)
+
+    const taskList = page.getByRole('region', {
+      name: copy.taskListLabel,
+      exact: true
+    })
+    await expect(taskList).toBeVisible()
+    await expect(taskList.getByRole('region')).toHaveCount(RENDERED_GROUP_COUNT)
+
+    for (const id of RENDERED_GROUP_IDS) {
+      const group = taskList.getByRole('region', {
+        name: copy.groups[id],
+        exact: true
+      })
+      await expect(
+        group.getByRole('heading', { level: 2, name: copy.groups[id] })
+      ).toBeVisible()
+      await expect(group.locator('.govuk-task-list')).toHaveCount(1)
+    }
+
+    await expect(page.getByText(copy.taskListLabel)).toHaveCount(0)
+    await expect(
+      page.getByRole('heading', { name: copy.taskListLabel })
+    ).toHaveCount(0)
+  })
+
   test('has no serious or critical axe violations on the initial render', async ({
     page
   }) => {

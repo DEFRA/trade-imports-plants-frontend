@@ -4,11 +4,11 @@ import * as countries from '../../../../../../../services/countries/index.js'
 import * as ports from '../../../../../../../services/ports/index.js'
 import { lineFieldsFor } from '../../../../../services/commodities/index.js'
 import { detailsHref } from '../../commodities/links.js'
-import { addressText } from '../../address-book-picker/address-lines.js'
+import { addressLines } from '../../address-book-picker/address-lines.js'
 import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
 import { row, readOnlyRow } from './rows/summary-row.js'
-import { errorRow } from './rows/error-row.js'
+import { errorLinesRow, errorRow } from './rows/error-row.js'
 import { changeAction, editableActions } from './rows/change-link.js'
 import { dateText } from './rows/value-text.js'
 import { anchorOf } from './incomplete-cards.js'
@@ -51,6 +51,11 @@ const IDENTIFIERS = [
   'consignmentNumber'
 ]
 
+const partyAddressLines = (party) =>
+  party
+    ? [...addressLines(party.address), party.address?.country].filter(Boolean)
+    : []
+
 const partyActions = (field, title, partyDisplayValues, journeyId) => {
   const actions = changeAction(journeyId, field, title)
   if (partyDisplayValues) {
@@ -84,6 +89,12 @@ const partyCard = (
   const fieldErrors = partyFieldErrorsById[field] ?? {}
   const messagesFor = (fields) =>
     fields.map((name) => fieldErrors[name]).filter(Boolean)
+  // Design release 2.1 reads a party back as its name and address; a contact
+  // detail shows only when it breaks a rule, so the trader sees what to fix.
+  const contactRowWhenInError = (label, value, fields) => {
+    const messages = messagesFor(fields)
+    return messages.length > 0 ? [errorRow(label, value, messages)] : []
+  }
   return {
     id,
     title,
@@ -97,26 +108,20 @@ const partyCard = (
         partyDisplayValues?.name,
         messagesFor(['name'])
       ),
-      errorRow(
+      errorLinesRow(
         copy.labels.address,
-        partyDisplayValues &&
-          [
-            addressText(partyDisplayValues.address),
-            partyDisplayValues.address?.country
-          ]
-            .filter(Boolean)
-            .join(', '),
+        partyAddressLines(partyDisplayValues),
         messagesFor(ADDRESS_FIELDS)
       ),
-      errorRow(
+      ...contactRowWhenInError(
         copy.labels.telephoneNumber,
         partyDisplayValues?.address?.telephoneNumber,
-        messagesFor(['phone'])
+        ['phone']
       ),
-      errorRow(
+      ...contactRowWhenInError(
         copy.labels.emailAddress,
         partyDisplayValues?.address?.emailAddress,
-        messagesFor(['email'])
+        ['email']
       )
     ]
   }

@@ -11,6 +11,7 @@ import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as commodityCopy } from '../commodities/copy/copy.en.js'
 import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as idsCopy } from '../identification-numbers/copy/copy.en.js'
+import { copy as declarationCopy } from '../declaration/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
 const save = (page) =>
@@ -121,7 +122,7 @@ test('renders saved answers, scoped cards and accessible Change links that retur
 }) => {
   const reference = await completeNotification(page)
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { level: 1, name: reference, exact: true })
   ).toBeVisible()
   for (const heading of Object.values(copy.sections)) {
     await expect(
@@ -134,7 +135,26 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   await expect(page.getByText(VARIETY, { exact: true })).toBeVisible()
   await expect(
     page.getByText('tech-imports-ltd@example.com', { exact: true })
-  ).toHaveCount(2)
+  ).toHaveCount(0)
+  const contactCard = page.locator('.govuk-summary-card').filter({
+    has: page.getByRole('heading', { name: copy.cards.contact, exact: true })
+  })
+  await expect(contactCard.getByRole('term')).toHaveText([
+    copy.labels.name,
+    copy.labels.address
+  ])
+  await expect(
+    contactCard
+      .locator('.govuk-summary-list__row', {
+        has: page
+          .getByRole('term')
+          .and(page.getByText(copy.labels.address, { exact: true }))
+      })
+      .locator('.govuk-summary-list__value')
+  ).toHaveJSProperty(
+    'innerText',
+    '18 Dockside Road\nLondon\nE14 9GE\nUnited Kingdom'
+  )
   await assertAccessible(page)
   await page
     .getByRole('link', {
@@ -165,11 +185,31 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   )
 })
 
-test('offers Back, Save and return, and Cancel to Overview', async ({
+test('offers Back, Save and return and Cancel to Overview, with Delete notification in its header and not beside Continue', async ({
   page
 }) => {
   const reference = await completeNotification(page)
   const hub = `${BASE}/notifications/${reference}`
+  const deleteButton = page.getByRole('button', {
+    name: copy.delete,
+    exact: true
+  })
+  await expect(deleteButton).toHaveCount(1)
+  await expect(deleteButton).toBeVisible()
+  await expect(deleteButton).toHaveClass(/govuk-button--warning/)
+  await expect(deleteButton).toHaveAttribute('href', /\/delete$/)
+  await expect(
+    page.getByRole('button', { name: copy.viewHeader.amend })
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('region', { name: copy.importReferences.heading })
+  ).toBeVisible()
+  await expect(
+    page
+      .locator('.govuk-button-group')
+      .filter({ has: page.getByRole('button', { name: copy.continue }) })
+      .getByRole('button', { name: copy.delete })
+  ).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveAttribute('href', hub)
@@ -186,6 +226,65 @@ test('offers Back, Save and return, and Cancel to Overview', async ({
     })
     .click()
   await expect(page).toHaveURL(new RegExp(`${hub}$`))
+})
+
+test("a draft's check answers is headed by its reference with a Draft tag and the date created, titled by its reference, with no status bar and no Copy as new, keeping its Change links and Continue", async ({
+  page
+}) => {
+  const reference = await completeNotification(page)
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: reference, exact: true })
+  ).toBeVisible()
+  await expect(
+    page
+      .getByRole('main')
+      .getByText(sharedCopy.journeyStrip.draft, { exact: true })
+  ).toHaveClass(/govuk-tag--blue/)
+  await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+  await expect(page).toHaveTitle(
+    `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
+  )
+  await expect(
+    page.getByText(/^Date created: \d{1,2} [A-Z][a-z]+ \d{4}$/)
+  ).toBeVisible()
+  await expect(
+    page
+      .getByRole('region', { name: copy.importReferences.heading })
+      .getByRole('definition')
+      .first()
+  ).toHaveText(reference)
+  await expect(
+    page.getByRole('region', { name: copy.importReferences.heading })
+  ).toContainText(copy.importReferences.warning)
+  await expect(page.getByText('Customs document code')).toHaveCount(0)
+  await expect(
+    page
+      .getByRole('region', { name: copy.importReferences.heading })
+      .getByRole('button')
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('button', {
+      name: sharedCopy.notificationActions.copy.text
+    })
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: /^Change/ }).first()
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: copy.continue, exact: true })
+  ).toBeVisible()
+  await assertAccessible(page)
+})
+
+test("Delete notification on a draft's check answers opens the delete page", async ({
+  page
+}) => {
+  await completeNotification(page)
+
+  await page.getByRole('button', { name: copy.delete, exact: true }).click()
+
+  await expect(page).toHaveURL(/\/delete$/)
 })
 
 test('rechecks a saved origin after a commodity change and exposes an accessible correction link', async ({
@@ -227,4 +326,124 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   await assertAccessible(page)
   await error.click()
   await expect(page).toHaveURL(/\/origin\?change=1$/)
+})
+
+const submitNotification = async (page) => {
+  const reference = await completeNotification(page)
+  await page.getByRole('button', { name: copy.continue, exact: true }).click()
+  await page
+    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
+    .check()
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  await expect(page).toHaveURL(/\/confirmation$/)
+  return reference
+}
+
+test("a submitted notification's view is headed by its reference with a Submitted tag and the date submitted, titled by its reference, with Back to the notification list", async ({
+  page
+}) => {
+  const reference = await submitNotification(page)
+
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: reference, exact: true })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: copy.title, level: 1 })
+  ).toHaveCount(0)
+  const tag = page
+    .getByRole('main')
+    .getByText(sharedCopy.journeyStrip.submitted, { exact: true })
+  await expect(tag).toHaveClass(/govuk-tag--green/)
+  await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+  await expect(page).toHaveTitle(
+    `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
+  )
+  await expect(
+    page.getByText(/^Date submitted: \d{1,2} [A-Z][a-z]+ \d{4}$/)
+  ).toBeVisible()
+  await assertAccessible(page)
+
+  await page.getByRole('link', { name: 'Back', exact: true }).click()
+
+  await expect(page).toHaveURL(setUrl('/?$'))
+  await expect(
+    page.getByRole('heading', { level: 1, name: dashboardCopy.title })
+  ).toBeVisible()
+})
+
+test("a submitted notification's view offers Amend this notification and a red Delete notification in its header, and no Copy as new", async ({
+  page
+}) => {
+  const reference = await submitNotification(page)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  const group = page.locator('.govuk-button-group').filter({
+    has: page.getByRole('button', { name: copy.viewHeader.amend, exact: true })
+  })
+  await expect(group.getByRole('button')).toHaveText([
+    copy.viewHeader.amend,
+    copy.delete
+  ])
+  await expect(
+    page.getByRole('button', { name: copy.delete, exact: true })
+  ).toHaveCount(1)
+  await expect(page.getByRole('button', { name: 'Copy as new' })).toHaveCount(0)
+
+  await expect(
+    page.getByRole('button', { name: copy.viewHeader.amend, exact: true })
+  ).not.toHaveClass(/govuk-button--(secondary|warning)/)
+  await page
+    .getByRole('button', { name: copy.viewHeader.amend, exact: true })
+    .click()
+
+  await expect(page).toHaveURL(
+    new RegExp(`${BASE}/notifications/${reference}$`)
+  )
+  await expect(
+    page.getByRole('main').getByText(sharedCopy.journeyStrip.amend, {
+      exact: true
+    })
+  ).toBeVisible()
+})
+
+test("a submitted notification's view shows its notification reference as plain text without JavaScript, with no customs document code and no Copy button", async ({
+  page,
+  browser
+}) => {
+  const reference = await submitNotification(page)
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState()
+  })
+  const noJs = await context.newPage()
+
+  await noJs.goto(`${BASE}/notifications/${reference}/notification-view`)
+
+  const region = noJs.getByRole('region', {
+    name: copy.importReferences.heading
+  })
+  await expect(region).toContainText(copy.importReferences.warning)
+  await expect(
+    region
+      .getByRole('term')
+      .filter({ hasText: copy.importReferences.notificationReference })
+      .locator('..')
+      .getByRole('definition')
+  ).toHaveText(reference)
+  await expect(noJs.getByText('Customs document code')).toHaveCount(0)
+  await expect(region.getByRole('button')).toHaveCount(0)
+
+  await context.close()
+})
+
+test('opening the view of a notification that does not exist goes to the notification list', async ({
+  page
+}) => {
+  await page.goto(`${BASE}/notifications/GBN-HRP-00-000000/notification-view`)
+
+  await expect(page).toHaveURL(setUrl('/?$'))
 })

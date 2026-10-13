@@ -2,6 +2,7 @@
 export const copy = {
   title: 'Trosolwg',
   returnToDashboard: 'Dychwelyd i’r dangosfwrdd',
+  taskListLabel: 'Rhestr dasgau’r hysbysiad',
   statuses: {
     completed: 'Wedi’i gwblhau',
     optional: 'Dewisol',

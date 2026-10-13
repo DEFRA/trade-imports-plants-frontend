@@ -13,10 +13,23 @@ export const copy = {
   },
 
   title: 'Check your answers',
+  viewHeader: {
+    dateCreated: (date) => `Date created: ${date}`,
+    dateSubmitted: (date) => `Date submitted: ${date}`,
+    amend: 'Amend this notification'
+  },
+  importReferences: {
+    heading: 'Import reference numbers',
+    warning:
+      'You must use the correct reference and code on the customs declaration or your consignment will be delayed.',
+    warningIcon: 'Warning',
+    notificationReference: 'Notification reference'
+  },
   change: 'Change',
   editDetails: 'Edit details',
   errorPrefix: 'Error:',
   cancelAmend: {
+    button: 'Cancel amend',
     successTitle: 'Success',
     successBody:
       'The amendment has been cancelled and the submitted version restored.'

@@ -1,4 +1,8 @@
-import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import {
+  dashboardPath,
+  hubPath,
+  pagePath
+} from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
@@ -67,6 +71,71 @@ const cardErrorsOf = (current, { answerErrors, partyErrors }) =>
     ...Object.keys(partyErrors)
   ])
 
+/** Cancel amend stands at the foot only while amending; Delete is in the header
+ * of a draft's and a submitted notification's view. */
+const endButtonHrefs = ({ status, journeyId }) => ({
+  cancelAmendHref:
+    status === state.AMEND ? pagePath(journeyId, kit.CANCEL_AMEND_SLUG) : null
+})
+
+// A UTC instant shown as the Europe/London civil date.
+const longDateText = (iso) =>
+  new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/London'
+  })
+
+const submittedDateText = (submittedAt) =>
+  submittedAt ? copy.viewHeader.dateSubmitted(longDateText(submittedAt)) : null
+
+const createdDateText = (createdAt) =>
+  createdAt ? copy.viewHeader.dateCreated(longDateText(createdAt)) : null
+
+const viewHeaderOf = (journey) => ({
+  reference: journey.journeyId,
+  status: kit.journeyStrip(journey).status,
+  dateCreated:
+    journey.status === state.DRAFT ? createdDateText(journey.createdAt) : null,
+  dateSubmitted:
+    journey.status === state.DRAFT
+      ? null
+      : submittedDateText(journey.submittedAt),
+  actions: {
+    amendHref:
+      journey.status === state.SUBMITTED
+        ? pagePath(journey.journeyId, 'amend')
+        : null,
+    deleteHref: pagePath(journey.journeyId, 'delete')
+  },
+  importReferences: [
+    {
+      key: { text: copy.importReferences.notificationReference },
+      value: { text: journey.journeyId }
+    }
+  ]
+})
+
+/** A submitted notification's view and a draft's check answers are titled and
+ * headed by the reference, with no status bar; a submitted view's Back goes to
+ * the notification list, a draft's and an amendment's to Overview; an amendment
+ * keeps Check your answers and the status bar. */
+const chromeOf = (journey, readOnly) => {
+  const headed = readOnly || journey.status === state.DRAFT
+  const chrome = kit.base(headed ? journey.journeyId : copy.title, {
+    journey,
+    page,
+    backLink: readOnly ? dashboardPath() : hubPath(journey.journeyId),
+    offerCancelAmend: false
+  })
+  return {
+    ...chrome,
+    journeyStrip: headed ? null : chrome.journeyStrip,
+    viewHeader: headed ? viewHeaderOf(journey) : null
+  }
+}
+
 /** Every reason the notification cannot go on: answer and invalid-party errors
  * first, then one entry per card still to complete, in page order. A card
  * already named by an answer or party error is not named twice. */
@@ -102,11 +171,7 @@ const render = async (
   const reviewed = await reviewedFor(current, refused)
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
-    ...kit.base(copy.title, {
-      journey: current.journey,
-      page,
-      backLink: hubPath(current.journey.journeyId)
-    }),
+    ...chromeOf(current.journey, readOnly),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
     readOnly,
@@ -133,16 +198,27 @@ const render = async (
       href: summaryHref(current),
       disableAutoFocus
     }),
-    deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
+    ...endButtonHrefs(current.journey),
     // Ruled c-030: the success banner shows once, after cancel-amend's own
     // redirect.
     amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }
 
+const renderOrList = async (request, h) => {
+  try {
+    return await render(request, h, await state.get(request, h))
+  } catch (error) {
+    if (state.isJourneyNotFound(error)) {
+      return h.redirect(dashboardPath())
+    }
+    throw error
+  }
+}
+
 const get = async (request, h) => {
   await completeOpeningRun(request, h, request.params.journeyId)
-  return render(request, h, await state.get(request, h))
+  return renderOrList(request, h)
 }
 
 const post = async (request, h) => {

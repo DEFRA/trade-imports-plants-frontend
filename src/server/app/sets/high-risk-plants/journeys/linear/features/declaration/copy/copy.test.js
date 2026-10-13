@@ -13,4 +13,9 @@ describe('declaration copy', () => {
       expect(copy.body).toHaveLength(3)
     }
   )
+
+  it('Should name the confirmation group for screen readers', () => {
+    expect(en.declarationLegend).toBe('Declaration confirmation')
+    expect(cy.declarationLegend).toBe('Cadarnhad y datganiad')
+  })
 })

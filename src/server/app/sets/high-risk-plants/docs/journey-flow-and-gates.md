@@ -117,8 +117,12 @@ the question: its target is `null` while the answer is out of scope, and the run
 goes straight on to arrival-details, which every commodity type answers.
 
 The opening run should begin when the notification is created, from the
-dashboard's create POST — the single caller of `beginOpeningRun`. The journey
-entry page is an ordinary page otherwise, with no opening-run special case.
+dashboard's create POST and its start GET (`<set>/start`, reached from the
+Import Notification Service's type question) — the only callers of
+`beginOpeningRun`. Both go through one `openNewNotification` helper. The start
+entry sits outside `/notifications/`, so the entry guard never sees it. The
+journey entry page is an ordinary page otherwise, with no opening-run special
+case.
 
 [`entry-guard.js`](../journeys/linear/flow/entry-guard.js) is **live**, keyed to
 the entry page `commodity-type`, whose identity it imports from
@@ -136,6 +140,9 @@ the call — and redirects on any target it returns. The guard:
   session (`openingRunStarted`, true for both `RUN_ACTIVE` and `RUN_COMPLETE`),
   or when the journey carries committed user answers
   (`hasCommittedNotificationAnswers`)
+- admits a request for a notification it cannot find, leaving the page to answer
+  it — the review page sends it to the notification list, every other page
+  answers not found
 - sends anything else — a deep link to an id this session never created and that
   holds no answers — to the entry page
 
