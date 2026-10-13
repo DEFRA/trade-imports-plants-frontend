@@ -51,7 +51,7 @@ const fillArrival = async (page, fields) => {
     await page
       .getByLabel(arrivalCopy.time.label, { exact: true })
       .fill(fields.arrivalTime)
-    await chooseOption(page, 'Port of Dover (GB DVR)')
+    await chooseOption(page, 'Port of Dover - GB DVR')
   }
 }
 

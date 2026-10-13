@@ -21,6 +21,7 @@ import {
 } from '../../../../../../engine/test-support.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
+import * as ports from '../../../../../../services/ports/index.js'
 import {
   COMPLETE_NOTIFICATION,
   installHighRiskPlantsJourney
@@ -126,6 +127,21 @@ describe('Check your answers', () => {
     expect(cardsOf(result)[0].rows[1]).toMatchObject({
       value: { text: UNOFFERED_COUNTRY }
     })
+  })
+
+  it('Should read the place of landing back exactly as the option the trader picked', async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    const arrival = cardsOf(result).find(
+      ({ title }) => title === copy.cards.arrival
+    )
+    const landing = arrival.rows.find(
+      ({ key }) => key.text === copy.labels.proposedPlaceOfLanding
+    )
+    const picked = (await ports.portOptions()).find(
+      ({ value }) => value === COMPLETE_NOTIFICATION.proposedPlaceOfLanding
+    )
+
+    expect(landing.value.text).toBe(picked.text)
   })
 
   it('Should name a territory of origin with its country', async () => {
