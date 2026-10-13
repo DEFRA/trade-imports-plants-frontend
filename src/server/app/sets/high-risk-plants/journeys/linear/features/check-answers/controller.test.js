@@ -135,7 +135,7 @@ describe('Check your answers', () => {
     ])
   })
 
-  it('Should name an invalid destination copy once, by its party error, and not again as an outstanding task', async () => {
+  it('Should name an invalid destination copy by its party error alone', async () => {
     const result = await driveHandler(get, { seed: invalidDestination })
     expect(result.view.context.errorSummary.errorList).toEqual(
       invalidDestinationErrors(result)
