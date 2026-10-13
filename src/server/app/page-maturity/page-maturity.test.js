@@ -5,45 +5,73 @@ import { copy } from './copy/copy.en.js'
 import { BANNER_CLASSES, LEVELS, TAG_CLASSES } from './levels.js'
 import { pageLevelFor, pageMaturityContext } from './page-maturity.js'
 
+const FLAG = 'pageMaturityBanner.enabled'
 const JOURNEY = '/high-risk-plants/notifications/{journeyId}'
-const DASHBOARD = '/high-risk-plants'
 const LISTED_ROUTE = `${JOURNEY}/commodity-type`
 
 const requestFor = (path) => ({ route: { path } })
 
 describe('#pageLevelFor', () => {
   it.each([
-    [DASHBOARD, LEVELS.exploring],
-    [`${JOURNEY}/commodity-type`, LEVELS.exploring],
-    [`${JOURNEY}/origin`, LEVELS.detailing],
-    [JOURNEY, LEVELS.detailing],
-    [`${JOURNEY}/declaration`, LEVELS.agreed],
-    [`${JOURNEY}/confirmation`, LEVELS.readyForLive]
-  ])('Should return the listed level for %s', (routePath, level) => {
-    expect(pageLevelFor(routePath)).toBe(level)
+    '/high-risk-plants',
+    JOURNEY,
+    `${JOURNEY}/commodity-type`,
+    `${JOURNEY}/notification-view`,
+    `${JOURNEY}/declaration`,
+    `${JOURNEY}/confirmation`,
+    '/auth/sign-out'
+  ])('Should make %s Exploring, like every plants page', (routePath) => {
+    expect(pageLevelFor(routePath)).toBe(LEVELS.exploring)
   })
 
-  it('Should return undefined for a page that is not listed', () => {
-    expect(pageLevelFor(`${JOURNEY}/identification-numbers`)).toBeUndefined()
-  })
+  it.each([undefined, ''])(
+    'Should return undefined for the path %j',
+    (routePath) => {
+      expect(pageLevelFor(routePath)).toBeUndefined()
+    }
+  )
 
-  it('Should return undefined for a path that only shares a prefix with a listed path', () => {
-    expect(pageLevelFor(`${JOURNEY}/origin-x`)).toBeUndefined()
-    expect(pageLevelFor(`${DASHBOARD}-archive`)).toBeUndefined()
-  })
+  describe('with a section', () => {
+    const sections = [{ section: '/example/section', level: LEVELS.detailing }]
 
-  it('Should return undefined for an undefined or empty path', () => {
-    expect(pageLevelFor(undefined)).toBeUndefined()
-    expect(pageLevelFor('')).toBeUndefined()
+    it.each([
+      '/example/section',
+      '/example/section/new',
+      '/example/section/{journeyId}/child'
+    ])('Should treat %s as in the section', (path) => {
+      expect(pageLevelFor(path, sections)).toBe(LEVELS.detailing)
+    })
+
+    it.each(['/example/sectionsomething', '/other'])(
+      'Should return undefined for %s, which is not in the section',
+      (path) => {
+        expect(pageLevelFor(path, sections)).toBeUndefined()
+      }
+    )
+
+    it('Should use the first section that holds the route', () => {
+      expect(
+        pageLevelFor('/example/section/new', [
+          ...sections,
+          { section: '/', level: LEVELS.exploring }
+        ])
+      ).toBe(LEVELS.detailing)
+    })
   })
 })
 
 describe('#pageMaturityContext', () => {
+  const initial = config.get(FLAG)
+
   afterEach(() => {
-    config.set('pageMaturityBanner.enabled', true)
+    config.set(FLAG, initial)
   })
 
-  it('Should return the tag, class, line and hidden prefix for a listed route', () => {
+  it('Should be on by default', () => {
+    expect(initial).toBe(true)
+  })
+
+  it('Should return the tag, class, line and hidden prefix for a page with a level', () => {
     expect(pageMaturityContext(requestFor(LISTED_ROUTE))).toEqual({
       pageMaturity: {
         tag: {
@@ -57,19 +85,13 @@ describe('#pageMaturityContext', () => {
     })
   })
 
-  it('Should return nothing for an unlisted route', () => {
-    expect(
-      pageMaturityContext(requestFor(`${JOURNEY}/identification-numbers`))
-    ).toEqual({})
-  })
-
   it('Should return nothing when the switch is off', () => {
-    config.set('pageMaturityBanner.enabled', false)
+    config.set(FLAG, false)
 
     expect(pageMaturityContext(requestFor(LISTED_ROUTE))).toEqual({})
   })
 
-  it('Should return nothing when the error page is rendered on a listed route', () => {
+  it('Should return nothing when the error page is rendered on a page with a level', () => {
     expect(
       pageMaturityContext({
         ...requestFor(LISTED_ROUTE),

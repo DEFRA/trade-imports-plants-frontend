@@ -12,36 +12,49 @@ const ERROR_TEMPLATE = 'shared/error'
 const isErrorPage = (request) =>
   request.response?.source?.template === ERROR_TEMPLATE
 
+// `/` as a section covers every route, so it is not given a second slash.
+const sectionPrefix = (section) =>
+  section.endsWith('/') ? section : `${section}/`
+
 /**
- * Find the maturity level of a page from its hapi route pattern. An exact
- * entry in `PAGE_LEVELS` wins; otherwise the route is matched against
- * `SECTION_LEVELS`, where a section covers itself and everything beneath it.
+ * Whether a route pattern is a section's own path or sits beneath it.
+ *
+ * @param {string} routePath - the hapi route pattern.
+ * @param {string} section - the section path, such as `/live-animals/notifications`, or `/` for every route.
+ * @returns {boolean} true when the route is in the section.
+ */
+export const isInSection = (routePath, section) =>
+  routePath === section || routePath.startsWith(sectionPrefix(section))
+
+/**
+ * Finds the maturity level of a page from its hapi route pattern. An exact
+ * entry in `PAGE_LEVELS` wins; otherwise the first section in `SECTION_LEVELS`
+ * that holds the route applies.
  *
  * @param {string} [routePath] - the hapi route pattern, such as
- * `/high-risk-plants/notifications/{journeyId}/origin`.
- * @returns {string|undefined} the level id, or undefined when the page is not
- * listed.
+ * `/live-animals/notifications/{journeyId}/origin`.
+ * @param {ReadonlyArray<{ section: string, level: string }>} [sections] - the
+ * sections to match, defaulting to `SECTION_LEVELS`.
+ * @returns {string|undefined} a level id from `LEVELS`, or undefined when the
+ * page has no level.
  */
-export function pageLevelFor(routePath) {
+export function pageLevelFor(routePath, sections = SECTION_LEVELS) {
   if (!routePath) {
     return undefined
   }
   if (Object.hasOwn(PAGE_LEVELS, routePath)) {
     return PAGE_LEVELS[routePath]
   }
-  return SECTION_LEVELS.find(
-    ({ section }) =>
-      routePath === section || routePath.startsWith(`${section}/`)
-  )?.level
+  return sections.find(({ section }) => isInSection(routePath, section))?.level
 }
 
 /**
- * The view context for the page maturity banner. Empty when the switch is off,
- * the request's route has no level, or the response is the error page, so the
- * rendered page is unchanged.
+ * Builds the view context that puts a page's maturity level in the phase
+ * banner. Empty when the switch is off, the page has no level, or the response
+ * is the error page, so the rendered page is unchanged.
  *
- * @param {object} request - the hapi request.
- * @returns {{pageMaturity?: {classes: string, tag: {text: string, classes: string}, text: string, hiddenPrefix: string}}}
+ * @param {{ route?: { path?: string }, response?: { source?: { template?: string } } }} request - the hapi request being rendered.
+ * @returns {{ pageMaturity?: { classes: string, tag: { text: string, classes: string }, text: string, hiddenPrefix: string } }}
  * the context to spread into the view model.
  */
 export function pageMaturityContext(request) {

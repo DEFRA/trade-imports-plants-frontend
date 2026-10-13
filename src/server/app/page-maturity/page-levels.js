@@ -1,19 +1,11 @@
 import { LEVELS } from './levels.js'
 
-const BASE = '/high-risk-plants'
-const JOURNEY = `${BASE}/notifications/{journeyId}`
+// A page's level changes through a reviewed pull request. The owners and the
+// evidence for each move are in workareas/shared/delivery-maturity/ideation.md
+// (section 4) in the workspace repo.
 
-export const PAGE_LEVELS = Object.freeze({
-  [BASE]: LEVELS.exploring,
-  [`${JOURNEY}/commodity-type`]: LEVELS.exploring,
-  [`${JOURNEY}/origin`]: LEVELS.detailing,
-  [`${JOURNEY}/arrival-details`]: LEVELS.detailing,
-  [`${JOURNEY}/consignment/contact/select`]: LEVELS.exploring,
-  [`${JOURNEY}/notification-view`]: LEVELS.exploring,
-  [JOURNEY]: LEVELS.detailing,
-  [`${JOURNEY}/consignors/select`]: LEVELS.detailing,
-  [`${JOURNEY}/declaration`]: LEVELS.agreed,
-  [`${JOURNEY}/confirmation`]: LEVELS.readyForLive
-})
+export const PAGE_LEVELS = Object.freeze({})
 
-export const SECTION_LEVELS = Object.freeze([])
+export const SECTION_LEVELS = Object.freeze([
+  { section: '/', level: LEVELS.exploring }
+])
