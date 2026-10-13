@@ -77,6 +77,14 @@ describe('countries service — stub mode', () => {
       value: 'AT',
       text: 'Austria'
     })
+    expect(await countries.originCountryOptions()).toContainEqual({
+      value: 'ES-CN',
+      text: 'Canary Islands'
+    })
+    expect(await countries.countryDisplayLabel('ES-CN')).toBe(
+      'Canary Islands (Spain)'
+    )
+    expect(countries.parentCountryCode('ES-CN')).toBe('ES')
   })
 
   it('Should short-circuit ensureLoaded and never fetch in stub mode', async () => {
@@ -110,6 +118,29 @@ describe('countries service — real mode', () => {
       'United Kingdom',
       'Zedland'
     ])
+  })
+
+  it('Should offer each fetched territory on the origin list, held to its country', async () => {
+    process.env.STUB_MODE = 'false'
+    stubFetch(
+      okOnlyForBlock('GBNAG_SPS_EX', [
+        {
+          code: 'FR',
+          name: 'France',
+          subDivisions: [{ code: 'FR-MQ', name: 'Martinique' }]
+        }
+      ])
+    )
+    const countries = await import('./countries/index.js')
+
+    expect(await countries.originCountryOptions()).toEqual([
+      { value: 'FR', text: 'France' },
+      { value: 'FR-MQ', text: 'Martinique' }
+    ])
+    expect(await countries.countryDisplayLabel('FR-MQ')).toBe(
+      'Martinique (France)'
+    )
+    expect(countries.parentCountryCode('FR-MQ')).toBe('FR')
   })
 
   it('Should offer address countries from the unfiltered list, as the address book does', async () => {

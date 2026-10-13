@@ -16,16 +16,16 @@ import { rowActions } from './actions.js'
  */
 export const toRow = async (journey) => {
   const reference = journey.reference ?? journey.journeyId
-  const originLabel = journey.originCountryCode
-    ? await countries.originLabel(journey.originCountryCode)
-    : undefined
+  const origin = journey.originCountryCode
+    ? await countries.countryDisplayLabel(journey.originCountryCode)
+    : ''
 
   return {
     reference,
     status: journeyStrip(journey).status,
     late: Boolean(journey.lateNotificationIndicator),
     commodity: formatCommodity(journey.commodity),
-    origin: originLabel ?? journey.originCountryCode ?? '',
+    origin,
     arrival: formatDisplayCalendarDate(journey.arrivalDate),
     consignor: journey.consignorName ?? '',
     created: formatDisplayMoment(journey.createdAt),

@@ -128,6 +128,16 @@ describe('Check your answers', () => {
     })
   })
 
+  it('Should name a territory of origin with its country', async () => {
+    const result = await driveHandler(get, {
+      seed: { ...COMPLETE_NOTIFICATION, countryOfOrigin: 'ES-CN' }
+    })
+
+    expect(cardsOf(result)[0].rows[1]).toMatchObject({
+      value: { text: 'Canary Islands (Spain)' }
+    })
+  })
+
   it.each([
     ['potatoes', COMPLETE_NOTIFICATION],
     [
