@@ -349,6 +349,24 @@ test.describe('consignor-select — saving an address', () => {
     await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
   })
 
+  test('Save and return to overview with nothing chosen reaches the overview without an error', async ({
+    page
+  }) => {
+    const reference = await startAtConsignor(page)
+
+    await page
+      .getByRole('button', {
+        name: sharedCopy.saveActions.saveAndReturnToHub
+      })
+      .click()
+
+    await expect(page).toHaveURL(HUB_URL)
+
+    await page.goto(consignorPathOf(reference))
+    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
+    await expect(page.getByRole('alert')).toHaveCount(0)
+  })
+
   test('Cancel and return to overview reaches the overview without saving', async ({
     page
   }) => {

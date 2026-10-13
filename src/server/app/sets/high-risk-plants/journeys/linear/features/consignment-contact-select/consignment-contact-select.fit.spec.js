@@ -450,9 +450,9 @@ test.describe('consignment-contact-select — the end of the opening run', () =>
       })
     ).toBeVisible()
     await expect(
-      page
-        .getByRole('alert')
-        .getByRole('link', { name: checkAnswersCopy.errors.rows.arrival })
+      page.getByRole('alert').getByRole('link', {
+        name: checkAnswersCopy.errors.cards.arrivalDetails
+      })
     ).toBeVisible()
   })
 })

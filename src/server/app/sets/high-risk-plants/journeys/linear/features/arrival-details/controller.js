@@ -126,6 +126,7 @@ const render = async (h, current, values, options = {}) => {
   const dateState = dateStateOf(current.answers, current.scope)
   return h.view(view, {
     ...kit.base(copy.title, {
+      request: h.request,
       backLink: hubPath(current.journey.journeyId),
       journey: current.journey,
       page,

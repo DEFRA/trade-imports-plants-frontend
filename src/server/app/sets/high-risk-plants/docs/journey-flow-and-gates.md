@@ -107,7 +107,7 @@ numbers and the contact address, and closes on check your answers. Check your
 answers carries its derived gate, so the run ends there, complete or not, once
 the commodity type and origin are answered; its GET marks the run complete (the
 hub's GET still does too), shows the unfinished notification and names every
-outstanding task. Continue there re-shows the page with those tasks named while
+unfinished card. Continue there re-shows the page with those cards named while
 anything is outstanding, and only the declaration and confirmation wait for a
 complete notification. With no later step `nextRunTarget` falls through to the
 hub. An unknown step id still returns `null`. The entry sub-page is not a
