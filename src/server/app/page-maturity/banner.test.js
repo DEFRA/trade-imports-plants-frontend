@@ -18,7 +18,7 @@ import { authenticatedCredentials } from '../engine/test-support.js'
 import { copy as sharedCopy } from '../shared/copy.en.js'
 import { SET_BASE } from '../sets/high-risk-plants/set.js'
 import { copy } from './copy/copy.en.js'
-import { TAG_CLASSES } from './levels.js'
+import { BANNER_CLASSES, LEVELS, TAG_CLASSES } from './levels.js'
 
 vi.mock('../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
@@ -31,11 +31,14 @@ const TAG = '.govuk-tag'
 const SERVICE_SENTENCE =
   'This is a new service. Help us improve it and give your feedback by email.'
 
-const exploring = {
-  tag: { text: copy.levels.exploring.tag, classes: TAG_CLASSES.exploring },
-  text: copy.levels.exploring.text,
+const pageMaturityFor = (level) => ({
+  tag: { text: copy.levels[level].tag, classes: TAG_CLASSES[level] },
+  text: copy.levels[level].text,
+  classes: BANNER_CLASSES[level],
   hiddenPrefix: copy.hiddenPrefix
-}
+})
+
+const exploring = pageMaturityFor(LEVELS.exploring)
 
 const renderLayout = (context = {}) =>
   environment.render('shared/layout.njk', {
@@ -75,13 +78,27 @@ describe('page maturity banner in the layout', () => {
       expect(banners).toHaveLength(2)
       expect(normalised(alpha.text())).toBe(`Alpha ${SERVICE_SENTENCE}`)
       expect(levelTag).toHaveLength(1)
-      expect(levelTag.text().trim()).toBe(copy.levels.exploring.tag)
       expect(levelTag.hasClass(TAG_CLASSES.exploring)).toBe(true)
       expect(levelTag.hasClass('govuk-phase-banner__content__tag')).toBe(true)
       expect(normalised(level.text())).toBe(
-        `${copy.levels.exploring.tag} ${copy.hiddenPrefix} ${copy.levels.exploring.text}`
+        `${copy.hiddenPrefix} ${copy.levels.exploring.tag}. ${copy.levels.exploring.text}`
       )
     })
+
+    it.each(Object.values(LEVELS))(
+      'Should give the %s row its own modifier class and tag colour',
+      (levelId) => {
+        const banners = load(
+          renderLayout({ pageMaturity: pageMaturityFor(levelId) })
+        )(PHASE_BANNER)
+
+        expect(banners.eq(1).hasClass(BANNER_CLASSES[levelId])).toBe(true)
+        expect(banners.eq(1).find(TAG).hasClass(TAG_CLASSES[levelId])).toBe(
+          true
+        )
+        expect(banners.eq(0).attr('class')).not.toContain('app-page-maturity')
+      }
+    )
 
     it('Should leave no line break or spacing utilities in the level row', () => {
       const level = levelBannerOf().eq(1)
@@ -97,10 +114,19 @@ describe('page maturity banner in the layout', () => {
       expect(links.attr('href')).toMatch(/^mailto:/)
     })
 
-    it('Should put the hidden prefix for screen readers in the level row', () => {
-      const hidden = levelBannerOf().eq(1).find('.govuk-visually-hidden')
+    it('Should read the hidden status prefix inside the tag, before the level', () => {
+      const level = levelBannerOf().eq(1)
+      const tag = level.find(TAG)
 
-      expect(hidden.text()).toBe(copy.hiddenPrefix)
+      expect(tag.find('.govuk-visually-hidden').first().text().trim()).toBe(
+        copy.hiddenPrefix
+      )
+      expect(normalised(tag.text())).toBe(
+        `${copy.hiddenPrefix} ${copy.levels.exploring.tag}.`
+      )
+      expect(level.find('.govuk-phase-banner__text').text()).not.toContain(
+        copy.hiddenPrefix
+      )
     })
 
     it('Should keep the service sentence in the Alpha row', () => {
@@ -142,7 +168,9 @@ describe('page maturity banner on a served page', () => {
 
     expect($(PHASE_BANNER)).toHaveLength(2)
     expect(tags).toHaveLength(2)
-    expect($(tags[1]).text().trim()).toBe(copy.levels.exploring.tag)
+    expect(normalised($(tags[1]).text())).toBe(
+      `${copy.hiddenPrefix} ${copy.levels.exploring.tag}.`
+    )
   })
 
   it('Should show only the Alpha tag when the switch is off', async () => {

@@ -12,8 +12,8 @@ export const PAGE_LEVELS = Object.freeze({
   [`${JOURNEY}/notification-view`]: LEVELS.exploring,
   [JOURNEY]: LEVELS.detailing,
   [`${JOURNEY}/consignors/select`]: LEVELS.detailing,
-  [`${JOURNEY}/declaration`]: LEVELS.detailing,
-  [`${JOURNEY}/confirmation`]: LEVELS.detailing
+  [`${JOURNEY}/declaration`]: LEVELS.agreed,
+  [`${JOURNEY}/confirmation`]: LEVELS.readyForLive
 })
 
 export const SECTION_LEVELS = Object.freeze([])

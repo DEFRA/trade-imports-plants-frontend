@@ -2,7 +2,7 @@ import { config } from '../../../config/config.js'
 import { copyFor } from '../shared/copy.js'
 import { copy as copyCy } from './copy/copy.cy.js'
 import { copy as copyEn } from './copy/copy.en.js'
-import { TAG_CLASSES } from './levels.js'
+import { BANNER_CLASSES, TAG_CLASSES } from './levels.js'
 import { PAGE_LEVELS, SECTION_LEVELS } from './page-levels.js'
 
 const pageMaturityCopy = copyFor({ en: copyEn, cy: copyCy })
@@ -41,7 +41,7 @@ export function pageLevelFor(routePath) {
  * rendered page is unchanged.
  *
  * @param {object} request - the hapi request.
- * @returns {{pageMaturity?: {tag: {text: string, classes: string}, text: string, hiddenPrefix: string}}}
+ * @returns {{pageMaturity?: {classes: string, tag: {text: string, classes: string}, text: string, hiddenPrefix: string}}}
  * the context to spread into the view model.
  */
 export function pageMaturityContext(request) {
@@ -55,6 +55,7 @@ export function pageMaturityContext(request) {
   const levelCopy = pageMaturityCopy.levels[level]
   return {
     pageMaturity: {
+      classes: BANNER_CLASSES[level],
       tag: { text: levelCopy.tag, classes: TAG_CLASSES[level] },
       text: levelCopy.text,
       hiddenPrefix: pageMaturityCopy.hiddenPrefix
