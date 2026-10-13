@@ -39,9 +39,9 @@ const COUNTRY_HINT = '#countryOfOrigin-hint'
 const REMOVED_COUNTRY_HINT = 'Start typing to search for a country.'
 
 const FRANCE = 'France'
-const FRANCE_CODE = Object.keys(COUNTRY_LABELS).find(
-  (code) => COUNTRY_LABELS[code] === FRANCE
-)
+const FRANCE_CODE = originPageCountryEntries().find(
+  ({ name }) => name === FRANCE
+).code
 const NORWAY = 'Norway'
 const SPAIN = 'Spain'
 
