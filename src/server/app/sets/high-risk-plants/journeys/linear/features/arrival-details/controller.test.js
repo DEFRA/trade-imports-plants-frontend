@@ -26,6 +26,8 @@ import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
 import { copy } from './copy/copy.en.js'
 import * as arrivalDetails from './controller.js'
 
+const MEDIUM_LABEL = 'govuk-label--m'
+
 const get = arrivalDetails.routes.find(
   (route) => route.method === 'GET'
 ).handler
@@ -88,6 +90,7 @@ describe('GET arrival-details — the question it asks', () => {
     expect(result.view.context.dateField.hint.text).toBe(
       copy.dateHints.potatoes
     )
+    expect(result.view.context.dateField.label.classes).toBe(MEDIUM_LABEL)
   })
 
   it('Should ask a consignment on its way for the expected date of landing', async () => {
@@ -98,6 +101,7 @@ describe('GET arrival-details — the question it asks', () => {
     expect(result.view.context.dateField.label.text).toBe(
       copy.dateLabels['not-yet-arrived']
     )
+    expect(result.view.context.dateField.label.classes).toBe(MEDIUM_LABEL)
   })
 
   it('Should ask a consignment already here when it first arrived', async () => {
@@ -108,6 +112,7 @@ describe('GET arrival-details — the question it asks', () => {
     expect(result.view.context.dateField.label.text).toBe(
       copy.dateLabels['already-arrived']
     )
+    expect(result.view.context.dateField.label.classes).toBe(MEDIUM_LABEL)
   })
 
   it('Should ask the pre-arrival question when no status has been chosen', async () => {
