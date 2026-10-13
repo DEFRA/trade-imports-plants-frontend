@@ -9,6 +9,7 @@ import {
 import { currentSetBase, currentSetId } from '../shared/set-context.js'
 import { AMEND, DRAFT, records, SUBMITTED } from './persistence/records.js'
 import { buildActor } from '../../common/helpers/actor-helpers.js'
+import { HTTP_STATUS_NOT_FOUND } from '../lib/http-status.js'
 
 export {
   flowOnlyAnswersCookie,
@@ -61,6 +62,10 @@ export const registerJourneyCookie = (server) => {
     server.state(name, cookieOptions)
   }
 }
+
+/** True for the not-found `currentJourney` raises for a notification that does not exist. */
+export const isJourneyNotFound = (error) =>
+  error?.isBoom === true && error.output?.statusCode === HTTP_STATUS_NOT_FOUND
 
 const JOURNEY_MEMO = Symbol('currentJourney')
 

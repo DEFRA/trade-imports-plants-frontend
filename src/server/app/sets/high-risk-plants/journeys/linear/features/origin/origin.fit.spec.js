@@ -35,8 +35,13 @@ const COUNTRY_SELECT = 'select[name="countryOfOrigin"]'
 const AUTOCOMPLETE_ARROW = '.autocomplete__dropdown-arrow-down'
 const AUTOCOMPLETE_OPTION = '.autocomplete__option'
 const ERROR_MESSAGE = '.govuk-error-message'
+const COUNTRY_HINT = '#countryOfOrigin-hint'
+const REMOVED_COUNTRY_HINT = 'Start typing to search for a country.'
 
 const FRANCE = 'France'
+const FRANCE_CODE = originPageCountryEntries().find(
+  ({ name }) => name === FRANCE
+).code
 const NORWAY = 'Norway'
 const SPAIN = 'Spain'
 
@@ -126,7 +131,7 @@ test.describe('origin feature', () => {
     await signIn(page)
   })
 
-  test('renders the caption, the heading, the label and the hint', async ({
+  test('renders the caption, the heading and the label, with no hint', async ({
     page
   }) => {
     await startAtOrigin(page)
@@ -140,9 +145,8 @@ test.describe('origin feature', () => {
     await expect(
       page.getByText(copy.country.label, { exact: true })
     ).toBeVisible()
-    await expect(
-      page.getByText(copy.country.hint, { exact: true })
-    ).toBeVisible()
+    await expect(page.locator(COUNTRY_HINT)).toHaveCount(0)
+    await expect(page.getByText(REMOVED_COUNTRY_HINT)).toHaveCount(0)
   })
 
   test('is reachable from the overview origin task row', async ({ page }) => {
@@ -315,6 +319,17 @@ test.describe('country of origin type-ahead', () => {
     await startAtOrigin(page)
   })
 
+  test('invites a search in the empty box', async ({ page }) => {
+    await expect(page.locator(COUNTRY_INPUT)).toHaveValue('')
+    await expect(page.locator(COUNTRY_INPUT)).toHaveAttribute(
+      'placeholder',
+      copy.country.searchPlaceholder
+    )
+    await expect(
+      page.getByRole('combobox', { name: copy.country.label })
+    ).toBeVisible()
+  })
+
   test('offers the whole country list on focus, without typing', async ({
     page
   }) => {
@@ -334,6 +349,44 @@ test.describe('country of origin type-ahead', () => {
     await page.locator(COUNTRY_INPUT).fill('zzzzzz')
 
     await expect(page.getByText(copy.country.noResults)).toBeVisible()
+  })
+})
+
+test.describe('country of origin without JavaScript', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('native select begins with the blank Select a country option and shows no hint', async ({
+    page
+  }) => {
+    await startAtOrigin(page)
+
+    const select = page.getByLabel(copy.country.label, { exact: true })
+    await expect(select.locator('option').first()).toHaveText(
+      copy.country.placeholder
+    )
+    await expect(select.locator('option').first()).toHaveAttribute('value', '')
+    await expect(page.locator(COUNTRY_HINT)).toHaveCount(0)
+    await expect(page.getByText(REMOVED_COUNTRY_HINT)).toHaveCount(0)
+  })
+
+  test('native select submits and persists the country code', async ({
+    page
+  }) => {
+    const reference = await startAtOrigin(page)
+
+    await page
+      .getByLabel(copy.country.label, { exact: true })
+      .selectOption({ label: FRANCE })
+    await saveAndContinue(page).click()
+
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
+
+    await page.goto(originPathOf(reference))
+    await expect(page.locator(COUNTRY_SELECT)).toHaveValue(FRANCE_CODE)
   })
 })
 

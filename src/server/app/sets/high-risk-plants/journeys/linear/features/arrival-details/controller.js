@@ -143,7 +143,8 @@ const render = async (h, current, values, options = {}) => {
       hint: copy.dateHints[dateState],
       value: values[ARRIVAL_DATE],
       error: errors[ARRIVAL_DATE],
-      maxDate: bounds.maxText
+      maxDate: bounds.maxText,
+      labelClasses: 'govuk-label--m'
     })
   })
 }

@@ -1,11 +1,14 @@
 {% extends "shared/layout.njk" %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
 {% from "shared/section-caption.njk" import sectionCaption %}
 {% from "shared/save-actions.njk" import saveActions %}
 
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+
+{% macro headerDelete(text, href) %}{{ govukButton({ text: text, href: href, classes: "govuk-button--warning" }) }}{% endmacro %}
 
 {% macro cardActions(actions) %}
   {% if actions and actions.items.length %}
@@ -30,7 +33,35 @@
   {% endif %}
   {% include "shared/error-summary.njk" %}
   {{ sectionCaption(caption) }}
-  <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% if viewHeader %}
+    <div class="govuk-!-margin-bottom-6">
+      <h1 class="govuk-heading-l govuk-!-display-inline-block govuk-!-margin-right-2 govuk-!-margin-bottom-2">{{ viewHeader.reference }}</h1>
+      {{ govukTag({ text: viewHeader.status.text, classes: viewHeader.status.classes }) }}
+      {% if viewHeader.dateSubmitted %}<p class="govuk-body govuk-!-margin-bottom-0">{{ viewHeader.dateSubmitted }}</p>{% endif %}
+      {% if viewHeader.dateCreated %}<p class="govuk-body govuk-!-margin-bottom-0">{{ viewHeader.dateCreated }}</p>{% endif %}
+      {% if viewHeader.actions.amendHref %}
+        <form method="post" action="{{ viewHeader.actions.amendHref }}" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
+          <div class="govuk-button-group govuk-!-margin-top-4">
+            {{ govukButton({ text: copy.viewHeader.amend }) }}
+            {{ headerDelete(copy.delete, viewHeader.actions.deleteHref) }}
+          </div>
+        </form>
+      {% else %}
+        <div class="govuk-button-group govuk-!-margin-top-4">{{ headerDelete(copy.delete, viewHeader.actions.deleteHref) }}</div>
+      {% endif %}
+      <section class="govuk-!-margin-bottom-6" aria-labelledby="import-reference-numbers">
+        <h2 class="govuk-heading-m" id="import-reference-numbers">{{ copy.importReferences.heading }}</h2>
+        {{ govukWarningText({
+          text: copy.importReferences.warning,
+          iconFallbackText: copy.importReferences.warningIcon
+        }) }}
+        {{ govukSummaryList({ rows: viewHeader.importReferences }) }}
+      </section>
+    </div>
+  {% else %}
+    <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% endif %}
   {% if lateNotification %}
     {% set lateBody %}
       <h2 class="govuk-notification-banner__heading">{{ copy.late.heading }}</h2>
@@ -66,18 +97,21 @@
       {% endif %}
     {% endfor %}
   {% endfor %}
-  {% if readOnly %}
-    {{ govukButton({ text: copy.delete, href: deleteHref, classes: "govuk-button--warning" }) }}
-  {% else %}
+  {% if not readOnly %}
     {% if lateWarning %}
       {{ govukWarningText({ text: copy.late.warning(lateRule), iconFallbackText: copy.late.icon }) }}
     {% endif %}
     <h2 class="govuk-heading-m">{{ copy.submit.heading }}</h2>
     <p class="govuk-body">{{ copy.submit.body }}</p>
+    {% if cancelAmendHref %}
+      {% set besidePrimary = [{ text: copy.cancelAmend.button, href: cancelAmendHref, classes: "govuk-button--secondary" }] %}
+    {% else %}
+      {% set besidePrimary = [] %}
+    {% endif %}
     <form method="post" novalidate>
       <input type="hidden" name="crumb" value="{{ crumb }}" />
       <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
-      {{ saveActions(hubHref, primary = { text: copy.continue }, copy = sharedCopy.saveActions) }}
+      {{ saveActions(hubHref, primary = { text: copy.continue }, copy = sharedCopy.saveActions, besidePrimary = besidePrimary) }}
     </form>
   {% endif %}
 {% endblock %}

@@ -177,15 +177,15 @@ test('shows an accessible submitted receipt, survives reload and links to the no
   ).toBeVisible()
 })
 
-test('returns a draft to check answers instead of showing a receipt', async ({
+test('sends a draft to the declaration instead of showing a receipt', async ({
   page
 }) => {
   const reference = await completeNotification(page)
   await page.goto(`${BASE}/notifications/${reference}/confirmation`)
   await expect(page).toHaveURL(
-    new RegExp(`${BASE}/notifications/${reference}/notification-view$`)
+    new RegExp(`${BASE}/notifications/${reference}/declaration$`)
   )
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { name: declarationCopy.title, level: 1 })
   ).toBeVisible()
 })

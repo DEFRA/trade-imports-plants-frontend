@@ -9,12 +9,13 @@ const ADDRESS_PARTS = [
   'postalOrZipCode'
 ]
 
+/** The address parts that hold a value, in the order they are read out. */
+export const addressLines = (address = {}) =>
+  ADDRESS_PARTS.map((part) => address[part]).filter(Boolean)
+
 /** The address as one line for the results table. The country has its own
  * column, so it is left out here. */
-export const addressText = (address = {}) =>
-  ADDRESS_PARTS.map((part) => address[part])
-    .filter(Boolean)
-    .join(', ')
+export const addressText = (address = {}) => addressLines(address).join(', ')
 
 /** Everything the record holds, one line each, for the row's View details
  * disclosure — including the contact details the table has no column for. */

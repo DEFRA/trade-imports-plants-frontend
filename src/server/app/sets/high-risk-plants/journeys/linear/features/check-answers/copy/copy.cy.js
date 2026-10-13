@@ -14,10 +14,23 @@ export const copy = {
   },
 
   title: 'Gwiriwch eich atebion',
+  viewHeader: {
+    dateCreated: (date) => `Dyddiad creu: ${date}`,
+    dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}`,
+    amend: 'Diwygio’r hysbysiad hwn'
+  },
+  importReferences: {
+    heading: 'Cyfeirnodau mewnforio',
+    warning:
+      'Rhaid i chi ddefnyddio’r cyfeirnod a’r cod cywir ar y datganiad tollau neu bydd oedi i’ch llwyth.',
+    warningIcon: 'Rhybudd',
+    notificationReference: 'Cyfeirnod yr hysbysiad'
+  },
   change: 'Newid',
   editDetails: 'Golygu manylion',
   errorPrefix: 'Gwall:',
   cancelAmend: {
+    button: 'Canslo diwygio',
     successTitle: 'Llwyddiant',
     successBody:
       'Mae’r diwygiad wedi’i ganslo a’r fersiwn a gyflwynwyd wedi’i hadfer.'

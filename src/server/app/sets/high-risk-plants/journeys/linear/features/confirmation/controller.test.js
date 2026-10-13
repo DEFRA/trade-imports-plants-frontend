@@ -138,14 +138,14 @@ describe('confirmation', () => {
   })
 
   it.each([state.DRAFT, state.AMEND])(
-    'Should return %s to check answers without claiming submission',
+    'Should send %s to the declaration without claiming submission',
     async (status) => {
       const { journeyId, response } = await driveHandler(get, {
         seed: COMPLETE_NOTIFICATION,
         amend: status === state.AMEND
       })
       expect(response).toEqual({
-        redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
+        redirect: `${SET_BASE}/notifications/${journeyId}/declaration`
       })
       expect((await store.get(journeyId)).status).toBe(status)
     }

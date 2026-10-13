@@ -8,6 +8,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { TEMPLATES } from '../../config.js'
 import { confirmationPage as page } from './page.js'
+import { declarationPage } from '../declaration/page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import {
@@ -31,7 +32,7 @@ const dateText = (value) =>
 const get = async (request, h) => {
   const { journey, answers } = await state.get(request, h)
   if (journey.status !== state.SUBMITTED) {
-    return h.redirect(pagePath(journey.journeyId, kit.CYA_SLUG))
+    return h.redirect(pagePath(journey.journeyId, declarationPage.slug))
   }
   return h.view(`${TEMPLATES}/features/confirmation/template`, {
     ...kit.base(copy.title, { journey, page }),

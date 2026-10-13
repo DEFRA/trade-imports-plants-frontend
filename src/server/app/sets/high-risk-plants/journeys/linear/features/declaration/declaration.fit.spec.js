@@ -151,6 +151,24 @@ test('renders the plants declaration and Back navigation with no serious accessi
   )
 })
 
+test("confirms with a small checkbox under a hidden 'Declaration confirmation' legend and shows no status bar", async ({
+  page
+}) => {
+  await openDeclaration(page)
+  const group = page.getByRole('group', {
+    name: declarationCopy.declarationLegend
+  })
+  await expect(group).toBeVisible()
+  await expect(group.locator('legend')).toHaveClass(/govuk-visually-hidden/)
+  await expect(group.locator('.govuk-checkboxes')).toHaveClass(
+    /govuk-checkboxes--small/
+  )
+  await expect(
+    group.getByRole('checkbox', { name: declarationCopy.declarationLabel })
+  ).toBeVisible()
+  await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+})
+
 test('requires confirmation, focuses the checkbox from the summary and has an accessible error state', async ({
   page
 }) => {
@@ -230,7 +248,7 @@ test('submits an on-time notification without a late banner', async ({
   ).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { name: reference, level: 1, exact: true })
   ).toBeVisible()
   await expect(
     page.getByRole('heading', { name: copy.late.heading })

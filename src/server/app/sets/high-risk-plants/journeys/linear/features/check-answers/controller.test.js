@@ -46,6 +46,8 @@ import { changeHref } from './view-model/rows/change-link.js'
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const NOT_YET_ARRIVED = 'not-yet-arrived'
 const DESTINATION_CARD = '#place-of-destination'
+const DOCKSIDE_ADDRESS_LINES =
+  '18 Dockside Road<br>London<br>E14 9GE<br>United Kingdom'
 
 const get = routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf({ routes })
@@ -85,7 +87,7 @@ describe('Check your answers', () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(meta.collects).toEqual([])
     expect(result.view.context).toMatchObject({
-      pageTitle: copy.title,
+      pageTitle: result.journeyId,
       readOnly: false,
       backLink: `${SET_BASE}/notifications/${result.journeyId}`,
       copy
@@ -116,12 +118,22 @@ describe('Check your answers', () => {
       'Planting'
     ])
     const contact = cards.find(({ title }) => title === copy.cards.contact)
-    expect(contact.rows.map(({ value }) => value.text)).toEqual([
-      'Tech Imports Ltd',
-      '18 Dockside Road, London, E14 9GE, United Kingdom',
-      '01632 960000',
-      'tech-imports-ltd@example.com'
-    ])
+    const nameAndAddress = [
+      [copy.labels.name, 'Tech Imports Ltd'],
+      [copy.labels.address, DOCKSIDE_ADDRESS_LINES]
+    ]
+    expect(
+      contact.rows.map(({ key, value }) => [key.text, value.text ?? value.html])
+    ).toEqual(nameAndAddress)
+    const destination = cards.find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(
+      destination.rows.map(({ key, value }) => [
+        key.text,
+        value.text ?? value.html
+      ])
+    ).toEqual(nameAndAddress)
     expect(result.after).toEqual(COMPLETE_NOTIFICATION)
   })
 
@@ -392,6 +404,79 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
   })
 })
 
+describe('Check your answers — headed draft and unheaded amendment', () => {
+  it("Should head a draft's check answers with its reference, a Draft tag and the date created, with no status bar, and Back to Overview", async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-21T23:30:00Z'))
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+      const h = stubH()
+      await get(journeyRequest(journeyId), h)
+
+      expect(h.captured.view.context).toMatchObject({
+        pageTitle: journeyId,
+        viewHeader: {
+          reference: journeyId,
+          status: { text: 'Draft', classes: 'govuk-tag--blue' },
+          dateCreated: 'Date created: 22 July 2026',
+          dateSubmitted: null,
+          actions: {
+            amendHref: null,
+            deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`
+          },
+          importReferences: [
+            {
+              key: { text: 'Notification reference' },
+              value: { text: journeyId }
+            }
+          ]
+        },
+        journeyStrip: null,
+        backLink: `${SET_BASE}/notifications/${journeyId}`
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('Should leave out Date created for a draft with no created date', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    const load = recordsStub.load
+    vi.spyOn(recordsStub, 'load').mockImplementation(async (...args) => ({
+      ...(await load(...args)),
+      createdAt: null
+    }))
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+
+    expect(h.captured.view.context.viewHeader).toMatchObject({
+      reference: journeyId,
+      status: { text: 'Draft', classes: 'govuk-tag--blue' },
+      dateCreated: null,
+      dateSubmitted: null,
+      actions: {
+        deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`
+      }
+    })
+  })
+
+  it("Should keep an amendment's check answers titled Check your answers with the status bar", async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    await recordsStub.amend(journeyId)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+
+    const { context } = h.captured.view
+    expect(context.pageTitle).toBe(copy.title)
+    expect(context.viewHeader).toBeNull()
+    expect(context.journeyStrip).not.toBeNull()
+  })
+})
+
 describe('Check your answers lateness', () => {
   it('Should warn using the request clock without writing lateness on draft GET', async () => {
     const journey = await store.create()
@@ -437,6 +522,48 @@ describe('Check your answers lateness', () => {
     }
   )
 
+  it("Should head a submitted notification's read-only view with its reference, a Submitted tag and the date submitted, with Back to the notification list", async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-21T23:30:00Z'))
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+      await store.submit(journeyId)
+      const h = stubH()
+      await get(journeyRequest(journeyId), h)
+
+      expect(h.captured.view.context).toMatchObject({
+        pageTitle: journeyId,
+        viewHeader: {
+          reference: journeyId,
+          status: { text: 'Submitted', classes: 'govuk-tag--green' },
+          dateSubmitted: 'Date submitted: 22 July 2026',
+          actions: {
+            amendHref: `${SET_BASE}/notifications/${journeyId}/amend`,
+            deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`
+          },
+          importReferences: [
+            {
+              key: { text: 'Notification reference' },
+              value: { text: journeyId }
+            }
+          ]
+        },
+        journeyStrip: null,
+        backLink: SET_BASE
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('Should send a notification that cannot be found to the notification list', async () => {
+    const h = stubH()
+    const response = await get(journeyRequest('GBN-HRP-00-000000'), h)
+
+    expect(response.redirect).toBe(SET_BASE)
+  })
+
   it('Should offer Cancel amendment only while amending, and the banner only after cancelling', async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
@@ -445,12 +572,10 @@ describe('Check your answers lateness', () => {
     await get(journeyRequest(journeyId), submitted)
     expect(submitted.captured.view.context).toMatchObject({
       readOnly: true,
-      deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`,
+      cancelAmendHref: null,
       amendmentCancelled: false
     })
-    expect(
-      submitted.captured.view.context.journeyStrip.cancelAmend
-    ).toBeUndefined()
+    expect(submitted.captured.view.context.journeyStrip).toBeNull()
     const cancelled = stubH()
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),
@@ -465,17 +590,29 @@ describe('Check your answers lateness', () => {
     )
     expect(amending.captured.view.context).toMatchObject({
       readOnly: false,
-      deleteHref: null,
+      cancelAmendHref: `${SET_BASE}/notifications/${journeyId}/cancel-amend`,
       amendmentCancelled: false
     })
-    expect(amending.captured.view.context.journeyStrip.cancelAmend.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/cancel-amend`
-    )
+    expect(
+      amending.captured.view.context.journeyStrip.cancelAmend
+    ).toBeUndefined()
   })
 
   it('Should show no error summary on opening an incomplete amend review', async () => {
     const result = await driveHandler(get, { amend: true })
     expect(result.view.context.errorSummary).toBeNull()
+  })
+
+  it("Should offer delete in a draft's header and not at its foot", async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    const h = stubH()
+    await get(journeyRequest(journeyId), h)
+    expect(h.captured.view.context.viewHeader.actions.deleteHref).toBe(
+      `${SET_BASE}/notifications/${journeyId}/delete`
+    )
+    expect(h.captured.view.context).not.toHaveProperty('deleteHref')
+    expect(h.captured.view.context.cancelAmendHref).toBeNull()
   })
 
   it('Should refuse Continue on an incomplete amend with the error summary, naming what is outstanding', async () => {
@@ -546,6 +683,40 @@ describe('Check your answers — copied addresses', () => {
     expect(destination.rows[0].value.text).toBe('Tech Imports Warehouse')
     expect(result.view.context.errorSummary).toBeNull()
     expect(partySpy).not.toHaveBeenCalled()
+  })
+
+  it("Should read a party's address back one line per line, ending with its country", async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    const address = destination.rows.find(
+      ({ key }) => key.text === copy.labels.address
+    )
+
+    expect(address.value.html).toBe(DOCKSIDE_ADDRESS_LINES)
+  })
+
+  it("Should escape markup in a party's address lines", async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      placeOfDestination: {
+        ...COMPLETE_NOTIFICATION.placeOfDestination,
+        address: {
+          ...COMPLETE_NOTIFICATION.placeOfDestination.address,
+          addressLine1: '<b>1</b> Lane'
+        }
+      }
+    }
+    const result = await driveHandler(get, { seed })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    const address = destination.rows.find(
+      ({ key }) => key.text === copy.labels.address
+    )
+
+    expect(address.value.html).toMatch(/^&lt;b&gt;1&lt;\/b&gt; Lane<br>/)
   })
 
   it('Should offer Change and Edit details on an answered address, and only Change on an unanswered one', async () => {
@@ -638,7 +809,7 @@ describe('Check your answers — copied addresses', () => {
 
     expect(rowFor(copy.labels.address).value.html).toBe(
       '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
-        '18 Dockside Road, London, E14 9GE, United Kingdom'
+        DOCKSIDE_ADDRESS_LINES
     )
     expect(rowFor(copy.labels.emailAddress).value.html).toContain(
       'Enter an email address in the correct format</p>not-an-email'
@@ -646,9 +817,7 @@ describe('Check your answers — copied addresses', () => {
     expect(rowFor(copy.labels.name).value).toEqual({
       text: 'Tech Imports Ltd'
     })
-    expect(rowFor(copy.labels.telephoneNumber).value).toEqual({
-      text: '01632 960000'
-    })
+    expect(rowFor(copy.labels.telephoneNumber)).toBeUndefined()
   })
 
   it('Should escape a copied value shown under its error', async () => {
