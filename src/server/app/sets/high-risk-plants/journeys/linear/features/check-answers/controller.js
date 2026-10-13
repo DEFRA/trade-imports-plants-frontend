@@ -81,12 +81,25 @@ const summaryErrors = (current, { answerErrors, partyErrors }) => ({
   ])
 })
 
-const render = async (request, h, current, disableAutoFocus = true) => {
+/** A submitted notification names nothing in error. c-201: an amendment opens
+ * with no errors; once its Continue is refused, it names them like a draft. */
+const reviewedFor = (current, refused) => {
+  const { status } = current.journey
+  const named =
+    status !== state.SUBMITTED && (status !== state.AMEND || refused)
+  return named ? reviewErrors(current) : null
+}
+
+const render = async (
+  request,
+  h,
+  current,
+  disableAutoFocus = true,
+  refused = false
+) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
-  // c-201: an amend review holds Continue silently, so it names nothing in error.
-  const holdsSilently = readOnly || current.journey.status === state.AMEND
-  const reviewed = holdsSilently ? null : await reviewErrors(current)
+  const reviewed = await reviewedFor(current, refused)
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -139,10 +152,7 @@ const post = async (request, h) => {
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
   ) {
-    if (current.journey.status === state.AMEND) {
-      return h.redirect(pagePath(current.journey.journeyId, page.slug))
-    }
-    return (await render(request, h, current, false)).code(
+    return (await render(request, h, current, false, true)).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }

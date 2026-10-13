@@ -410,26 +410,43 @@ describe('Check your answers lateness', () => {
     )
   })
 
-  it('Should show no error summary on an incomplete amend review', async () => {
-    const { journeyId } = await store.create()
-    await store.seedAnswers(journeyId, {})
-    await store.submit(journeyId)
-    await recordsStub.amend(journeyId)
-    const h = stubH()
-    await get(journeyRequest(journeyId), h)
-    expect(h.captured.view.context.errorSummary).toBeNull()
+  it('Should show no error summary on opening an incomplete amend review', async () => {
+    const result = await driveHandler(get, { amend: true })
+    expect(result.view.context.errorSummary).toBeNull()
   })
 
-  it('Should keep an incomplete amend on the review without an error', async () => {
-    const { journeyId } = await store.create()
-    await store.seedAnswers(journeyId, {})
-    await store.submit(journeyId)
-    await recordsStub.amend(journeyId)
-    const response = await post(journeyRequest(journeyId), stubH())
-    expect(response).toEqual({
-      redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
+  it('Should refuse Continue on an incomplete amend with the error summary, naming what is outstanding', async () => {
+    const result = await driveHandler(post, {
+      seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' },
+      amend: true
     })
-    expect((await store.get(journeyId)).status).toBe(AMEND)
+    const base = `${SET_BASE}/notifications/${result.journeyId}`
+    expect(result.response.statusCode).toBe(400)
+    expect(result.response.redirect).toBeUndefined()
+    expect(result.view.context.errorSummary.disableAutoFocus).toBe(false)
+    expect(result.view.context.errorSummary.errorList).toEqual(
+      expect.arrayContaining([
+        {
+          text: copy.errors.rows.destination,
+          href: `${base}/destinations/select?change=1`
+        },
+        {
+          text: copy.errors.rows.contact,
+          href: `${base}/consignment/contact/select?change=1`
+        }
+      ])
+    )
+    expect((await store.get(result.journeyId)).status).toBe(AMEND)
+  })
+
+  it('Should let a complete amend continue to the declaration', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_NOTIFICATION,
+      amend: true
+    })
+    expect(result.response).toEqual({
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/declaration`
+    })
   })
 })
 

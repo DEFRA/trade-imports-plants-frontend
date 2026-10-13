@@ -231,6 +231,44 @@ test('Overview and review offer Cancel amend while amending', async ({
   }
 })
 
+test('Continue on an incomplete amendment shows There is a problem, naming the outstanding task', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
+  await page
+    .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
+      exact: true
+    })
+    .fill('')
+  await page
+    .getByRole('button', {
+      name: sharedCopy.saveActions.saveAndReturnToHub,
+      exact: true
+    })
+    .click()
+  await expect(page).toHaveURL(setUrl(`/notifications/${reference}$`))
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+  await expect(page.getByRole('alert')).toHaveCount(0)
+
+  await page.getByRole('button', { name: copy.continue, exact: true }).click()
+
+  await expect(page).toHaveURL(cyaUrl)
+  const summary = page.getByRole('alert')
+  await expect(
+    summary.getByRole('heading', { name: sharedCopy.errorSummary.title })
+  ).toBeVisible()
+  await expect(
+    summary.getByRole('link', {
+      name: copy.errors.rows.identificationNumbers,
+      exact: true
+    })
+  ).toBeVisible()
+  await expect(strip(page).locator(TAG)).toHaveText(
+    sharedCopy.journeyStrip.amend
+  )
+})
+
 test('Cancel amend on the Overview opens the confirmation page', async ({
   page
 }) => {
