@@ -446,9 +446,9 @@ test.describe('consignment-contact-select — the end of the opening run', () =>
       page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
     await expect(
-      page
-        .getByRole('alert')
-        .getByRole('link', { name: checkAnswersCopy.errors.rows.arrival })
+      page.getByRole('alert').getByRole('link', {
+        name: checkAnswersCopy.errors.cards.arrivalDetails
+      })
     ).toBeVisible()
   })
 })

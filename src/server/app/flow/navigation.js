@@ -47,11 +47,6 @@ const taskRowOfPage = (pageId) =>
 const staysInTaskRow = (row, page) =>
   !row || row.pages.some((candidate) => candidate.id === page.id)
 
-export const nextInSection = (pageId, scope, journeyId) => {
-  const next = nextSectionPage(pageId, scope)
-  return next ? pagePath(journeyId, next.slug) : hubPath(journeyId)
-}
-
 /** Where a save goes outside the opening run: on to the next page of the same
  * task row, otherwise back to the hub. A page outside every task row keeps its
  * section's order. */

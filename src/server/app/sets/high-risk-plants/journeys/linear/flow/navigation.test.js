@@ -1,7 +1,7 @@
 import { SET_BASE } from '../../../set.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { nextInSection, nextInTaskRow } from '../../../../../flow/navigation.js'
+import { nextInTaskRow } from '../../../../../flow/navigation.js'
 import { installHighRiskPlantsJourney } from '../test-support.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import { commoditiesPage } from '../features/commodities/page.js'
@@ -62,9 +62,6 @@ describe('#nextInTaskRow — where a save outside the opening run goes', () => {
   it('Should return the consignor to the overview rather than on to identification numbers, a task of its own', () => {
     const scope = scopeOf(...PLANTS_RUN, 'identificationNumbers')
     expect(nextInTaskRow(consignorPage.id, scope, JOURNEY_ID)).toBe(HUB)
-    expect(nextInSection(consignorPage.id, scope, JOURNEY_ID)).toBe(
-      journeyPath('identification-numbers')
-    )
   })
 
   it('Should keep check your answers leading on to the declaration — it belongs to no task row', () => {
