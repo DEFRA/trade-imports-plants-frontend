@@ -61,6 +61,7 @@ const render = (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
+      request: h.request,
       backLink: hubPath(current.journey.journeyId),
       journey: current.journey,
       page,
