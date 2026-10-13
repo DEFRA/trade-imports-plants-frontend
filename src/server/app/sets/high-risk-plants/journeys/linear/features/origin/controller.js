@@ -127,6 +127,7 @@ const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
+      request: h.request,
       backLink: backLinkFor(current.journey, current.answers),
       journey: current.journey,
       page,
