@@ -10,7 +10,9 @@ import { session as sessionStub } from '../../../../../../../services/persistenc
 import { driveHandler } from '../../../../../../../engine/test-support.js'
 
 import * as checkAnswers from '../controller.js'
+import { taskRows } from '../../../flow/task-rows.js'
 import { copy } from './copy.en.js'
+import { copy as cy } from './copy.cy.js'
 
 import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
 
@@ -24,6 +26,14 @@ describe('checkAnswers copy module', () => {
     for (const { path, value } of leaves(copy)) {
       expect(isCopyLeaf(value), `${path} must be copy`).toBe(true)
     }
+  })
+
+  // The review names every outstanding task row with its errors.rows entry, so
+  // a new row cannot reach the review page without one.
+  it('Should name an outstanding-row error for every task row, and no other', () => {
+    const ids = taskRows.map((row) => row.id)
+    expect(Object.keys(copy.errors.rows)).toEqual(ids)
+    expect(Object.keys(cy.errors.rows)).toEqual(ids)
   })
 })
 

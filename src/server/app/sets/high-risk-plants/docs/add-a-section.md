@@ -276,6 +276,7 @@ Registration work for the feature group is therefore limited to:
 3. add page identities to `sections` and `taskRows`
 4. add task-row ids and copy to the hub
 5. add pages to `run.js` only when they belong in the opening run
+6. add the task-row id's outstanding-row error to check-answers `errors.rows`
 
 Change `journeys/linear/config.js` or the `configureJourneyFlow()` call only when
 the journey's template identity, cookie identity or injected policy surface
@@ -305,6 +306,11 @@ and [`copy/copy.cy.js`](../journeys/linear/features/check-answers/copy/copy.cy.j
 Extend
 [`check-answers.fit.spec.js`](../journeys/linear/features/check-answers/check-answers.fit.spec.js),
 which covers saved answers, scoped cards, Change navigation and accessibility.
+
+Add the row's "Complete …" message under `errors.rows`, keyed by the task-row id,
+in both check-answers `copy.en.js` and `copy.cy.js`. The review page names every
+outstanding row with it, and check-answers `copy/copy.test.js` fails until it is
+there.
 
 ## 8. Update downstream persistence when applicable
 
