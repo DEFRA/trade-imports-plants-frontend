@@ -26,7 +26,7 @@ for the registered routes and tasks, and
 for real features to follow when extending the journey.
 
 Deployed end-to-end tests for this service live in the shared tests repository
-`trade-imports-ins-tests`, as its `plants` Playwright project alongside
+`trade-imports-ins-tests`, as its `plants` domain (`tests/plants/`) alongside
 `animals`, `animals-admin` and `ins`. See
 [Cross-repo test ownership](src/server/app/docs/test-ownership.md).
 

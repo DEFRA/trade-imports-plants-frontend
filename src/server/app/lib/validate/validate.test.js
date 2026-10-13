@@ -41,6 +41,7 @@ const FLIP_FIELD_MAX_LENGTH_MESSAGE = 'Code must be 5 characters or less'
 const COUNT_REQUIRED_MESSAGE = 'Enter the number of items'
 const COUNT_WHOLE_NUMBER_MESSAGE = 'Enter a whole number greater than 0'
 const NOT_A_DATE = 'not a date'
+const OUT_OF_DOMAIN = 'gold-plated'
 const BLOCKS_BLANK_WHITESPACE_AND_MISSING =
   'Should block blank, whitespace-only and missing values with the required message'
 
@@ -187,7 +188,7 @@ describe('#requiredOneOf — save-blocking value domain', () => {
   })
 
   it('Should reject a value outside the domain', () => {
-    expect(run(schema, { itemSelector: 'gold-plated' }).errors).toEqual({
+    expect(run(schema, { itemSelector: OUT_OF_DOMAIN }).errors).toEqual({
       itemSelector: SELECTOR_REQUIRED_MESSAGE
     })
   })
@@ -204,6 +205,25 @@ describe('#requiredOneOf — save-blocking value domain', () => {
     })
     expect(run(noDomain, { itemSelector: '' }).errors).toEqual({
       itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+  })
+
+  it('Should tell a value outside the domain from a blank one when given two messages', () => {
+    const unknownMessage = 'Select a listed option'
+    const twoMessages = requiredOneOf(
+      'itemSelector',
+      [SELECTOR_ALPHA, SELECTOR_BRAVO],
+      { required: SELECTOR_REQUIRED_MESSAGE, unknown: unknownMessage }
+    )
+
+    expect(run(twoMessages, { itemSelector: '' }).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+    expect(run(twoMessages, {}).errors).toEqual({
+      itemSelector: SELECTOR_REQUIRED_MESSAGE
+    })
+    expect(run(twoMessages, { itemSelector: OUT_OF_DOMAIN }).errors).toEqual({
+      itemSelector: unknownMessage
     })
   })
 })
@@ -757,7 +777,7 @@ describe('#validate with allowMissing — the save-and-return reading', () => {
   describe('a value that breaks its own rule', () => {
     it('Should still refuse a value outside a requiredOneOf domain', () => {
       const schema = requiredOneOf('answer', DOMAIN, REQUIRED)
-      expect(validate(schema, { answer: 'gold-plated' }, ALLOW).errors).toEqual(
+      expect(validate(schema, { answer: OUT_OF_DOMAIN }, ALLOW).errors).toEqual(
         { answer: REQUIRED }
       )
     })

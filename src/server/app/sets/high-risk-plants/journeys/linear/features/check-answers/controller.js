@@ -3,22 +3,22 @@ import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
-import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
 import { changeHref } from './view-model/rows/change-link.js'
-import { outstandingPartyErrors } from './view-model/outstanding-parties.js'
 import {
   outstandingRowErrors,
   outstandingRowHref,
   ROW_KEY_PREFIX
 } from './view-model/outstanding-rows.js'
+import { reviewErrors } from './refusal.js'
 import { completeOpeningRun } from '../../../../../../flow/run-state.js'
-import { originErrors } from '../origin/controller.js'
+import { PARTIES, partyOf } from '../../parties/index.js'
+import { toDisplayParty } from '../../parties/picked-party.js'
+import { partyEditHref } from '../party-edit/edit-href.js'
 
 import { lateness, requestClock } from '../review/lateness.js'
 import {
@@ -30,53 +30,64 @@ export const meta = { ...page, collects: [] }
 const view = `${TEMPLATES}/features/check-answers/template`
 const copy = copyFor({ en, cy })
 
-const partiesFor = async (request, source, scope) => {
-  const parties = {}
-  for (const field of ['placeOfDestination', 'consignor', 'contactAddress']) {
-    const saved = source[field]
-    if (!scope.has(field) || !saved) {
-      continue
-    }
-    const party = saved.addressId
-      ? await addressBook.party(organisationIdOf(request), saved.addressId)
-      : saved
-    if (party && !party.deleted) {
-      parties[field] = party
+const partyDisplayValuesFor = async ({ answers, scope }) => {
+  const partyDisplayValuesById = {}
+  for (const { id } of PARTIES) {
+    const partyDisplayValues = scope.has(id)
+      ? await toDisplayParty(answers[id])
+      : undefined
+    if (partyDisplayValues) {
+      partyDisplayValuesById[id] = partyDisplayValues
     }
   }
-  return parties
+  return partyDisplayValuesById
 }
 
-/** Every reason the notification cannot go on: origin and removed-party errors
+/** Party errors are keyed `party:<id>` so their summary entries link to the
+ * page that edits the copied address, returning here, rather than to the
+ * picker a Change link opens. Outstanding task rows are keyed `row:<rowId>`
+ * and link to the row's entry page with the change context. */
+const PARTY_KEY_PREFIX = 'party:'
+
+const summaryHref = (current) => (key) => {
+  const { journeyId } = current.journey
+  if (key.startsWith(PARTY_KEY_PREFIX)) {
+    return partyEditHref(
+      journeyId,
+      partyOf(key.slice(PARTY_KEY_PREFIX.length)),
+      kit.CYA_SLUG
+    )
+  }
+  if (key.startsWith(ROW_KEY_PREFIX)) {
+    return outstandingRowHref(key, current.scope, journeyId)
+  }
+  return changeHref(journeyId, key)
+}
+
+/** Every reason the notification cannot go on: answer and invalid-party errors
  * first, then one entry per task row still to complete. A row already named by
- * a field or party error is not named twice. The sanitiser drops unresolved
- * references that the page must name, so the party errors read the stored
- * answers; the rest of the page uses sanitised answers. */
-const continueErrors = async (current, source, parties) => {
-  const fieldErrors = {
-    ...(await originErrors(current)),
-    ...outstandingPartyErrors(source, parties)
-  }
-  return {
-    ...fieldErrors,
-    ...outstandingRowErrors(current, Object.keys(fieldErrors))
-  }
-}
-
-const errorHref = (current, key) =>
-  key.startsWith(ROW_KEY_PREFIX)
-    ? outstandingRowHref(key, current.scope, current.journey.journeyId)
-    : changeHref(current.journey.journeyId, key)
+ * an answer or party error is not named twice. */
+const summaryErrors = (current, { answerErrors, partyErrors }) => ({
+  ...answerErrors,
+  ...Object.fromEntries(
+    Object.entries(partyErrors).map(([id, text]) => [
+      `${PARTY_KEY_PREFIX}${id}`,
+      text
+    ])
+  ),
+  ...outstandingRowErrors(current, [
+    ...Object.keys(answerErrors),
+    ...Object.keys(partyErrors)
+  ])
+})
 
 const render = async (request, h, current, disableAutoFocus = true) => {
   const readOnly = current.journey.status === state.SUBMITTED
-  const source = current.storedAnswers ?? current.answers
-  const parties = await partiesFor(request, source, current.scope)
+  const partyDisplayValuesById = await partyDisplayValuesFor(current)
   // c-201: an amend review holds Continue silently, so it names nothing in error.
   const holdsSilently = readOnly || current.journey.status === state.AMEND
-  const errors = holdsSilently
-    ? {}
-    : await continueErrors(current, source, parties)
+  const reviewed = holdsSilently ? null : await reviewErrors(current)
+  const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
@@ -99,9 +110,11 @@ const render = async (request, h, current, disableAutoFocus = true) => {
       current.answers.commodityType === 'potatoes'
         ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
-    sections: await buildSections(current, parties, readOnly),
+    sections: await buildSections(current, partyDisplayValuesById, readOnly, {
+      partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
+    }),
     errorSummary: kit.errorSummary(errors, {
-      href: (key) => errorHref(current, key),
+      href: summaryHref(current),
       disableAutoFocus
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
@@ -121,9 +134,7 @@ const post = async (request, h) => {
   if (current.journey.status === state.SUBMITTED) {
     return h.redirect(pagePath(current.journey.journeyId, page.slug))
   }
-  const source = current.storedAnswers ?? current.answers
-  const parties = await partiesFor(request, source, current.scope)
-  const errors = await continueErrors(current, source, parties)
+  const errors = summaryErrors(current, await reviewErrors(current))
   if (
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
