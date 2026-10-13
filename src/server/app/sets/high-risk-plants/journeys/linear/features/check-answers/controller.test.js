@@ -25,6 +25,7 @@ import {
 } from '../../../../../../engine/test-support.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
+import * as ports from '../../../../../../services/ports/index.js'
 import {
   COMPLETE_NOTIFICATION,
   installHighRiskPlantsJourney
@@ -142,17 +143,6 @@ describe('Check your answers', () => {
     expect(result.view.context.errorSummary.errorList).toEqual(
       invalidDestinationErrors(result)
     )
-  })
-
-  it('Should render the raw ISO code in the origin row when the stored country is no longer offered by the origin block', async () => {
-    const UNOFFERED_COUNTRY = 'ZZ'
-    const result = await driveHandler(get, {
-      seed: { ...COMPLETE_NOTIFICATION, countryOfOrigin: UNOFFERED_COUNTRY }
-    })
-
-    expect(cardsOf(result)[0].rows[1]).toMatchObject({
-      value: { text: UNOFFERED_COUNTRY }
-    })
   })
 
   it('Should refuse Continue for an invalid destination copy, naming it once', async () => {
@@ -278,6 +268,44 @@ describe('Check your answers', () => {
     }
     expect(await post(request, h)).toEqual({
       redirect: `${SET_BASE}/notifications/${journey.journeyId}/notification-view`
+    })
+  })
+})
+
+describe('Check your answers — reference-list answers', () => {
+  it('Should render the raw ISO code in the origin row when the stored country is no longer offered by the origin block', async () => {
+    const UNOFFERED_COUNTRY = 'ZZ'
+    const result = await driveHandler(get, {
+      seed: { ...COMPLETE_NOTIFICATION, countryOfOrigin: UNOFFERED_COUNTRY }
+    })
+
+    expect(cardsOf(result)[0].rows[1]).toMatchObject({
+      value: { text: UNOFFERED_COUNTRY }
+    })
+  })
+
+  it('Should read the place of landing back exactly as the option the trader picked', async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    const arrival = cardsOf(result).find(
+      ({ title }) => title === copy.cards.arrival
+    )
+    const landing = arrival.rows.find(
+      ({ key }) => key.text === copy.labels.proposedPlaceOfLanding
+    )
+    const picked = (await ports.portOptions()).find(
+      ({ value }) => value === COMPLETE_NOTIFICATION.proposedPlaceOfLanding
+    )
+
+    expect(landing.value.text).toBe(picked.text)
+  })
+
+  it('Should name a territory of origin with its country', async () => {
+    const result = await driveHandler(get, {
+      seed: { ...COMPLETE_NOTIFICATION, countryOfOrigin: 'ES-CN' }
+    })
+
+    expect(cardsOf(result)[0].rows[1]).toMatchObject({
+      value: { text: 'Canary Islands (Spain)' }
     })
   })
 })

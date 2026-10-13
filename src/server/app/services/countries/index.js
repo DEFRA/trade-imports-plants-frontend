@@ -1,12 +1,33 @@
 import Boom from '@hapi/boom'
-import { ADDRESS_BOOK_COUNTRY_LABELS, COUNTRY_LABELS } from './stub.js'
+import {
+  ADDRESS_BOOK_COUNTRY_LABELS,
+  COUNTRY_LABELS,
+  COUNTRY_SUBDIVISIONS
+} from './stub.js'
 import { fetchCountries } from './client.js'
 import { isStubMode } from '../../../common/services/mode.js'
 
 let labels = { ...COUNTRY_LABELS }
+let subdivisionLabels = { ...COUNTRY_SUBDIVISIONS.labels }
+let subdivisionToParent = { ...COUNTRY_SUBDIVISIONS.parents }
 let loaded = false
 let addressBookLabels = { ...ADDRESS_BOOK_COUNTRY_LABELS }
 let addressBookLoaded = false
+
+const indexSubDivisions = (countries) => {
+  const nextSubdivisionLabels = {}
+  const nextSubdivisionToParent = {}
+
+  for (const country of countries) {
+    for (const subdivision of country.subDivisions ?? []) {
+      nextSubdivisionLabels[subdivision.code] = subdivision.name
+      nextSubdivisionToParent[subdivision.code] = country.code
+    }
+  }
+
+  subdivisionLabels = nextSubdivisionLabels
+  subdivisionToParent = nextSubdivisionToParent
+}
 
 /** Load the country list from the reference-data service, once. Called
  * implicitly by every reader — the readers self-load on first use rather than
@@ -22,6 +43,7 @@ export const ensureLoaded = async () => {
   try {
     const countries = await fetchCountries(['GBNAG_SPS_EX'])
     labels = Object.fromEntries(countries.map(({ code, name }) => [code, name]))
+    indexSubDivisions(countries)
     loaded = true
   } catch (err) {
     throw Boom.serverUnavailable('Reference data unavailable', {
@@ -37,17 +59,69 @@ export const ensureLoaded = async () => {
 const UNITED_KINGDOM = 'United Kingdom'
 const UNITED_KINGDOM_CODE = 'GB'
 
+export const isSubdivisionCode = (code) =>
+  code != null && Object.hasOwn(subdivisionLabels, code)
+
+export const parentCountryCode = (code) => subdivisionToParent[code] ?? code
+
 export const originLabel = async (code) => {
   await ensureLoaded()
+  if (code == null || code === '') {
+    return undefined
+  }
+  if (isSubdivisionCode(code)) {
+    return subdivisionLabels[code]
+  }
   return (
     labels[code] ?? (code === UNITED_KINGDOM_CODE ? UNITED_KINGDOM : undefined)
   )
+}
+
+const subdivisionDisplayLabel = (code) => {
+  const subdivisionName = subdivisionLabels[code]
+  const parentName = labels[parentCountryCode(code)]
+  return parentName ? `${subdivisionName} (${parentName})` : subdivisionName
+}
+
+/** A country or subdivision as a review row shows it, a subdivision named with its parent country. */
+export const countryDisplayLabel = async (code) => {
+  await ensureLoaded()
+  if (code == null || code === '') {
+    return ''
+  }
+  if (isSubdivisionCode(code)) {
+    return subdivisionDisplayLabel(code)
+  }
+  return (await originLabel(code)) ?? code
 }
 
 export const originCountries = async () => {
   await ensureLoaded()
   return Object.entries(labels).map(([value, text]) => ({ value, text }))
 }
+
+const countryAndSubdivisionOptions = async (subdivisionText) => {
+  await ensureLoaded()
+  const countryOptions = Object.entries(labels).map(([value, text]) => ({
+    value,
+    text
+  }))
+  const subdivisionOptions = Object.keys(subdivisionLabels).map((value) => ({
+    value,
+    text: subdivisionText(value)
+  }))
+  return [...countryOptions, ...subdivisionOptions].sort((left, right) =>
+    left.text.localeCompare(right.text)
+  )
+}
+
+/** Flat country and subdivision entries for the origin page only. */
+export const originCountryOptions = () =>
+  countryAndSubdivisionOptions((code) => subdivisionLabels[code])
+
+/** Countries and their subdivisions for a destination select, one alphabetical list, each subdivision named with its parent country. */
+export const destinationCountryOptions = () =>
+  countryAndSubdivisionOptions(subdivisionDisplayLabel)
 
 export const addressCountries = async () => {
   await ensureLoaded()
@@ -84,6 +158,7 @@ export const addressBookCountries = async () => {
   ]
 }
 
+/** Falls back to the code. */
 export const addressBookCountryName = async (code) =>
   (await addressBookCountries()).find((option) => option.code === code)?.name ??
   code

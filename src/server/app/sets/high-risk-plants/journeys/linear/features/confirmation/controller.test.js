@@ -1,5 +1,13 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
+} from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
 import { configureRecords } from '../../../../../../engine/persistence/records.js'
@@ -91,6 +99,28 @@ describe('confirmation', () => {
       })
     }
   )
+
+  describe('notification date', () => {
+    afterEach(() => vi.useRealTimers())
+
+    it.each([
+      { submittedAt: '2026-08-11T23:30:00Z', shown: '12 August 2026' },
+      { submittedAt: '2026-01-11T23:30:00Z', shown: '11 January 2026' }
+    ])(
+      'Should show $shown for a notification submitted at $submittedAt, the London date',
+      async ({ submittedAt, shown }) => {
+        const { journeyId } = await store.create()
+        await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(new Date(submittedAt))
+        await store.submit(journeyId)
+        vi.useRealTimers()
+        const h = stubH()
+        await get(journeyRequest(journeyId), h)
+        expect(h.captured.view.context.notificationDate).toBe(shown)
+      }
+    )
+  })
 
   it('Should quote the plants and wood window for a plants consignment', async () => {
     const { journeyId } = await store.create()

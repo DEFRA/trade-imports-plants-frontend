@@ -167,7 +167,7 @@ const sectionContext = async (
   // Pre-resolve the reference-data-backed labels so the section builders can
   // stay synchronous. The readers self-load; buildSections is the natural
   // await point since it is already the async gateway to check-answers.
-  const originCountryLabel = await countries.originLabel(
+  const originCountryLabel = await countries.countryDisplayLabel(
     answers.countryOfOrigin
   )
   const proposedPlaceOfLandingLabel = scope.has('proposedPlaceOfLanding')
