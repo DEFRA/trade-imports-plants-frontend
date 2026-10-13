@@ -59,7 +59,7 @@ const summaryHref = (current) => (key) => {
     )
   }
   if (key.startsWith(ROW_KEY_PREFIX)) {
-    return outstandingRowHref(key, current.scope, journeyId)
+    return outstandingRowHref(key, current)
   }
   return changeHref(journeyId, key)
 }

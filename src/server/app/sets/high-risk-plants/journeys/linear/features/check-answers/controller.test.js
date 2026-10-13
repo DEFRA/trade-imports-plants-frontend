@@ -43,6 +43,7 @@ import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js
 import { changeHref } from './view-model/rows/change-link.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
+const NOT_YET_ARRIVED = 'not-yet-arrived'
 
 const get = routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf({ routes })
@@ -131,7 +132,7 @@ describe('Check your answers', () => {
     const arrival = cards.find(({ title }) => title === copy.cards.arrival)
     expect(arrival.rows.map(({ key }) => key.text)).toEqual([
       copy.labels.arrivalStatus,
-      arrivalCopy.dateLabels['not-yet-arrived']
+      arrivalCopy.dateLabels[NOT_YET_ARRIVED]
     ])
   })
 
@@ -184,11 +185,11 @@ describe('Check your answers', () => {
   it.each([
     ['potatoes', COMPLETE_NOTIFICATION],
     [
-      'not-yet-arrived',
+      NOT_YET_ARRIVED,
       {
         commodityType: PLANTS_FOR_PLANTING,
         countryOfOrigin: 'FR',
-        arrivalStatus: 'not-yet-arrived'
+        arrivalStatus: NOT_YET_ARRIVED
       }
     ],
     [
@@ -281,7 +282,7 @@ describe('Check your answers', () => {
 })
 
 describe('Check your answers — outstanding tasks and the opening run', () => {
-  it('Should name every outstanding task on an incomplete notification, linking to its page with the change context', async () => {
+  it('Should name every outstanding task on an incomplete notification, linking to its first unanswered page with the change context', async () => {
     const result = await driveHandler(get, {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
     })
@@ -290,7 +291,7 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
       expect.arrayContaining([
         {
           text: copy.errors.rows.commodities,
-          href: `${base}/commodity-type?change=1`
+          href: `${base}/commodities?change=1`
         },
         {
           text: copy.errors.rows.destination,
@@ -305,6 +306,21 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
     expect(result.view.context.errorSummary.errorList).not.toContainEqual(
       expect.objectContaining({ text: copy.errors.rows.origin })
     )
+  })
+
+  it('Should link a half-done row to the page still missing, not its answered first page', async () => {
+    const result = await driveHandler(get, {
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: 'FR',
+        arrivalStatus: NOT_YET_ARRIVED
+      }
+    })
+    const base = `${SET_BASE}/notifications/${result.journeyId}`
+    expect(result.view.context.errorSummary.errorList).toContainEqual({
+      text: copy.errors.rows.arrival,
+      href: `${base}/arrival-details?change=1`
+    })
   })
 
   it('Should complete the opening run when check your answers is shown', async () => {
