@@ -117,21 +117,6 @@ describe('Check your answers', () => {
     ])
   })
 
-  it('Should render Not provided for a removed address-book reference', async () => {
-    vi.spyOn(addressBook, 'party').mockResolvedValue(undefined)
-    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
-    const destination = cardsOf(result).find(
-      ({ title }) => title === destinationCopy.headings.potatoes
-    )
-    expect(
-      destination.rows.every(({ value }) => value.text === copy.notProvided)
-    ).toBe(true)
-    expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.parties.placeOfDestination,
-      href: changeHref(result.journeyId, 'placeOfDestination')
-    })
-  })
-
   it('Should render the raw ISO code in the origin row when the stored country is no longer offered by the origin block', async () => {
     const UNOFFERED_COUNTRY = 'ZZ'
     const result = await driveHandler(get, {
@@ -141,30 +126,6 @@ describe('Check your answers', () => {
     expect(cardsOf(result)[0].rows[1]).toMatchObject({
       value: { text: UNOFFERED_COUNTRY }
     })
-  })
-
-  it('Should refuse Continue for a removed address-book reference', async () => {
-    vi.spyOn(addressBook, 'party').mockResolvedValue(undefined)
-    const result = await driveHandler(post, { seed: COMPLETE_NOTIFICATION })
-    expect(result.response.statusCode).toBe(400)
-    expect(result.response.redirect).toBeUndefined()
-    expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.parties.placeOfDestination,
-      href: changeHref(result.journeyId, 'placeOfDestination')
-    })
-  })
-
-  it('Should render an unanswered destination without a party error', async () => {
-    const seed = { ...COMPLETE_NOTIFICATION }
-    delete seed.placeOfDestination
-    const result = await driveHandler(get, { seed })
-    const destination = cardsOf(result).find(
-      ({ title }) => title === destinationCopy.headings.potatoes
-    )
-    expect(
-      destination.rows.every(({ value }) => value.text === copy.notProvided)
-    ).toBe(true)
-    expect(result.view.context.errorSummary).toBeNull()
   })
 
   it.each([
@@ -334,15 +295,6 @@ describe('Check your answers lateness', () => {
       amendmentCancelled: false
     })
   })
-
-  it('Should let unexpected address-book errors escape', async () => {
-    vi.spyOn(addressBook, 'party').mockRejectedValue(
-      new TypeError('unexpected')
-    )
-    await expect(
-      driveHandler(get, { seed: COMPLETE_NOTIFICATION })
-    ).rejects.toThrow('unexpected')
-  })
 })
 
 describe('review navigation', () => {
@@ -359,8 +311,164 @@ describe('review navigation', () => {
     )
     expect(
       STUB_BOOK.some(
-        ({ id }) => id === COMPLETE_NOTIFICATION.contactAddress.addressId
+        ({ id }) => id === COMPLETE_NOTIFICATION.contactAddress.pickedFromId
       )
     ).toBe(true)
+  })
+})
+
+describe('Check your answers — copied addresses', () => {
+  it('Should show the copy held on the notification without reading the address book', async () => {
+    const partySpy = vi.spyOn(addressBook, 'party')
+    const edited = {
+      ...COMPLETE_NOTIFICATION,
+      placeOfDestination: {
+        ...COMPLETE_NOTIFICATION.placeOfDestination,
+        name: 'Tech Imports Warehouse'
+      }
+    }
+    const result = await driveHandler(get, { seed: edited })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(destination.rows[0].value.text).toBe('Tech Imports Warehouse')
+    expect(result.view.context.errorSummary).toBeNull()
+    expect(partySpy).not.toHaveBeenCalled()
+  })
+
+  it('Should offer Change and Edit details on an answered address, and only Change on an unanswered one', async () => {
+    const seed = { ...COMPLETE_NOTIFICATION }
+    delete seed.placeOfDestination
+    const result = await driveHandler(get, { seed })
+    const cards = cardsOf(result)
+    const contact = cards.find(({ title }) => title === copy.cards.contact)
+    const destination = cards.find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+
+    expect(contact.actions.items).toEqual([
+      {
+        href: changeHref(result.journeyId, 'contactAddress'),
+        text: copy.change,
+        visuallyHiddenText: copy.cards.contact
+      },
+      {
+        href: `${SET_BASE}/notifications/${result.journeyId}/consignment/contact/edit?return=notification-view`,
+        text: copy.editDetails,
+        visuallyHiddenText: copy.cards.contact
+      }
+    ])
+    expect(destination.actions.items.map(({ text }) => text)).toEqual([
+      copy.change
+    ])
+  })
+
+  it('Should refuse Continue while a copy breaks the address-book rules, linking to its edit page', async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      contactAddress: {
+        ...COMPLETE_NOTIFICATION.contactAddress,
+        email: 'not-an-email'
+      }
+    }
+    for (const handler of [get, post]) {
+      const result = await driveHandler(handler, { seed })
+      expect(result.view.context.errorSummary.errorList).toEqual([
+        {
+          text: copy.errors.parties.contactAddress,
+          href: `${SET_BASE}/notifications/${result.journeyId}/consignment/contact/edit?return=notification-view`
+        }
+      ])
+      expect(result.after).toEqual(seed)
+      if (handler === post) {
+        expect(result.response.statusCode).toBe(400)
+      }
+    }
+  })
+
+  it('Should refuse Continue for a copy whose country is not in the address book list', async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      placeOfDestination: {
+        ...COMPLETE_NOTIFICATION.placeOfDestination,
+        address: {
+          ...COMPLETE_NOTIFICATION.placeOfDestination.address,
+          countryCode: 'United Kingdom'
+        }
+      }
+    }
+    const result = await driveHandler(post, { seed })
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errorSummary.errorList).toContainEqual({
+      text: copy.errors.parties.placeOfDestination,
+      href: `${SET_BASE}/notifications/${result.journeyId}/destinations/edit?return=notification-view`
+    })
+  })
+
+  it('Should mark the row holding each field that breaks the rules, still showing the copy', async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      placeOfDestination: {
+        ...COMPLETE_NOTIFICATION.placeOfDestination,
+        email: 'not-an-email',
+        address: {
+          ...COMPLETE_NOTIFICATION.placeOfDestination.address,
+          countryCode: 'United Kingdom'
+        }
+      }
+    }
+    const result = await driveHandler(get, { seed })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    const rowFor = (label) =>
+      destination.rows.find(({ key }) => key.text === label)
+
+    expect(rowFor(copy.labels.address).value.html).toBe(
+      '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
+        '18 Dockside Road, London, E14 9GE, United Kingdom'
+    )
+    expect(rowFor(copy.labels.emailAddress).value.html).toContain(
+      'Enter an email address in the correct format</p>not-an-email'
+    )
+    expect(rowFor(copy.labels.name).value).toEqual({
+      text: 'Tech Imports Ltd'
+    })
+    expect(rowFor(copy.labels.telephoneNumber).value).toEqual({
+      text: '01632 960000'
+    })
+  })
+
+  it('Should escape a copied value shown under its error', async () => {
+    const seed = {
+      ...COMPLETE_NOTIFICATION,
+      contactAddress: {
+        ...COMPLETE_NOTIFICATION.contactAddress,
+        email: '<b>x</b>'
+      }
+    }
+    const result = await driveHandler(get, { seed })
+    const contact = cardsOf(result).find(
+      ({ title }) => title === copy.cards.contact
+    )
+    const email = contact.rows.find(
+      ({ key }) => key.text === copy.labels.emailAddress
+    )
+
+    expect(email.value.html).toContain('&lt;b&gt;x&lt;/b&gt;')
+    expect(email.value.html).not.toContain('<b>')
+  })
+
+  it('Should render an unanswered destination without a party error', async () => {
+    const seed = { ...COMPLETE_NOTIFICATION }
+    delete seed.placeOfDestination
+    const result = await driveHandler(get, { seed })
+    const destination = cardsOf(result).find(
+      ({ title }) => title === destinationCopy.headings.potatoes
+    )
+    expect(
+      destination.rows.every(({ value }) => value.text === copy.notProvided)
+    ).toBe(true)
+    expect(result.view.context.errorSummary).toBeNull()
   })
 })
