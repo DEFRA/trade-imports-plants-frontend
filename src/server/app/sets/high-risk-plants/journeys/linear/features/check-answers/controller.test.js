@@ -44,6 +44,7 @@ import { changeHref } from './view-model/rows/change-link.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const NOT_YET_ARRIVED = 'not-yet-arrived'
+const DESTINATION_CARD = '#place-of-destination'
 
 const get = routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf({ routes })
@@ -177,8 +178,8 @@ describe('Check your answers', () => {
       expect.objectContaining({ text: copy.errors.parties.placeOfDestination })
     )
     expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.rows.destination,
-      href: `${SET_BASE}/notifications/${result.journeyId}/destinations/select?change=1`
+      text: copy.errors.cards.placeOfDestination,
+      href: DESTINATION_CARD
     })
   })
 
@@ -255,8 +256,8 @@ describe('Check your answers', () => {
       result.view.context.errorSummary.errorList.map(({ text }) => text)
     ).toEqual(
       expect.arrayContaining([
-        copy.errors.rows.destination,
-        copy.errors.rows.contact
+        copy.errors.cards.placeOfDestination,
+        copy.errors.cards.contact
       ])
     )
   })
@@ -282,33 +283,29 @@ describe('Check your answers', () => {
 })
 
 describe('Check your answers — outstanding tasks and the opening run', () => {
-  it('Should name every outstanding task on an incomplete notification, linking to its first unanswered page with the change context', async () => {
+  it('Should name every unfinished card on an incomplete notification, in page order, linking to the card on this page', async () => {
     const result = await driveHandler(get, {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
     })
-    const base = `${SET_BASE}/notifications/${result.journeyId}`
-    expect(result.view.context.errorSummary.errorList).toEqual(
-      expect.arrayContaining([
-        {
-          text: copy.errors.rows.commodities,
-          href: `${base}/commodities?change=1`
-        },
-        {
-          text: copy.errors.rows.destination,
-          href: `${base}/destinations/select?change=1`
-        },
-        {
-          text: copy.errors.rows.contact,
-          href: `${base}/consignment/contact/select?change=1`
-        }
-      ])
-    )
-    expect(result.view.context.errorSummary.errorList).not.toContainEqual(
-      expect.objectContaining({ text: copy.errors.rows.origin })
-    )
+    expect(result.view.context.errorSummary.errorList).toEqual([
+      {
+        text: copy.errors.cards.commodities,
+        href: '#about-the-consignment'
+      },
+      { text: copy.errors.cards.arrivalDetails, href: '#arrival-details' },
+      {
+        text: copy.errors.cards.placeOfDestination,
+        href: DESTINATION_CARD
+      },
+      {
+        text: copy.errors.cards.identificationNumbers,
+        href: '#identification-numbers'
+      },
+      { text: copy.errors.cards.contact, href: '#contact' }
+    ])
   })
 
-  it('Should link a half-done row to the page still missing, not its answered first page', async () => {
+  it('Should name a half-done card once, linking to the card rather than a page', async () => {
     const result = await driveHandler(get, {
       seed: {
         commodityType: PLANTS_FOR_PLANTING,
@@ -316,11 +313,33 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
         arrivalStatus: NOT_YET_ARRIVED
       }
     })
-    const base = `${SET_BASE}/notifications/${result.journeyId}`
-    expect(result.view.context.errorSummary.errorList).toContainEqual({
-      text: copy.errors.rows.arrival,
-      href: `${base}/arrival-details?change=1`
+    const arrivalEntries = result.view.context.errorSummary.errorList.filter(
+      ({ text }) => text === copy.errors.cards.arrivalDetails
+    )
+    expect(arrivalEntries).toEqual([
+      { text: copy.errors.cards.arrivalDetails, href: '#arrival-details' }
+    ])
+  })
+
+  it('Should mark each unfinished card with its anchor and message, and leave finished cards unmarked', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
     })
+    const [consignment] = result.view.context.sections
+    expect(consignment.anchor).toBe('about-the-consignment')
+    const cards = cardsOf(result)
+    expect(
+      cards.find(({ title }) => title === copy.cards.import)
+    ).toMatchObject({ anchor: 'import-details', error: null })
+    expect(
+      cards.find(({ title }) => title === copy.cards.contact)
+    ).toMatchObject({ anchor: 'contact', error: copy.errors.cards.contact })
+  })
+
+  it('Should mark no card on a complete notification', async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    expect(result.view.context.errorSummary).toBeNull()
+    expect(cardsOf(result).every(({ error }) => !error)).toBe(true)
   })
 
   it('Should complete the opening run when check your answers is shown', async () => {
@@ -436,20 +455,16 @@ describe('Check your answers lateness', () => {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' },
       amend: true
     })
-    const base = `${SET_BASE}/notifications/${result.journeyId}`
     expect(result.response.statusCode).toBe(400)
     expect(result.response.redirect).toBeUndefined()
     expect(result.view.context.errorSummary.disableAutoFocus).toBe(false)
     expect(result.view.context.errorSummary.errorList).toEqual(
       expect.arrayContaining([
         {
-          text: copy.errors.rows.destination,
-          href: `${base}/destinations/select?change=1`
+          text: copy.errors.cards.placeOfDestination,
+          href: DESTINATION_CARD
         },
-        {
-          text: copy.errors.rows.contact,
-          href: `${base}/consignment/contact/select?change=1`
-        }
+        { text: copy.errors.cards.contact, href: '#contact' }
       ])
     )
     expect((await store.get(result.journeyId)).status).toBe(AMEND)

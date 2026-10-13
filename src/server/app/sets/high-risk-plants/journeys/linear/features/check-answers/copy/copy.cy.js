@@ -32,14 +32,14 @@ export const copy = {
       contactAddress:
         'Cywirwch fanylion y cyfeiriad cyswllt ar gyfer y llwyth hwn'
     },
-    rows: {
-      commodities: 'Cwblhewch beth rydych chi’n ei fewnforio',
-      origin: 'Cwblhewch o ble mae’r llwyth hwn yn dod',
-      arrival: 'Cwblhewch y manylion cyrraedd',
-      destination: 'Cwblhewch y man cyrchfan',
+    cards: {
+      importDetails: 'Cwblhewch y manylion mewnforio',
+      commodities: 'Cwblhewch fanylion y nwydd',
+      arrivalDetails: 'Cwblhewch y manylion cyrraedd',
+      placeOfDestination: 'Cwblhewch y man cyrchfan',
       consignor: 'Cwblhewch yr anfonwr neu’r allforiwr',
       identificationNumbers: 'Cwblhewch y rhifau adnabod',
-      contact: 'Cwblhewch y cyfeiriad cyswllt ar gyfer y llwyth'
+      contact: 'Cwblhewch y cyswllt'
     }
   },
   submit: {

@@ -10,10 +10,10 @@ import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
 import { changeHref } from './view-model/rows/change-link.js'
 import {
-  outstandingRowErrors,
-  outstandingRowHref,
-  ROW_KEY_PREFIX
-} from './view-model/outstanding-rows.js'
+  cardAnchorHref,
+  incompleteCardErrors,
+  withCardErrors
+} from './view-model/incomplete-cards.js'
 import { reviewErrors } from './refusal.js'
 import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
@@ -45,8 +45,8 @@ const partyDisplayValuesFor = async ({ answers, scope }) => {
 
 /** Party errors are keyed `party:<id>` so their summary entries link to the
  * page that edits the copied address, returning here, rather than to the
- * picker a Change link opens. Outstanding task rows are keyed `row:<rowId>`
- * and link to the row's entry page with the change context. */
+ * picker a Change link opens. An unfinished card is somewhere on this page,
+ * so its entry is an anchor to the card. */
 const PARTY_KEY_PREFIX = 'party:'
 
 const summaryHref = (current) => (key) => {
@@ -58,27 +58,27 @@ const summaryHref = (current) => (key) => {
       kit.CYA_SLUG
     )
   }
-  if (key.startsWith(ROW_KEY_PREFIX)) {
-    return outstandingRowHref(key, current)
-  }
-  return changeHref(journeyId, key)
+  return cardAnchorHref(key) ?? changeHref(journeyId, key)
 }
 
+const cardErrorsOf = (current, { answerErrors, partyErrors }) =>
+  incompleteCardErrors(current, [
+    ...Object.keys(answerErrors),
+    ...Object.keys(partyErrors)
+  ])
+
 /** Every reason the notification cannot go on: answer and invalid-party errors
- * first, then one entry per task row still to complete. A row already named by
- * an answer or party error is not named twice. */
-const summaryErrors = (current, { answerErrors, partyErrors }) => ({
-  ...answerErrors,
+ * first, then one entry per card still to complete, in page order. A card
+ * already named by an answer or party error is not named twice. */
+const summaryErrors = (current, reviewed) => ({
+  ...reviewed.answerErrors,
   ...Object.fromEntries(
-    Object.entries(partyErrors).map(([id, text]) => [
+    Object.entries(reviewed.partyErrors).map(([id, text]) => [
       `${PARTY_KEY_PREFIX}${id}`,
       text
     ])
   ),
-  ...outstandingRowErrors(current, [
-    ...Object.keys(answerErrors),
-    ...Object.keys(partyErrors)
-  ])
+  ...cardErrorsOf(current, reviewed)
 })
 
 /** A submitted notification names nothing in error. c-201: an amendment opens
@@ -123,9 +123,12 @@ const render = async (
       current.answers.commodityType === 'potatoes'
         ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
         : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
-    sections: await buildSections(current, partyDisplayValuesById, readOnly, {
-      partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
-    }),
+    sections: withCardErrors(
+      await buildSections(current, partyDisplayValuesById, readOnly, {
+        partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
+      }),
+      reviewed ? cardErrorsOf(current, reviewed) : {}
+    ),
     errorSummary: kit.errorSummary(errors, {
       href: summaryHref(current),
       disableAutoFocus

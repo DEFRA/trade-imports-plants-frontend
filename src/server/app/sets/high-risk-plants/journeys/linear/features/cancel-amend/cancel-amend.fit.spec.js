@@ -260,7 +260,7 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   ).toBeVisible()
   await expect(
     summary.getByRole('link', {
-      name: copy.errors.rows.identificationNumbers,
+      name: copy.errors.cards.identificationNumbers,
       exact: true
     })
   ).toBeVisible()

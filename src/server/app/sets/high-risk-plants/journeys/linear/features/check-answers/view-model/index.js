@@ -11,6 +11,7 @@ import { row, readOnlyRow } from './rows/summary-row.js'
 import { errorRow } from './rows/error-row.js'
 import { changeAction, editableActions } from './rows/change-link.js'
 import { dateText } from './rows/value-text.js'
+import { anchorOf } from './incomplete-cards.js'
 import { CYA_SLUG } from '../../../../../../../shared/kit.js'
 import { partyOf } from '../../../parties/index.js'
 import { partyEditHref } from '../../party-edit/edit-href.js'
@@ -75,7 +76,7 @@ const ADDRESS_FIELDS = [
 ]
 
 const partyCard = (
-  field,
+  { field, id },
   title,
   { partyDisplayValuesById, partyFieldErrorsById, journeyId, readOnly }
 ) => {
@@ -84,6 +85,7 @@ const partyCard = (
   const messagesFor = (fields) =>
     fields.map((name) => fieldErrors[name]).filter(Boolean)
   return {
+    id,
     title,
     ...editableActions(
       readOnly,
@@ -199,8 +201,10 @@ const consignmentSection = ({
   originCountryLabel
 }) => ({
   heading: copy.sections.consignment,
+  anchor: anchorOf('commodities'),
   cards: [
     {
+      id: 'importDetails',
       title: copy.cards.import,
       rows: [
         answerRow('commodityType', copy.typeLabels[answers.commodityType]),
@@ -240,9 +244,13 @@ const arrivalRows = ({
 const arrivalSection = (context) => ({
   heading: copy.sections.arrival,
   cards: [
-    { title: copy.cards.arrival, rows: arrivalRows(context) },
+    {
+      id: 'arrivalDetails',
+      title: copy.cards.arrival,
+      rows: arrivalRows(context)
+    },
     partyCard(
-      'placeOfDestination',
+      { field: 'placeOfDestination', id: 'placeOfDestination' },
       destinationCopy.headings[context.arrivalState],
       context
     )
@@ -253,10 +261,24 @@ const partiesSection = (context) => ({
   heading: copy.sections.parties,
   cards: [
     ...(context.scope.has('consignor')
-      ? [partyCard('consignor', copy.cards.consignor, context)]
+      ? [
+          partyCard(
+            { field: 'consignor', id: 'consignor' },
+            copy.cards.consignor,
+            context
+          )
+        ]
       : []),
-    { title: copy.cards.identification, rows: context.scopedRows(IDENTIFIERS) },
-    partyCard('contactAddress', copy.cards.contact, context)
+    {
+      id: 'identificationNumbers',
+      title: copy.cards.identification,
+      rows: context.scopedRows(IDENTIFIERS)
+    },
+    partyCard(
+      { field: 'contactAddress', id: 'contact' },
+      copy.cards.contact,
+      context
+    )
   ]
 })
 
