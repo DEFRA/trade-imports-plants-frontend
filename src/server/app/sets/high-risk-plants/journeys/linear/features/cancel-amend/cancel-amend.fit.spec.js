@@ -269,6 +269,37 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   )
 })
 
+test('The commodities list ends with Save and return and Save and continue while amending', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  const listUrl = `${BASE}/notifications/${reference}/commodities`
+  const saveAndReturn = page.getByRole('button', {
+    name: sharedCopy.saveActions.saveAndReturn,
+    exact: true
+  })
+  await page.goto(listUrl)
+  await expect(saveAndReturn).toBeVisible()
+  await expect(save(page)).toBeVisible()
+  await expect(
+    page.getByRole('button', {
+      name: sharedCopy.saveActions.saveAndReturnToHub
+    })
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('link', {
+      name: sharedCopy.saveActions.cancelAndReturnToHub
+    })
+  ).toHaveCount(0)
+
+  await saveAndReturn.click()
+  await expect(page).toHaveURL(cyaUrl)
+
+  await page.goto(listUrl)
+  await save(page).click()
+  await expect(page).toHaveURL(setUrl(`/notifications/${reference}$`))
+})
+
 test('Cancel amend on the Overview opens the confirmation page', async ({
   page
 }) => {
