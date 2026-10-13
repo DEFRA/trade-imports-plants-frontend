@@ -47,7 +47,9 @@ reflects every in-scope mandatory obligation and group invariant.
 missing required answer. A controller opts in by passing
 `{ allowMissing: kit.isHubExit(request) }` to `validate`, which drops the
 blank-or-absent errors and keeps every other one, so an answer that breaks its own
-rule is still refused.
+rule is still refused. The address-book pickers do not use `validate`: they follow
+the same rule by leaving without a commit when nothing is ticked and
+`kit.isHubExit(request)` is true, and still refuse an id the book does not hold.
 
 [`src/server/app/flow/prerequisites.js`](../flow/prerequisites.js) adds the separate
 continue-time gate for configured fields that must be answered before later pages

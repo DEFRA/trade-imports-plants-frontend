@@ -67,9 +67,12 @@ const destinationStateOf = (answers, scope) => {
 const committedId = (answers) => answers[PLACE_OF_DESTINATION]?.pickedFromId
 
 // An edited copy has no source record to tick, so a save with nothing ticked
-// must not lose it.
-const keepsHeldCopy = (selectedId, answers) =>
-  !selectedId && Boolean(answers[PLACE_OF_DESTINATION])
+// must not lose it. 'Save and return to overview' with nothing ticked leaves
+// without refusing, as every other overview-linked page does
+// (docs/validation.md).
+const leavesUnchanged = (request, selectedId, answers) =>
+  !selectedId &&
+  (Boolean(answers[PLACE_OF_DESTINATION]) || kit.isHubExit(request))
 
 // The question means a different thing in each of the three states, so the
 // heading and the description are chosen per notification rather than fixed.
@@ -111,7 +114,7 @@ const post = async (request, h) => {
     })
   }
 
-  if (keepsHeldCopy(selectedId, current.answers)) {
+  if (leavesUnchanged(request, selectedId, current.answers)) {
     return h.redirect(await kit.nextTarget(request, page, current.scope))
   }
 
