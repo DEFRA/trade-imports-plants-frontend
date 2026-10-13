@@ -71,28 +71,10 @@ describe('context and cache', () => {
           homeUrl: SET_BASE,
           authEnabled: true,
           staleActionRejected: false,
-          amendFormActions: {
-            returnAction: `${SET_BASE}?change=1`,
-            continueAction: SET_BASE
-          },
           activeNavigationItem: 'dashboard',
           templatesUrl: 'http://localhost:3000/live-animals/templates',
           addressBookUrl: 'http://localhost:3002/address-book',
           userSession: { isAuthenticated: false }
-        })
-      })
-
-      test('Should build the amend save-button URLs from the request path and query', async () => {
-        const result = await contextImport.context({
-          path: `${SET_BASE}/n/j-1/origin`,
-          url: new URL(
-            `http://x${SET_BASE}/n/j-1/origin?change=1&return=addresses`
-          )
-        })
-
-        expect(result.amendFormActions).toEqual({
-          returnAction: `${SET_BASE}/n/j-1/origin?change=1&return=addresses`,
-          continueAction: `${SET_BASE}/n/j-1/origin?return=addresses`
         })
       })
 
@@ -266,10 +248,6 @@ describe('context and cache', () => {
           homeUrl: SET_BASE,
           authEnabled: true,
           staleActionRejected: false,
-          amendFormActions: {
-            returnAction: `${SET_BASE}?change=1`,
-            continueAction: SET_BASE
-          },
           activeNavigationItem: 'dashboard',
           templatesUrl: 'http://localhost:3000/live-animals/templates',
           addressBookUrl: 'http://localhost:3002/address-book',

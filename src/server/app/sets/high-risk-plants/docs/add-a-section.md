@@ -276,6 +276,7 @@ Registration work for the feature group is therefore limited to:
 3. add page identities to `sections` and `taskRows`
 4. add task-row ids and copy to the hub
 5. add pages to `run.js` only when they belong in the opening run
+6. place the task-row id on its check-answers card in `REVIEW_CARDS`
 
 Change `journeys/linear/config.js` or the `configureJourneyFlow()` call only when
 the journey's template identity, cookie identity or injected policy surface
@@ -305,6 +306,15 @@ and [`copy/copy.cy.js`](../journeys/linear/features/check-answers/copy/copy.cy.j
 Extend
 [`check-answers.fit.spec.js`](../journeys/linear/features/check-answers/check-answers.fit.spec.js),
 which covers saved answers, scoped cards, Change navigation and accessibility.
+
+Place the task-row id on the card that shows its answers in `REVIEW_CARDS`
+([`view-model/incomplete-cards.js`](../journeys/linear/features/check-answers/view-model/incomplete-cards.js)),
+giving a new card an `id`, an `anchor` and the same `id` on the card its view
+model builds. Add a new card's message under `errors.cards`, keyed by that id —
+"Complete" and the card's title, lower-cased — in both check-answers
+`copy.en.js` and `copy.cy.js`. The review page names every unfinished card with
+it, linking to the card; `view-model/incomplete-cards.test.js` fails until every
+task row is on a card, and `copy/copy.test.js` until every card has a message.
 
 ## 8. Update downstream persistence when applicable
 

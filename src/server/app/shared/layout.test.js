@@ -290,8 +290,4 @@ describe('page title', () => {
       `${errorTitlePrefix}Create an import notification - ${serviceName} - ${govukSuffix}`
     )
   })
-
-  it('Should not separate the title with a pipe', () => {
-    expect(titleOf(renderLayout({ isAuthenticated: true }))).not.toContain('|')
-  })
 })

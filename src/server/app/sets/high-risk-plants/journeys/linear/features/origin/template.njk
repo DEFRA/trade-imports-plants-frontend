@@ -28,6 +28,6 @@
       autocomplete: { showAllValues: true, noResults: copy.country.noResults, placeholder: copy.country.searchPlaceholder }
     }) }}
 
-    {{ saveActions(hubHref, copy = sharedCopy.saveActions, amend = amendFormActions if amending else none) }}
+    {{ saveActions(hubHref, copy = sharedCopy.saveActions, amend = amend) }}
   </form>
 {% endblock %}

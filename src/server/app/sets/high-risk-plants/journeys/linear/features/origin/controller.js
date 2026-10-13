@@ -38,14 +38,14 @@ const copy = copyFor({ en, cy })
 const COUNTRY_FIELD = 'countryOfOrigin'
 
 const countryValues = async () =>
-  (await countries.originCountries()).map(({ value }) => value)
+  (await countries.originCountryOptions()).map(({ value }) => value)
 
 // The list feeds a type-ahead that enhances this select, so it carries only
 // the placeholder and the real countries — a scroll-only list would need a
 // divider rule under the placeholder, a searchable one does not.
 const countryItems = async () => [
   { value: '', text: copy.country.placeholder },
-  ...(await countries.originCountries())
+  ...(await countries.originCountryOptions())
 ]
 
 const categoriesOf = (current) =>
@@ -76,9 +76,12 @@ const membershipRule = async () =>
     )
   )
 
+// A territory is held to its country's constraints: the Canary Islands may
+// send what Spain may.
 const narrowingErrorFor = (constraints, country) => {
   const failing = constraints.find(
-    (constraint) => !constraint.countries.includes(country)
+    (constraint) =>
+      !constraint.countries.includes(countries.parentCountryCode(country))
   )
   return failing ? copy.errors.narrowing[failing.id] : undefined
 }
@@ -127,6 +130,7 @@ const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
+      request: h.request,
       backLink: backLinkFor(current.journey, current.answers),
       journey: current.journey,
       page,
