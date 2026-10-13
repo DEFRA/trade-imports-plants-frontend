@@ -31,7 +31,7 @@ import {
 } from '../../test-support.js'
 import {
   sectionEntry,
-  nextInSection
+  nextInTaskRow
 } from '../../../../../../flow/navigation.js'
 import { sectionGatePasses } from '../../../../../../flow/gates.js'
 import { AMEND, makeScope } from '../../../../../../engine/index.js'
@@ -459,7 +459,7 @@ describe('review navigation', () => {
     expect(sectionEntry('review', complete, 'j-1')).toBe(
       `${SET_BASE}/notifications/j-1/notification-view`
     )
-    expect(nextInSection('consignment-contact-select', complete, 'j-1')).toBe(
+    expect(nextInTaskRow('consignment-contact-select', complete, 'j-1')).toBe(
       `${SET_BASE}/notifications/j-1`
     )
     expect(
