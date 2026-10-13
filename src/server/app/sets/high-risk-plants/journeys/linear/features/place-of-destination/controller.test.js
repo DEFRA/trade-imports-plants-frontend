@@ -512,6 +512,26 @@ describe('POST place-of-destination — accepted answers', () => {
     expect(result.after.placeOfDestination).toEqual(copied(TECH_IMPORTS))
   })
 
+  it('Should honour Save and return to overview with nothing chosen, committing nothing', async () => {
+    const result = await driveHandler(post, {
+      seed: potatoes(),
+      payload: { exit: 'hub' }
+    })
+
+    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.after.placeOfDestination).toBeUndefined()
+  })
+
+  it('Should still refuse an id the address book does not hold on Save and return to overview', async () => {
+    const result = await driveHandler(post, {
+      seed: potatoes(),
+      payload: { exit: 'hub', placeOfDestination: NOT_IN_THE_BOOK }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.after.placeOfDestination).toBeUndefined()
+  })
+
   it('Should replace a copy already held rather than keeping both', async () => {
     const result = await driveHandler(post, {
       seed: potatoes({ placeOfDestination: copied(TECH_IMPORTS) }),

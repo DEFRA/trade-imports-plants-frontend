@@ -474,6 +474,26 @@ describe('POST consignor-select — accepted answers', () => {
     expect(result.after.consignor).toEqual(copied(TECH_IMPORTS))
   })
 
+  it('Should honour Save and return to overview with nothing chosen, committing nothing', async () => {
+    const result = await driveHandler(post, {
+      seed: plants(),
+      payload: { exit: 'hub' }
+    })
+
+    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.after.consignor).toBeUndefined()
+  })
+
+  it('Should still refuse an id the address book does not hold on Save and return to overview', async () => {
+    const result = await driveHandler(post, {
+      seed: plants(),
+      payload: { exit: 'hub', consignor: NOT_IN_THE_BOOK }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.after.consignor).toBeUndefined()
+  })
+
   it('Should replace a copy already held rather than keeping both', async () => {
     const result = await driveHandler(post, {
       seed: plants({ consignor: copied(TECH_IMPORTS) }),

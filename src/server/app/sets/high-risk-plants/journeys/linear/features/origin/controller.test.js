@@ -364,6 +364,41 @@ describe('POST origin — an accepted answer', () => {
     expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
     expect(result.after).toEqual({ countryOfOrigin: FRANCE })
   })
+
+  it('Should save no country and go to the overview on Save and return to overview', async () => {
+    const result = await driveHandler(post, {
+      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
+      payload: { countryOfOrigin: '', exit: 'hub' }
+    })
+
+    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.after.countryOfOrigin).toBe('')
+  })
+
+  it('Should still refuse a country the consignment may not name on Save and return to overview', async () => {
+    const result = await driveHandler(post, {
+      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
+      payload: { countryOfOrigin: NORWAY, exit: 'hub' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      copy.errors.narrowing[EU_MEMBER_STATES]
+    )
+    expect(result.after).toEqual(result.before)
+  })
+
+  it('Should keep refusing no country on Save and continue', async () => {
+    const result = await driveHandler(post, {
+      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
+      payload: { countryOfOrigin: '' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      copy.errors.countryRequired
+    )
+  })
 })
 
 describe('POST origin — save failures', () => {

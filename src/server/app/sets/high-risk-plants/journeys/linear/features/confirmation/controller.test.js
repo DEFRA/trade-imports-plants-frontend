@@ -6,7 +6,11 @@ import { configureRecords } from '../../../../../../engine/persistence/records.j
 import { configureSession } from '../../../../../../engine/persistence/session.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
-import { journeyRequest, stubH } from '../../../../../../engine/test-support.js'
+import {
+  driveHandler,
+  journeyRequest,
+  stubH
+} from '../../../../../../engine/test-support.js'
 import {
   COMPLETE_NOTIFICATION,
   installHighRiskPlantsJourney
@@ -106,14 +110,11 @@ describe('confirmation', () => {
   it.each([state.DRAFT, state.AMEND])(
     'Should return %s to check answers without claiming submission',
     async (status) => {
-      const { journeyId } = await store.create()
-      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
-      if (status === state.AMEND) {
-        await store.submit(journeyId)
-        await recordsStub.amend(journeyId)
-      }
-      const h = stubH()
-      expect(await get(journeyRequest(journeyId), h)).toEqual({
+      const { journeyId, response } = await driveHandler(get, {
+        seed: COMPLETE_NOTIFICATION,
+        amend: status === state.AMEND
+      })
+      expect(response).toEqual({
         redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
       })
       expect((await store.get(journeyId)).status).toBe(status)
