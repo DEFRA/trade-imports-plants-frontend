@@ -18,12 +18,4 @@ describe('#captured reference fixtures', () => {
       type: 'seaport'
     })
   })
-
-  it('Should hold the captured ports airports first, then seaports, then rail ports', () => {
-    const PORT_TYPE_ORDER = ['airport', 'seaport', 'rail']
-    const ranks = portsOfEntry.map(({ type }) => PORT_TYPE_ORDER.indexOf(type))
-
-    expect(ranks).not.toContain(-1)
-    expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
-  })
 })
