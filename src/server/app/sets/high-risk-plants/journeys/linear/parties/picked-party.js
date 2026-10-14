@@ -6,8 +6,8 @@ import { addressBookCountryName } from '../../../../../services/countries/index.
 export const answerForPickedParty = (chosen) => ({
   pickedFromId: chosen.id,
   name: chosen.name,
-  phone: chosen.address?.telephoneNumber,
-  email: chosen.address?.emailAddress,
+  phone: chosen.address?.phone,
+  email: chosen.address?.email,
   address: toWireAddress(chosen.address ?? {})
 })
 
@@ -28,10 +28,10 @@ export const toDisplayParty = async (party) => {
       addressLine2: address.addressLine2,
       townOrCity: address.townOrCity,
       county: address.county,
-      postalOrZipCode: address.postcode,
+      postcode: address.postcode,
       country: await addressBookCountryName(address.countryCode),
-      telephoneNumber: party.phone,
-      emailAddress: party.email
+      phone: party.phone,
+      email: party.email
     }
   }
 }

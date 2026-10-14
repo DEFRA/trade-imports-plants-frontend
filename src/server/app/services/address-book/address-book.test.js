@@ -198,10 +198,10 @@ describe('mapping the wire onto the journey', () => {
         addressLine1: '1 Test Street',
         townOrCity: 'Testville',
         county: 'Testshire',
-        postalOrZipCode: 'TE5 7ER',
+        postcode: 'TE5 7ER',
         countryCode: 'BE',
-        emailAddress: 'record-1@example.com',
-        telephoneNumber: PHONE
+        email: 'record-1@example.com',
+        phone: PHONE
       }
     })
   })

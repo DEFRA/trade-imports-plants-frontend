@@ -640,13 +640,13 @@ describe('Check your answers — copied addresses', () => {
       '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
         '18 Dockside Road, London, E14 9GE, United Kingdom'
     )
-    expect(rowFor(copy.labels.emailAddress).value.html).toContain(
+    expect(rowFor(copy.labels.email).value.html).toContain(
       'Enter an email address in the correct format</p>not-an-email'
     )
     expect(rowFor(copy.labels.name).value).toEqual({
       text: 'Tech Imports Ltd'
     })
-    expect(rowFor(copy.labels.telephoneNumber).value).toEqual({
+    expect(rowFor(copy.labels.phone).value).toEqual({
       text: '01632 960000'
     })
   })
@@ -663,9 +663,7 @@ describe('Check your answers — copied addresses', () => {
     const contact = cardsOf(result).find(
       ({ title }) => title === copy.cards.contact
     )
-    const email = contact.rows.find(
-      ({ key }) => key.text === copy.labels.emailAddress
-    )
+    const email = contact.rows.find(({ key }) => key.text === copy.labels.email)
 
     expect(email.value.html).toContain('&lt;b&gt;x&lt;/b&gt;')
     expect(email.value.html).not.toContain('<b>')
