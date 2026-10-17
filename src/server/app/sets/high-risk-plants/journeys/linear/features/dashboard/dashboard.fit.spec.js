@@ -55,6 +55,17 @@ test.describe('dashboard feature — initial render', () => {
     await signIn(page)
   })
 
+  test('a start from another service opens a new notification at its first question', async ({
+    page
+  }) => {
+    await page.goto(`${BASE}/start`)
+
+    await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+    await expect(
+      page.getByRole('heading', { name: 'What are you importing?' })
+    ).toBeVisible()
+  })
+
   test('renders the service heading, the intro body and the start button', async ({
     page
   }) => {
