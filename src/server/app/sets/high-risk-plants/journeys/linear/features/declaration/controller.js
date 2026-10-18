@@ -13,6 +13,7 @@ import {
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { lateness, requestClock } from '../review/lateness.js'
+import { notificationDateText } from '../review/notification-date.js'
 import { isReviewRefused } from '../check-answers/refusal.js'
 import { declarationPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -25,14 +26,6 @@ const copy = copyFor({ en, cy })
 const fields = compose(
   requiredOneOf('declaration', ['confirmed'], copy.errors.declarationRequired)
 )
-
-const dateText = (value) =>
-  new Date(value).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Europe/London'
-  })
 
 const render = (
   request,
@@ -50,7 +43,7 @@ const render = (
       recoverableError
     }),
     copy,
-    submissionDate: dateText(requestClock(request)),
+    submissionDate: notificationDateText(requestClock(request)),
     values,
     errors,
     errorSummary: kit.errorSummary(errors)

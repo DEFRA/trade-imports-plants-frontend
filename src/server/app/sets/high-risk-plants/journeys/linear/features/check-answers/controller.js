@@ -81,25 +81,23 @@ const summaryErrors = (current, reviewed) => ({
   ...cardErrorsOf(current, reviewed)
 })
 
-/** A submitted notification names nothing in error. c-201: an amendment opens
- * with no errors; once its Continue is refused, it names them like a draft. */
-const reviewedFor = (current, refused) => {
-  const { status } = current.journey
-  const named =
-    status !== state.SUBMITTED && (status !== state.AMEND || refused)
-  return named ? reviewErrors(current) : null
-}
+const showsErrorsForStatus = (status, continueRefused) =>
+  status !== state.SUBMITTED && (status !== state.AMEND || continueRefused)
+
+const shownReviewErrors = (current, continueRefused) =>
+  showsErrorsForStatus(current.journey.status, continueRefused)
+    ? reviewErrors(current)
+    : null
 
 const render = async (
   request,
   h,
   current,
-  disableAutoFocus = true,
-  refused = false
+  { continueRefused = false } = {}
 ) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
-  const reviewed = await reviewedFor(current, refused)
+  const reviewed = await shownReviewErrors(current, continueRefused)
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -131,11 +129,9 @@ const render = async (
     ),
     errorSummary: kit.errorSummary(errors, {
       href: summaryHref(current),
-      disableAutoFocus
+      disableAutoFocus: !continueRefused
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
-    // Ruled c-030: the success banner shows once, after cancel-amend's own
-    // redirect.
     amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }
@@ -155,7 +151,7 @@ const post = async (request, h) => {
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
   ) {
-    return (await render(request, h, current, false, true)).code(
+    return (await render(request, h, current, { continueRefused: true })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }

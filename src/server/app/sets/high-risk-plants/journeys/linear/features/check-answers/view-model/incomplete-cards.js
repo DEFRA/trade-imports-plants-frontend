@@ -6,29 +6,9 @@ import { copy as cy } from '../copy/copy.cy.js'
 
 const copy = copyFor({ en, cy })
 
-// A row is finished when `rowReady` says so — literally the predicate
-// `readyForCheckYourAnswers` applies, imported rather than restated, so a
-// notification with no unfinished card is exactly a notification that is ready
-// to submit and the two cannot diverge.
-
 /**
  * The review page's cards in page order, each with the task rows whose answers
  * it shows and the id the error summary links to.
- *
- * Every task row appears exactly once — `incomplete-cards.test.js` pins that —
- * so "no unfinished card" and `scope.readyForCheckYourAnswers` are the same
- * verdict.
- *
- * The commodities entry is the one entry whose anchor is not a card. Commodity
- * cards are built one per commodity line and carry no `id`, so `decorateCard`
- * never reaches them: the entry names the outstanding work without marking a
- * card, and anchors to the heading of the section those answers live in, which
- * always stands.
- *
- * The consignor card is the one entry whose card is conditional: it is built
- * only while the consignor is in scope, and while it is out of scope its task
- * row is NA, so `incompleteCardErrors` never names a card that is not on the
- * page.
  */
 export const REVIEW_CARDS = [
   { id: 'importDetails', anchor: 'import-details', rows: ['origin'] },
