@@ -1,4 +1,4 @@
-import Boom from '@hapi/boom'
+import { referenceDataUnavailable } from '../reference-data-unavailable.js'
 import {
   ADDRESS_BOOK_COUNTRY_LABELS,
   COUNTRY_LABELS,
@@ -46,10 +46,7 @@ export const ensureLoaded = async () => {
     indexSubDivisions(countries)
     loaded = true
   } catch (err) {
-    throw Boom.serverUnavailable('Reference data unavailable', {
-      dataset: 'countries',
-      cause: err
-    })
+    throw referenceDataUnavailable('countries', err)
   }
 }
 
@@ -141,10 +138,7 @@ const ensureAddressBookCountriesLoaded = async () => {
     )
     addressBookLoaded = true
   } catch (err) {
-    throw Boom.serverUnavailable('Reference data unavailable', {
-      dataset: 'countries',
-      cause: err
-    })
+    throw referenceDataUnavailable('countries', err)
   }
 }
 

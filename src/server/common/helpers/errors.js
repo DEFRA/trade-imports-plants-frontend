@@ -22,11 +22,7 @@ export function catchAll(request, h) {
   const errorMessage = errorMessageFor(statusCode)
 
   if (statusCode >= statusCodes.internalServerError) {
-    request.logger.error(response?.stack)
-    const cause = response.data?.cause
-    if (cause) {
-      request.logger.error({ err: cause }, `Caused by: ${cause.message}`)
-    }
+    request.logger.error({ err: response, statusCode }, 'Request failed')
   }
 
   return h
