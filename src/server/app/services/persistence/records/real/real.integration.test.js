@@ -28,7 +28,7 @@ import {
 
 // The default run skips this suite. Run it against a running backend with:
 //
-//   PERSISTENCE_IT=real npm test -- real.integration
+//   PERSISTENCE_IT_MODE=real npm test -- real.integration
 
 const backendBaseUrl =
   process.env.TRADE_IMPORTS_PLANTS_BACKEND_URL ?? 'http://localhost:8091'

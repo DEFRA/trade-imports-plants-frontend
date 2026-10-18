@@ -9,46 +9,79 @@ const ruleTester = new RuleTester()
 
 ruleTester.run('no-tracking-ids', houseRules.rules['no-tracking-ids'], {
   valid: [
-    '// Leaves a blank answer unreported',
-    "it('Should keep the answer', () => {})",
+    '// Shows the review once every card is complete',
+    "it('Should refuse a blank declaration', () => {})",
     "const id = 'c-201'",
-    "const uuid = '3fa85f64-5717-4562-b3fc-2c963f66afa6'"
+    "const id = 'eudpa-573-ghost-obligation'",
+    "const uuid = 'c3d0a1e2-0b1c-4d2e-9f3a-123456789abc'",
+    '// Unruled transporters carry no status'
   ],
   invalid: [
-    { code: '// EUDPA-565: keep this', errors: 1 },
-    { code: '/* c-201: an amendment opens clean */', errors: 1 },
-    { code: '// see inc-104', errors: 1 },
-    { code: '// Ruled at the panel', errors: 1 },
-    { code: '// as Design release 1 does', errors: 1 },
-    { code: '// matches the real service', errors: 1 },
-    { code: "it('Should match DR2.1', () => {})", errors: 1 },
-    { code: "test.describe('EUDPA-12 flow', () => {})", errors: 1 },
-    { code: "it.each([1])('Should hold d-049 for %s', () => {})", errors: 1 }
+    { code: '// See EUDPA-523', errors: [{ messageId: 'found' }] },
+    {
+      code: '/* c-201: opens with no errors */',
+      errors: [{ messageId: 'found' }]
+    },
+    { code: '// keeps inc-104 working', errors: [{ messageId: 'found' }] },
+    {
+      code: '// as Design release 1 shows it',
+      errors: [{ messageId: 'found' }]
+    },
+    { code: '// DR2.1 layout', errors: [{ messageId: 'found' }] },
+    { code: '// Ruled by the team', errors: [{ messageId: 'found' }] },
+    {
+      code: '// Save and return goes to the real service change page',
+      errors: [{ messageId: 'found' }]
+    },
+    {
+      code: "test('Should word the hint as Design release 1 does', () => {})",
+      errors: [{ messageId: 'found' }]
+    },
+    {
+      code: `test.describe(\`EUDPA-389 \${name}\`, () => {})`,
+      errors: [{ messageId: 'found' }]
+    },
+    {
+      code: "it.each([1])('Should hold d-049 for %s', () => {})",
+      errors: [{ messageId: 'found' }]
+    }
   ]
 })
+
+const SET_TERMS = ['high-risk-plants']
 
 ruleTester.run('no-set-vocabulary', houseRules.rules['no-set-vocabulary'], {
   valid: [
     {
-      code: "const prefix = '/example-set'",
-      options: [{ terms: ['high-risk-plants'] }]
+      code: "const setId = 'plants-high-risk'",
+      options: [{ terms: SET_TERMS }]
     }
   ],
   invalid: [
     {
-      code: "const prefix = '/high-risk-plants'",
-      options: [{ terms: ['high-risk-plants'] }],
-      errors: 1
+      code: "const setId = 'high-risk-plants'",
+      options: [{ terms: SET_TERMS }],
+      errors: [{ messageId: 'found' }]
+    },
+    {
+      code: 'const highRiskPlantsCodes = []',
+      options: [{ terms: SET_TERMS }],
+      errors: [{ messageId: 'found' }]
     },
     {
       code: 'const mode = process.env.HIGH_RISK_PLANTS_IT',
-      options: [{ terms: ['high-risk-plants'] }],
-      errors: 1
+      options: [{ terms: SET_TERMS }],
+      errors: [{ messageId: 'found' }]
     },
     {
-      code: '// mounted at highRiskPlants',
-      options: [{ terms: ['high-risk-plants'] }],
-      errors: 1
+      code: '// mounted at high-risk-plants',
+      options: [{ terms: SET_TERMS }],
+      errors: [{ messageId: 'found' }]
+    },
+    {
+      code: 'const prefix = `/high-risk-plants`',
+      options: [{ terms: SET_TERMS }],
+      errors: [{ messageId: 'found' }]
     }
   ]
 })
@@ -60,27 +93,22 @@ describe('restricted syntax', () => {
       rules: { 'no-restricted-syntax': ['error', ...restrictedSyntax] }
     })
 
-  it('Should refuse a catch handler that returns undefined', () => {
-    expect(messagesFor('record().catch(() => undefined)')).toHaveLength(1)
+  it.each([
+    'record().catch(() => undefined)',
+    'record().catch(() => {})',
+    'record().catch(function () {})',
+    "try { run() } catch (error) { logger.error('Run failed') }",
+    `try { run() } catch (error) { request.logger.warn(\`Run failed \${error}\`) }`
+  ])('Should refuse %s', (code) => {
+    expect(messagesFor(code)).toHaveLength(1)
   })
 
-  it('Should refuse a catch handler with an empty body', () => {
-    expect(messagesFor('record().catch(() => {})')).toHaveLength(1)
-  })
-
-  it('Should refuse a logger call with only a message inside a catch', () => {
-    expect(
-      messagesFor("try { a() } catch (err) { logger.error('Failed') }")
-    ).toHaveLength(1)
-    expect(
-      messagesFor("try { a() } catch (err) { request.logger.warn('Failed') }")
-    ).toHaveLength(1)
-  })
-
-  it('Should accept a logger call that carries the error', () => {
-    expect(
-      messagesFor("try { a() } catch (err) { logger.error({ err }, 'Failed') }")
-    ).toEqual([])
+  it.each([
+    "record().catch((err) => logger.warn({ err }, 'Could not record'))",
+    "try { run() } catch (err) { logger.error({ err }, 'Run failed') }",
+    "logger.error('Catbox Memory is for local development only')"
+  ])('Should accept %s', (code) => {
+    expect(messagesFor(code)).toEqual([])
   })
 })
 

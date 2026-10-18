@@ -283,7 +283,7 @@ const redirectOnStaleAction = (post) => async (request, h) => {
           journeyId: request.params?.journeyId,
           postedConcurrencyToken: request.payload?.concurrencyToken
         },
-        'Stale concurrency token, page reloaded'
+        'Save refused: the notification changed since the page was shown'
       )
       const query = request.url.searchParams
       query.set('staleAction', '1')

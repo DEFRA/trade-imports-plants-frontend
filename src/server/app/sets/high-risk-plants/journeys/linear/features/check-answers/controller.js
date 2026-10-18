@@ -81,13 +81,13 @@ const summaryErrors = (current, reviewed) => ({
   ...cardErrorsOf(current, reviewed)
 })
 
-const showsErrorsForStatus = (status, continueRefused) =>
-  status !== state.SUBMITTED && (status !== state.AMEND || continueRefused)
+const hidesAnswerErrors = (status, continueRefused) =>
+  status === state.SUBMITTED || (status === state.AMEND && !continueRefused)
 
 const shownReviewErrors = (current, continueRefused) =>
-  showsErrorsForStatus(current.journey.status, continueRefused)
-    ? reviewErrors(current)
-    : null
+  hidesAnswerErrors(current.journey.status, continueRefused)
+    ? null
+    : reviewErrors(current)
 
 const render = async (
   request,
