@@ -26,11 +26,9 @@ import {
   VARIANT_ONE
 } from '../../../../../../../test/fixtures/index.js'
 
-// Gated integration test for the option-e REAL adapter and its two backend
-// resources. The default hermetic run skips it. Run against the matching
-// backend worktree with:
+// The default run skips this suite. Run it against a running backend with:
 //
-//   HIGH_RISK_PLANTS_IT=real npm test -- real.integration
+//   PERSISTENCE_IT=real npm test -- real.integration
 
 const backendBaseUrl =
   process.env.TRADE_IMPORTS_PLANTS_BACKEND_URL ?? 'http://localhost:8091'

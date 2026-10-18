@@ -38,10 +38,9 @@ export const recordPageRequest = async ({
 
 /**
  * Emits the document without making the request wait for the flush.
- * Recording never rejects, so there is nothing for the caller to handle.
  *
  * @param {{ backendCalls: number, sessionResolutions: number }} counts - what the request made
  */
 export const recordPageRequestInBackground = (counts) => {
-  recordPageRequest(counts).catch(() => undefined)
+  recordPageRequest(counts)
 }

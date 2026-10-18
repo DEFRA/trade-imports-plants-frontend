@@ -203,6 +203,10 @@ describe('context and cache', () => {
 
       test('Should log that the Webpack Manifest file is not available', () => {
         expect(mockLoggerError).toHaveBeenCalledWith(
+          {
+            err: expect.any(SyntaxError),
+            manifestPath: expect.stringMatching(/assets-manifest\.json$/)
+          },
           'Webpack assets-manifest.json not found'
         )
       })

@@ -5,9 +5,7 @@
  * fields. The evaluator continues to receive its existing UUID-keyed map.
  * Both directions preserve input order and pass values through unchanged.
  *
- * The persisted wire schema keeps `fulfilmentId` as the record property
- * name for what the runtime now calls `fulfilmentIndex` — retained for
- * backend-contract stability (EUDPA-349 renamed the runtime term only).
+ * The persisted record names the runtime `fulfilmentIndex` as `fulfilmentId`.
  */
 
 export { encodeEvaluatorFulfilments } from './encode.js'

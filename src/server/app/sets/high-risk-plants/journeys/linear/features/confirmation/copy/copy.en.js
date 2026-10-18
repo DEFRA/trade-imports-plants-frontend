@@ -4,8 +4,6 @@ export const copy = {
   reference: 'Your notification reference',
   body: 'Your notification has been submitted. Keep the reference for your records.',
   dateOfNotification: 'Date of notification:',
-  // Ruled c-030/c-035: the same rule strings and banner heading as the
-  // submitted check-answers view, reading the stored lateNotificationIndicator.
   late: {
     title: 'Important',
     heading: 'Your notification was made outside the required timing',

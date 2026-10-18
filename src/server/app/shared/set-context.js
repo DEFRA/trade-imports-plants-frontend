@@ -15,12 +15,7 @@ export const mountedSetIds = () => [...mounts.keys()]
 /**
  * Which set a request path belongs to, read off the registered mounts.
  *
- * Longest match wins, so a set mounted at `/high-risk-plants/extra` would beat
- * one at `/high-risk-plants` rather than depending on registration order.
- *
- * This is the one way to name a set when there is no ambient context to read:
- * a path that matched no route ran no set's `onPreAuth`, and hapi-vision
- * marshals a view after the handler's context has gone.
+ * The longest matching prefix wins, whatever the registration order.
  *
  * @param {string} [path] - the request path.
  * @returns {string|undefined} the set id, or undefined where the path is

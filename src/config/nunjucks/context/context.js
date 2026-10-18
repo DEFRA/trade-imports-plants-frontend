@@ -54,8 +54,11 @@ async function context(request) {
   if (!webpackManifest) {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-    } catch (error) {
-      logger.error(`Webpack ${path.basename(manifestPath)} not found`)
+    } catch (err) {
+      logger.error(
+        { err, manifestPath },
+        `Webpack ${path.basename(manifestPath)} not found`
+      )
     }
   }
 
