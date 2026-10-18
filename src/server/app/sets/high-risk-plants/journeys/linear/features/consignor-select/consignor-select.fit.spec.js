@@ -1,3 +1,4 @@
+import { chooseAutocompleteOption } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
   BASE,
   journeyIdFromPage
@@ -107,12 +108,8 @@ const addLine = async (page, category, values) => {
 
 // The country list enhances a native select, so the visible combobox keeps the
 // field's own id.
-const chooseCountry = async (page, name) => {
-  const field = page.locator(COUNTRY_INPUT)
-  await field.click()
-  await field.fill(name)
-  await page.getByRole('option', { name, exact: true }).click()
-}
+const chooseCountry = (page, name) =>
+  chooseAutocompleteOption(page, page.locator(COUNTRY_INPUT), name)
 
 const saveOrigin = async (page, reference, country) => {
   await page.goto(`${BASE}/notifications/${reference}/origin`)

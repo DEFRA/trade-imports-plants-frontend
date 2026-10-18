@@ -1,3 +1,4 @@
+import { chooseAutocompleteOption } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
   BASE,
   journeyIdFromPage
@@ -78,10 +79,7 @@ const addWoodLine = async (page) => {
 
 const saveOrigin = async (page, reference) => {
   await page.goto(`${BASE}/notifications/${reference}/origin`)
-  const field = page.locator(COUNTRY_INPUT)
-  await field.click()
-  await field.fill(FRANCE)
-  await page.getByRole('option', { name: FRANCE, exact: true }).click()
+  await chooseAutocompleteOption(page, page.locator(COUNTRY_INPUT), FRANCE)
   await saveAndContinue(page).click()
 }
 

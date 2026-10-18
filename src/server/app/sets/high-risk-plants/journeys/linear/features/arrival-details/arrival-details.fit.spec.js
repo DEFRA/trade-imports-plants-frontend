@@ -1,3 +1,4 @@
+import { chooseAutocompleteOption } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
   BASE,
   journeyIdFromPage,
@@ -111,12 +112,8 @@ const addLine = async (page, category, values) => {
   await expect(page).toHaveURL(COMMODITY_LIST_URL)
 }
 
-const chooseFromAutocomplete = async (page, selector, name) => {
-  const field = page.locator(selector)
-  await field.click()
-  await field.fill(name)
-  await page.getByRole('option', { name, exact: true }).click()
-}
+const chooseFromAutocomplete = (page, selector, name) =>
+  chooseAutocompleteOption(page, page.locator(selector), name)
 
 const saveOrigin = async (page, reference, country) => {
   await page.goto(`${BASE}/notifications/${reference}/origin`)

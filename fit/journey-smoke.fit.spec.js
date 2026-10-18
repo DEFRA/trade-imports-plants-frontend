@@ -16,11 +16,10 @@ import { copy as idsCopy } from '../src/server/app/sets/high-risk-plants/journey
 import { copy as reviewCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/check-answers/copy/copy.en.js'
 import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
 import { copy as confirmationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/confirmation/copy/copy.en.js'
+import { chooseAutocompleteOption } from './high-risk-plants-journey.js'
 
-const chooseOption = async (page, name) => {
-  await page.getByRole('combobox').fill(name)
-  await page.getByRole('option', { name, exact: true }).click()
-}
+const chooseOption = (page, name) =>
+  chooseAutocompleteOption(page, page.getByRole('combobox'), name)
 
 const chooseRadio = (page, name) =>
   page.getByRole('radio', { name, exact: true }).check()
