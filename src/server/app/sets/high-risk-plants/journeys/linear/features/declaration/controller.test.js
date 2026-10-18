@@ -23,7 +23,7 @@ import {
 import { lateNotificationIndicator } from '../../../../obligations/index.js'
 import { SYSTEM_POPULATED } from '../../../../../../bridge/obligation-source.js'
 import { copy } from './copy/copy.en.js'
-import { routes, meta } from './controller.js'
+import { DECLARATION_REFUSAL, routes, meta } from './controller.js'
 
 const get = routes.find(({ method }) => method === 'GET').handler
 const post = routes.find(({ method }) => method === 'POST').handler
@@ -122,13 +122,24 @@ describe('declaration', () => {
     }
   )
 
-  it('Should return an incomplete submission to check answers', async () => {
+  it('Should return an incomplete submission to check answers and log the refusal', async () => {
     const { request, h, id } = await setup({ commodityType: 'potatoes' })
     request.payload = { declaration: 'confirmed' }
     expect(await post(request, h)).toEqual({
       redirect: `${SET_BASE}/notifications/${id}/notification-view`
     })
     expect((await store.get(id)).status).toBe(state.DRAFT)
+    expect(request.logger.entries).toEqual([
+      {
+        level: 'info',
+        fields: {
+          journeyId: id,
+          refusal: DECLARATION_REFUSAL.review,
+          concurrencyToken: expect.any(Number)
+        },
+        message: 'Declaration refused'
+      }
+    ])
   })
 
   it('Should send a copied address that breaks the address-book rules back to check answers, unsubmitted', async () => {
