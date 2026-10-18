@@ -348,6 +348,40 @@ scope, redirects, marked recoverable failures and unexpected errors.
 Add focused tests for bindings, model gates, flow order, branch skipping,
 task-row status, hub rendering, check-answers rows and notification mapping.
 
+## Test support
+
+Build test set-up from the shared helpers, and extend them rather than writing
+set-up in the test file:
+
+- controller tests:
+  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
+  seeds a journey, runs one handler and returns the answers before and after;
+  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
+  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+- the set's journey and seed data:
+  [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
+  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
+  `COMPLETE_POTATO_CONSIGNMENT`. A new section's answers join
+  `COMPLETE_NOTIFICATION`
+- browser tests:
+  [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
+  — journey steps such as `startPotatoNotification`,
+  `completePotatoNotification`, `openDeclaration`, `chooseAutocompleteOption`,
+  `saveAndContinue` and `expectNoSeriousAxeViolations`. A new section that the
+  opening run reaches adds its step to `completePotatoNotification`
+
+When a second test needs the same set-up, move it into one of these helpers in
+the same change and delete every local copy. Importing a sibling feature's test
+helper is fine.
+
+## Logging
+
+A branch that changes what the request does — a refusal, a redirect away from
+the normal next page, a retry or a fallback — logs once through
+`request.logger` with `journeyId` and the reason. A validation 400 that
+re-renders the page does not log. See "Logging" in
+[`architecture.md`](../../../docs/architecture.md).
+
 ## Playwright feature test
 
 Put the co-located specs in `journeys/linear/features/<group>/fit/`.

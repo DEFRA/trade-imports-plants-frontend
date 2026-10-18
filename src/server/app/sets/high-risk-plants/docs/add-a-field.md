@@ -238,6 +238,38 @@ Extend the feature's `controller.test.js`. Cover:
 Add focused model, gate, mapper and check-answers tests when the field changes
 those contracts.
 
+## Test support
+
+Build test set-up from the shared helpers, and extend them rather than writing
+set-up in the test file:
+
+- controller tests:
+  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
+  seeds a journey, runs one handler and returns the answers before and after;
+  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
+  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+- the set's journey and seed data:
+  [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
+  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
+  `COMPLETE_POTATO_CONSIGNMENT`
+- browser tests:
+  [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
+  — journey steps such as `startPotatoNotification`,
+  `completePotatoNotification`, `openDeclaration`, `chooseAutocompleteOption`,
+  `saveAndContinue` and `expectNoSeriousAxeViolations`
+
+When a second test needs the same set-up, move it into one of these helpers in
+the same change and delete every local copy. Importing a sibling feature's test
+helper is fine.
+
+## Logging
+
+A branch that changes what the request does — a refusal, a redirect away from
+the normal next page, a retry or a fallback — logs once through
+`request.logger` with `journeyId` and the reason. A validation 400 that
+re-renders the page does not log. See "Logging" in
+[`architecture.md`](../../../docs/architecture.md).
+
 ## Playwright feature test
 
 Keep the spec with the feature. Extend its existing `*.fit.spec.js`. A small

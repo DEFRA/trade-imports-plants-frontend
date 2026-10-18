@@ -124,6 +124,22 @@ Wrap the write in `kit.recoverableSave()`. A marked persistence failure renders
 the same values with `recoverableError: true` and status 500. Unexpected errors
 must throw.
 
+"Save and return to overview" posts `exit=hub`. When the page has a required
+rule, opt in to saving a blank answer on that exit by passing
+`{ allowMissing: kit.isHubExit(request) }` to `validate`, as
+[`journeys/linear/features/commodity-type/controller.js`](../journeys/linear/features/commodity-type/controller.js)
+does. Every other rule still refuses. An address-book picker does not call
+`validate`: it leaves without a commit when nothing is ticked and
+`kit.isHubExit(request)` is true, as
+[`journeys/linear/features/place-of-destination/controller.js`](../journeys/linear/features/place-of-destination/controller.js)
+does. These task-row pages offer no overview exit and stay strict on every
+submit:
+
+- the commodities list
+  ([`journeys/linear/features/commodities/list/list.controller.js`](../journeys/linear/features/commodities/list/list.controller.js))
+- commodity details
+  ([`journeys/linear/features/commodities/details/details.controller.js`](../journeys/linear/features/commodities/details/details.controller.js))
+
 Export the standard routes:
 
 ```js
@@ -210,15 +226,11 @@ If you add a task row, also:
 - update the hub's `copy/copy.test.js`, the hub feature spec and
   `journeys/linear/flow/task-rows.test.js`
 
-The hub feature is built, and it is the worked example for those bullets. It now
-renders four rows — commodities, origin, arrival and destination — so read it as
-a worked example of a row that already exists rather than as an empty consumer.
+The hub feature is the worked example for those bullets.
 
 - [`journeys/linear/features/hub/controller.js`](../journeys/linear/features/hub/controller.js)
-  holds `GROUPS` — the four numbered groups in the order the hub renders them.
-  The first two now name the landed rows (`['commodities', 'origin']` and
-  `['arrival', 'destination']`); consignment-parties and check-and-submit still hold an empty
-  `rows` list. It turns a row id into a task-list item: a row
+  holds `GROUPS` — the numbered groups in the order the hub renders them, each
+  naming its row ids. It turns a row id into a task-list item: a row
   whose gate passes gets its `rowEntry()` link and a status tag, a row whose
   gate fails gets the "Cannot start yet" status and no link, and a conditional
   row that is not applicable is dropped. A group with no items is not rendered.
@@ -228,9 +240,9 @@ a worked example of a row that already exists rather than as an empty consumer.
   hold the four group captions, the five statuses — completed, optional, in
   progress, not yet started and cannot start yet, whose presentation lives in
   the controller as three `govuk-tag` classes, plain text for optional and a
-  task-list status class for cannot start yet — and a `rows` map that now holds
-  the landed rows. Your row's `title` and `hint` join them under `rows` in both
-  locales.
+  task-list status class for cannot start yet — and a `rows` map with each
+  row's `title` and `hint`. Your row's `title` and `hint` join them under
+  `rows` in both locales.
 - [`journeys/linear/features/hub/copy/copy.test.js`](../journeys/linear/features/hub/copy/copy.test.js)
   checks the English bundle leaf by leaf, names the four groups in the design
   order in both locales, holds the controller and the captions to the same set
@@ -260,10 +272,9 @@ continue-enforced fields. Add an authored `gate` to the page identity only when
 that rule cannot express the page.
 
 Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
-only when it belongs in the opening run — that is, add it to `RUN_STEPS`, which
-currently holds six steps: commodity-type, commodities, origin, arrival-status,
-arrival-details and place-of-destination, the arrival-status step skipped for
-potatoes by its derived gate. Update its run tests if you do.
+only when it belongs in the opening run — that is, add it to `RUN_STEPS` in
+journey order. A step whose derived gate fails is skipped, as arrival-status is
+for potatoes. Update its run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 
@@ -317,6 +328,38 @@ In `controller.test.js`, cover:
 
 Add or update flow tests for section order, skip behaviour, task-row entry,
 status and opening-run behaviour.
+
+## Test support
+
+Build test set-up from the shared helpers, and extend them rather than writing
+set-up in the test file:
+
+- controller tests:
+  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
+  seeds a journey, runs one handler and returns the answers before and after;
+  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
+  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+- the set's journey and seed data:
+  [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
+  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
+  `COMPLETE_POTATO_CONSIGNMENT`
+- browser tests:
+  [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
+  — journey steps such as `startPotatoNotification`,
+  `completePotatoNotification`, `openDeclaration`, `chooseAutocompleteOption`,
+  `saveAndContinue` and `expectNoSeriousAxeViolations`
+
+When a second test needs the same set-up, move it into one of these helpers in
+the same change and delete every local copy. Importing a sibling feature's test
+helper is fine.
+
+## Logging
+
+A branch that changes what the request does — a refusal, a redirect away from
+the normal next page, a retry or a fallback — logs once through
+`request.logger` with `journeyId` and the reason. A validation 400 that
+re-renders the page does not log. See "Logging" in
+[`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 
