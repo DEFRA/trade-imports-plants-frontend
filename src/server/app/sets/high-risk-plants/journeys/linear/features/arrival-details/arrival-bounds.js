@@ -11,7 +11,7 @@ const SERVICE_TIME_ZONE = 'Europe/London'
 /**
  * The bounds the arrival date is held to, in both the shapes that need them.
  *
- * Only one bound is ruled: a consignment that has already arrived cannot have
+ * Only one bound applies: a consignment that has already arrived cannot have
  * arrived tomorrow, so the date is capped at today (reg 26(2)(a) — "the date on
  * which it first arrived"). Nothing bounds the other two states. A late
  * notification is accepted and flagged rather than refused, so there is no

@@ -234,9 +234,9 @@ describe('the notification-level gates stay inside the service vocabulary', () =
   })
 
   it('Should admit only plants for planting and wood and cut trees', () => {
-    // Reg 26(2) gives only those two a post-arrival branch, and
-    // journey-spec.json rules this pair, so a commodity type the service
-    // starts offering must be ruled in rather than joining the gate silently.
+    // Reg 26(2) gives only those two a post-arrival branch, so a commodity
+    // type the service starts offering must be added to this list rather than
+    // joining the gate silently.
     expect([...gateValues()]).toEqual([
       'plants-for-planting',
       'wood-and-cut-trees'
@@ -263,8 +263,8 @@ describe('the notification-level gates stay inside the service vocabulary', () =
 
       it('Should admit potatoes and nothing else', () => {
         // Reg 24A gives only potatoes a time and a place of landing, so
-        // another commodity type must be ruled in rather than joining the
-        // gate silently.
+        // another commodity type must be added to this assertion rather than
+        // joining the gate silently.
         expect(obligationMetadata(obligation).value).toBe('potatoes')
       })
     })
