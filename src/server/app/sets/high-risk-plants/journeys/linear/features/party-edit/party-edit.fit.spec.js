@@ -1,27 +1,25 @@
-import { chooseAutocompleteOption } from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import {
+  addCommodityLine,
+  chooseCommodityType,
+  expectNoSeriousOrCriticalViolations,
+  saveAndContinue,
+  saveOrigin,
+  startNotification
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
   BASE,
   journeyIdFromPage
 } from '../../../../../../../../../fit/set-base.js'
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
-import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
-import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as contactCopy } from '../consignment-contact-select/copy/copy.en.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const COMMODITY_TYPE_URL = /\/notifications\/[^/]+\/commodity-type$/
-const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details/
-const COMMODITY_LIST_URL = /\/notifications\/[^/]+\/commodities$/
 const CONTACT_URL = /\/notifications\/[^/]+\/consignment\/contact\/select$/
 const EDIT_URL = /\/notifications\/[^/]+\/consignment\/contact\/edit\?/
 
-const COUNTRY_INPUT = 'input#countryOfOrigin'
 const FRANCE = 'France'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
@@ -37,56 +35,14 @@ const TECH_IMPORTS_POSTCODE = 'E14 9GE'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const CURRENT_CONTACT = pickerCopy.parties.contactAddress.current
 
-const saveAndContinue = (page) =>
-  page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
-
 const currentContactCard = (page) =>
   page.getByRole('region', { name: CURRENT_CONTACT })
 
-const startNotification = async (page) => {
-  await page.goto(BASE)
-  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-  await expect(page).toHaveURL(COMMODITY_TYPE_URL)
-  return journeyIdFromPage(page)
-}
-
-const addWoodLine = async (page) => {
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[WOOD_AND_CUT_TREES],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
-  await page
-    .getByRole('radio', {
-      name: commoditiesCopy.categoryLabels[CUT_CONIFEROUS_TREES],
-      exact: true
-    })
-    .check()
-  await page
-    .getByRole('button', { name: commoditiesCopy.details.continue })
-    .click()
-  for (const [field, value] of Object.entries(WOOD_LINE_FIELDS)) {
-    await page
-      .getByLabel(commoditiesCopy.details.fields[field].label, { exact: true })
-      .fill(value)
-  }
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_LIST_URL)
-}
-
-const saveOrigin = async (page, reference) => {
-  await page.goto(`${BASE}/notifications/${reference}/origin`)
-  await chooseAutocompleteOption(page, page.locator(COUNTRY_INPUT), FRANCE)
-  await saveAndContinue(page).click()
-}
-
 const openContactEdit = async (page) => {
   const reference = await startNotification(page)
-  await addWoodLine(page)
-  await saveOrigin(page, reference)
+  await chooseCommodityType(page, WOOD_AND_CUT_TREES)
+  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
+  await saveOrigin(page, reference, FRANCE)
   const contactPath = `${BASE}/notifications/${reference}/consignment/contact/select`
   await page.goto(contactPath)
   await page
@@ -167,15 +123,6 @@ test.describe('edit a copied address', () => {
   test('edit page has no serious or critical axe violations', async ({
     page
   }) => {
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    const seriousOrCritical = results.violations.filter(({ impact }) =>
-      ['serious', 'critical'].includes(impact)
-    )
-    expect(
-      seriousOrCritical,
-      `Edit address details: ${JSON.stringify(seriousOrCritical, null, 2)}`
-    ).toEqual([])
+    await expectNoSeriousOrCriticalViolations(page, 'Edit address details')
   })
 })

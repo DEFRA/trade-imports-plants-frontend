@@ -1,7 +1,7 @@
 import { BASE } from '../../../../../../../../../fit/set-base.js'
 import {
   completePotatoNotification,
-  expectNoSeriousAxeViolations,
+  expectNoSeriousOrCriticalViolations,
   openDeclaration
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { copy as confirmationCopy } from '../confirmation/copy/copy.en.js'
@@ -29,7 +29,7 @@ test('renders the plants declaration and Back navigation with no serious accessi
   await expect(
     page.getByText(declarationCopy.dateOfDeclaration, { exact: false })
   ).toBeVisible()
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(page, 'Declaration')
   await page
     .getByRole('link', { name: sharedCopy.layout.back, exact: true })
     .click()
@@ -53,7 +53,7 @@ test('requires confirmation, focuses the checkbox from the summary and has an ac
   await expect(
     page.getByRole('checkbox', { name: declarationCopy.declarationLabel })
   ).toBeFocused()
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(page, 'Declaration with an error')
 })
 
 test('accepts a late notification and shows the stored late banner on the read-only view', async ({
@@ -88,7 +88,10 @@ test('accepts a late notification and shows the stored late banner on the read-o
     page.getByRole('button', { name: copy.continue, exact: true })
   ).toHaveCount(0)
   await expect(page.getByRole('link', { name: /^Change/ })).toHaveCount(0)
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(
+    page,
+    'Submitted notification with a late banner'
+  )
   await page.reload()
   await expect(
     page.getByRole('heading', { name: copy.late.heading })

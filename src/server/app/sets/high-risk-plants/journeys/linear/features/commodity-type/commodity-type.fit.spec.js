@@ -3,14 +3,17 @@ import {
   journeyIdFromPage,
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
-import AxeBuilder from '@axe-core/playwright'
+import {
+  expectNoSeriousOrCriticalViolations,
+  saveAndContinue,
+  startNotification
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { commodityTypes } from '../../../../services/commodities/index.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
-import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import {
   PLANTS_WOOD_DAYS_AFTER_ARRIVAL,
@@ -39,35 +42,12 @@ const backLink = (page) =>
 const radioFor = (page, value) =>
   page.getByRole('radio', { name: copy.typeLabels[value], exact: true })
 
-const saveAndContinue = (page) =>
-  page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
-
-const startAtCommodityType = async (page) => {
-  await page.goto(BASE)
-  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-  await expect(page).toHaveURL(PAGE_URL)
-}
-
 const hubPathOf = (page) => `${BASE}/notifications/${journeyIdFromPage(page)}`
-
-const expectNoSeriousOrCriticalViolations = async (page, subject) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
-  const seriousOrCritical = results.violations.filter(({ impact }) =>
-    ['serious', 'critical'].includes(impact)
-  )
-
-  expect(
-    seriousOrCritical,
-    `${subject} has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
-  ).toEqual([])
-}
 
 test.describe('commodity-type feature', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
-    await startAtCommodityType(page)
+    await startNotification(page)
   })
 
   test('renders the caption, the legend as the page heading and the hint', async ({
@@ -289,7 +269,7 @@ test.describe('commodity-type feature', () => {
 test.describe('commodity-type as the journey entry page', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
-    await startAtCommodityType(page)
+    await startNotification(page)
   })
 
   test('bounces a deep link from a session that never created the notification, and saving carries on through the section', async ({

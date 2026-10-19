@@ -4,7 +4,7 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import { copy as typeCopy } from '../commodity-type/copy/copy.en.js'
-import AxeBuilder from '@axe-core/playwright'
+import { expectNoSeriousOrCriticalViolations } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -187,17 +187,10 @@ test.describe('overview hub feature', () => {
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    const seriousOrCritical = results.violations.filter(({ impact }) =>
-      ['serious', 'critical'].includes(impact)
+    await expectNoSeriousOrCriticalViolations(
+      page,
+      'Overview hub initial render'
     )
-
-    expect(
-      seriousOrCritical,
-      `Overview hub initial render has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
-    ).toEqual([])
   })
 })
 

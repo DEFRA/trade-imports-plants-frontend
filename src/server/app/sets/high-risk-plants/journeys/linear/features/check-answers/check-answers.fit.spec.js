@@ -3,7 +3,7 @@ import {
   CHECK_ANSWERS_URL,
   POTATO_VARIETY,
   completePotatoNotification,
-  expectNoSeriousAxeViolations,
+  expectNoSeriousOrCriticalViolations,
   saveAndContinue
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -32,7 +32,7 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   await expect(
     page.getByText('tech-imports-ltd@example.com', { exact: true })
   ).toHaveCount(2)
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(page, 'Check answers')
   await page
     .getByRole('link', {
       name: 'Change country of origin (Import details)',
@@ -121,7 +121,10 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
     'href',
     `${BASE}/notifications/${reference}/origin?change=1`
   )
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(
+    page,
+    'Check answers with an origin error'
+  )
   await error.click()
   await expect(page).toHaveURL(/\/origin\?change=1$/)
 })

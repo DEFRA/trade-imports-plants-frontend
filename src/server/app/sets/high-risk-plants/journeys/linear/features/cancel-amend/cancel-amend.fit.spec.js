@@ -7,7 +7,7 @@ import {
 import {
   CHECK_ANSWERS_URL,
   completePotatoNotification,
-  expectNoSeriousAxeViolations,
+  expectNoSeriousOrCriticalViolations,
   saveAndContinue
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -80,7 +80,7 @@ test('renders accessible confirmation copy, actions and a bare heading', async (
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveAttribute('href', cyaHref)
   await expect(page.locator('.govuk-caption-l')).toHaveCount(0)
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(page, 'Cancel amendment page')
 })
 
 test('No preserves the amendment and its changes after reload', async ({
@@ -251,7 +251,10 @@ test('confirmation restores the submitted snapshot and an accessible success vie
   await expect(page.getByText('DiscardMe99', { exact: true })).toHaveCount(0)
   await expect(page.getByText('P123', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Change/ })).toHaveCount(0)
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(
+    page,
+    'Submitted notification after a cancelled amendment'
+  )
   await page.reload()
   await expect(page.getByText('P123', { exact: true })).toBeVisible()
 })

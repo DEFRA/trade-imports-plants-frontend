@@ -1,10 +1,13 @@
-import { chooseAutocompleteOption } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
-  BASE,
-  journeyIdFromPage,
-  setUrl
-} from '../../../../../../../../../fit/set-base.js'
-import AxeBuilder from '@axe-core/playwright'
+  addCommodityLine,
+  chooseAutocompleteOption,
+  chooseCommodityType,
+  expectNoSeriousOrCriticalViolations,
+  saveAndContinue,
+  saveOrigin,
+  startNotification
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -15,31 +18,20 @@ import {
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
-import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
-import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
-const COMMODITY_DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details')
-const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
-const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
 const ARRIVAL_STATUS_URL = setUrl('/notifications/[^/]+/arrival-status$')
 const PAGE_URL = setUrl('/notifications/[^/]+/arrival-details$')
 const HUB_URL = setUrl('/notifications/[^/]+$')
-// Continue from here goes on to the place of destination, the last step of the
-// opening run, rather than straight back to the overview.
 const DESTINATION_URL = setUrl('/notifications/[^/]+/destinations/select$')
 
 const DATE_INPUT = 'input#arrivalDate'
 const TIME_INPUT = 'input#arrivalTime'
-// accessible-autocomplete enhances the native <select>: the visible combobox
-// input keeps the original id, and the hidden select still submits the value.
 const PORT_INPUT = 'input#proposedPlaceOfLanding'
 const PORT_SELECT = 'select[name="proposedPlaceOfLanding"]'
 const UNOFFERED_PORT = 'GB ZZZ'
-const COUNTRY_INPUT = 'input#countryOfOrigin'
 
 const POTATOES = 'potatoes'
 const WARE_POTATOES = 'ware-potatoes'
@@ -69,76 +61,33 @@ const WOOD_LINE_FIELDS = {
 const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
-const saveAndContinue = (page) =>
-  page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
-
 const arrivalDetailsPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-details`
-
-const startNotification = async (page) => {
-  await page.goto(BASE)
-  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-  await expect(page).toHaveURL(COMMODITY_TYPE_URL)
-  return journeyIdFromPage(page)
-}
-
-const chooseCommodityType = async (page, commodityType) => {
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
-}
-
-const addLine = async (page, category, values) => {
-  await page
-    .getByRole('radio', {
-      name: commoditiesCopy.categoryLabels[category],
-      exact: true
-    })
-    .check()
-  await page
-    .getByRole('button', { name: commoditiesCopy.details.continue })
-    .click()
-  for (const [field, value] of Object.entries(values)) {
-    await page
-      .getByLabel(commoditiesCopy.details.fields[field].label, { exact: true })
-      .fill(value)
-  }
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_LIST_URL)
-}
 
 const chooseFromAutocomplete = (page, selector, name) =>
   chooseAutocompleteOption(page, page.locator(selector), name)
 
-const saveOrigin = async (page, reference, country) => {
-  await page.goto(`${BASE}/notifications/${reference}/origin`)
-  await expect(page).toHaveURL(ORIGIN_URL)
-  await chooseFromAutocomplete(page, COUNTRY_INPUT, country)
-  await saveAndContinue(page).click()
-}
+const selectPortMissingFromTheList = (page, code) =>
+  page.locator(PORT_SELECT).evaluate((select, portCode) => {
+    const option = document.createElement('option')
+    option.value = portCode
+    select.append(option)
+    select.value = portCode
+  }, code)
 
-/** A ware-potato notification, walked as far as the arrival details. Potatoes
- * are never asked the arrival question, so the run lands here from origin. */
 const startAtPotatoDetails = async (page) => {
   const reference = await startNotification(page)
   await chooseCommodityType(page, POTATOES)
-  await addLine(page, WARE_POTATOES, WARE_POTATO_LINE_FIELDS)
+  await addCommodityLine(page, WARE_POTATOES, WARE_POTATO_LINE_FIELDS)
   await saveOrigin(page, reference, SPAIN)
   await expect(page).toHaveURL(PAGE_URL)
   return reference
 }
 
-/** A wood notification, walked as far as the arrival details through the
- * arrival question, answering it with the status given. */
 const startAtWoodDetails = async (page, status) => {
   const reference = await startNotification(page)
   await chooseCommodityType(page, WOOD_AND_CUT_TREES)
-  await addLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
+  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
   await saveOrigin(page, reference, FRANCE)
   await expect(page).toHaveURL(ARRIVAL_STATUS_URL)
   await page
@@ -152,9 +101,6 @@ const startAtWoodDetails = async (page, status) => {
   return reference
 }
 
-// Changing type once a line is saved drops the lines the new type cannot
-// hold. After that the next change has no lines, so do not pin the landing
-// URL — the list reports a removal, the details page does not.
 const changeCommodityType = async (page, reference, commodityType) => {
   await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
   await page
@@ -164,20 +110,6 @@ const changeCommodityType = async (page, reference, commodityType) => {
     })
     .check()
   await saveAndContinue(page).click()
-}
-
-const expectNoSeriousOrCriticalViolations = async (page, subject) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
-  const seriousOrCritical = results.violations.filter(({ impact }) =>
-    ['serious', 'critical'].includes(impact)
-  )
-
-  expect(
-    seriousOrCritical,
-    `${subject} has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
-  ).toEqual([])
 }
 
 test.describe('arrival-details — a potato notification', () => {
@@ -462,16 +394,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await page.locator(DATE_INPUT).fill(A_DATE)
     await page.locator(TIME_INPUT).fill(A_TIME)
-    // The list is closed, so the only way to send a port the service does not
-    // hold is to put it in the select the picker submits. The visible combobox
-    // is left untouched on purpose: the picker rewrites the select from the
-    // combobox text whenever that input loses focus.
-    await page.locator(PORT_SELECT).evaluate((select, code) => {
-      const option = document.createElement('option')
-      option.value = code
-      select.append(option)
-      select.value = code
-    }, UNOFFERED_PORT)
+    await selectPortMissingFromTheList(page, UNOFFERED_PORT)
     await saveAndContinue(page).click()
 
     await expect(

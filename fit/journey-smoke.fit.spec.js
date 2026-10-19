@@ -1,6 +1,5 @@
-import { BASE, journeyIdFromPage } from './set-base.js'
+import { BASE } from './set-base.js'
 import { createRequire } from 'node:module'
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
@@ -8,7 +7,6 @@ const happyPaths = createRequire(import.meta.url)(
   '../src/server/app/sets/high-risk-plants/journeys/linear/flow/fixtures/happy-path.json'
 )
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
-import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/copy/copy.en.js'
 import { copy as arrivalCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-details/copy/copy.en.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
@@ -16,7 +14,11 @@ import { copy as idsCopy } from '../src/server/app/sets/high-risk-plants/journey
 import { copy as reviewCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/check-answers/copy/copy.en.js'
 import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
 import { copy as confirmationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/confirmation/copy/copy.en.js'
-import { chooseAutocompleteOption } from './high-risk-plants-journey.js'
+import {
+  chooseAutocompleteOption,
+  expectNoSeriousOrCriticalViolations,
+  startNotification
+} from './high-risk-plants-journey.js'
 
 const chooseOption = (page, name) =>
   chooseAutocompleteOption(page, page.getByRole('combobox'), name)
@@ -81,10 +83,7 @@ const fillSteps = {
 for (const [name, shape] of Object.entries(happyPaths)) {
   test(`${name}: ${shape.useCase} reaches confirmation`, async ({ page }) => {
     await signIn(page)
-    await page.goto(BASE)
-    await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-    await expect(page).toHaveURL(/\/commodity-type$/)
-    const reference = journeyIdFromPage(page)
+    const reference = await startNotification(page)
 
     for (const step of shape.steps) {
       await test.step(step.slug, async () => {
@@ -122,22 +121,12 @@ for (const [name, shape] of Object.entries(happyPaths)) {
     await expect(
       page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
     ).toBeVisible()
-    // The reference also appears in the persistent journey strip, so a bare
-    // getByText(reference) matches two elements — scope to the panel's own
-    // reference line, as confirmation.fit.spec.js does.
     await expect(
       page.getByText(confirmationCopy.reference, { exact: false })
     ).toContainText(reference)
     await expect(
       page.getByRole('heading', { name: confirmationCopy.late.heading })
     ).toHaveCount(shape.late ? 1 : 0)
-    const { violations } = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa'])
-      .analyze()
-    expect(
-      violations.filter(({ impact }) =>
-        ['serious', 'critical'].includes(impact)
-      )
-    ).toEqual([])
+    await expectNoSeriousOrCriticalViolations(page, `${name} confirmation`)
   })
 }

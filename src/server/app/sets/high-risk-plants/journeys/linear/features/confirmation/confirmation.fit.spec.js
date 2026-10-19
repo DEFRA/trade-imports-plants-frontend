@@ -1,7 +1,7 @@
 import { BASE } from '../../../../../../../../../fit/set-base.js'
 import {
   completePotatoNotification,
-  expectNoSeriousAxeViolations,
+  expectNoSeriousOrCriticalViolations,
   openDeclaration
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -39,7 +39,7 @@ test('shows an accessible submitted receipt, survives reload and links to the no
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveCount(0)
-  await expectNoSeriousAxeViolations(page)
+  await expectNoSeriousOrCriticalViolations(page, 'Confirmation')
   await page.reload()
   await expect(
     page.getByRole('heading', { name: confirmationCopy.title, level: 1 })

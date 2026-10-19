@@ -1,36 +1,25 @@
-import { chooseAutocompleteOption } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
-  BASE,
-  journeyIdFromPage,
-  setUrl
-} from '../../../../../../../../../fit/set-base.js'
-import AxeBuilder from '@axe-core/playwright'
+  addCommodityLine,
+  chooseCommodityType,
+  chooseCountryOfOrigin,
+  expectNoSeriousOrCriticalViolations,
+  saveAndContinue,
+  startNotification
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-// The service reader would try to load real reference data when called from
-// the FIT process (which does not set STUB_MODE); the server runs against the
-// captured fixtures in FIT mode, so the expected list is read from them.
 import { originPageCountryEntries } from '../../../../../../services/_capture/fixtures.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
-import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
-import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
-const COMMODITY_DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details')
-const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
-// A potato notification is never asked the arrival question, so Continue from
-// origin lands on the arrival details.
 const ARRIVAL_DETAILS_URL = setUrl('/notifications/[^/]+/arrival-details$')
 
-// accessible-autocomplete enhances the native <select>: the visible combobox
-// input keeps the original id, and the hidden select still submits the value.
 const COUNTRY_INPUT = 'input#countryOfOrigin'
 const COUNTRY_SELECT = 'select[name="countryOfOrigin"]'
 const AUTOCOMPLETE_ARROW = '.autocomplete__dropdown-arrow-down'
@@ -49,52 +38,7 @@ const EU_MEMBER_STATES = 'eu-member-states'
 const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
-const saveAndContinue = (page) =>
-  page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
-
 const originPathOf = (reference) => `${BASE}/notifications/${reference}/origin`
-
-const chooseCountry = (page, name) =>
-  chooseAutocompleteOption(page, page.locator(COUNTRY_INPUT), name)
-
-const startNotification = async (page) => {
-  await page.goto(BASE)
-  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-  await expect(page).toHaveURL(COMMODITY_TYPE_URL)
-  return journeyIdFromPage(page)
-}
-
-const chooseCommodityType = async (page, commodityType) => {
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
-}
-
-// The narrowing is decided by the categories of the lines already saved, so a
-// test of it has to go through the commodity section first.
-const addLine = async (page, category, values) => {
-  await page
-    .getByRole('radio', {
-      name: commoditiesCopy.categoryLabels[category],
-      exact: true
-    })
-    .check()
-  await page
-    .getByRole('button', { name: commoditiesCopy.details.continue })
-    .click()
-  for (const [field, value] of Object.entries(values)) {
-    await page
-      .getByLabel(commoditiesCopy.details.fields[field].label, { exact: true })
-      .fill(value)
-  }
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_LIST_URL)
-}
 
 const startAtOrigin = async (page) => {
   const reference = await startNotification(page)
@@ -102,20 +46,6 @@ const startAtOrigin = async (page) => {
   await page.goto(originPathOf(reference))
   await expect(page).toHaveURL(ORIGIN_URL)
   return reference
-}
-
-const expectNoSeriousOrCriticalViolations = async (page, subject) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
-  const seriousOrCritical = results.violations.filter(({ impact }) =>
-    ['serious', 'critical'].includes(impact)
-  )
-
-  expect(
-    seriousOrCritical,
-    `${subject} has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
-  ).toEqual([])
 }
 
 test.describe('origin feature', () => {
@@ -203,7 +133,7 @@ test.describe('origin feature', () => {
   }) => {
     const reference = await startAtOrigin(page)
 
-    await chooseCountry(page, FRANCE)
+    await chooseCountryOfOrigin(page, FRANCE)
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
@@ -217,7 +147,7 @@ test.describe('origin feature', () => {
   }) => {
     const reference = await startAtOrigin(page)
 
-    await chooseCountry(page, FRANCE)
+    await chooseCountryOfOrigin(page, FRANCE)
     await page
       .getByRole('button', {
         name: sharedCopy.saveActions.saveAndReturnToHub
@@ -235,7 +165,7 @@ test.describe('origin feature', () => {
   }) => {
     const reference = await startAtOrigin(page)
 
-    await chooseCountry(page, FRANCE)
+    await chooseCountryOfOrigin(page, FRANCE)
     await page
       .getByRole('link', {
         name: sharedCopy.saveActions.cancelAndReturnToHub
@@ -274,7 +204,7 @@ test.describe('origin feature', () => {
       })
     ).toBeVisible()
 
-    await chooseCountry(page, FRANCE)
+    await chooseCountryOfOrigin(page, FRANCE)
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
@@ -492,7 +422,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
   }) => {
     const reference = await startNotification(page)
     await chooseCommodityType(page, 'potatoes')
-    await addLine(page, WARE_POTATOES, {
+    await addCommodityLine(page, WARE_POTATOES, {
       potatoVariety: 'Maris Piper',
       quantity: '250',
       potatoIntendedUse: 'Eating'
@@ -503,7 +433,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
       page.getByText(copy.guidance[WARE_POTATOES], { exact: true })
     ).toBeVisible()
 
-    await chooseCountry(page, FRANCE)
+    await chooseCountryOfOrigin(page, FRANCE)
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(ORIGIN_URL)
@@ -517,14 +447,14 @@ test.describe('origin — the country list narrowed by the commodities', () => {
   test('accepts one of the four ware-potato countries', async ({ page }) => {
     const reference = await startNotification(page)
     await chooseCommodityType(page, 'potatoes')
-    await addLine(page, WARE_POTATOES, {
+    await addCommodityLine(page, WARE_POTATOES, {
       potatoVariety: 'Maris Piper',
       quantity: '250',
       potatoIntendedUse: 'Eating'
     })
     await page.goto(originPathOf(reference))
 
-    await chooseCountry(page, SPAIN)
+    await chooseCountryOfOrigin(page, SPAIN)
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
@@ -535,7 +465,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
   }) => {
     const reference = await startNotification(page)
     await chooseCommodityType(page, 'wood-and-cut-trees')
-    await addLine(page, CUT_CONIFEROUS_TREES, {
+    await addCommodityLine(page, CUT_CONIFEROUS_TREES, {
       commodityCode: '06042020',
       quantity: '40',
       sizeOfTree: '3.5',
@@ -547,7 +477,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
       page.getByText(copy.guidance[WARE_POTATOES], { exact: true })
     ).toHaveCount(0)
 
-    await chooseCountry(page, NORWAY)
+    await chooseCountryOfOrigin(page, NORWAY)
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(ORIGIN_URL)
