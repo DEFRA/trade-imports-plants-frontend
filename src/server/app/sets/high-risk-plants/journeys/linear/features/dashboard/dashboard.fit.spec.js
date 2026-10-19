@@ -2,7 +2,7 @@ import {
   BASE,
   journeyIdFromPage
 } from '../../../../../../../../../fit/set-base.js'
-import AxeBuilder from '@axe-core/playwright'
+import { expectNoSeriousOrCriticalViolations } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -35,20 +35,6 @@ const cardRowValue = (page, key) =>
     .locator('.govuk-summary-list__row')
     .filter({ has: page.getByText(key, { exact: true }) })
     .locator('.govuk-summary-list__value')
-
-const expectNoSeriousOrCriticalViolations = async (page, subject) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
-    .analyze()
-  const seriousOrCritical = results.violations.filter(({ impact }) =>
-    ['serious', 'critical'].includes(impact)
-  )
-
-  expect(
-    seriousOrCritical,
-    `${subject} has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
-  ).toEqual([])
-}
 
 test.describe('dashboard feature — initial render', () => {
   test.beforeEach(async ({ page }) => {

@@ -21,6 +21,16 @@ Canonical fulfilment is the durable answer source. Writes replace a whole evalua
 and purged snapshot. Reads rebuild projected answers, scope and status, so derived
 state is not stored.
 
+The evaluator works with fulfilments as a map keyed by UUID. The
+[fulfilment codec](../services/persistence/records/fulfilment-codec/index.js)
+stores them as an array instead, so obligation and fulfilment ids are ordinary
+fields; the stored record names the runtime `fulfilmentIndex` as
+`fulfilmentId`, which the backend contract keeps.
+
+The real adapter's integration suite is skipped by default. Run it against a
+running plants backend with
+`PERSISTENCE_IT_MODE=real npm test -- real.integration`.
+
 ## Session port
 
 [`src/server/app/engine/persistence/session.js`](../engine/persistence/session.js)

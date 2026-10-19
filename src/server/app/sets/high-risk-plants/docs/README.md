@@ -36,6 +36,7 @@ collide; `npm run test:fit:ci` does this for you.
 - [Set-owned services](services.md)
 - [High-risk-plants limits](limits.md)
 - [Testing the set and journey](testing.md)
+- [Copy status](copy-status.md)
 - [Lighthouse](lighthouse.md)
 
 ## Recipes

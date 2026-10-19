@@ -217,7 +217,27 @@ production:
 - [`../co-residency.test.js`](../co-residency.test.js) boots the production
   router with a second set and checks that each set answers with its own
   configuration, that interleaved requests keep their own set, that cookies are
-  scoped per set, and that the server-wide surface stays unprefixed.
+  scoped per set, and that the server-wide surface stays unprefixed. In detail:
+  - a third realm counts every route its `onPreAuth` runs on, so an extension
+    registered without `{ sandbox: 'plugin' }` would tick on the other sets'
+    routes
+  - an unrouted path under a set's mount renders that set's 404 chrome: no
+    route ran, so the set comes from the path, and the sole-set fallback would
+    turn the 404 into a 500 once two sets are mounted
+  - each set's entry guard runs with that set's configuration. The guard is a
+    server `onPreHandler`, which `routeWithSetContext` does not wrap, so the
+    gateway re-enters its set around it
+  - interleaved requests start before any is awaited, so their
+    `AsyncLocalStorage` contexts overlap
+  - cookies are read through a jar that honours each cookie's `Path`, and the
+    suite proves a cookie is present in its own set before proving it is absent
+    from the other
+  - two sets wired to the same shipped stub store cannot list or load each
+    other's drafts, even by id
+  - the sign-in routes are registered by `server.js`, not the router, so the
+    suite also boots the real composition root; the real OIDC plugin is not
+    registered in stub mode, so the suite asks that plugin which routes it
+    declares
 
 The second set in those suites is `test/fixtures/second-set.js`, a fixture
 rather than a real journey. If you are adding a real set, the fixture stays:

@@ -16,12 +16,7 @@ import { amendFormActions } from './amend-form-actions.js'
 
 export const routeOptions = { auth: 'session' }
 
-/**
- * The one resolved instance of the shared chrome copy. `base` puts it in
- * every journey view model; a controller that builds its own view model —
- * `src/server/auth/controller.js` — imports it from here rather than
- * re-wiring `copyFor`.
- */
+/** The shared chrome copy in the request's language. */
 export const sharedCopy = copyFor({ en: sharedEn, cy: sharedCy })
 
 export const SURFACES = Object.freeze({
@@ -90,7 +85,7 @@ export const journeyStrip = (journey, { offerCancelAmend = true } = {}) =>
 const anchorHref = (field) => `#${field}`
 
 /**
- * The one error summary shape the service renders.
+ * The error summary view model for a set of field errors.
  *
  * @param {object} [fieldErrors] - map of key to message. Empty means no summary.
  * @param {object} [options]
@@ -149,21 +144,10 @@ export const nextTarget = async (request, page, scope) =>
       nextInTaskRow(page.id, scope, request.params.journeyId)
   )
 
-/**
- * The layout a page outside every set renders in. Each set names the same
- * template today, but a set may override it, and a server-wide page has no set
- * to ask.
- */
 export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 
 /**
- * The chrome a page outside every set shares — the sign-in error page, the
- * shared error page reached from a server-wide route.
- *
- * `base` below cannot serve them: it reads `journeyLayout()` and
- * `journeySectionCaption()`, which resolve through the active set, and a
- * server-wide route never enters one. With a single set mounted that resolves
- * by the sole-set fallback and the bug stays hidden; with two it throws.
+ * The chrome for a page outside every set, such as the sign-in error page.
  *
  * @param {string} title - the page title.
  * @returns {object} the common view model, without anything set-owned.
@@ -171,12 +155,7 @@ export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 export const serverWideBase = (title) => ({
   layout: SERVER_WIDE_LAYOUT,
   pageTitle: title,
-  // The chrome's home link. A server-wide page belongs to no set, so it points
-  // at the root, which redirects to the default set.
   homeUrl: '/',
-  // A server-wide page has no journey, so no strip and no token. `backLink`
-  // and `hubHref` are simply absent, which the layout treats the same as the
-  // undefined `base` leaves them at.
   journeyStrip: null,
   concurrencyToken: null,
   sharedCopy,
@@ -185,14 +164,8 @@ export const serverWideBase = (title) => ({
 })
 
 /**
- * The chrome for a page that may or may not be inside a set, resolved from the
- * request path rather than from whichever set happens to be ambient.
- *
- * The error page is the case: it is reached from a set's route and from a
- * server-wide one alike, and only at render time is it known which. The path
- * is what settles it — an unrouted 404 ran no set's extension, so there may be
- * no ambient context to read even under a set's own mount, and the sole-set
- * fallback would answer with the wrong set as soon as a second one mounted.
+ * The chrome for a page that may or may not be inside a set, chosen by the
+ * set whose mount the request path falls under.
  *
  * @param {string} title - the page title.
  * @param {string} [requestPath] - the path the request asked for.
@@ -239,15 +212,10 @@ export const base = (
     pageTitle: title,
     caption: journeySectionCaption(page?.id),
     backLink,
-    // The chrome's home link, resolved in this request's set. Hardcoding `/`
-    // in the layout sent every set's service navigation to the default set's
-    // dashboard by way of the root redirect.
     homeUrl: dashboardPath(),
     hubHref: hasJourney ? hubPath(journeyId) : undefined,
     journeyStrip: journeyStrip(journey, { offerCancelAmend }),
     amending,
-    // Per request because an amend page's save buttons carry the page's own
-    // query, and the POST re-render needs the same URLs as the GET.
     amend:
       amending && request
         ? amendFormActions(request.path ?? '', request.url?.searchParams)
@@ -278,6 +246,13 @@ const redirectOnStaleAction = (post) => async (request, h) => {
     return await post(request, h)
   } catch (error) {
     if (error?.code === 'STALE_CONCURRENCY_TOKEN') {
+      request.logger.info(
+        {
+          journeyId: request.params?.journeyId,
+          postedConcurrencyToken: request.payload?.concurrencyToken
+        },
+        'Save refused: the notification changed since the page was shown'
+      )
       const query = request.url.searchParams
       query.set('staleAction', '1')
       return h.redirect(`${request.path}?${query.toString()}`)
@@ -323,16 +298,15 @@ const dateInputValue = (value) =>
         .join('/')
 
 /**
+ * The view model for a date-picker text field.
+ *
  * @param {string} name
  * @param {object} [options]
- * @param {string} [options.minDate] - `d/m/yyyy` TEXT, not a Date: it goes
- * verbatim into `data-min-date`, and the MoJ picker parses nothing else. Pass
- * `arrivalWindow().minText`, never its sibling `min`.
- * @param {string} [options.maxDate] - `d/m/yyyy` text, same contract.
+ * @param {string} [options.minDate] - the earliest date as `d/m/yyyy` text,
+ * never a Date.
+ * @param {string} [options.maxDate] - the latest date as `d/m/yyyy` text.
  * @param {string} [options.formGroupClasses] - classes for the field's form
- * group. The picker's client-side script inserts the calendar dialog inside
- * the form group, so a class here is the simplest stylesheet hook onto one
- * picker rather than all of them.
+ * group.
  */
 export const dateField = (
   name,

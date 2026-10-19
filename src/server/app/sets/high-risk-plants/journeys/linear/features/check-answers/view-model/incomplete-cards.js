@@ -6,29 +6,9 @@ import { copy as cy } from '../copy/copy.cy.js'
 
 const copy = copyFor({ en, cy })
 
-// A row is finished when `rowReady` says so — literally the predicate
-// `readyForCheckYourAnswers` applies, imported rather than restated, so a
-// notification with no unfinished card is exactly a notification that is ready
-// to submit and the two cannot diverge.
-
 /**
  * The review page's cards in page order, each with the task rows whose answers
  * it shows and the id the error summary links to.
- *
- * Every task row appears exactly once — `incomplete-cards.test.js` pins that —
- * so "no unfinished card" and `scope.readyForCheckYourAnswers` are the same
- * verdict.
- *
- * The commodities entry is the one entry whose anchor is not a card. Commodity
- * cards are built one per commodity line and carry no `id`, so `decorateCard`
- * never reaches them: the entry names the outstanding work without marking a
- * card, and anchors to the heading of the section those answers live in, which
- * always stands.
- *
- * The consignor card is the one entry whose card is conditional: it is built
- * only while the consignor is in scope, and while it is out of scope its task
- * row is NA, so `incompleteCardErrors` never names a card that is not on the
- * page.
  */
 export const REVIEW_CARDS = [
   { id: 'importDetails', anchor: 'import-details', rows: ['origin'] },
@@ -84,8 +64,7 @@ export const incompleteCardErrors = (current, coveredKeys = []) =>
     ).map((card) => [card.id, copy.errors.cards[card.id]])
   )
 
-/** The in-page target for a card error, or undefined for a key that is not a
- * card — which is how the error summary tells the two kinds of entry apart. */
+/** The in-page target for a card error, or undefined for a key that is not a card. */
 export const cardAnchorHref = (key) => {
   const card = cardById.get(key)
   return card ? `#${card.anchor}` : undefined
@@ -102,9 +81,7 @@ const decorateCard = (card, cardErrors) => {
   return { ...card, anchor: known.anchor, error: cardErrors[card.id] ?? null }
 }
 
-/** Give every card its anchor, and the unfinished ones their own message. The
- * decoration is a pass over the built sections rather than another argument
- * threaded through every card factory. */
+/** Every card with its anchor, and each unfinished card with its message. */
 export const withCardErrors = (sections, cardErrors = {}) =>
   sections.map((section) => ({
     ...section,

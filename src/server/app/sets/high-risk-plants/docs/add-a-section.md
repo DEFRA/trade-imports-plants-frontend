@@ -109,7 +109,6 @@ journeys/linear/features/<group>/
 │   ├── copy.en.js
 │   └── copy.test.js
 ├── fit/
-│   ├── axe.js
 │   ├── <first-page>.fit.spec.js
 │   └── <second-page>.fit.spec.js
 ├── <first-page>/
@@ -348,6 +347,39 @@ scope, redirects, marked recoverable failures and unexpected errors.
 Add focused tests for bindings, model gates, flow order, branch skipping,
 task-row status, hub rendering, check-answers rows and notification mapping.
 
+## Test support
+
+Build test set-up from the shared helpers, and extend them rather than writing
+set-up in the test file:
+
+- controller tests:
+  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
+  seeds a journey, runs one handler and returns the answers before and after;
+  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
+  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+- the set's journey and seed data:
+  [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
+  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
+  `COMPLETE_POTATO_CONSIGNMENT`. A new section's answers join
+  `COMPLETE_NOTIFICATION`
+- browser tests:
+  [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
+  — see [Shared browser-test helpers](testing.md#shared-browser-test-helpers).
+  A new section that the opening run reaches adds its step to
+  `completePotatoNotification`
+
+When a second test needs the same set-up, move it into one of these helpers in
+the same change and delete every local copy. Importing a sibling feature's test
+helper is fine.
+
+## Logging
+
+A branch that changes what the request does — a refusal, a redirect away from
+the normal next page, a retry or a fallback — logs once through
+`request.logger` with `journeyId` and the reason. A validation 400 that
+re-renders the page does not log. See "Logging" in
+[`architecture.md`](../../../docs/architecture.md).
+
 ## Playwright feature test
 
 Put the co-located specs in `journeys/linear/features/<group>/fit/`.
@@ -377,24 +409,13 @@ Add axe coverage for every new page in both states:
 - initial render
 - validation error state after the error summary appears
 
-Build axe with `AxeBuilder({ page })`, fail on every `serious` or `critical`
-violation, and filter only a proved component false positive. Do not spell the
-tag list out in each spec: put it in one helper the whole group calls.
+Call `expectNoSeriousOrCriticalViolations(page, subject)` from
+[`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js).
+It is the one place the tag list and impact threshold are written, so every
+page is checked against the same rules. Do not build `AxeBuilder` in a spec.
 
 Add or extend the hub axe test when the new row or a new group heading changes
 the hub state.
-
-[`journeys/linear/features/commodities/fit/axe.js`](../journeys/linear/features/commodities/fit/axe.js)
-is that helper for the multi-page group, and
-[`list.fit.spec.js`](../journeys/linear/features/commodities/fit/list.fit.spec.js)
-and
-[`details.fit.spec.js`](../journeys/linear/features/commodities/fit/details.fit.spec.js)
-both call it. One helper beside the group's specs keeps the tag list and the
-impact threshold identical on every page of the group, so a second page cannot
-quietly be checked against a narrower set of rules than the first. Its tags are
-`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` and `wcag22aa`: axe-core tags a rule
-by the WCAG version that introduced it, so a rule reachable only through the
-2.1 or 2.2 tags would never run on the two WCAG 2.0 tags alone.
 
 ## 11. Run every check
 

@@ -2,8 +2,6 @@ import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
 import { records } from './persistence/records.js'
 
-// Mirrors what plugins/auth.js puts on credentials after sign-in: the raw
-// `currentRelationshipId` claim, plus the `organisationId` it is mapped to.
 export const authenticatedCredentials = Object.freeze({
   contactId: 2100010101,
   name: 'Andrew Farmer',
@@ -46,8 +44,7 @@ const stubView = (captured) => (view, context) => {
   return rendered
 }
 
-/** A response toolkit that records what the handler rendered. Pass the request
- * to expose it as `h.request`, as hapi's toolkit does. */
+/** A response toolkit that records what the handler rendered, with `request` as `h.request`. */
 export const stubH = (request) => {
   const captured = {}
   return {
@@ -60,10 +57,25 @@ export const stubH = (request) => {
   }
 }
 
+/** A request logger that keeps every line it is given in `entries`. */
+export const recordingLogger = () => {
+  const entries = []
+  const recordAt = (level) => (fields, message) =>
+    entries.push({ level, fields, message })
+  return {
+    entries,
+    debug: recordAt('debug'),
+    info: recordAt('info'),
+    warn: recordAt('warn'),
+    error: recordAt('error')
+  }
+}
+
 export const journeyRequest = (journeyId, overrides = {}) => ({
   payload: {},
   query: {},
   headers: {},
+  logger: recordingLogger(),
   auth: {
     isAuthenticated: true,
     credentials: authenticatedCredentials
@@ -92,7 +104,6 @@ export const recordingH = () => {
   }
 }
 
-/** The path and URL a request for `pathOf(journeyId)` carries, query included. */
 const requestLocation = (pathOf, journeyId, query) => {
   if (!pathOf) {
     return {}

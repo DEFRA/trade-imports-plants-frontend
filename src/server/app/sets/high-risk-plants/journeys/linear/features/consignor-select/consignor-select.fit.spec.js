@@ -1,28 +1,25 @@
 import {
-  BASE,
-  journeyIdFromPage
-} from '../../../../../../../../../fit/set-base.js'
-import AxeBuilder from '@axe-core/playwright'
+  addCommodityLine,
+  chooseCommodityType,
+  expectNoSeriousOrCriticalViolations,
+  saveAndContinue,
+  saveOrigin,
+  startNotification
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import { BASE } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
-import { copy as commoditiesCopy } from '../commodities/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
-import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const COMMODITY_TYPE_URL = /\/notifications\/[^/]+\/commodity-type$/
-const COMMODITY_DETAILS_URL = /\/notifications\/[^/]+\/commodities\/details/
-const COMMODITY_LIST_URL = /\/notifications\/[^/]+\/commodities$/
-const ORIGIN_URL = /\/notifications\/[^/]+\/origin$/
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/consignors\/select/
 
-const COUNTRY_INPUT = 'input#countryOfOrigin'
 const FIRST_ROW_RADIO = '#consignor'
 
 const FRANCE = 'France'
@@ -36,15 +33,10 @@ const WOOD_LINE_FIELDS = {
   phytosanitaryTreatments: 'Heat treatment'
 }
 
-// Records the stub address book holds. Tech Imports is on the first page of
-// results and Alpine Supplies on the last, so paging can be proved by what is
-// on screen rather than by the link alone.
 const TECH_IMPORTS = 'Tech Imports Ltd'
 const IMPORT_CO = 'Import Co UK'
 const ALPINE = 'Alpine Supplies GmbH'
 const STUB_BOOK_SIZE = 13
-// govukPagination gives each number link a visually hidden "Page " prefix, so
-// that — not the bare number — is the link's accessible name.
 const SECOND_PAGE_LINK = 'Page 2'
 const DENMARK = 'Denmark'
 const COPENHAGEN = 'Copenhagen Exports ApS'
@@ -52,9 +44,6 @@ const MATCHES_NOTHING = 'nothing matches this'
 
 const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-
-const saveAndContinue = (page) =>
-  page.getByRole('button', { name: sharedCopy.saveActions.saveAndContinue })
 
 const rowRadio = (page, name) =>
   page.getByRole('radio', {
@@ -68,82 +57,14 @@ const selectedInset = (page, name) =>
 const consignorPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignors/select`
 
-const startNotification = async (page) => {
-  await page.goto(BASE)
-  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-  await expect(page).toHaveURL(COMMODITY_TYPE_URL)
-  return journeyIdFromPage(page)
-}
-
-const chooseCommodityType = async (page, commodityType) => {
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
-}
-
-const addLine = async (page, category, values) => {
-  await page
-    .getByRole('radio', {
-      name: commoditiesCopy.categoryLabels[category],
-      exact: true
-    })
-    .check()
-  await page
-    .getByRole('button', { name: commoditiesCopy.details.continue })
-    .click()
-  for (const [field, value] of Object.entries(values)) {
-    await page
-      .getByLabel(commoditiesCopy.details.fields[field].label, { exact: true })
-      .fill(value)
-  }
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_LIST_URL)
-}
-
-// The country list enhances a native select, so the visible combobox keeps the
-// field's own id.
-const chooseCountry = async (page, name) => {
-  const field = page.locator(COUNTRY_INPUT)
-  await field.click()
-  await field.fill(name)
-  await page.getByRole('option', { name, exact: true }).click()
-}
-
-const saveOrigin = async (page, reference, country) => {
-  await page.goto(`${BASE}/notifications/${reference}/origin`)
-  await expect(page).toHaveURL(ORIGIN_URL)
-  await chooseCountry(page, country)
-  await saveAndContinue(page).click()
-}
-
-// A wood notification with the prerequisite origin answered.
 const startAtConsignor = async (page) => {
   const reference = await startNotification(page)
   await chooseCommodityType(page, WOOD_AND_CUT_TREES)
-  await addLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
+  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
   await saveOrigin(page, reference, FRANCE)
   await page.goto(consignorPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
   return reference
-}
-
-const expectNoSeriousOrCriticalViolations = async (page, subject) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
-  const seriousOrCritical = results.violations.filter(({ impact }) =>
-    ['serious', 'critical'].includes(impact)
-  )
-
-  expect(
-    seriousOrCritical,
-    `${subject} has serious/critical accessibility violations.\nFull axe violations:\n${JSON.stringify(results.violations, null, 2)}`
-  ).toEqual([])
 }
 
 test.describe('consignor-select feature', () => {

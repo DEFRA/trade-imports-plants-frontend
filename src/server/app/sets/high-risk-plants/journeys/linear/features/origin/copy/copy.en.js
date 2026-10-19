@@ -1,13 +1,6 @@
-// AWAITING THE COPY PASS — `guidance` and every `errors.narrowing` sentence
-// are invented copy with no service source behind them
-// (journey-spec.json pages[origin].provisionalCopy, decisions.json d-054).
-
 /**
- * The origin page — where the consignment comes from.
- *
- * `guidance` and `errors.narrowing` are both keyed by origin-constraint id, so
- * a constraint the commodities service adds arrives here as one more leaf
- * rather than as a branch in the controller.
+ * The origin page — where the consignment comes from. `guidance` and
+ * `errors.narrowing` are keyed by origin-constraint id.
  */
 export const copy = {
   title: 'Origin of the import',

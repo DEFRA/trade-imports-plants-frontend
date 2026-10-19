@@ -6,7 +6,8 @@ import {
   itemsPage
 } from '../../../../test/fixtures/index.js'
 import { AMEND, DRAFT, SUBMITTED } from '../engine/index.js'
-import { base, dateField, isHubExit } from './kit.js'
+import { journeyRequest, stubH } from '../engine/test-support.js'
+import { base, dateField, isHubExit, pageRoutes } from './kit.js'
 
 describe('#isHubExit — the Save and return to overview submit', () => {
   const params = { journeyId: 'journey-1' }
@@ -126,5 +127,39 @@ describe('#base — amending', () => {
       base('t', { journey: { status: DRAFT }, request: originRequest }).amend
     ).toBeNull()
     expect(base('t', { journey: { status: AMEND } }).amend).toBeNull()
+  })
+})
+
+describe('#pageRoutes — a save refused as stale', () => {
+  const staleSave = () => {
+    const error = new Error('stale')
+    error.code = 'STALE_CONCURRENCY_TOKEN'
+    throw error
+  }
+  const postRoute = pageRoutes(
+    { slug: 'origin' },
+    { get: () => null, post: staleSave }
+  ).find((route) => route.method === 'POST')
+
+  it('Should log the journey id and posted token, then redirect back to the page with staleAction', async () => {
+    const request = journeyRequest('journey-1', {
+      payload: { concurrencyToken: '3' },
+      path: '/notifications/journey-1/origin',
+      url: new URL('http://localhost/notifications/journey-1/origin?change=1')
+    })
+
+    const response = await postRoute.handler(request, stubH(request))
+
+    expect(response).toEqual({
+      redirect: '/notifications/journey-1/origin?change=1&staleAction=1'
+    })
+    expect(request.logger.entries).toEqual([
+      {
+        level: 'info',
+        fields: { journeyId: 'journey-1', postedConcurrencyToken: '3' },
+        message:
+          'Save refused: the notification changed since the page was shown'
+      }
+    ])
   })
 })
