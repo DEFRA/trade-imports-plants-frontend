@@ -22,9 +22,14 @@ Platform services are:
 - [`ports`](../services/ports/index.js)
 - [`address-book`](../services/address-book/index.js)
 
-Countries and ports expose `prime()` operations. The set's gateway
-(`routes-<set-id>.js`, re-exported by the `routes.js` barrel) primes them when
-the application runs in real mode, before Hapi routes are registered.
+Countries and ports load their list on the first read, not at boot, so a
+reference-data outage at start-up does not stop the service serving. A failed
+load throws a 503 through `referenceDataUnavailable()` and the next read tries
+again. In stub mode they read their seeded lists and never call reference data.
+
+The origin page reads the SPS country list (`GBNAG_SPS_EX`). The address book
+validates against the unfiltered list. "United Kingdom" is not on the SPS list,
+so address forms offer it first and store it as `GB`.
 
 The reason-for-import/purpose service and the transport and transporter services
 were removed because the high-risk-plants journey asks no such question:

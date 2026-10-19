@@ -48,9 +48,6 @@ export const hasSetContext = () =>
 export const currentSetId = () => {
   const id = storage.getStore()?.setId ?? soleSetId()
   if (!id) {
-    // Naming the mounted sets separates the two ways this fires: nothing has
-    // booted yet, or several sets are mounted and the caller is outside any
-    // request's context.
     throw new Error(
       `No set context — no active set, and ${
         mounts.size === 0
@@ -76,14 +73,8 @@ export const withSetContext = (setId, fn) => storage.run({ setId }, fn)
 export const enterSetContext = (setId) => storage.enterWith({ setId })
 
 /**
- * Server-wide set context, registered once by the composition root.
- *
- * Each set's own sandboxed `onPreAuth` enters the context for that set's
- * routes, but a request can need the context where no set route runs: the
- * shared error page on an unrouted path under a set's mount, and the view
- * marshal step, which runs after the handler's context has gone. Resolving the
- * set from the path before routing covers both without any set owning
- * server-wide state.
+ * An `onRequest` extension that enters the set whose mount the request path
+ * falls under, before routing.
  */
 export const setContextExtension = {
   type: 'onRequest',
@@ -101,11 +92,6 @@ const contextualMethod = (setId, method) =>
     ? (request, h) => withSetContext(setId, () => method(request, h))
     : method
 
-/**
- * Wraps whatever shape a route's lifecycle entry takes — a bare function, an
- * object carrying `method`, or an array of either. Route `ext` points and `pre`
- * entries both use this grammar, so both go through here.
- */
 const contextualEntry = (setId, entry) => {
   if (Array.isArray(entry)) {
     return entry.map((item) => contextualEntry(setId, item))
@@ -131,20 +117,14 @@ const contextualOptions = (setId, options) => {
         ])
       )
     }),
-    // `options.handler` is the same handler by another name, and `options.pre`
-    // runs before it. Both would otherwise resolve whichever set happened to be
-    // ambient, so both are wrapped the way `route.handler` is.
     ...(handler && { handler: contextualMethod(setId, handler) }),
     ...(pre && { pre: contextualEntry(setId, pre) })
   }
 }
 
 /**
- * A route registered so every method it declares runs inside its own set.
- *
- * Each key is copied only when the route declares it: setting `handler` on a
- * route that puts its handler in `options` would hand Hapi a route with both,
- * one of them undefined.
+ * A route registered so every method it declares runs inside its own set. Only
+ * the keys the route declares are set.
  *
  * @param {string} setId - the set the route belongs to.
  * @param {object} route - the route as the set declared it.
@@ -156,15 +136,6 @@ export const routeWithSetContext = (setId, route) => ({
   ...(route.handler && { handler: contextualMethod(setId, route.handler) })
 })
 
-/**
- * The seams a mounted set MUST configure, indexed by label as each seam module
- * loads. A seam opts in by naming the function that configures it, so the
- * completeness check at mount reads this rather than a hand-kept list a new
- * seam could quietly fall out of.
- *
- * Seams with a real default — the flow-only keys the journey flow forwards —
- * register nothing here: a set that leaves them alone is correctly configured.
- */
 const requiredSeams = new Map()
 
 /**

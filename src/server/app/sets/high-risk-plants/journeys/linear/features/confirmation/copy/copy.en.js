@@ -1,4 +1,3 @@
-// Provisional plants copy pending content review.
 export const copy = {
   title: 'Notification submitted',
   reference: 'Your notification reference',

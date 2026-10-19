@@ -45,8 +45,6 @@ const nestedPath = (entryIndex) => [
   'nestedCollection'
 ]
 
-// `SELECTOR_DELTA` is the value that puts both `nestedGatedFieldD` and
-// `nestedCompositeBlock` in scope inside `nestedCollection`.
 const deltaEntry = (nestedRecords = []) => ({
   itemSelector: SELECTOR_DELTA,
   nestedCollection: nestedRecords
@@ -282,8 +280,6 @@ describe('batch reconcile (reconcileEntriesAt — the tag-grain create)', () => 
   })
 
   it('Should run the scope-and-wipe pass: dropping the last triggering entry destroys the dependent top-level answer', async () => {
-    // aggregateGatedToggle is in scope only while SOME entry carries the
-    // listed selector (an anyAllowListed gate), and is purged when none does.
     await store.seedAnswers(journeyId, {
       aggregateGatedToggle: TOGGLE_NO,
       itemCollection: [

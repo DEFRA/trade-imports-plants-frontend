@@ -345,9 +345,7 @@ set-up in the test file:
   `COMPLETE_POTATO_CONSIGNMENT`
 - browser tests:
   [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
-  — journey steps such as `startPotatoNotification`,
-  `completePotatoNotification`, `openDeclaration`, `chooseAutocompleteOption`,
-  `saveAndContinue` and `expectNoSeriousAxeViolations`
+  — see [Shared browser-test helpers](testing.md#shared-browser-test-helpers)
 
 When a second test needs the same set-up, move it into one of these helpers in
 the same change and delete every local copy. Importing a sibling feature's test
@@ -389,9 +387,9 @@ Cover:
 
 Add one axe check for the initial render and one for the validation error state.
 
-Build axe with `AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa'])`. Fail if
-any result has `impact` equal to `serious` or `critical`. Only filter a known
-component false positive when the same component and condition apply.
+Call `expectNoSeriousOrCriticalViolations(page, subject)` from
+[`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js).
+Do not build `AxeBuilder` in a spec.
 
 [`journeys/linear/features/commodity-type/commodity-type.fit.spec.js`](../journeys/linear/features/commodity-type/commodity-type.fit.spec.js)
 establishes that pattern for a validated field: one axe check on the initial

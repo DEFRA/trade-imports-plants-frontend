@@ -182,13 +182,20 @@ describe('#catchAll', () => {
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.imATeapot)
   })
 
-  test('Should provide expected "Something went wrong" page and log error for internalServerError', () => {
-    const request = mockRequest(statusCodes.internalServerError)
+  test('Should provide expected "Something went wrong" page and log the error with its status and journey id for internalServerError', () => {
+    const request = {
+      ...mockRequest(statusCodes.internalServerError),
+      params: { journeyId: 'journey-1' }
+    }
 
     catchAll(request, mockToolkit)
 
     expect(mockErrorLogger).toHaveBeenCalledWith(
-      { err: request.response, statusCode: statusCodes.internalServerError },
+      {
+        err: request.response,
+        statusCode: statusCodes.internalServerError,
+        journeyId: 'journey-1'
+      },
       'Request failed'
     )
     expect(mockToolkitView).toHaveBeenCalledWith(

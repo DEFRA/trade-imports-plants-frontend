@@ -12,8 +12,6 @@ const PHASE_BANNER = 'govuk-phase-banner'
 const BREADCRUMBS = 'govuk-breadcrumbs'
 const ADDRESS_BOOK_URL = 'http://ins.test/address-book'
 
-// `homeUrl` comes from the view model, the way kit.base() supplies it, so the
-// rendered chrome carries the set's own prefix rather than a bare `/`.
 const renderLayout = (userSession, context = {}) =>
   environment.render('shared/layout.njk', {
     pageTitle: 'Create an import notification',

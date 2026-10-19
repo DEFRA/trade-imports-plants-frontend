@@ -10,10 +10,7 @@ import { TEMPLATES } from '../../config.js'
 import { confirmationPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
-import {
-  POTATO_DAYS_BEFORE_ARRIVAL,
-  PLANTS_WOOD_DAYS_AFTER_ARRIVAL
-} from '../timing-windows.js'
+import { lateRuleText } from '../review/late-rule.js'
 import { notificationDateText } from '../review/notification-date.js'
 
 export const meta = { ...page, collects: [] }
@@ -30,16 +27,12 @@ const get = async (request, h) => {
     reference: journey.journeyId,
     notificationDate: notificationDateText(journey.submittedAt),
     late: answers.lateNotificationIndicator === 'late',
-    lateRule:
-      answers.commodityType === 'potatoes'
-        ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
-        : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
+    lateRule: lateRuleText(answers.commodityType, copy.late),
     notificationHref: pagePath(journey.journeyId, kit.CYA_SLUG),
     dashboardHref: dashboardPath()
   })
 }
 
-// Confirmation is a read-only receipt; there is no form or POST action.
 export const routes = [
   {
     method: 'GET',

@@ -109,6 +109,28 @@ fail-closed.
 
 Tests may compose real layers, but production code cannot use test exemptions.
 
+## Set context
+
+A request finds its set from its path: the longest mount prefix wins, whatever
+the registration order. `setContextExtension` enters that set on `onRequest`,
+before routing, so the shared error page on an unrouted path and the view
+marshal step, which runs after the handler returns, both resolve the right set.
+`routeWithSetContext()` runs every method a set's route declares — `handler`,
+`options.handler`, `options.pre` and `ext` entries — inside that set.
+
+A seam made with `setKeyed(label, { configuredBy })` is required: a set that
+mounts without calling `configuredBy` is rejected. A seam with a default
+registers nothing.
+
+`kit.base()` resolves the layout and caption through the active set, so a page
+outside every set uses `kit.serverWideBase()`, and the error page uses
+`kit.chromeFor()` to choose between them from the request path. The chrome's
+home link is the set's own dashboard, or `/` for a page outside every set. The
+global view context in
+[`config/nunjucks/context/context.js`](../../../config/nunjucks/context/context.js)
+gives every rendered view the same `homeUrl` and active navigation item, worked
+out from the request path, and a view's own context wins.
+
 ## Feature folders
 
 A feature's production controllers do not share controller logic with another
@@ -159,6 +181,9 @@ A controller passes the page's own title to `kit.base()`.
 error prefix when the page shows an error summary, then the page title, the
 service name and GOV.UK. A page never builds its own `<title>`.
 
+A link destination that is the same in every language, such as the phase
+banner's feedback address, is set in `shared/layout.njk`, not in copy.
+
 ### Backend HTTP clients
 
 Each backend or reference-data call lives in its own module under `services/`,
@@ -175,7 +200,9 @@ so the line carries the request's trace id. Log the ids support searches by:
 `journeyId` always, plus the reason and any token or code the decision turned
 on. Log a caught error as `{ err }`, never only its message. A validation 400
 that re-renders the page does not log, and nothing logs a request or response
-body at INFO.
+body at INFO. A response of 500 or above is logged once, by `catchAll` in
+[`common/helpers/errors.js`](../../common/helpers/errors.js), with the error,
+its status and the `journeyId`.
 
 The canonical example is the declaration refusal in
 [`declaration/controller.js`](../sets/high-risk-plants/journeys/linear/features/declaration/controller.js):

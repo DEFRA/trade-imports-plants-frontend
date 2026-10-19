@@ -19,12 +19,8 @@ import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
 import { toDisplayParty } from '../../parties/picked-party.js'
 import { partyEditHref } from '../party-edit/edit-href.js'
-
 import { lateness, requestClock } from '../review/lateness.js'
-import {
-  POTATO_DAYS_BEFORE_ARRIVAL,
-  PLANTS_WOOD_DAYS_AFTER_ARRIVAL
-} from '../timing-windows.js'
+import { lateRuleText } from '../review/late-rule.js'
 
 export const meta = { ...page, collects: [] }
 const view = `${TEMPLATES}/features/check-answers/template`
@@ -43,13 +39,9 @@ const partyDisplayValuesFor = async ({ answers, scope }) => {
   return partyDisplayValuesById
 }
 
-/** Party errors are keyed `party:<id>` so their summary entries link to the
- * page that edits the copied address, returning here, rather than to the
- * picker a Change link opens. An unfinished card is somewhere on this page,
- * so its entry is an anchor to the card. */
 const PARTY_KEY_PREFIX = 'party:'
 
-const summaryHref = (current) => (key) => {
+const summaryHrefFor = (current) => (key) => {
   const { journeyId } = current.journey
   if (key.startsWith(PARTY_KEY_PREFIX)) {
     return partyEditHref(
@@ -67,9 +59,6 @@ const cardErrorsOf = (current, { answerErrors, partyErrors }) =>
     ...Object.keys(partyErrors)
   ])
 
-/** Every reason the notification cannot go on: answer and invalid-party errors
- * first, then one entry per card still to complete, in page order. A card
- * already named by an answer or party error is not named twice. */
 const summaryErrors = (current, reviewed) => ({
   ...reviewed.answerErrors,
   ...Object.fromEntries(
@@ -117,10 +106,7 @@ const render = async (
       ) === 'late',
     lateNotification:
       readOnly && current.answers.lateNotificationIndicator === 'late',
-    lateRule:
-      current.answers.commodityType === 'potatoes'
-        ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
-        : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
+    lateRule: lateRuleText(current.answers.commodityType, copy.late),
     sections: withCardErrors(
       await buildSections(current, partyDisplayValuesById, readOnly, {
         partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
@@ -128,7 +114,7 @@ const render = async (
       reviewed ? cardErrorsOf(current, reviewed) : {}
     ),
     errorSummary: kit.errorSummary(errors, {
-      href: summaryHref(current),
+      href: summaryHrefFor(current),
       disableAutoFocus: !continueRefused
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,

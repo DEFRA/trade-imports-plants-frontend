@@ -29,13 +29,13 @@ const indexSubDivisions = (countries) => {
   subdivisionToParent = nextSubdivisionToParent
 }
 
-/** Load the country list from the reference-data service, once. Called
- * implicitly by every reader — the readers self-load on first use rather than
- * relying on a startup priming step, so an MDM outage at boot no longer stops
- * the pod from serving. In stub mode the seeded COUNTRY_LABELS play the role
- * of a loaded cache and this is a no-op. A prior failed load leaves `loaded`
- * false so the next reader retries; a success flips the flag and subsequent
- * calls short-circuit. */
+/**
+ * Loads the SPS country list from reference data unless it is already loaded
+ * or the service runs in stub mode.
+ *
+ * @throws {import('@hapi/boom').Boom} a 503 when the load fails; the next call
+ * tries again.
+ */
 export const ensureLoaded = async () => {
   if (isStubMode() || loaded) {
     return
@@ -50,9 +50,6 @@ export const ensureLoaded = async () => {
   }
 }
 
-/** Address forms offer "United Kingdom" ahead of the SPS origin list, but UK
- * is not in GBNAG_SPS_EX. Map it explicitly so writes stay ISO 3166-1 alpha-2
- * (D1) and read-back still renders the display name. */
 const UNITED_KINGDOM = 'United Kingdom'
 const UNITED_KINGDOM_CODE = 'GB'
 
@@ -125,8 +122,6 @@ export const addressCountries = async () => {
   return [UNITED_KINGDOM, ...Object.values(labels)]
 }
 
-/** Kept apart from `ensureLoaded` so the origin readers keep the narrower SPS
- * list; the address book validates against the unfiltered one. */
 const ensureAddressBookCountriesLoaded = async () => {
   if (isStubMode() || addressBookLoaded) {
     return
@@ -152,16 +147,12 @@ export const addressBookCountries = async () => {
   ]
 }
 
-/** Falls back to the code. */
+/** The address-book name for a country code, or the code when none matches. */
 export const addressBookCountryName = async (code) =>
   (await addressBookCountries()).find((option) => option.code === code)?.name ??
   code
 
-/** The ISO code for a country's display name (cv-011).
- *
- * Address forms collect a country by name; the address book keys on the code.
- * "United Kingdom" is offered by `addressCountries` but is not in GBNAG_SPS_EX,
- * so it is aliased to GB rather than falling through as a display name. */
+/** The ISO code for a country's display name, `GB` for "United Kingdom". */
 export const countryCodeOf = async (name) => {
   await ensureLoaded()
   return name === UNITED_KINGDOM

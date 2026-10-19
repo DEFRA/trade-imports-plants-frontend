@@ -454,9 +454,9 @@ set-up in the test file:
   `COMPLETE_POTATO_CONSIGNMENT`
 - browser tests:
   [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
-  — journey steps such as `startPotatoNotification`,
-  `completePotatoNotification` and `chooseAutocompleteOption`. A step that adds
-  one instance to the collection belongs here once two specs need it
+  — see [Shared browser-test helpers](testing.md#shared-browser-test-helpers).
+  A step that adds one instance to the collection belongs here once two specs
+  need it
 
 When a second test needs the same set-up, move it into one of these helpers in
 the same change and delete every local copy. Importing a sibling feature's test

@@ -1,13 +1,4 @@
 // MACHINE-DRAFT Welsh — not reviewed by a translator. Do not ship user-facing without Welsh Language Standards sign-off.
-// AWAITING THE COPY PASS — the English behind `guidance` and every
-// `errors.narrowing` sentence is provisional (journey-spec.json
-// pages[origin].provisionalCopy).
-// `title`, `country.*` are the live-animals strings for the identical English
-// (live-animals features/origin/copy/copy.cy.js). `errors.countryRequired`
-// diverges from animals because the English does: the subject is the
-// consignment, not the animal, so the Welsh is
-// machine-draft. `guidance` and `errors.narrowing` have no service counterpart
-// and are machine-draft too.
 export const copy = {
   title: 'Tarddiad y mewnforyn',
   country: {

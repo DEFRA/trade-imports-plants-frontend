@@ -6,13 +6,13 @@ import { isStubMode } from '../../../common/services/mode.js'
 let ports = [...PORTS]
 let loaded = false
 
-/** Load the port-of-entry list from the reference-data service, once. Called
- * implicitly by every reader — the readers self-load on first use rather than
- * relying on a startup priming step, so an MDM outage at boot no longer stops
- * the pod from serving. In stub mode the seeded PORTS list plays the role of
- * a loaded cache and this is a no-op. A prior failed load leaves `loaded`
- * false so the next reader retries; a success flips the flag and subsequent
- * calls short-circuit. */
+/**
+ * Loads the port-of-entry list from reference data unless it is already loaded
+ * or the service runs in stub mode.
+ *
+ * @throws {import('@hapi/boom').Boom} a 503 when the load fails; the next call
+ * tries again.
+ */
 export const ensureLoaded = async () => {
   if (isStubMode() || loaded) {
     return

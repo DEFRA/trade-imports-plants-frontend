@@ -6,7 +6,7 @@ import {
   itemsPage
 } from '../../../../test/fixtures/index.js'
 import { AMEND, DRAFT, SUBMITTED } from '../engine/index.js'
-import { recordingLogger } from '../engine/test-support.js'
+import { journeyRequest, stubH } from '../engine/test-support.js'
 import { base, dateField, isHubExit, pageRoutes } from './kit.js'
 
 describe('#isHubExit — the Save and return to overview submit', () => {
@@ -142,22 +142,18 @@ describe('#pageRoutes — a save refused as stale', () => {
   ).find((route) => route.method === 'POST')
 
   it('Should log the journey id and posted token, then redirect back to the page with staleAction', async () => {
-    const logger = recordingLogger()
-    const request = {
-      logger,
-      params: { journeyId: 'journey-1' },
+    const request = journeyRequest('journey-1', {
       payload: { concurrencyToken: '3' },
       path: '/notifications/journey-1/origin',
       url: new URL('http://localhost/notifications/journey-1/origin?change=1')
-    }
-    const h = { redirect: (to) => ({ redirect: to }) }
+    })
 
-    const response = await postRoute.handler(request, h)
+    const response = await postRoute.handler(request, stubH(request))
 
     expect(response).toEqual({
       redirect: '/notifications/journey-1/origin?change=1&staleAction=1'
     })
-    expect(logger.entries).toEqual([
+    expect(request.logger.entries).toEqual([
       {
         level: 'info',
         fields: { journeyId: 'journey-1', postedConcurrencyToken: '3' },

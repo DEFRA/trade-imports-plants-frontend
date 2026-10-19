@@ -64,8 +64,7 @@ export const incompleteCardErrors = (current, coveredKeys = []) =>
     ).map((card) => [card.id, copy.errors.cards[card.id]])
   )
 
-/** The in-page target for a card error, or undefined for a key that is not a
- * card — which is how the error summary tells the two kinds of entry apart. */
+/** The in-page target for a card error, or undefined for a key that is not a card. */
 export const cardAnchorHref = (key) => {
   const card = cardById.get(key)
   return card ? `#${card.anchor}` : undefined
@@ -82,9 +81,7 @@ const decorateCard = (card, cardErrors) => {
   return { ...card, anchor: known.anchor, error: cardErrors[card.id] ?? null }
 }
 
-/** Give every card its anchor, and the unfinished ones their own message. The
- * decoration is a pass over the built sections rather than another argument
- * threaded through every card factory. */
+/** Every card with its anchor, and each unfinished card with its message. */
 export const withCardErrors = (sections, cardErrors = {}) =>
   sections.map((section) => ({
     ...section,

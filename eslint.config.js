@@ -21,8 +21,6 @@ const PLATFORM_LAYER = [
 ].map((dir) => `src/server/app/${dir}/**/*.js`)
 
 export default [
-  // neostandard 0.14 scopes `ignores` to its own layers, so gitignored
-  // output (.public, coverage, playwright-report) needs a global ignore
   includeIgnoreFile(path.join(import.meta.dirname, '.gitignore')),
   ...neostandard({
     env: ['node', 'vitest'],
@@ -30,7 +28,6 @@ export default [
     noStyle: true
   }),
   {
-    // page.evaluate callbacks in Playwright specs run in the browser
     files: ['**/*.fit.spec.js'],
     languageOptions: {
       globals: {
@@ -41,7 +38,6 @@ export default [
     }
   },
   {
-    // mirrors the SonarCloud quality-gate rules that have local equivalents
     files: ['src/server/**/*.js'],
     plugins: { sonarjs },
     rules: {
