@@ -66,8 +66,8 @@ holds the steps more than one spec takes: `startNotification`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
 `GOVUK_BLUE_SHADE_50` and `WHITE`. The type-ahead readers
 `measureJoinedSearchButton` and `boldLettersOf` live in
-`type-ahead-measurements.js` beside the type-ahead spec. When a second spec
-needs a step, move it there in the same change and delete every local copy.
+`type-ahead.fit.spec.js`, so the coverage report never counts them as source.
+When a second spec needs a step, move it there in the same change and delete every local copy.
 
 Things that are easy to get wrong:
 
