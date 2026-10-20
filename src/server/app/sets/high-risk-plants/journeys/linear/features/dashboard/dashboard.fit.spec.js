@@ -69,9 +69,6 @@ test.describe('dashboard feature — initial render', () => {
     await expect(
       page.getByRole('link', { name: copy.guidanceLink })
     ).toHaveCount(0)
-    // The two '#' hrefs the layout's service navigation still carries are
-    // shared chrome placeholders, not this page's. Nothing the dashboard
-    // renders may hold one.
     await expect(page.locator('main a[href="#"]')).toHaveCount(0)
   })
 
@@ -287,5 +284,29 @@ test.describe('dashboard feature — accessibility', () => {
     await page.goto(BASE)
 
     await expectNoSeriousOrCriticalViolations(page, 'Dashboard initial render')
+  })
+
+  test('the amend refused banner has no serious or critical axe violations', async ({
+    page
+  }) => {
+    await page.goto(`${BASE}?amendRefused=1`)
+
+    await expectNoSeriousOrCriticalViolations(page, 'Amend refused banner')
+  })
+})
+
+test.describe('dashboard feature — amend refused banner', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+    await page.goto(`${BASE}?amendRefused=1`)
+  })
+
+  test('renders the could-not-amend banner with its title and body', async ({
+    page
+  }) => {
+    const banner = page.getByRole('region', { name: copy.amendRefused.title })
+
+    await expect(banner).toBeVisible()
+    await expect(banner).toContainText(copy.amendRefused.body)
   })
 })

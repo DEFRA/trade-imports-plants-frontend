@@ -17,6 +17,10 @@ export const authenticatedActor = Object.freeze({
   organisationId: '5900001'
 })
 
+export const registerTestRequestLogger = (server) => {
+  server.decorate('request', 'logger', () => recordingLogger(), { apply: true })
+}
+
 export const registerTestSessionAuth = (server) => {
   server.auth.scheme('test-session', () => ({
     authenticate: (_request, h) =>
@@ -44,15 +48,31 @@ const stubView = (captured) => (view, context) => {
   return rendered
 }
 
+const cookieRecorder = () => {
+  const cookies = {}
+  const calls = []
+  return {
+    cookies,
+    calls,
+    state: (name, value) => {
+      calls.push([name, value])
+      cookies[name] = value
+    },
+    unstate: (name) => {
+      delete cookies[name]
+    }
+  }
+}
+
 /** A response toolkit that records what the handler rendered, with `request` as `h.request`. */
 export const stubH = (request) => {
   const captured = {}
   return {
+    ...cookieRecorder(),
     request,
     view: stubView(captured),
     redirect: (to) => ({ redirect: to }),
     response: stubResponse,
-    state: () => {},
     captured
   }
 }
@@ -71,7 +91,11 @@ export const recordingLogger = () => {
   }
 }
 
-export const journeyRequest = (journeyId, overrides = {}) => ({
+export const journeyRequest = (
+  journeyId,
+  { knownJourneyIds, ...overrides } = {}
+) => ({
+  app: {},
   payload: {},
   query: {},
   headers: {},
@@ -83,26 +107,29 @@ export const journeyRequest = (journeyId, overrides = {}) => ({
   ...overrides,
   params: { journeyId, ...overrides.params },
   state: {
-    [knownJourneysCookie()]: [journeyId],
+    [knownJourneysCookie()]: knownJourneyIds ?? (journeyId ? [journeyId] : []),
     ...overrides.state
   }
 })
 
-export const recordingH = () => {
-  const cookies = {}
-  const calls = []
-  return {
-    state: (name, value) => {
-      calls.push([name, value])
-      cookies[name] = value
-    },
-    unstate: (name) => {
-      delete cookies[name]
-    },
-    cookies,
-    calls
-  }
-}
+export const recordingH = () => cookieRecorder()
+
+export const backendJourneyId = 'REFERENCE-0001'
+
+export const backendNotification = ({
+  status = 'DRAFT',
+  fulfilments = [],
+  concurrencyToken = 0,
+  submittedAt = null
+} = {}) =>
+  JSON.stringify({
+    referenceNumber: backendJourneyId,
+    fulfilments,
+    status,
+    created: '2026-07-23T09:00:00',
+    submittedAt,
+    concurrencyToken
+  })
 
 const requestLocation = (pathOf, journeyId, query) => {
   if (!pathOf) {
