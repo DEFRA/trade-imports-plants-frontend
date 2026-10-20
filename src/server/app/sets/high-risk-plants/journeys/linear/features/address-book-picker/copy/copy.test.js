@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
+import { expectEveryLeafToBeCopy } from '../../../../../../../engine/test-support.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
 
@@ -10,11 +10,7 @@ describe('#copy', () => {
     ['cy', cy]
   ])(
     'Should hold a non-empty string or copy function at every %s leaf',
-    (locale, bundle) => {
-      for (const { path, value } of leaves(bundle)) {
-        expect(isCopyLeaf(value), `${locale}: ${path} must be copy`).toBe(true)
-      }
-    }
+    expectEveryLeafToBeCopy
   )
 
   it('Should carry the Edit details action the animals journey uses', () => {

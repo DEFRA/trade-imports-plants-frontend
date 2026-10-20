@@ -22,6 +22,28 @@ const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
 const COUNTRY_OF_ORIGIN_INPUT = 'input#countryOfOrigin'
 
+export const FORM_GROUP_ANCESTOR_XPATH =
+  'xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'
+
+export const childTagsAndClassesOf = (formGroup) =>
+  formGroup.evaluate((group) =>
+    [...group.children].map(({ tagName, className }) => ({
+      tagName,
+      className
+    }))
+  )
+
+export const expectedFormGroupChildren = ({
+  hint,
+  labelSize,
+  enhanced = false
+}) => [
+  { tagName: 'LABEL', className: `govuk-label govuk-label--${labelSize}` },
+  ...(hint ? [{ tagName: 'DIV', className: 'govuk-hint' }] : []),
+  ...(enhanced ? [{ tagName: 'DIV', className: 'app-autocomplete' }] : []),
+  { tagName: 'SELECT', className: 'govuk-select' }
+]
+
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 const BLOCKING_IMPACTS = ['serious', 'critical']
 const JSON_INDENT = 2

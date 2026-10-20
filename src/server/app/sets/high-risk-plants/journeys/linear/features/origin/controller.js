@@ -44,7 +44,7 @@ const countryValues = async () =>
 // the placeholder and the real countries — a scroll-only list would need a
 // divider rule under the placeholder, a searchable one does not.
 const countryItems = async () => [
-  { value: '', text: copy.country.placeholder },
+  { value: '', text: copy.country.selectText },
   ...(await countries.originCountryOptions())
 ]
 

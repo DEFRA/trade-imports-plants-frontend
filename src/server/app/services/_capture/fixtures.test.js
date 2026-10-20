@@ -5,7 +5,7 @@ import {
   countriesOrigin,
   countriesOriginEntries,
   destinationPageCountryEntries,
-  originPageCountryEntries,
+  countryAndSubdivisionEntries,
   portsOfEntry
 } from './fixtures.js'
 
@@ -36,11 +36,11 @@ describe('#captured reference fixtures', () => {
   })
 
   it('Should flatten origin-page country options with subdivisions sorted by name', () => {
-    expect(originPageCountryEntries()).toContainEqual({
+    expect(countryAndSubdivisionEntries()).toContainEqual({
       code: 'ES-CN',
       name: 'Canary Islands'
     })
-    expect(originPageCountryEntries().length).toBeGreaterThan(
+    expect(countryAndSubdivisionEntries().length).toBeGreaterThan(
       countriesOriginEntries().length
     )
   })
@@ -51,7 +51,7 @@ describe('#captured reference fixtures', () => {
       name: 'Canary Islands (Spain)'
     })
     expect(destinationPageCountryEntries()).toHaveLength(
-      originPageCountryEntries().length
+      countryAndSubdivisionEntries().length
     )
   })
 })

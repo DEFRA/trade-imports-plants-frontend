@@ -1,18 +1,21 @@
 import { expect, test } from '@playwright/test'
 
 import {
+  FORM_GROUP_ANCESTOR_XPATH,
   GOVUK_BLUE,
   GOVUK_BLUE_SHADE_50,
   WHITE,
+  childTagsAndClassesOf,
   chooseCommodityCategory,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
+  expectedFormGroupChildren,
   startNotification,
   startNotificationAtOrigin,
   startPotatoNotification
 } from '../../../../../../../../fit/high-risk-plants-journey.js'
 import { signIn } from '../../../../../../../../fit/sign-in.js'
-import { originPageCountryEntries } from '../../../../../services/_capture/fixtures.js'
+import { countryAndSubdivisionEntries } from '../../../../../services/_capture/fixtures.js'
 import { copy as arrivalCopy } from './arrival-details/copy/copy.en.js'
 import { copy as commodityCopy } from './commodities/copy/copy.en.js'
 import { copy as originCopy } from './origin/copy/copy.en.js'
@@ -21,26 +24,9 @@ const AUTOCOMPLETE_CONTAINER =
   'xpath=ancestor::*[contains(@class,"app-autocomplete")][1]'
 const COUNTRY_SELECT = 'select#countryOfOrigin-select'
 const DOVER_OPTION = 'Port of Dover - GB DVR'
-const countries = originPageCountryEntries()
+const countries = countryAndSubdivisionEntries()
 const france = countries.find(({ code }) => code === 'FR')
 const ireland = countries.find(({ code }) => code === 'IE')
-
-const FORM_GROUP_ANCESTOR =
-  'xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'
-
-const childrenOf = (formGroup) =>
-  formGroup.evaluate((group) =>
-    [...group.children].map(({ tagName, className }) => ({
-      tagName,
-      className
-    }))
-  )
-
-const expectedFormGroupChildren = ({ hint, labelSize }) => [
-  { tagName: 'LABEL', className: `govuk-label govuk-label--${labelSize}` },
-  ...(hint ? [{ tagName: 'DIV', className: 'govuk-hint' }] : []),
-  { tagName: 'SELECT', className: 'govuk-select' }
-]
 
 const inputFor = (page, inputId) => page.locator(`input#${inputId}`)
 
@@ -56,11 +42,10 @@ const typeAheads = [
     inputId: 'countryOfOrigin',
     label: originCopy.country.label,
     labelSize: 'm',
-    hint: originCopy.country.hint,
     typed: 'fra',
     suggestion: france.name,
     bold: 'Fra',
-    selectText: originCopy.country.placeholder,
+    selectText: originCopy.country.selectText,
     open: startNotificationAtOrigin
   },
   {
@@ -197,13 +182,17 @@ for (const typeAhead of typeAheads) {
         await noJavaScript.goto(page.url())
         const formGroup = noJavaScript
           .locator(`select#${inputId}`)
-          .locator(FORM_GROUP_ANCESTOR)
+          .locator(FORM_GROUP_ANCESTOR_XPATH)
         const select = formGroup.getByLabel(label, { exact: true })
 
         await expect(select).toHaveJSProperty('tagName', 'SELECT')
         await expect(select).toBeVisible()
         await expect(select.locator('option').first()).toHaveText(selectText)
-        expect(await childrenOf(formGroup)).toEqual(
+        await expect(select.locator('option').first()).toHaveJSProperty(
+          'value',
+          ''
+        )
+        expect(await childTagsAndClassesOf(formGroup)).toEqual(
           expectedFormGroupChildren({ hint, labelSize })
         )
         await expect(

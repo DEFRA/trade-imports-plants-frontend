@@ -2,8 +2,11 @@ import {
   addCommodityLine,
   chooseCommodityType,
   chooseCountryOfOrigin,
+  FORM_GROUP_ANCESTOR_XPATH,
+  childTagsAndClassesOf,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
+  expectedFormGroupChildren,
   saveAndContinue,
   startNotification,
   startNotificationAtOrigin
@@ -13,7 +16,7 @@ import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { originPageCountryEntries } from '../../../../../../services/_capture/fixtures.js'
+import { countryAndSubdivisionEntries } from '../../../../../../services/_capture/fixtures.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
@@ -45,7 +48,7 @@ test.describe('origin feature', () => {
     await signIn(page)
   })
 
-  test('renders the caption, the heading, the label and the hint', async ({
+  test('renders the caption, the heading and the label, with no hint', async ({
     page
   }) => {
     await startNotificationAtOrigin(page)
@@ -59,9 +62,20 @@ test.describe('origin feature', () => {
     await expect(
       page.getByText(copy.country.label, { exact: true })
     ).toBeVisible()
-    await expect(
-      page.getByText(copy.country.hint, { exact: true })
-    ).toBeVisible()
+    expect(
+      await childTagsAndClassesOf(
+        page.locator(COUNTRY_INPUT).locator(FORM_GROUP_ANCESTOR_XPATH)
+      )
+    ).toEqual(expectedFormGroupChildren({ labelSize: 'm', enhanced: true }))
+  })
+
+  test('invites a search in the empty box', async ({ page }) => {
+    await startNotificationAtOrigin(page)
+
+    await expect(page.locator(COUNTRY_INPUT)).toHaveAttribute(
+      'placeholder',
+      copy.country.searchPlaceholder
+    )
   })
 
   test('is reachable from the overview origin task row', async ({ page }) => {
@@ -88,8 +102,8 @@ test.describe('origin feature', () => {
       )
 
     expect(rendered).toEqual([
-      { code: '', name: copy.country.placeholder },
-      ...originPageCountryEntries()
+      { code: '', name: copy.country.selectText },
+      ...countryAndSubdivisionEntries()
     ])
   })
 
@@ -233,7 +247,7 @@ test.describe('country of origin type-ahead', () => {
       page.getByRole('option', { name: FRANCE, exact: true })
     ).toBeVisible()
     await expect(page.getByRole('option')).toHaveCount(
-      originPageCountryEntries().length
+      countryAndSubdivisionEntries().length
     )
   })
 
@@ -243,6 +257,25 @@ test.describe('country of origin type-ahead', () => {
     await page.locator(COUNTRY_INPUT).fill('zzzzzz')
 
     await expect(page.getByText(copy.country.noResults)).toBeVisible()
+  })
+})
+
+test.describe('country of origin without JavaScript', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('native select submits and persists the country code', async ({
+    page
+  }) => {
+    await signIn(page)
+    const reference = await startNotificationAtOrigin(page)
+    const select = page.locator(COUNTRY_SELECT)
+
+    await select.selectOption({ label: FRANCE })
+    await saveAndContinue(page).click()
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
+
+    await page.goto(originPathOf(reference))
+    await expect(select.locator('option:checked')).toHaveText(FRANCE)
   })
 })
 

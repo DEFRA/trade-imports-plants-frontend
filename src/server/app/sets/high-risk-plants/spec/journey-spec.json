@@ -1857,7 +1857,7 @@
       "mandateRaw": "the country from which the plants or wood originate [reg 26(2)(e)]; the country from which the potatoes originate [reg 24A(2)(ab)]",
       "input": {
         "widget": "autocomplete",
-        "widgetDetail": "appAccessibleAutocomplete over a select; showAllValues; placeholder Select a country; noResults No countries found; govuk-label--m",
+        "widgetDetail": "appAccessibleAutocomplete over a select; showAllValues; placeholder Select a country; search placeholder Search for a country (Chwiliwch am wlad in Welsh); noResults No countries found; govuk-label--m",
         "service": "services/countries originCountries() over reference-data /countries?blocks=GBNAG_SPS_EX (captured membership: EU-27 plus IS, LI, NO, CH) — stores ISO 3166-1 alpha-2; the per-category narrowing lists come from sets/high-risk-plants/services/commodities originCountriesFor(category)",
         "valueConstraints": {
           "seed-potatoes": "ANY_PRIMED_COUNTRY",
@@ -1874,8 +1874,6 @@
       },
       "label": "Country of origin",
       "labelCy": "Gwlad tarddiad",
-      "hint": "Start typing to search for a country.",
-      "hintCy": "Dechreuwch deipio i chwilio am wlad.",
       "errorCopy": "Select the country where the consignment originates from",
       "validationRaw": "requiredOneOf(originCountries values) copied from animals, then requiredOneOf over the effective narrowed list from the set-owned commodities service — both built inside POST (skeleton validation-library); ENFORCED_AT_CONTINUE as in animals",
       "enforcedAtContinue": "true",

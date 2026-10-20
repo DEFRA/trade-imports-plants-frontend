@@ -94,7 +94,7 @@ describe('GET origin', () => {
 
     expect(result.view.context.countryItems[0]).toEqual({
       value: '',
-      text: copy.country.placeholder
+      text: copy.country.selectText
     })
     expect(result.view.context.countryItems.slice(1)).toEqual(
       await countries.originCountryOptions()

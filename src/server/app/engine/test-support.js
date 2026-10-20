@@ -1,3 +1,5 @@
+import { expect } from 'vitest'
+import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
 import { records } from './persistence/records.js'
@@ -188,3 +190,9 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
   featureModule.routes.find(
     (route) => route.method === 'POST' && route.path.endsWith(pathSuffix)
   ).handler
+
+export const expectEveryLeafToBeCopy = (locale, bundle) => {
+  for (const { path, value } of leaves(bundle)) {
+    expect(isCopyLeaf(value), `${locale}: ${path} must be copy`).toBe(true)
+  }
+}
