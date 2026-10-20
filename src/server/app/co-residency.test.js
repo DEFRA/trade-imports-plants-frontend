@@ -39,7 +39,10 @@ import {
   secondSet
 } from '../../../test/fixtures/second-set.js'
 import { configureRecords, records } from './engine/persistence/records.js'
-import { registerTestSessionAuth } from './engine/test-support.js'
+import {
+  registerTestRequestLogger,
+  registerTestSessionAuth
+} from './engine/test-support.js'
 import { records as shippedRecords } from './services/persistence/records/index.js'
 import { commodityTypePage } from './sets/high-risk-plants/journeys/linear/features/commodity-type/page.js'
 
@@ -114,6 +117,7 @@ beforeAll(async () => {
       files: { relativeTo: path.resolve(config.get('root'), '.public') }
     }
   })
+  registerTestRequestLogger(server)
   registerTestSessionAuth(server)
   await server.register([nunjucksConfig, router])
   await server.register(secondSet, { routes: { prefix: SECOND_SET_BASE } })
