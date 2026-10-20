@@ -5,6 +5,7 @@ import {
 } from '../../../../../../../../../fit/set-base.js'
 import {
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
@@ -99,17 +100,7 @@ test.describe('commodity-type feature', () => {
   })
 
   test('offers the three save controls', async ({ page }) => {
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
   })
 
   test('sends Back to the dashboard while the notification has no answer', async ({

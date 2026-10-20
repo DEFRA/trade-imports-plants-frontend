@@ -1,11 +1,9 @@
 import {
   CHECK_ANSWERS_URL,
-  addCommodityLine,
-  chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
-  saveOrigin,
-  startNotification
+  startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -20,17 +18,6 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
-
-const FRANCE = 'France'
-const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
-const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
-
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
 
 const TECH_IMPORTS = 'Tech Imports Ltd'
 const IMPORT_CO = 'Import Co UK'
@@ -76,10 +63,7 @@ const contactRow = (page) =>
   })
 
 const startInTheRunAtContact = async (page) => {
-  const reference = await startNotification(page)
-  await chooseCommodityType(page, WOOD_AND_CUT_TREES)
-  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
-  await saveOrigin(page, reference, FRANCE)
+  const reference = await startWoodNotificationWithOriginSaved(page)
   await page.goto(contactPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
   return reference
@@ -164,13 +148,7 @@ test.describe('consignment-contact-select feature', () => {
   test('offers the three save controls', async ({ page }) => {
     await startAtContact(page)
 
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(saveAndReturn(page)).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
   })
 
   test('sends Back to the overview', async ({ page }) => {

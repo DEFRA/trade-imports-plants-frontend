@@ -2,9 +2,11 @@ import {
   addCommodityLine,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
   saveOrigin,
-  startNotification
+  startNotification,
+  startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -27,19 +29,9 @@ const ARRIVAL_DETAILS_URL = setUrl('/notifications/[^/]+/arrival-details$')
 
 const STATUS_INPUT_SELECTOR = 'input[name="arrivalStatus"]'
 
-const FRANCE = 'France'
-const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
-const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 const POTATOES = 'potatoes'
 const WARE_POTATOES = 'ware-potatoes'
 const SPAIN = 'Spain'
-
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
 
 const WARE_POTATO_LINE_FIELDS = {
   potatoVariety: 'Maris Piper',
@@ -57,10 +49,7 @@ const arrivalStatusPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-status`
 
 const startAtArrivalStatus = async (page) => {
-  const reference = await startNotification(page)
-  await chooseCommodityType(page, WOOD_AND_CUT_TREES)
-  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
-  await saveOrigin(page, reference, FRANCE)
+  const reference = await startWoodNotificationWithOriginSaved(page)
   await expect(page).toHaveURL(PAGE_URL)
   return reference
 }
@@ -115,17 +104,7 @@ test.describe('arrival-status feature', () => {
   }) => {
     const reference = await startAtArrivalStatus(page)
 
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
     await expect(backLink(page)).toHaveAttribute(
       'href',
       `${BASE}/notifications/${reference}`

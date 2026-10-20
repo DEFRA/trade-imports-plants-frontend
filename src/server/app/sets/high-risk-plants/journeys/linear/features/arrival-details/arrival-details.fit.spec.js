@@ -3,6 +3,7 @@ import {
   chooseAutocompleteOption,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
   saveOrigin,
   startNotification
@@ -128,17 +129,7 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
     await expect(backLink(page)).toHaveAttribute(
       'href',
       `${BASE}/notifications/${reference}`

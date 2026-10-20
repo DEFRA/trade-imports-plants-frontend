@@ -1,11 +1,9 @@
 import {
   CHECK_ANSWERS_URL,
-  addCommodityLine,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
-  saveOrigin,
-  startNotification
+  startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -25,16 +23,7 @@ const COMMODITY_REMOVED_URL = setUrl(
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const PAGE_URL = setUrl('/notifications/[^/]+/identification-numbers')
 
-const FRANCE = 'France'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
-const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
-
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
 
 const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
@@ -61,10 +50,7 @@ const changeCommodityTypeTo = async (page, reference, commodityType) => {
 }
 
 const startAtIdentification = async (page) => {
-  const reference = await startNotification(page)
-  await chooseCommodityType(page, WOOD_AND_CUT_TREES)
-  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
-  await saveOrigin(page, reference, FRANCE)
+  const reference = await startWoodNotificationWithOriginSaved(page)
   await page.goto(identificationPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
   return reference

@@ -1,5 +1,6 @@
 import { setUrl } from '../../../../../../../../../../fit/set-base.js'
 import {
+  chooseCommodityCategory,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
   startNotification
@@ -52,8 +53,7 @@ const startAtDetails = async (page, commodityType) => {
 }
 
 const chooseCategory = async (page, category) => {
-  await categoryRadio(page, category).check()
-  await page.getByRole('button', { name: copy.details.continue }).click()
+  await chooseCommodityCategory(page, category)
   await expect(page).toHaveURL(DETAILS_EDIT_URL)
 }
 

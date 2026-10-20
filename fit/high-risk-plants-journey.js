@@ -28,11 +28,36 @@ const JSON_INDENT = 2
 
 const DAYS_AHEAD_ON_TIME = 7
 
+/** govuk-frontend's blue, its darkest shade and white, as the browser reports them. */
+export const GOVUK_BLUE = 'rgb(29, 112, 184)'
+export const GOVUK_BLUE_SHADE_50 = 'rgb(15, 56, 92)'
+export const WHITE = 'rgb(255, 255, 255)'
+
 export const saveAndContinue = (page) =>
   page.getByRole('button', {
     name: sharedCopy.saveActions.saveAndContinue,
     exact: true
   })
+
+/**
+ * Fails unless the page offers Save and continue, Save and return to overview
+ * and Cancel and return to overview.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export const expectThreeSaveControls = async (page) => {
+  await expect(saveAndContinue(page)).toBeVisible()
+  await expect(
+    page.getByRole('button', {
+      name: sharedCopy.saveActions.saveAndReturnToHub
+    })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('link', {
+      name: sharedCopy.saveActions.cancelAndReturnToHub
+    })
+  ).toBeVisible()
+}
 
 /**
  * Types into an accessible-autocomplete input and picks the option named.
@@ -71,7 +96,7 @@ export const expectNoSeriousOrCriticalViolations = async (page, subject) => {
  * Starts a notification from the dashboard.
  *
  * @param {import('@playwright/test').Page} page
- * @returns {Promise<string>} the notification's journey id
+ * @returns {Promise<string>} the notification's reference
  */
 export const startNotification = async (page) => {
   await page.goto(BASE)
@@ -99,13 +124,13 @@ export const chooseCommodityType = async (page, commodityType) => {
 }
 
 /**
- * Fills the commodity details page and saves the line, landing on the list.
+ * Chooses the commodity category on the commodity details page and continues
+ * to the page that asks for the line's fields.
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} category - a commodity category value, such as `ware-potatoes`
- * @param {Record<string, string>} fields - each details field's value, by field name
  */
-export const addCommodityLine = async (page, category, fields) => {
+export const chooseCommodityCategory = async (page, category) => {
   await page
     .getByRole('radio', {
       name: commodityCopy.categoryLabels[category],
@@ -115,6 +140,17 @@ export const addCommodityLine = async (page, category, fields) => {
   await page
     .getByRole('button', { name: commodityCopy.details.continue, exact: true })
     .click()
+}
+
+/**
+ * Fills the commodity details page and saves the line, landing on the list.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} category - a commodity category value, such as `ware-potatoes`
+ * @param {Record<string, string>} fields - each details field's value, by field name
+ */
+export const addCommodityLine = async (page, category, fields) => {
+  await chooseCommodityCategory(page, category)
   for (const [field, value] of Object.entries(fields)) {
     await page
       .getByLabel(commodityCopy.details.fields[field].label, { exact: true })
@@ -124,18 +160,57 @@ export const addCommodityLine = async (page, category, fields) => {
   await expect(page).toHaveURL(COMMODITY_LIST_URL)
 }
 
+const openOrigin = async (page, reference) => {
+  await page.goto(`${BASE}/notifications/${reference}/origin`)
+  await expect(page).toHaveURL(ORIGIN_URL)
+}
+
 /**
  * Opens the origin page of a notification, chooses a country and saves it.
  *
  * @param {import('@playwright/test').Page} page
- * @param {string} reference - the notification's journey id
+ * @param {string} reference - the notification's reference
  * @param {string} country - the country's name as the list shows it
  */
 export const saveOrigin = async (page, reference, country) => {
-  await page.goto(`${BASE}/notifications/${reference}/origin`)
-  await expect(page).toHaveURL(ORIGIN_URL)
+  await openOrigin(page, reference)
   await chooseCountryOfOrigin(page, country)
   await saveAndContinue(page).click()
+}
+
+/**
+ * Starts a potato notification and opens its origin page.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string>} the notification's reference
+ */
+export const startNotificationAtOrigin = async (page) => {
+  const reference = await startNotification(page)
+  await chooseCommodityType(page, 'potatoes')
+  await openOrigin(page, reference)
+  return reference
+}
+
+const WOOD_LINE_FIELDS = {
+  commodityCode: '06042020',
+  quantity: '40',
+  sizeOfTree: '3.5',
+  phytosanitaryTreatments: 'Heat treatment'
+}
+
+/**
+ * Starts a notification for cut coniferous trees and saves France as the
+ * country of origin.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string>} the notification's reference
+ */
+export const startWoodNotificationWithOriginSaved = async (page) => {
+  const reference = await startNotification(page)
+  await chooseCommodityType(page, 'wood-and-cut-trees')
+  await addCommodityLine(page, 'cut-coniferous-trees', WOOD_LINE_FIELDS)
+  await saveOrigin(page, reference, 'France')
+  return reference
 }
 
 const pickAddressBookParty = async (page) => {
@@ -150,7 +225,7 @@ const pickAddressBookParty = async (page) => {
  * arrival details page.
  *
  * @param {import('@playwright/test').Page} page
- * @returns {Promise<string>} the notification's journey id
+ * @returns {Promise<string>} the notification's reference
  */
 export const startPotatoNotification = async (page) => {
   const reference = await startNotification(page)
@@ -175,7 +250,7 @@ export const startPotatoNotification = async (page) => {
  * @param {import('@playwright/test').Page} page
  * @param {{ late?: boolean }} [options] - `late` arrives today, inside the
  *   potato notice period, so the notification is late
- * @returns {Promise<string>} the notification's journey id
+ * @returns {Promise<string>} the notification's reference
  */
 export const completePotatoNotification = async (
   page,
@@ -229,7 +304,7 @@ export const completePotatoNotification = async (
  *
  * @param {import('@playwright/test').Page} page
  * @param {{ late?: boolean }} [options] - passed to `completePotatoNotification`
- * @returns {Promise<string>} the notification's journey id
+ * @returns {Promise<string>} the notification's reference
  */
 export const openDeclaration = async (page, options) => {
   const reference = await completePotatoNotification(page, options)
@@ -241,3 +316,26 @@ export const openDeclaration = async (page, options) => {
   )
   return reference
 }
+
+/**
+ * The radio for one address on an address picker page.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ selectRowPrefix: string }} pickerCopy - the picker page's copy
+ * @param {string} name - the address's name
+ */
+export const addressRowRadio = (page, pickerCopy, name) =>
+  page.getByRole('radio', {
+    name: `${pickerCopy.selectRowPrefix} ${name}`,
+    exact: true
+  })
+
+/**
+ * The inset that names the address already chosen on an address picker page.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ selectedAddressPrefix: string }} pickerCopy - the picker page's copy
+ * @param {string} name - the address's name
+ */
+export const selectedAddressInset = (page, pickerCopy, name) =>
+  page.getByText(`${pickerCopy.selectedAddressPrefix} ${name}`, { exact: true })

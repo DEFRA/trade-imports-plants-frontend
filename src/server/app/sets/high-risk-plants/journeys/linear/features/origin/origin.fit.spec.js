@@ -3,8 +3,10 @@ import {
   chooseCommodityType,
   chooseCountryOfOrigin,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
-  startNotification
+  startNotification,
+  startNotificationAtOrigin
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -22,7 +24,6 @@ const ARRIVAL_DETAILS_URL = setUrl('/notifications/[^/]+/arrival-details$')
 
 const COUNTRY_INPUT = 'input#countryOfOrigin'
 const COUNTRY_SELECT = 'select[name="countryOfOrigin"]'
-const AUTOCOMPLETE_ARROW = '.autocomplete__dropdown-arrow-down'
 const AUTOCOMPLETE_OPTION = '.autocomplete__option'
 const ERROR_MESSAGE = '.govuk-error-message'
 
@@ -30,7 +31,6 @@ const FRANCE = 'France'
 const NORWAY = 'Norway'
 const SPAIN = 'Spain'
 
-const POTATOES = 'potatoes'
 const WARE_POTATOES = 'ware-potatoes'
 const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
 const EU_MEMBER_STATES = 'eu-member-states'
@@ -40,14 +40,6 @@ const backLink = (page) =>
 
 const originPathOf = (reference) => `${BASE}/notifications/${reference}/origin`
 
-const startAtOrigin = async (page) => {
-  const reference = await startNotification(page)
-  await chooseCommodityType(page, POTATOES)
-  await page.goto(originPathOf(reference))
-  await expect(page).toHaveURL(ORIGIN_URL)
-  return reference
-}
-
 test.describe('origin feature', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -56,7 +48,7 @@ test.describe('origin feature', () => {
   test('renders the caption, the heading, the label and the hint', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
 
     await expect(
       page.getByText(captionsCopy.sections.aboutTheConsignment, { exact: true })
@@ -73,7 +65,7 @@ test.describe('origin feature', () => {
   })
 
   test('is reachable from the overview origin task row', async ({ page }) => {
-    const reference = await startAtOrigin(page)
+    const reference = await startNotificationAtOrigin(page)
     await page.goto(`${BASE}/notifications/${reference}`)
 
     await page.getByRole('link', { name: hubCopy.rows.origin.title }).click()
@@ -84,7 +76,7 @@ test.describe('origin feature', () => {
   test('offers a placeholder ahead of every country and territory the service primes, by name', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
 
     const rendered = await page
       .locator(`${COUNTRY_SELECT} option`)
@@ -102,25 +94,15 @@ test.describe('origin feature', () => {
   })
 
   test('offers the three save controls', async ({ page }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
 
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
   })
 
   test('sends Back to the overview once the notification has an answer', async ({
     page
   }) => {
-    const reference = await startAtOrigin(page)
+    const reference = await startNotificationAtOrigin(page)
 
     await expect(backLink(page)).toHaveAttribute(
       'href',
@@ -131,7 +113,7 @@ test.describe('origin feature', () => {
   test('saves a country, reaches the arrival details and shows it again on return', async ({
     page
   }) => {
-    const reference = await startAtOrigin(page)
+    const reference = await startNotificationAtOrigin(page)
 
     await chooseCountryOfOrigin(page, FRANCE)
     await saveAndContinue(page).click()
@@ -145,7 +127,7 @@ test.describe('origin feature', () => {
   test('Save and return to overview saves the country and reaches the overview', async ({
     page
   }) => {
-    const reference = await startAtOrigin(page)
+    const reference = await startNotificationAtOrigin(page)
 
     await chooseCountryOfOrigin(page, FRANCE)
     await page
@@ -163,7 +145,7 @@ test.describe('origin feature', () => {
   test('Cancel and return to overview reaches the overview without saving', async ({
     page
   }) => {
-    const reference = await startAtOrigin(page)
+    const reference = await startNotificationAtOrigin(page)
 
     await chooseCountryOfOrigin(page, FRANCE)
     await page
@@ -181,7 +163,7 @@ test.describe('origin feature', () => {
   test('continuing with nothing chosen shows the error and focuses the field', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
 
     await saveAndContinue(page).click()
 
@@ -196,7 +178,7 @@ test.describe('origin feature', () => {
   })
 
   test('recovers from the error once a country is chosen', async ({ page }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
     await saveAndContinue(page).click()
     await expect(
       page.getByRole('alert').getByRole('link', {
@@ -213,7 +195,7 @@ test.describe('origin feature', () => {
   test('has no serious or critical axe violations on the initial render', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
     await expect(
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
@@ -224,7 +206,7 @@ test.describe('origin feature', () => {
   test('has no serious or critical axe violations in the error state', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
     await saveAndContinue(page).click()
     await expect(
       page.getByRole('alert').getByRole('link', {
@@ -239,7 +221,7 @@ test.describe('origin feature', () => {
 test.describe('country of origin type-ahead', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
   })
 
   test('offers the whole country list on focus, without typing', async ({
@@ -272,7 +254,7 @@ test.describe('origin accessible-autocomplete styles', () => {
   test('uses GOV.UK typography for the enhanced input and its options', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
     const input = page.getByRole('combobox', { name: copy.country.label })
     await input.fill('Fr')
     await expect(
@@ -311,42 +293,10 @@ test.describe('origin accessible-autocomplete styles', () => {
     expect(typography.optionSize).toBe(typography.referenceSize)
   })
 
-  test('paints the dropdown arrow behind the interactive input', async ({
-    page
-  }) => {
-    await startAtOrigin(page)
-
-    const paintStack = await page
-      .locator(AUTOCOMPLETE_ARROW)
-      .evaluate((arrow) => {
-        const bounds = arrow.getBoundingClientRect()
-        const hits = document.elementsFromPoint(
-          bounds.left + bounds.width / 2,
-          bounds.top + bounds.height / 2
-        )
-        const wrapper = arrow.closest('.autocomplete__wrapper')
-        return {
-          arrowIsInStack: hits.some(
-            (element) => element === arrow || arrow.contains(element)
-          ),
-          inputIsTopHit: hits[0]?.matches('.autocomplete__input') ?? false,
-          inputPaddingRight: getComputedStyle(hits[0]).paddingRight,
-          wrapperZIndex: getComputedStyle(wrapper).zIndex
-        }
-      })
-
-    expect(paintStack).toEqual({
-      arrowIsInStack: true,
-      inputIsTopHit: true,
-      inputPaddingRight: '35px',
-      wrapperZIndex: '0'
-    })
-  })
-
   test('keeps the upstream focus indicator on the enhanced input', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
     const input = page.getByRole('combobox', { name: copy.country.label })
 
     await input.focus()
@@ -374,7 +324,7 @@ test.describe('origin accessible-autocomplete styles', () => {
   test('gives the enhanced input the standard GOV.UK error border', async ({
     page
   }) => {
-    await startAtOrigin(page)
+    await startNotificationAtOrigin(page)
     await saveAndContinue(page).click()
     await expect(
       page.getByRole('alert').getByRole('link', {

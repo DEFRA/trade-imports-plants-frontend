@@ -59,11 +59,15 @@ run.
 
 [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
 holds the steps more than one spec takes: `startNotification`,
-`chooseCommodityType`, `addCommodityLine`, `saveOrigin`,
-`chooseCountryOfOrigin`, `chooseAutocompleteOption`, `saveAndContinue`,
-`startPotatoNotification`, `completePotatoNotification`, `openDeclaration` and
-`expectNoSeriousOrCriticalViolations`. When a second spec needs a step, move it
-there in the same change and delete every local copy.
+`startNotificationAtOrigin`, `chooseCommodityType`, `chooseCommodityCategory`,
+`addCommodityLine`, `saveOrigin`, `chooseCountryOfOrigin`,
+`chooseAutocompleteOption`, `saveAndContinue`, `startPotatoNotification`,
+`completePotatoNotification`, `openDeclaration`,
+`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
+`GOVUK_BLUE_SHADE_50` and `WHITE`. The type-ahead readers
+`measureJoinedSearchButton` and `boldLettersOf` live in
+`type-ahead-measurements.js` beside the type-ahead spec. When a second spec
+needs a step, move it there in the same change and delete every local copy.
 
 Things that are easy to get wrong:
 
