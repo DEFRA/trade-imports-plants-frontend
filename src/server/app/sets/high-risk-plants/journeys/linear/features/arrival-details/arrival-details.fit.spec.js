@@ -157,6 +157,22 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(page.getByText(copy.placeOfLanding.hint)).toBeVisible()
   })
 
+  for (const fieldId of [
+    'arrivalDate',
+    'arrivalTime',
+    'proposedPlaceOfLanding'
+  ]) {
+    test(`sets the ${fieldId} question label in the medium GOV.UK label size`, async ({
+      page
+    }) => {
+      await startAtPotatoDetails(page)
+
+      await expect(page.locator(`label[for="${fieldId}"]`)).toHaveClass(
+        /govuk-label--m/
+      )
+    })
+  }
+
   test('offers the ports the reference-data service holds', async ({
     page
   }) => {
@@ -266,6 +282,18 @@ test.describe('arrival-details — the question a plants notification is asked',
       page.getByLabel(copy.dateLabels[ALREADY_ARRIVED], { exact: true })
     ).toBeVisible()
   })
+
+  for (const status of [NOT_YET_ARRIVED, ALREADY_ARRIVED]) {
+    test(`sets the arrival date label in the medium GOV.UK label size when the status is ${status}`, async ({
+      page
+    }) => {
+      await startAtWoodDetails(page, status)
+
+      await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
+        /govuk-label--m/
+      )
+    })
+  }
 
   test('asks for no time and no place of landing', async ({ page }) => {
     await startAtWoodDetails(page, NOT_YET_ARRIVED)

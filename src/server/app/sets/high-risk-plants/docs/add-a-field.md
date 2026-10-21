@@ -171,7 +171,11 @@ copy test.
 ## 5. Add the check-answers row
 
 Add the row to the matching card under the check-answers feature's view model.
-Add its label and any displayed value labels to both check-answers copy bundles.
+Add its label to both check-answers copy bundles. A value label that the
+feature's own page already shows is read from that feature's label function
+(for example `meansOfTransportLabel` in the transport feature), never copied
+into the check-answers copy. Value labels only the review shows go in the
+check-answers copy bundles.
 
 Use `row()` for an editable scalar. Pass the obligation name so `changeAction()`
 resolves the owning page through the dispatch index. Use a service label function

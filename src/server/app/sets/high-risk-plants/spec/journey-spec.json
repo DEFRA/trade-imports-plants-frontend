@@ -2160,11 +2160,11 @@
       "wipeOnExit": true,
       "input": {
         "widget": "autocomplete",
-        "widgetDetail": "appAccessibleAutocomplete; showAllValues; placeholder Select a place of landing; noResults No ports found; items name (code), value = code — copied from animals portOfEntry",
+        "widgetDetail": "appAccessibleAutocomplete; showAllValues; placeholder Select a place of landing, shown in the empty search box and as the no-JavaScript list first option; noResults No ports found; items name (code), value = code — copied from animals portOfEntry",
         "service": "services/ports list() — reference-data GET /ports-of-entry (built: PortsOfEntryController over MdmService.getPortsOfEntry(), PortsOfEntryControllerIT); stub from the captured ports-of-entry.json fixture (77 MDM entries including Dover, Folkestone, Portsmouth, Harwich, Hull, Holyhead, Newhaven, Poole, Purfleet, Tilbury 2 Ro-Ro); stores the port code"
       },
       "label": "Proposed place of landing",
-      "hint": "Where the potatoes will enter Great Britain. Start typing to search by port name or code.",
+      "hint": "Select where the potatoes will enter Great Britain. Start typing to search by port or airport name or code.",
       "errorCopy": "Select the proposed place of landing",
       "validationRaw": "requiredOneOf(port codes) built inside POST; none given by any source",
       "typeRaw": "not stated (place)",
@@ -2197,7 +2197,7 @@
         "page": "port-of-entry",
         "divergence": "animals always collects the port of entry for every notification; plants collects a proposed place of landing only for potatoes (the plants/wood matters have no landing element), over the same ports-of-entry list, which carries the Channel and North Sea ro-ro ports EU road freight uses"
       },
-      "notes": "Widget and validation copied from animals portOfEntry; label from the SI. Animals' hint ('Choose where the transporter will enter...') replaced because plants has no transporter section. | Ruled at D3-origin-values-and-validation (d-053, c-020): Ruled c-020: potatoes only (annex:5/reg:24A(2)(aa); reg 26(2) has no landing element). The ports list is a closed list against a statutory matter with no list in law, so before go-live confirm it covers the road, ro-ro and rail entry points potatoes actually use (Eurotunnel is present as Folkestone). input.service no longer says 'an endpoint reference-data marks as not built (skeleton); value source is a gate question'."
+      "notes": "Widget and validation copied from animals portOfEntry; label from the SI. The hint does not reuse the animals port of entry hint because plants has no transporter section. | Ruled at D3-origin-values-and-validation (d-053, c-020): Ruled c-020: potatoes only (annex:5/reg:24A(2)(aa); reg 26(2) has no landing element). The ports list is a closed list against a statutory matter with no list in law, so before go-live confirm it covers the road, ro-ro and rail entry points potatoes actually use (Eurotunnel is present as Folkestone). input.service no longer says 'an endpoint reference-data marks as not built (skeleton); value source is a gate question'."
     },
     {
       "id": "placeOfDestination",

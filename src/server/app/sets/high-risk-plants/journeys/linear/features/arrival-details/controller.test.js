@@ -118,6 +118,20 @@ describe('GET arrival-details — the question it asks', () => {
     )
   })
 
+  it.each([
+    ['potatoes', potatoes()],
+    ['a consignment on its way', plants({ arrivalStatus: NOT_YET_ARRIVED })],
+    ['a consignment already here', plants({ arrivalStatus: ALREADY_ARRIVED })]
+  ])(
+    'Should set the date label in the medium GOV.UK label size for %s',
+    async (_state, seed) => {
+      const result = await driveHandler(get, { seed })
+
+      expect(result.view.context.dateField.label.classes).toBe('govuk-label--m')
+      expect(result.view.context.questionLabelClasses).toBe('govuk-label--m')
+    }
+  )
+
   it('Should cap the picker at today only for a consignment already here', async () => {
     const arrived = await driveHandler(get, {
       seed: plants({ arrivalStatus: ALREADY_ARRIVED })

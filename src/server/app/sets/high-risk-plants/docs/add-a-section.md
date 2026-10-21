@@ -286,8 +286,10 @@ argument in both `routes-high-risk-plants.js` and the test fixture at
 ## 7. Add check-answers output
 
 Add a section or cards for the feature under the check-answers feature's view
-model. Add English and Welsh headings, row labels and value labels to the
-check-answers copy bundles.
+model. Add English and Welsh headings and row labels to the check-answers copy
+bundles. A value label that the feature's own page already shows is read from
+that feature's label function, never copied into the check-answers copy. Value
+labels only the review shows go in the check-answers copy bundles.
 
 Pass obligation names to `row()` and `changeAction()` so Change links resolve
 through dispatch. Use `scope` to omit out-of-scope rows. Extend the

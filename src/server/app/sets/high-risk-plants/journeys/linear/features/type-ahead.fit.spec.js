@@ -46,18 +46,20 @@ const typeAheads = [
     suggestion: france.name,
     bold: 'Fra',
     selectText: originCopy.country.selectText,
+    emptyBoxText: originCopy.country.searchPlaceholder,
     open: startNotificationAtOrigin
   },
   {
     name: 'Proposed place of landing',
     inputId: 'proposedPlaceOfLanding',
     label: arrivalCopy.placeOfLanding.label,
-    labelSize: 's',
+    labelSize: 'm',
     hint: arrivalCopy.placeOfLanding.hint,
     typed: 'dov',
     suggestion: DOVER_OPTION,
     bold: 'Dov',
     selectText: arrivalCopy.placeOfLanding.placeholder,
+    emptyBoxText: arrivalCopy.placeOfLanding.placeholder,
     open: startPotatoNotification
   },
   {
@@ -92,6 +94,7 @@ for (const typeAhead of typeAheads) {
     suggestion,
     bold,
     selectText,
+    emptyBoxText,
     open
   } = typeAhead
 
@@ -100,6 +103,15 @@ for (const typeAhead of typeAheads) {
       await signIn(page)
       await open(page)
     })
+
+    if (emptyBoxText !== undefined) {
+      test('shows the empty search box text and no value', async ({ page }) => {
+        const input = inputFor(page, inputId)
+
+        await expect(input).toHaveAttribute('placeholder', emptyBoxText)
+        await expect(input).toHaveValue('')
+      })
+    }
 
     test('shows the joined blue magnifying glass button flush with the box and no dropdown arrow', async ({
       page

@@ -278,8 +278,13 @@ for potatoes. Update its run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 
-Add the page's fields to the matching check-answers card and both check-answers
-copy bundles. Pass each obligation name to `row()` or `changeAction()` so the
+Add the page's rows to the matching check-answers card and their row labels to
+both check-answers copy bundles. A value label that the page itself already
+shows is read from that feature's label function (for example
+`meansOfTransportLabel`), never copied into the check-answers copy. Value
+labels only the review shows go in the check-answers copy bundles.
+
+Pass each obligation name to `row()` or `changeAction()` so the
 dispatch index builds the Change URL. Extend the check-answers feature spec.
 
 Canonical persistence is complete once the feature binding is registered. If the
