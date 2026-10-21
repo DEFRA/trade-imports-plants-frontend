@@ -64,7 +64,8 @@ holds the steps more than one spec takes: `startNotification`,
 `chooseAutocompleteOption`, `saveAndContinue`, `startPotatoNotification`,
 `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
-`GOVUK_BLUE_SHADE_50` and `WHITE`. The type-ahead readers
+`GOVUK_BLUE_SHADE_50` and `WHITE`, and `describeDatePickerLook`, which
+registers the four look tests for one date field. The type-ahead readers
 `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, so the coverage report never counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.

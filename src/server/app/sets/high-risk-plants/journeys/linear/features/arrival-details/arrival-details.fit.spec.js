@@ -2,6 +2,7 @@ import {
   addCommodityLine,
   chooseAutocompleteOption,
   chooseCommodityType,
+  describeDatePickerLook,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -228,6 +229,19 @@ test.describe('arrival-details — a potato notification', () => {
   })
 })
 
+test.describe('arrival-details — the arrival date calendar', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+    await startAtPotatoDetails(page)
+  })
+
+  describeDatePickerLook({
+    fieldName: 'arrival date',
+    label: copy.dateLabels[POTATOES],
+    nextQuestionLabel: (page) => page.locator('label[for="arrivalTime"]')
+  })
+})
+
 test.describe('arrival-details — the question a plants notification is asked', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -260,9 +274,7 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(page.locator(PORT_INPUT)).toHaveCount(0)
   })
 
-  test('keeps the date when the status switches, because the date is always asked', async ({
-    page
-  }) => {
+  test('keeps the date when the status switches', async ({ page }) => {
     const reference = await startAtWoodDetails(page, NOT_YET_ARRIVED)
     await page.locator(DATE_INPUT).fill(A_PAST_DATE)
     await saveAndContinue(page).click()
@@ -280,9 +292,7 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_PAST_DATE)
   })
 
-  test('accepts a past date, because a late notification is recorded not refused', async ({
-    page
-  }) => {
+  test('accepts a past date', async ({ page }) => {
     const reference = await startAtWoodDetails(page, ALREADY_ARRIVED)
 
     await page.locator(DATE_INPUT).fill(A_PAST_DATE)

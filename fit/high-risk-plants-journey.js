@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
@@ -50,16 +50,159 @@ const JSON_INDENT = 2
 
 const DAYS_AHEAD_ON_TIME = 7
 
-/** govuk-frontend's blue, its darkest shade and white, as the browser reports them. */
 export const GOVUK_BLUE = 'rgb(29, 112, 184)'
 export const GOVUK_BLUE_SHADE_50 = 'rgb(15, 56, 92)'
 export const WHITE = 'rgb(255, 255, 255)'
+const GOVUK_BLUE_SHADE_25 = 'rgb(22, 84, 138)'
+const GOVUK_FOCUS = 'rgb(255, 221, 0)'
+const GOVUK_FOCUS_TEXT = 'rgb(11, 12, 12)'
+const GOVUK_BORDER_WIDTH = '2px'
+const BLUE_ICON_BUTTON_EDGE = `${GOVUK_BLUE_SHADE_50} 0px -2px 0px 0px inset`
 
 export const saveAndContinue = (page) =>
   page.getByRole('button', {
     name: sharedCopy.saveActions.saveAndContinue,
     exact: true
   })
+
+const documentTop = (locator) =>
+  locator.evaluate((el) => el.getBoundingClientRect().top + window.scrollY)
+
+const documentBottom = (locator) =>
+  locator.evaluate((el) => el.getBoundingClientRect().bottom + window.scrollY)
+
+const computedStyle = (locator, property) =>
+  locator.evaluate(
+    (el, name) => window.getComputedStyle(el).getPropertyValue(name),
+    property
+  )
+
+const datePickerOf = (page, label) =>
+  page.locator('.moj-datepicker', { has: page.getByLabel(label) })
+
+const dateToggleOf = (page, label) =>
+  datePickerOf(page, label).getByRole('button', { name: 'Choose date' })
+
+const openDatePicker = async (page, label) => {
+  await dateToggleOf(page, label).click()
+  const dialog = datePickerOf(page, label).getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  return dialog
+}
+
+const expectDateToggleLook = async (page, label) => {
+  const toggle = dateToggleOf(page, label)
+  await expect(toggle).toHaveCSS('background-color', GOVUK_BLUE)
+  await expect(toggle).toHaveCSS('color', WHITE)
+  await expect(toggle).toHaveCSS('border-bottom-width', '0px')
+  await expect(toggle).toHaveCSS('box-shadow', BLUE_ICON_BUTTON_EDGE)
+
+  await toggle.hover()
+  await expect(toggle).toHaveCSS('background-color', GOVUK_BLUE_SHADE_25)
+  await expect(toggle).toHaveCSS('color', WHITE)
+
+  await toggle.focus()
+  await expect(toggle).toHaveCSS('background-color', GOVUK_FOCUS)
+  await expect(toggle).toHaveCSS('color', GOVUK_FOCUS_TEXT)
+}
+
+const expectCalendarEndsAboveNextQuestion = async (
+  page,
+  label,
+  nextQuestionLabel
+) => {
+  const dialog = await openDatePicker(page, label)
+  await expect(nextQuestionLabel).toBeVisible()
+  const calendarBottom = await documentBottom(dialog)
+  const nextQuestionTop = await documentTop(nextQuestionLabel)
+
+  expect(calendarBottom).toBeLessThanOrEqual(nextQuestionTop)
+}
+
+const restingBackgroundOfButton = (page, name) =>
+  computedStyle(
+    page.getByRole('button', { name, exact: true }),
+    'background-color'
+  )
+
+const expectMouseOpenedCalendarLook = async (page, label) => {
+  const primaryBackground = await restingBackgroundOfButton(
+    page,
+    sharedCopy.saveActions.saveAndContinue
+  )
+  const secondaryBackground = await restingBackgroundOfButton(
+    page,
+    sharedCopy.saveActions.saveAndReturnToHub
+  )
+  const dialog = await openDatePicker(page, label)
+
+  await expect(dialog).toHaveCSS('outline-style', 'solid')
+  await expect(dialog).toHaveCSS('outline-width', GOVUK_BORDER_WIDTH)
+  await expect(dialog).toHaveCSS('outline-color', GOVUK_FOCUS_TEXT)
+
+  const openedOnDay = dialog.locator('.moj-datepicker__button--selected')
+  await expect(openedOnDay).toBeFocused()
+  await expect(openedOnDay).toHaveCSS('background-color', GOVUK_BLUE)
+  await expect(openedOnDay).toHaveCSS('color', WHITE)
+  await expect(dialog.locator('tbody')).toHaveCSS('outline-style', 'none')
+
+  await expect(
+    dialog.getByRole('button', { name: 'Select', exact: true })
+  ).toHaveCSS('background-color', primaryBackground)
+  await expect(
+    dialog.getByRole('button', { name: 'Close', exact: true })
+  ).toHaveCSS('background-color', secondaryBackground)
+}
+
+const expectKeyboardOpenedCalendarLook = async (page, label) => {
+  await dateToggleOf(page, label).focus()
+  await page.keyboard.press('Enter')
+  const dialog = datePickerOf(page, label).getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  const focusedDay = dialog.locator('.moj-datepicker__button:focus')
+  await expect(focusedDay).toHaveCSS('background-color', GOVUK_FOCUS)
+  await expect(focusedDay).toHaveCSS('color', GOVUK_FOCUS_TEXT)
+  await expect(dialog.locator('tbody')).toHaveCSS(
+    'outline-width',
+    GOVUK_BORDER_WIDTH
+  )
+  await expect(dialog.locator('tbody')).toHaveCSS('outline-color', GOVUK_FOCUS)
+}
+
+export const describeDatePickerLook = ({
+  fieldName,
+  label,
+  nextQuestionLabel
+}) => {
+  test(`the ${fieldName} button that opens the calendar is GOV.UK blue with a white icon, darkens on hover and turns yellow when focused`, async ({
+    page
+  }) => {
+    await expectDateToggleLook(page, label)
+  })
+
+  test(`the ${fieldName} calendar ends above the next question`, async ({
+    page
+  }) => {
+    await expectCalendarEndsAboveNextQuestion(
+      page,
+      label,
+      nextQuestionLabel(page)
+    )
+  })
+
+  test(`the ${fieldName} calendar opened with the mouse has a 2px black outline, the opened-on day in GOV.UK blue with white text, and Select and Close buttons matching the page's primary and secondary buttons`, async ({
+    page
+  }) => {
+    await expectMouseOpenedCalendarLook(page, label)
+  })
+
+  test(`the ${fieldName} calendar opened with the keyboard shows the focused day and calendar body in the GOV.UK focus yellow`, async ({
+    page
+  }) => {
+    await expectKeyboardOpenedCalendarLook(page, label)
+  })
+}
 
 /**
  * Fails unless the page offers Save and continue, Save and return to overview

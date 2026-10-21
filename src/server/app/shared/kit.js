@@ -190,7 +190,7 @@ export const chromeFor = (title, requestPath) => {
  * @param {object} [options.request] - the request being answered. Supply it
  * on a page that ends with `saveActions`, and the view gains `amend`: the two
  * form actions its save buttons carry while the journey is being amended, or
- * null otherwise. A template passes it on as `amend = amend`.
+ * null otherwise.
  * @returns {object} the common view model.
  */
 export const base = (
@@ -298,30 +298,51 @@ const dateInputValue = (value) =>
         .join('/')
 
 /**
- * The view model for a date-picker text field.
+ * The view model for a date-picker text field. The form group always carries
+ * the house date-picker class.
  *
  * @param {string} name
  * @param {object} [options]
+ * @param {string} [options.label] - the label text.
+ * @param {string} [options.hint] - the hint text. No hint shows when absent.
+ * @param {string|{day?: string, month?: string, year?: string}} [options.value]
+ * the answer, shown as `d/m/yyyy` text.
+ * @param {string} [options.error] - the error message text. No error shows
+ * when absent.
  * @param {string} [options.minDate] - the earliest date as `d/m/yyyy` text,
  * never a Date.
  * @param {string} [options.maxDate] - the latest date as `d/m/yyyy` text.
- * @param {string} [options.formGroupClasses] - classes for the field's form
- * group.
+ * @param {string} [options.formGroupClasses] - extra classes for the form
+ * group, added after the house date-picker class.
+ * @param {string} [options.labelClasses] - classes for the label. The GOV.UK
+ * small label unless the page asks for another.
+ * @returns {object} the view model for the MoJ date picker macro.
  */
 export const dateField = (
   name,
-  { label, hint, value = {}, error, minDate, maxDate, formGroupClasses } = {}
+  {
+    label,
+    hint,
+    value = {},
+    error,
+    minDate,
+    maxDate,
+    formGroupClasses,
+    labelClasses = 'govuk-label--s'
+  } = {}
 ) => {
   return {
     id: name,
     name,
     classes: 'govuk-input--width-10',
-    label: { text: label, classes: 'govuk-label--s' },
+    label: { text: label, classes: labelClasses },
     hint: hint ? { text: hint } : undefined,
     errorMessage: error ? { text: error } : undefined,
     value: dateInputValue(value),
     minDate,
     maxDate,
-    formGroup: formGroupClasses ? { classes: formGroupClasses } : undefined
+    formGroup: {
+      classes: ['app-date-picker', formGroupClasses].filter(Boolean).join(' ')
+    }
   }
 }
