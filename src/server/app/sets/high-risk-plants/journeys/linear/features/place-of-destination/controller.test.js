@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { store } from '../../../../../../engine/store.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { COMPLETE_NOTIFICATION } from '../../test-support.js'
 import {
   driveHandler,
   postHandlerOf
@@ -93,6 +94,7 @@ describeAddressBookPickerController({
   get,
   post,
   seed: potatoes,
+  previousStep: { slug: 'arrival-details', seed: COMPLETE_NOTIFICATION },
   fieldName: 'placeOfDestination',
   errorText: copy.errors.placeOfDestination
 })

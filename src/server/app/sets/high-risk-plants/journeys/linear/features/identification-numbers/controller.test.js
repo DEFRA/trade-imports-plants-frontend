@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectBackLinkIsPage,
   expectOneRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
-import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
+import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import {
+  COMPLETE_NOTIFICATION,
+  COMPLETE_PLANTS_NOTIFICATION,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
 import * as identificationNumbers from './controller.js'
 
@@ -51,6 +57,29 @@ describe('identification numbers', () => {
       expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     }
   )
+  it('Should send Back to the consignor for plants or wood while the opening run is on', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_PLANTS_NOTIFICATION,
+      openingRun: RUN_ACTIVE
+    })
+    expectBackLinkIsPage(result, 'consignors/select')
+  })
+  it('Should send Back to the place of destination for potatoes while the opening run is on', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_NOTIFICATION,
+      openingRun: RUN_ACTIVE
+    })
+    expectBackLinkIsPage(result, 'destinations/select')
+  })
+  it('Should keep Back on the consignor when the page is shown again after a refusal in the run', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_PLANTS_NOTIFICATION,
+      payload: { supplierIdentificationNumber: '' },
+      openingRun: RUN_ACTIVE
+    })
+    expect(result.response.statusCode).toBe(400)
+    expectBackLinkIsPage(result, 'consignors/select')
+  })
   it.each(branches)(
     'Should trim, persist and ignore hidden payload fields for %s',
     async (commodityType, fields) => {

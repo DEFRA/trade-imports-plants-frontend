@@ -1,16 +1,19 @@
-import { SET_BASE } from '../../../../set.js'
 import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectBackLinkIsPage,
   expectOneRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import {
+  COMPLETE_NOTIFICATION,
   COMPLETE_POTATO_CONSIGNMENT,
+  itSendsBackToTheDashboardUntilCommodityTypeAnswered,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -101,18 +104,26 @@ describe('GET origin', () => {
     expect(result.view.context.values).toEqual({ countryOfOrigin: FRANCE })
   })
 
-  it('Should send Back to the dashboard while nothing is committed', async () => {
-    const result = await driveHandler(get)
+  itSendsBackToTheDashboardUntilCommodityTypeAnswered(get)
 
-    expect(result.view.context.backLink).toBe(SET_BASE)
-  })
-
-  it('Should send Back to the overview once the notification has an answer', async () => {
+  it('Should send Back to the commodities list while the opening run is on', async () => {
     const result = await driveHandler(get, {
-      seed: { commodityType: POTATOES }
+      seed: COMPLETE_NOTIFICATION,
+      openingRun: RUN_ACTIVE
     })
 
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+    expectBackLinkIsPage(result, 'commodities')
+  })
+
+  it('Should keep Back on the commodities list when the page is shown again after a refusal in the run', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_NOTIFICATION,
+      payload: { countryOfOrigin: UNOFFERED_COUNTRY },
+      openingRun: RUN_ACTIVE
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expectBackLinkIsPage(result, 'commodities')
   })
 })
 

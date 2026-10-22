@@ -15,9 +15,12 @@ import { copy as reviewCopy } from '../src/server/app/sets/high-risk-plants/jour
 import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
 import { copy as confirmationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/confirmation/copy/copy.en.js'
 import {
+  backLink,
   chooseAutocompleteOption,
   expectNoSeriousOrCriticalViolations,
-  startNotification
+  saveAndContinue,
+  startNotification,
+  startPotatoNotification
 } from './high-risk-plants-journey.js'
 
 const chooseOption = (page, name) =>
@@ -130,3 +133,32 @@ for (const [name, shape] of Object.entries(happyPaths)) {
     await expectNoSeriousOrCriticalViolations(page, `${name} confirmation`)
   })
 }
+
+const startPotatoNotificationAtArrivalDetails = async (page) => {
+  await signIn(page)
+  const reference = await startPotatoNotification(page)
+  return (slug) => `${BASE}/notifications/${reference}/${slug}`
+}
+
+test('following Back through the opening run and choosing Save and continue carries on to the next step, not the overview', async ({
+  page
+}) => {
+  const pathOf = await startPotatoNotificationAtArrivalDetails(page)
+
+  await backLink(page).click()
+  await expect(page).toHaveURL(pathOf('origin'))
+
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(pathOf('arrival-details'))
+})
+
+test('following Back from the arrival details reaches origin and then the commodities list', async ({
+  page
+}) => {
+  const pathOf = await startPotatoNotificationAtArrivalDetails(page)
+
+  for (const slug of ['origin', 'commodities']) {
+    await backLink(page).click()
+    await expect(page).toHaveURL(pathOf(slug))
+  }
+})

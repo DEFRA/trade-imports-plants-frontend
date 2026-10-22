@@ -1,4 +1,3 @@
-import { hubPath } from '../../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../../config.js'
 import * as state from '../../../../../../../engine/index.js'
 import {
@@ -49,7 +48,7 @@ const buildView = (request, h, model) => {
   return h.view(view, {
     ...kit.base(copy.title, {
       request,
-      backLink: hubPath(model.journey.journeyId),
+      backLink: model.backLink,
       journey: model.journey,
       page,
       recoverableError: model.recoverableError ?? false
@@ -72,9 +71,11 @@ const buildView = (request, h, model) => {
 }
 
 const pageState = async (request, h) => {
-  const { journey, answers, scope, evaluation } = await state.get(request, h)
+  const current = await state.get(request, h)
+  const { journey, answers, scope, evaluation } = current
   return {
     journey,
+    backLink: await kit.runBackLink(request, page.id, current),
     scope,
     commodityType: answers.commodityType,
     lines: state.collectionView(answers, [LINES], evaluation),

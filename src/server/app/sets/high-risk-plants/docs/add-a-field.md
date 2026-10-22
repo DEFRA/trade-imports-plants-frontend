@@ -260,7 +260,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares;
+  picker shares, and a picker's call also names the previous run step's slug and
+  the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,

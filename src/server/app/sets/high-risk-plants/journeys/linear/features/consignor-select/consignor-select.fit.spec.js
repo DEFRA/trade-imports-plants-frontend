@@ -4,6 +4,7 @@ import {
   addCommodityLine,
   addressRowRadio,
   backLink,
+  openFromOverview,
   chooseCommodityType,
   describeAddressPicker,
   describeSubmittedSearchPicker,
@@ -145,8 +146,23 @@ test.describe('consignor-select feature', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to the overview', async ({ page }) => {
+  test('sends Back to the place of destination in the opening run', async ({
+    page
+  }) => {
     const reference = await startAtConsignor(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/destinations/select`
+    )
+  })
+
+  test('sends Back to the overview when opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startAtConsignor(page)
+
+    await openFromOverview(page, reference, consignorPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',

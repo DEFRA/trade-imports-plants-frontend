@@ -2,13 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectBackLinkIsPage,
   expectOneRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { validatorDefaults } from '../../../../../../shared/copy.en.js'
-import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
+import {
+  COMPLETE_NOTIFICATION,
+  COMPLETE_PLANTS_NOTIFICATION,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
 import { copy } from './copy/copy.en.js'
 import * as arrivalDetails from './controller.js'
@@ -187,11 +193,40 @@ describe('GET arrival-details — the potato-only fields', () => {
     expect(result.view.context.dateField.value).toBe(A_DATE)
   })
 
-  it('Should send Back to the overview', async () => {
+  it('Should send Back to the overview when the page is opened from the overview', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
     expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     expect(result.view.context.errorSummary).toBeNull()
+  })
+
+  it('Should send Back to arrival status for plants or wood while the opening run is on', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_PLANTS_NOTIFICATION,
+      openingRun: RUN_ACTIVE
+    })
+
+    expectBackLinkIsPage(result, 'arrival-status')
+  })
+
+  it('Should send Back to origin for potatoes while the opening run is on', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_NOTIFICATION,
+      openingRun: RUN_ACTIVE
+    })
+
+    expectBackLinkIsPage(result, 'origin')
+  })
+
+  it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_NOTIFICATION,
+      payload: potatoPayload({ arrivalDate: '' }),
+      openingRun: RUN_ACTIVE
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expectBackLinkIsPage(result, 'origin')
   })
 })
 

@@ -1,4 +1,3 @@
-import { hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -98,14 +97,14 @@ const valuesFrom = (source, scope) => ({
 const boundsFor = (answers, scope) =>
   arrivalBounds(dateStateOf(answers, scope) === ALREADY_ARRIVED)
 
-const render = async (h, current, values, options = {}) => {
+const render = async (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   const bounds = options.bounds ?? boundsFor(current.answers, current.scope)
   const dateState = dateStateOf(current.answers, current.scope)
   return h.view(view, {
     ...kit.base(copy.title, {
-      request: h.request,
-      backLink: hubPath(current.journey.journeyId),
+      request,
+      backLink: await kit.runBackLink(request, page.id, current),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -151,7 +150,7 @@ const get = async (request, h) => {
           copy.errors.proposedPlaceOfLandingNoLongerAvailable
       }
     : {}
-  return render(h, current, values, { errors })
+  return render(request, h, current, values, { errors })
 }
 
 const committedValues = (cleaned, scope) => ({
@@ -171,7 +170,7 @@ const post = async (request, h) => {
   )
   if (errors) {
     kit.logRefusal(request, { fieldErrors: errors })
-    return (await render(h, current, values, { bounds, errors })).code(
+    return (await render(request, h, current, values, { bounds, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }
@@ -188,7 +187,10 @@ const post = async (request, h) => {
     },
     async () =>
       (
-        await render(h, current, values, { bounds, recoverableError: true })
+        await render(request, h, current, values, {
+          bounds,
+          recoverableError: true
+        })
       ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
   )
   if (failure) {

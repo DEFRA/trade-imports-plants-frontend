@@ -5,6 +5,7 @@ import {
   FORM_GROUP_ANCESTOR_XPATH,
   childTagsAndClassesOf,
   backLink,
+  openFromOverview,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   expectedFormGroupChildren,
@@ -111,10 +112,23 @@ test.describe('origin feature', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to the overview once the notification has an answer', async ({
+  test('sends Back to the commodities list in the opening run', async ({
     page
   }) => {
     const reference = await startNotificationAtOrigin(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/commodities`
+    )
+  })
+
+  test('sends Back to the overview once the notification has an answer and the page is opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startNotificationAtOrigin(page)
+
+    await openFromOverview(page, reference, originPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',

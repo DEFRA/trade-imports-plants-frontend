@@ -111,6 +111,9 @@ whose root another page already owns.
 Use one `render()` helper for GET and POST errors. Build the common view with
 `kit.base()`. Pass `journey` so the shared reference strip renders, and `page`
 so the section caption does. The normal back link is `hubPath(journey.journeyId)`.
+A page that is a step of the opening run takes its back link from
+`kit.runBackLink()`, which opens the previous run step while the run is active
+and falls back to the overview.
 
 GET calls `state.get()` once and prefills from `answers`. POST:
 
@@ -277,7 +280,11 @@ that rule cannot express the page.
 Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
 only when it belongs in the opening run — that is, add it to `RUN_STEPS` in
 journey order. A step whose derived gate fails is skipped, as arrival-status is
-for potatoes. Update its run tests if you do.
+for potatoes. A run step names its `backCandidates`, the earlier steps its Back
+link may open, nearest first. Inserting a step mid-run updates the following
+step's `backCandidates`. The controller's `render` takes its Back link from
+`kit.runBackLink(request, page.id, current, { fallback })`, where `fallback` is
+a named option that defaults to the overview. Update its run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 
@@ -352,7 +359,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares;
+  picker shares, and a picker's call also names the previous run step's slug and
+  the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,

@@ -11,6 +11,7 @@ import {
 import { hubPath } from '../../../../../../shared/paths.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
+  itSendsBackToTheDashboardUntilCommodityTypeAnswered,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { commodityTypes } from '../../../../services/commodities/index.js'
@@ -104,19 +105,7 @@ describe('GET commodity-type', () => {
     ])
   })
 
-  it('Should send Back to the dashboard while nothing is committed', async () => {
-    const result = await driveHandler(get)
-
-    expect(result.view.context.backLink).toBe(SET_BASE)
-  })
-
-  it('Should send Back to the overview once the notification has an answer', async () => {
-    const result = await driveHandler(get, {
-      seed: { commodityType: POTATOES }
-    })
-
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
-  })
+  itSendsBackToTheDashboardUntilCommodityTypeAnswered(get)
 })
 
 describe('POST commodity-type — a rejected answer', () => {

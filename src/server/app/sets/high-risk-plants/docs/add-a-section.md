@@ -219,8 +219,9 @@ a flow fact that those rules cannot express. Add focused navigation and gate
 tests for every conditional page or branch.
 
 Add these pages to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
-— its empty `RUN_STEPS` — only if product behaviour puts them in the opening
-run. Update opening-run tests when you do.
+only if product behaviour puts them in the opening run. A page joining the run
+takes a `RUN_STEPS` entry with its `backCandidates`. Update opening-run tests
+when you do.
 
 ## 6. Add one task row and wire it to the hub
 
@@ -264,8 +265,8 @@ This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), already
 imports the journey's
-`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `FLOW_ONLY_KEYS`,
-`entryGuardTarget`, `sectionCaptionOf` and `LAYOUT`. It passes them to
+`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `previousRunTarget`,
+`FLOW_ONLY_KEYS`, `entryGuardTarget`, `sectionCaptionOf` and `LAYOUT`. It passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js). Because it injects the
 whole exported arrays, adding a section or task row to the existing modules needs
 no new L1 import or configure call.
@@ -366,7 +367,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares;
+  picker shares, and a picker's call also names the previous run step's slug and
+  the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,

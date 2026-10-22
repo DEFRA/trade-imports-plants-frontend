@@ -1,4 +1,8 @@
-import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import {
+  dashboardPath,
+  hubPath,
+  pagePath
+} from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
@@ -78,6 +82,11 @@ const shownReviewErrors = (current, continueRefused) =>
     ? null
     : reviewErrors(current)
 
+const backLinkFor = (journey) =>
+  journey.status === state.SUBMITTED
+    ? dashboardPath()
+    : hubPath(journey.journeyId)
+
 const render = async (
   request,
   h,
@@ -92,7 +101,7 @@ const render = async (
     ...kit.base(copy.title, {
       journey: current.journey,
       page,
-      backLink: hubPath(current.journey.journeyId)
+      backLink: backLinkFor(current.journey)
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,

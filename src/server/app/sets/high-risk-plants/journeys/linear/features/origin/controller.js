@@ -116,17 +116,19 @@ const errorsFor = async (
 export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
-const backLinkForSavedState = (journey, answers) =>
-  hasCommittedNotificationAnswers(answers)
-    ? hubPath(journey.journeyId)
-    : dashboardPath()
+const backLinkFor = (request, current) =>
+  kit.runBackLink(request, page.id, current, {
+    fallback: hasCommittedNotificationAnswers(current.answers)
+      ? hubPath(current.journey.journeyId)
+      : dashboardPath()
+  })
 
 const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
       request: h.request,
-      backLink: backLinkForSavedState(current.journey, current.answers),
+      backLink: options.backLink,
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -157,6 +159,7 @@ const get = async (request, h) => {
     current,
     { [COUNTRY_FIELD]: staleCountry ? '' : stored },
     {
+      backLink: await backLinkFor(request, current),
       constraints: constraintsOn(categoriesOf(current)),
       errors: staleCountry
         ? { [COUNTRY_FIELD]: copy.errors.countryNoLongerAvailable }
@@ -169,15 +172,16 @@ const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { [COUNTRY_FIELD]: payload[COUNTRY_FIELD] ?? '' }
   const current = await state.get(request, h)
+  const backLink = await backLinkFor(request, current)
   const constraints = constraintsOn(categoriesOf(current))
   const errors = await errorsFor(payload, constraints, {
     allowMissing: kit.isHubExit(request)
   })
   if (errors) {
     kit.logRefusal(request, { fieldErrors: errors })
-    return (await render(h, current, values, { constraints, errors })).code(
-      HTTP_STATUS_BAD_REQUEST
-    )
+    return (
+      await render(h, current, values, { backLink, constraints, errors })
+    ).code(HTTP_STATUS_BAD_REQUEST)
   }
 
   let committed
@@ -191,6 +195,7 @@ const post = async (request, h) => {
     async () =>
       (
         await render(h, current, values, {
+          backLink,
           constraints,
           recoverableError: true
         })

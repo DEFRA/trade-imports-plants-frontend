@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectBackLinkIsPage,
   expectOneRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { PLANTS_WOOD_DAYS_AFTER_ARRIVAL } from '../timing-windows.js'
-import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
+import {
+  COMPLETE_PLANTS_NOTIFICATION,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
 import {
   ALREADY_ARRIVED,
@@ -107,10 +112,30 @@ describe('GET arrival-status', () => {
     ).toBe(ALREADY_ARRIVED)
   })
 
-  it('Should send Back to the overview', async () => {
+  it('Should send Back to the overview when the page is opened from the overview', async () => {
     const result = await driveHandler(get, { seed: plants() })
 
     expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+  })
+
+  it('Should send Back to origin while the opening run is on', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_PLANTS_NOTIFICATION,
+      openingRun: RUN_ACTIVE
+    })
+
+    expectBackLinkIsPage(result, 'origin')
+  })
+
+  it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_PLANTS_NOTIFICATION,
+      payload: {},
+      openingRun: RUN_ACTIVE
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expectBackLinkIsPage(result, 'origin')
   })
 })
 

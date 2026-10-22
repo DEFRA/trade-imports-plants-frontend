@@ -198,6 +198,11 @@ export const SECOND_PAGE_LINK = 'Page 2'
 export const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
+export const openFromOverview = async (page, reference, path) => {
+  await page.goto(`${BASE}/notifications/${reference}`)
+  await page.goto(path)
+}
+
 /**
  * The search box of an address picker page.
  *

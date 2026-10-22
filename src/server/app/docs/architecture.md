@@ -148,6 +148,7 @@ way:
 - errors: `errorSummary()`, `fieldError()` and `logRefusal()`
 - where a POST goes next: `hubExitTarget()`, `isHubExit()`, `exitTarget()`,
   `runTarget()` and `nextTarget()`
+- where a page's Back link goes: `runBackLink()`
 - saving: `recoverableSave()` and `pageRoutes()`
 - date fields: `readDate()` and `dateField()`
 

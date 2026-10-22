@@ -2,6 +2,7 @@ import {
   WOOD_LINE_FIELDS,
   addCommodityLine,
   backLink,
+  openFromOverview,
   chooseCommodityType,
   describeAddressPicker,
   describeSubmittedSearchPicker,
@@ -134,8 +135,23 @@ test.describe('place-of-destination feature', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to the overview', async ({ page }) => {
+  test('sends Back to the arrival details in the opening run', async ({
+    page
+  }) => {
     const reference = await startAtDestination(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/arrival-details`
+    )
+  })
+
+  test('sends Back to the overview when opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startAtDestination(page)
+
+    await openFromOverview(page, reference, destinationPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',

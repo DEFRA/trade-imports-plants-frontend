@@ -7,6 +7,7 @@ import {
   postHandlerOf
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { COMPLETE_PLANTS_NOTIFICATION } from '../../test-support.js'
 import {
   copied,
   describeAddressBookPickerController,
@@ -58,6 +59,10 @@ describeAddressBookPickerController({
   get,
   post,
   seed: plants,
+  previousStep: {
+    slug: 'destinations/select',
+    seed: COMPLETE_PLANTS_NOTIFICATION
+  },
   fieldName: 'consignor',
   errorText: copy.errors.consignor
 })

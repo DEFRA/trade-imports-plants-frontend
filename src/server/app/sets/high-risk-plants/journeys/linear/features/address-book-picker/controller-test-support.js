@@ -20,9 +20,11 @@ import { records as realRecords } from '../../../../../../services/persistence/r
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
+  expectBackLinkIsPage,
   expectOneRefusalLogged
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
 import {
   HTTP_STATUS_BAD_REQUEST,
@@ -80,7 +82,7 @@ const renderPageFor = (template) => (context) =>
     ...context
   })
 
-const describePageServed = ({ pickerName, get, seed }) => {
+const describePageServed = ({ pickerName, get, seed, previousStep }) => {
   describe(`GET ${pickerName} — the page it serves`, () => {
     beforeAll(installStubs)
     beforeEach(() => store.clear())
@@ -91,11 +93,20 @@ const describePageServed = ({ pickerName, get, seed }) => {
       expect(result.view.context.contentColumnClass).toBe(SURFACES.display)
     })
 
-    it('Should send Back to the overview and raise no error summary', async () => {
-      const result = await driveHandler(get, { seed: seed() })
+    it('Should send Back to the overview and raise no error summary when the page is opened from the overview', async () => {
+      const result = await driveHandler(get, { seed: previousStep.seed })
 
       expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
       expect(result.view.context.errorSummary).toBeNull()
+    })
+
+    it('Should send Back to the previous step while the opening run is on', async () => {
+      const result = await driveHandler(get, {
+        seed: previousStep.seed,
+        openingRun: RUN_ACTIVE
+      })
+
+      expectBackLinkIsPage(result, previousStep.slug)
     })
 
     it('Should show the first page of the organisation book, counted against the whole', async () => {
@@ -552,6 +563,9 @@ const describeSaveFailures = (picker) => {
  * @param {(answers?: object) => object} picker.seed - the answers a notification opens the picker with
  * @param {string} picker.fieldName - the answer name the page collects
  * @param {string} picker.errorText - the error shown for an address not in the book
+ * @param {object} picker.previousStep - the page the opening run's Back link opens
+ * @param {string} picker.previousStep.slug - that page's slug
+ * @param {object} picker.previousStep.seed - answers that make that page apply
  */
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)

@@ -4,6 +4,7 @@ import {
   chooseCommodityType,
   describeDatePickerLook,
   backLink,
+  openFromOverview,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -114,7 +115,7 @@ test.describe('arrival-details — a potato notification', () => {
   test('renders the caption, the heading and the three save controls', async ({
     page
   }) => {
-    const reference = await startAtPotatoDetails(page)
+    await startAtPotatoDetails(page)
 
     await expect(
       page.getByText(captionsCopy.sections.arrival, { exact: true })
@@ -123,6 +124,24 @@ test.describe('arrival-details — a potato notification', () => {
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
     await expectThreeSaveControls(page)
+  })
+
+  test('sends Back to origin in the opening run', async ({ page }) => {
+    const reference = await startAtPotatoDetails(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/origin`
+    )
+  })
+
+  test('sends Back to the overview when opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startAtPotatoDetails(page)
+
+    await openFromOverview(page, reference, arrivalDetailsPathOf(reference))
+
     await expect(backLink(page)).toHaveAttribute(
       'href',
       `${BASE}/notifications/${reference}`

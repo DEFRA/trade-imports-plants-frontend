@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectBackLinkIsPage,
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../../shared/paths.js'
+import { RUN_ACTIVE } from '../../../../../../../flow/run-state.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
   useStubbedHighRiskPlantsJourney
@@ -122,10 +124,19 @@ describe('GET commodities', () => {
     }
   )
 
-  it('Should send Back to the overview', async () => {
+  it('Should send Back to the overview when the page is opened from the overview', async () => {
     const result = await driveHandler(get, { seed: TWO_LINES })
 
     expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+  })
+
+  it('Should send Back to the commodity type while the opening run is on', async () => {
+    const result = await driveHandler(get, {
+      seed: TWO_LINES,
+      openingRun: RUN_ACTIVE
+    })
+
+    expectBackLinkIsPage(result, 'commodity-type')
   })
 })
 
