@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SET_BASE } from '../../../../set.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 
-export const JOURNEY_ID = 'HRP-0001'
+const JOURNEY_ID = 'HRP-0001'
 const PAGE_SIZE = 5
 const LABELS = pickerCopy.pagination
 const PAGES_IN_A_SHORT_BOOK = 3
@@ -18,7 +18,7 @@ const POSTCODE = 'E14 9GE'
 const COUNTRY = 'United Kingdom'
 const ONE_LINE = `${LINE_1}, Unit 4, London, Greater London, ${POSTCODE}`
 
-export const TECH_IMPORTS_ID = 'tech-imports-ltd'
+const TECH_IMPORTS_ID = 'tech-imports-ltd'
 const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
@@ -92,10 +92,22 @@ const found = (results, { page = 1, total = results.length } = {}) => ({
   pageSize: PAGE_SIZE
 })
 
+const pagePathFor = (slug) => `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
+
 const describeResultsHref = ({ slug, resultsHref }) => {
-  const pagePath = `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
+  const pagePath = pagePathFor(slug)
 
   describe('#resultsHref', () => {
+    it('Should carry the search term, the page and the ticked row', () => {
+      expect(
+        resultsHref(JOURNEY_ID, {
+          query: 'imports',
+          page: 3,
+          selectedId: TECH_IMPORTS_ID
+        })
+      ).toBe(`${pagePath}?q=imports&page=3&selected=${TECH_IMPORTS_ID}`)
+    })
+
     it('Should leave out a search term and a selection it does not have', () => {
       expect(
         resultsHref(JOURNEY_ID, { query: '', page: 2, selectedId: '' })
@@ -153,7 +165,7 @@ const describePagination = ({ pagination }) => {
 }
 
 const describePagingLinks = ({ slug, pagination }) => {
-  const pagePath = `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
+  const pagePath = pagePathFor(slug)
 
   describe('#pagination links', () => {
     it('Should carry the search term and the ticked row into every paging link', () => {
