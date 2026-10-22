@@ -33,7 +33,7 @@ const taskRowPages = taskRows
   .flatMap((row) => row.pages)
   .filter((page) => page.id !== commodityDetailsPage.id)
 
-const getHandlerOf = (page) =>
+const pageGetHandler = (page) =>
   allRoutes.find(
     (route) =>
       route.method === 'GET' &&
@@ -47,7 +47,7 @@ const seedFor = (page) =>
     : COMPLETE_NOTIFICATION
 
 const renderAmending = async (page) => {
-  const { journeyId, view } = await driveHandler(getHandlerOf(page), {
+  const { journeyId, view } = await driveHandler(pageGetHandler(page), {
     seed: seedFor(page),
     amend: true,
     pathOf: (id) => pagePath(id, page.slug)

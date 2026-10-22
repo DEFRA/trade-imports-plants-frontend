@@ -138,6 +138,7 @@ export const journeyFormOf = (page) => page.locator(JOURNEY_FORM_SELECTOR)
 const MEDIUM_LABEL_FONT_SIZE = '24px'
 const BOLD_FONT_WEIGHT = '700'
 const WIDTH_TOLERANCE_PX = 1
+const SEARCH_ICON_SIZE = '20px'
 
 const expectSubmittedSearchLook = async (page, { search, expectedWidth }) => {
   const box = page.getByLabel(search.label, { exact: true })
@@ -152,7 +153,13 @@ const expectSubmittedSearchLook = async (page, { search, expectedWidth }) => {
   await expect(label).toHaveCSS('font-size', MEDIUM_LABEL_FONT_SIZE)
   await expect(label).toHaveCSS('font-weight', BOLD_FONT_WEIGHT)
   await expect(wrapper.getByRole('button')).toHaveCount(1)
-  await expect(button.locator('svg')).toBeVisible()
+  const icon = await button.evaluate((el) => {
+    const { maskImage, width, height } = window.getComputedStyle(el, '::before')
+    return { maskImage, width, height }
+  })
+  expect(icon.maskImage).toContain('svg')
+  expect(icon.width).toBe(SEARCH_ICON_SIZE)
+  expect(icon.height).toBe(SEARCH_ICON_SIZE)
   await expectBlueIconButtonLook(button)
 
   const boxEdge = await box.evaluate((el) => el.getBoundingClientRect().right)
@@ -212,6 +219,28 @@ export const searchBox = (page) =>
   page.getByLabel(pickerCopy.search.label, { exact: true })
 
 /**
+ * Opens the page's current URL in a new signed-in context with JavaScript
+ * switched off, hands that page to `use`, and closes the context afterwards.
+ *
+ * @param {import('@playwright/test').Page} page - the signed-in page to reopen
+ * @param {import('@playwright/test').Browser} browser
+ * @param {(plainPage: import('@playwright/test').Page) => Promise<void>} use
+ */
+export const withoutJavaScript = async (page, browser, use) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState()
+  })
+  try {
+    const plainPage = await context.newPage()
+    await plainPage.goto(page.url())
+    await use(plainPage)
+  } finally {
+    await context.close()
+  }
+}
+
+/**
  * Declares the tests every address picker's submitted search box shares: its
  * look, searching by pressing Enter without JavaScript, and axe on the empty,
  * searched and no-match states.
@@ -267,14 +296,7 @@ export const describeSubmittedSearchPicker = ({ pickerName, openPicker }) => {
   }) => {
     await signIn(page)
     await openPicker(page)
-    const withoutJavaScript = await browser.newContext({
-      javaScriptEnabled: false,
-      storageState: await page.context().storageState()
-    })
-    try {
-      const plainPage = await withoutJavaScript.newPage()
-      await plainPage.goto(page.url())
-
+    await withoutJavaScript(page, browser, async (plainPage) => {
       await searchByPressingEnter(plainPage, {
         search: pickerCopy.search,
         term: DENMARK
@@ -284,9 +306,7 @@ export const describeSubmittedSearchPicker = ({ pickerName, openPicker }) => {
       await expect(addressRowRadio(plainPage, ADDRESS_BOOK_PARTY)).toHaveCount(
         0
       )
-    } finally {
-      await withoutJavaScript.close()
-    }
+    })
   })
 }
 
@@ -866,7 +886,7 @@ export const describeAddressPicker = ({
       await signIn(page)
     })
 
-    test('saves the chosen address, continues to identification numbers and shows it again on return', async ({
+    test('saves the chosen address, continues to the next page and shows it again on return', async ({
       page
     }) => {
       const reference = await openPicker(page)

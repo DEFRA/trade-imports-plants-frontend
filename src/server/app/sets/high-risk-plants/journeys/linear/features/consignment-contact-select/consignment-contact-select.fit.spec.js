@@ -1,23 +1,13 @@
 import {
   ADDRESS_BOOK_PARTY,
-  ALPINE,
   CHECK_ANSWERS_URL,
   COPENHAGEN,
-  DENMARK,
-  IMPORT_CO,
-  MATCHES_NOTHING,
-  NOT_IN_THE_BOOK,
   SECOND_PAGE_LINK,
-  STUB_BOOK_SIZE,
   addressRowRadio,
   backLink,
+  describeAddressPicker,
   describeSubmittedSearchPicker,
-  expectNoSeriousOrCriticalViolations,
-  expectPickerResultsLayout,
-  expectSelectedAddressCarriedToSecondPage,
   expectThreeSaveControls,
-  pickerResultsSummary,
-  postAnIdNotInTheBook,
   saveAndContinue,
   selectedAddressInset,
   startWoodNotificationWithOriginSaved
@@ -27,7 +17,6 @@ import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
 import { copy as captionCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as checkAnswersCopy } from '../check-answers/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
@@ -41,11 +30,6 @@ const saveAndReturn = (page) =>
   page.getByRole('button', {
     name: sharedCopy.saveActions.saveAndReturnToHub
   })
-
-const errorSummaryLink = (page) =>
-  page
-    .getByRole('alert')
-    .getByRole('link', { name: copy.errors.contactAddress })
 
 const contactPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignment/contact/select`
@@ -77,6 +61,18 @@ const startAtContact = async (page) => {
 describeSubmittedSearchPicker({
   pickerName: 'consignment contact',
   openPicker: startAtContact
+})
+
+describeAddressPicker({
+  pickerName: 'consignment contact',
+  openPicker: startAtContact,
+  pathOf: contactPathOf,
+  notInBookError: copy.errors.contactAddress,
+  hubRowTitle: hubCopy.rows.contact.title,
+  hubUrl: HUB_URL,
+  pageUrl: PAGE_URL,
+  afterSaveUrl: HUB_URL,
+  firstRowRadio: '#contactAddress'
 })
 
 test.describe('consignment-contact-select feature', () => {
@@ -117,22 +113,6 @@ test.describe('consignment-contact-select feature', () => {
     await expect(page).toHaveURL(PAGE_URL)
   })
 
-  test('shows the first page of the organisation address book with its count', async ({
-    page
-  }) => {
-    await startAtContact(page)
-
-    await expectPickerResultsLayout(
-      page,
-      pickerCopy.resultsCount(PAGE_SIZE, STUB_BOOK_SIZE)
-    )
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeVisible()
-    await expect(addressRowRadio(page, ALPINE)).toHaveCount(0)
-    await expect(
-      page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-    ).toBeVisible()
-  })
-
   test('offers the three save controls', async ({ page }) => {
     await startAtContact(page)
 
@@ -149,84 +129,23 @@ test.describe('consignment-contact-select feature', () => {
     await backLink(page).click()
     await expect(page).toHaveURL(HUB_URL)
   })
-
-  test('narrows the results to the search term', async ({ page }) => {
-    await startAtContact(page)
-
-    await page
-      .getByLabel(pickerCopy.search.label, { exact: true })
-      .fill(DENMARK)
-    await page.getByRole('button', { name: pickerCopy.search.button }).click()
-
-    await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toHaveCount(0)
-  })
-
-  test('says so rather than showing an empty table when nothing matches', async ({
-    page
-  }) => {
-    await startAtContact(page)
-
-    await page
-      .getByLabel(pickerCopy.search.label, { exact: true })
-      .fill(MATCHES_NOTHING)
-    await page.getByRole('button', { name: pickerCopy.search.button }).click()
-
-    await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
-  })
-
-  test('keeps a ticked row while the search narrows the results', async ({
-    page
-  }) => {
-    await startAtContact(page)
-
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await page
-      .getByLabel(pickerCopy.search.label, { exact: true })
-      .fill(DENMARK)
-    await page.getByRole('button', { name: pickerCopy.search.button }).click()
-
-    await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
-  })
-
-  test('carries a saved address through the paging links', async ({ page }) => {
-    const reference = await startAtContact(page)
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
-    await page.goto(contactPathOf(reference))
-
-    await expectSelectedAddressCarriedToSecondPage(page)
-  })
-
-  test('carries a newly ticked address through the paging links', async ({
-    page
-  }) => {
-    await startAtContact(page)
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-
-    await expectSelectedAddressCarriedToSecondPage(page)
-  })
 })
 
-test.describe('consignment-contact-select — saving an address', () => {
+test.describe('consignment-contact-select — the overview task row', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
   })
 
-  test('saves the chosen address, returns to the overview with the row complete and shows it again on return', async ({
+  test('saving the chosen address marks the contact row complete', async ({
     page
   }) => {
-    const reference = await startAtContact(page)
+    await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
-
-    await page.goto(contactPathOf(reference))
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeChecked()
-    await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
   })
 
   test('a row ticked on the second page saves, and re-entering shows it as the selected address', async ({
@@ -249,41 +168,22 @@ test.describe('consignment-contact-select — saving an address', () => {
     await expect(addressRowRadio(page, COPENHAGEN)).toHaveCount(0)
   })
 
-  test('replaces the address already saved rather than keeping both', async ({
+  test('Save and return to overview marks the contact row complete', async ({
     page
   }) => {
-    const reference = await startAtContact(page)
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
-    await page.goto(contactPathOf(reference))
-
-    await addressRowRadio(page, IMPORT_CO).check()
-    await saveAndContinue(page).click()
-    await page.goto(contactPathOf(reference))
-
-    await expect(addressRowRadio(page, IMPORT_CO)).toBeChecked()
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
-  })
-
-  test('Save and return to overview saves the address and reaches the overview', async ({
-    page
-  }) => {
-    const reference = await startAtContact(page)
+    await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndReturn(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
-
-    await page.goto(contactPathOf(reference))
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeChecked()
   })
 
-  test('Cancel and return to overview reaches the overview without saving', async ({
+  test('Cancel and return to overview leaves the contact row not yet started', async ({
     page
   }) => {
-    const reference = await startAtContact(page)
+    await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await page
@@ -294,9 +194,6 @@ test.describe('consignment-contact-select — saving an address', () => {
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
-
-    await page.goto(contactPathOf(reference))
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
   })
 })
 
@@ -353,75 +250,4 @@ test.describe('consignment-contact-select — a blank save', () => {
       await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
     })
   }
-})
-
-test.describe('consignment-contact-select — the answers it refuses', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page)
-  })
-
-  test('rejects an id the address book does not hold, focuses the first row and preserves the search', async ({
-    page
-  }) => {
-    await startAtContact(page)
-    await page
-      .getByLabel(pickerCopy.search.label, { exact: true })
-      .fill('Imports')
-
-    await postAnIdNotInTheBook(page)
-
-    await expect(page).toHaveURL(PAGE_URL)
-    await expect(errorSummaryLink(page)).toBeVisible()
-    await expect(
-      page.getByLabel(pickerCopy.search.label, { exact: true })
-    ).toHaveValue('Imports')
-    await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
-    await expect(page.getByRole('radio').first()).not.toHaveValue(
-      NOT_IN_THE_BOOK
-    )
-
-    await errorSummaryLink(page).click()
-    await expect(page.getByRole('radio').first()).toBeFocused()
-  })
-
-  test('recovers from the error once an address is chosen', async ({
-    page
-  }) => {
-    await startAtContact(page)
-    await postAnIdNotInTheBook(page)
-    await expect(errorSummaryLink(page)).toBeVisible()
-
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
-
-    await expect(page).toHaveURL(HUB_URL)
-    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
-  })
-})
-
-test.describe('consignment-contact-select — accessibility', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page)
-  })
-
-  test('has no serious or critical axe violations on the initial render', async ({
-    page
-  }) => {
-    await startAtContact(page)
-    await expect(
-      page.getByRole('heading', { name: copy.title, level: 1 })
-    ).toBeVisible()
-
-    await expectNoSeriousOrCriticalViolations(page, 'Contact initial render')
-  })
-
-  test('has no serious or critical axe violations in the error state', async ({
-    page
-  }) => {
-    await startAtContact(page)
-    await postAnIdNotInTheBook(page)
-    await expect(errorSummaryLink(page)).toBeVisible()
-
-    await expectNoSeriousOrCriticalViolations(page, 'Contact error state')
-  })
 })

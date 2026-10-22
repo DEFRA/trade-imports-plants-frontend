@@ -12,7 +12,8 @@ import {
   expectedFormGroupChildren,
   startNotification,
   startNotificationAtOrigin,
-  startPotatoNotification
+  startPotatoNotification,
+  withoutJavaScript
 } from '../../../../../../../../fit/high-risk-plants-journey.js'
 import { signIn } from '../../../../../../../../fit/sign-in.js'
 import { countryAndSubdivisionEntries } from '../../../../../services/_capture/fixtures.js'
@@ -184,14 +185,7 @@ for (const typeAhead of typeAheads) {
     }) => {
       await signIn(page)
       await open(page)
-      const context = await browser.newContext({
-        javaScriptEnabled: false,
-        storageState: await page.context().storageState()
-      })
-
-      try {
-        const noJavaScript = await context.newPage()
-        await noJavaScript.goto(page.url())
+      await withoutJavaScript(page, browser, async (noJavaScript) => {
         const formGroup = noJavaScript
           .locator(`select#${inputId}`)
           .locator(FORM_GROUP_ANCESTOR_XPATH)
@@ -212,9 +206,7 @@ for (const typeAhead of typeAheads) {
             '.autocomplete__wrapper, .app-autocomplete__button'
           )
         ).toHaveCount(0)
-      } finally {
-        await context.close()
-      }
+      })
     })
   })
 }

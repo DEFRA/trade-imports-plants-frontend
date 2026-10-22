@@ -7,6 +7,7 @@ import {
 } from '../../../../test/fixtures/index.js'
 import { AMEND, DRAFT, SUBMITTED } from '../engine/index.js'
 import {
+  expectOneLogged,
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   journeyRequest,
@@ -19,6 +20,7 @@ import {
   isHubExit,
   logRefusal,
   pageRoutes,
+  REFUSAL_LOG_MESSAGE,
   recoverableSave
 } from './kit.js'
 
@@ -293,9 +295,10 @@ describe('#logRefusal', () => {
       }
     })
 
-    expectOneRefusalLogged(request.logger, {
-      journeyId: 'journey-1',
-      errorCodes: ['postcode', 'email']
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: { journeyId: 'journey-1', errorCodes: ['postcode', 'email'] },
+      message: REFUSAL_LOG_MESSAGE
     })
   })
 

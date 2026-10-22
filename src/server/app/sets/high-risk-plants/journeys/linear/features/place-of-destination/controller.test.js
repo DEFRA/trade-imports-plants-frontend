@@ -1,8 +1,10 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { store } from '../../../../../../engine/store.js'
 import { hubPath } from '../../../../../../shared/paths.js'
-import { COMPLETE_NOTIFICATION } from '../../test-support.js'
+import {
+  COMPLETE_NOTIFICATION,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
 import {
   driveHandler,
   postHandlerOf
@@ -10,8 +12,7 @@ import {
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
 import {
   copied,
-  describeAddressBookPickerController,
-  installStubs
+  describeAddressBookPickerController
 } from '../address-book-picker/controller-test-support.js'
 import { copy } from './copy/copy.en.js'
 import * as placeOfDestination from './controller.js'
@@ -44,8 +45,7 @@ describe('#meta', () => {
 })
 
 describe('GET place-of-destination — the question it asks', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should title the page and caption the destination section', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
@@ -100,8 +100,7 @@ describeAddressBookPickerController({
 })
 
 describe('GET place-of-destination — the address this notification holds', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should show the copy with a link to edit its details', async () => {
     const result = await driveHandler(get, {

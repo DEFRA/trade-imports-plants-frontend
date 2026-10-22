@@ -1,4 +1,3 @@
-import { dashboardPath, hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -13,7 +12,7 @@ import {
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { hasCommittedNotificationAnswers } from '../../flow/entry-guard.js'
+import { entryBackLink } from '../../flow/entry-guard.js'
 import {
   CATEGORY,
   GENUS,
@@ -58,11 +57,6 @@ const typeOptions = (selected) =>
     checked: value === selected
   }))
 
-const backLinkFor = (journey, answers) =>
-  hasCommittedNotificationAnswers(answers)
-    ? hubPath(journey.journeyId)
-    : dashboardPath()
-
 const linesOf = (current) =>
   state.collectionView(current.answers, [LINES], current.evaluation)
 
@@ -89,7 +83,7 @@ const render = (h, current, values, options = {}) => {
   return h.view(view, {
     ...kit.base(copy.title, {
       request: h.request,
-      backLink: backLinkFor(current.journey, current.answers),
+      backLink: entryBackLink(current.journey, current.answers),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false

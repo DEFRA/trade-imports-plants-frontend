@@ -1,27 +1,14 @@
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { load } from 'cheerio'
 
-import { SET_ID } from '../../../../set.js'
 import { config } from '../../../../../../../../config/config.js'
 import { nunjucksConfig } from '../../../../../../../../config/nunjucks/nunjucks.js'
-import { store } from '../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { records as realRecords } from '../../../../../../services/persistence/records/real/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
   expectBackLinkIsPage,
-  expectOneRefusalLogged
+  expectOneRefusalLogged,
+  expectOneSaveFallbackLogged,
+  unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
@@ -30,25 +17,25 @@ import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
+import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
-import { installHighRiskPlantsJourney } from '../../test-support.js'
+import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 import {
   bookHoldingADeletedRecord,
   DELETED_ID,
-  NOT_IN_THE_BOOK
+  IMPORT_CO,
+  NOT_IN_THE_BOOK,
+  TECH_IMPORTS_ID,
+  TECH_IMPORTS_NAME
 } from './test-support.js'
 
-const PAGE_SIZE = 5
 const STUB_BOOK_SIZE = 13
 const LAST_PAGE = 3
 const DENMARK = 'Denmark'
 const DENMARK_ROWS = ['copenhagen-exports-aps', 'aarhus-trading-aps']
 const MATCHES_NOTHING = 'nothing matches this'
-const TECH_IMPORTS = 'tech-imports-ltd'
-const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
-const IMPORT_CO = 'import-co-uk'
 const ALPINE = 'alpine-supplies-gmbh'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const MARKUP_IN_A_NAME = '</span><a href="https://evil.example">x</a><span>'
@@ -57,23 +44,17 @@ const MARKUP_LINK = '<a href="https://evil.example"'
 export const copied = (id) =>
   answerForPickedParty(STUB_BOOK.find((record) => record.id === id))
 
-export const installStubs = () => {
-  configureRecords(SET_ID, recordsStub)
-  configureSession(SET_ID, sessionStub)
-  installHighRiskPlantsJourney()
-}
-
 const rowIds = (result) => result.view.context.picker.rows.map((row) => row.id)
 
 export const checkedId = (result) =>
   result.view.context.picker.rows.find((row) => row.checked)?.id
 
-const pickedFrom = (id) => ({ ...copied(TECH_IMPORTS), pickedFromId: id })
+const pickedFrom = (id) => ({ ...copied(TECH_IMPORTS_ID), pickedFromId: id })
 
 const savedWithFor =
   ({ post, seed }) =>
-  (payload, answers) =>
-    driveHandler(post, { seed: seed(answers), payload })
+  (payload, { answers, ...driveOptions } = {}) =>
+    driveHandler(post, { seed: seed(answers), payload, ...driveOptions })
 
 const renderPageFor = (template) => (context) =>
   nunjucksConfig.options.compileOptions.environment.render(template, {
@@ -84,8 +65,7 @@ const renderPageFor = (template) => (context) =>
 
 const describePageServed = ({ pickerName, get, seed, previousStep }) => {
   describe(`GET ${pickerName} — the page it serves`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should render the results table on the full-width surface', async () => {
       const result = await driveHandler(get, { seed: seed() })
@@ -161,15 +141,14 @@ const describeSelectionShown = ({
   const renderPage = renderPageFor(template)
 
   describe(`GET ${pickerName} — the selection it shows`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should tick the record the copy was picked from', async () => {
       const result = await driveHandler(get, {
-        seed: seed({ [fieldName]: copied(TECH_IMPORTS) })
+        seed: seed({ [fieldName]: copied(TECH_IMPORTS_ID) })
       })
 
-      expect(checkedId(result)).toBe(TECH_IMPORTS)
+      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
       expect(result.view.context.picker.tickedRecord.name).toBe(
         TECH_IMPORTS_NAME
       )
@@ -177,7 +156,7 @@ const describeSelectionShown = ({
 
     it('Should carry a selection the query string names over the stored one', async () => {
       const result = await driveHandler(get, {
-        seed: seed({ [fieldName]: copied(TECH_IMPORTS) }),
+        seed: seed({ [fieldName]: copied(TECH_IMPORTS_ID) }),
         query: { selected: IMPORT_CO }
       })
 
@@ -216,8 +195,7 @@ const describeSearching = (picker) => {
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — searching`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should re-render the narrowed results without committing anything', async () => {
       const result = await savedWith({ action: 'search', q: DENMARK })
@@ -241,10 +219,10 @@ const describeSearching = (picker) => {
       const result = await savedWith({
         action: 'search',
         q: 'Imports',
-        selected: TECH_IMPORTS
+        selected: TECH_IMPORTS_ID
       })
 
-      expect(checkedId(result)).toBe(TECH_IMPORTS)
+      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
     })
   })
 }
@@ -254,8 +232,7 @@ const describeNothingChosen = (picker) => {
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — a save with nothing chosen`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should move on to the overview, committing nothing and raising no error', async () => {
       const result = await savedWith({ action: 'save' })
@@ -273,12 +250,12 @@ const describeNothingChosen = (picker) => {
     })
 
     it('Should keep a copy already held, edited since it was picked', async () => {
-      const edited = { ...copied(TECH_IMPORTS), name: EDITED_NAME }
+      const edited = { ...copied(TECH_IMPORTS_ID), name: EDITED_NAME }
       delete edited.pickedFromId
 
       const result = await savedWith(
         { action: 'save' },
-        { [fieldName]: edited }
+        { answers: { [fieldName]: edited } }
       )
 
       expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
@@ -293,8 +270,7 @@ const describeAddressNotInTheBook = (pickerConfig) => {
   const savedWith = savedWithFor(pickerConfig)
 
   describe(`POST ${pickerName} — an address the book does not hold`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should refuse the id, linking the error to the first row and describing the group by it', async () => {
       const result = await savedWith({
@@ -334,7 +310,7 @@ const describeAddressNotInTheBook = (pickerConfig) => {
     it('Should refuse a source record id posted back once the book no longer holds it, committing nothing', async () => {
       const result = await savedWith(
         { action: 'save', [fieldName]: 'gone' },
-        { [fieldName]: pickedFrom('gone') }
+        { answers: { [fieldName]: pickedFrom('gone') } }
       )
 
       expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
@@ -349,8 +325,7 @@ const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
   const savedWith = savedWithFor(pickerConfig)
 
   describe(`POST ${pickerName} — a refused save keeps the search and page`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should keep the refused search term so the results are still there', async () => {
       const result = await savedWith({
@@ -399,10 +374,9 @@ const describeDeletedRecord = (picker) => {
   describe(`${pickerName} — a record the organisation has deleted`, () => {
     const originalMode = config.get('stubMode')
 
-    beforeAll(installStubs)
+    useStubbedHighRiskPlantsJourney()
 
-    beforeEach(async () => {
-      await store.clear()
+    beforeEach(() => {
       config.set('stubMode', false)
       vi.stubGlobal('fetch', bookHoldingADeletedRecord())
     })
@@ -441,16 +415,15 @@ const describeAcceptedAnswers = (picker) => {
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — accepted answers`, () => {
-    beforeAll(installStubs)
-    beforeEach(() => store.clear())
+    useStubbedHighRiskPlantsJourney()
 
     it('Should commit a copy of the chosen record and move on to the overview', async () => {
       const result = await savedWith({
         action: 'save',
-        [fieldName]: TECH_IMPORTS
+        [fieldName]: TECH_IMPORTS_ID
       })
 
-      expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS))
+      expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS_ID))
       expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
     })
 
@@ -461,16 +434,19 @@ const describeAcceptedAnswers = (picker) => {
     })
 
     it('Should honour Save and return to overview', async () => {
-      const result = await savedWith({ [fieldName]: TECH_IMPORTS, exit: 'hub' })
+      const result = await savedWith({
+        [fieldName]: TECH_IMPORTS_ID,
+        exit: 'hub'
+      })
 
       expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-      expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS))
+      expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS_ID))
     })
 
     it('Should replace a copy already held rather than keeping both', async () => {
       const result = await savedWith(
         { action: 'save', [fieldName]: IMPORT_CO },
-        { [fieldName]: copied(TECH_IMPORTS) }
+        { answers: { [fieldName]: copied(TECH_IMPORTS_ID) } }
       )
 
       expect(result.after[fieldName]).toEqual(copied(IMPORT_CO))
@@ -479,12 +455,12 @@ const describeAcceptedAnswers = (picker) => {
     it('Should tick the committed copy on the next GET', async () => {
       const saved = await savedWith({
         action: 'save',
-        [fieldName]: TECH_IMPORTS
+        [fieldName]: TECH_IMPORTS_ID
       })
 
       const result = await driveHandler(get, { seed: saved.after })
 
-      expect(checkedId(result)).toBe(TECH_IMPORTS)
+      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
     })
   })
 }
@@ -494,58 +470,31 @@ const describeSaveFailures = (picker) => {
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — save failures`, () => {
-    beforeAll(installStubs)
+    useStubbedHighRiskPlantsJourney()
 
-    beforeEach(async () => {
-      await store.clear()
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async () => ({
-          ok: false,
-          status: 503,
-          statusText: 'Service Unavailable'
-        }))
+    it('Should re-render a backend request failure at 500 with the banner and the selection, logging the fallback', async () => {
+      const failure = unavailableBackendError('save answers')
+
+      const result = await savedWith(
+        { action: 'save', [fieldName]: TECH_IMPORTS_ID },
+        { saveFailure: failure }
       )
-    })
-
-    afterEach(() => {
-      configureRecords(SET_ID, recordsStub)
-      vi.unstubAllGlobals()
-    })
-
-    const holdsThePostedParty = (fulfilment) =>
-      JSON.stringify(fulfilment).includes(TECH_IMPORTS)
-
-    const failingOnControllerCommit = (failure) => {
-      configureRecords(SET_ID, {
-        ...recordsStub,
-        replaceFulfilment: (journeyId, fulfilment, ...rest) =>
-          holdsThePostedParty(fulfilment)
-            ? failure(journeyId, fulfilment, ...rest)
-            : recordsStub.replaceFulfilment(journeyId, fulfilment, ...rest)
-      })
-    }
-
-    it('Should re-render a backend request failure at 500 with the banner and the selection', async () => {
-      failingOnControllerCommit(realRecords.replaceFulfilment)
-
-      const result = await savedWith({
-        action: 'save',
-        [fieldName]: TECH_IMPORTS
-      })
 
       expect(result.response.statusCode).toBe(HTTP_STATUS_INTERNAL_SERVER_ERROR)
       expect(result.view.context.recoverableError).toBe(true)
-      expect(checkedId(result)).toBe(TECH_IMPORTS)
+      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
+      expectOneSaveFallbackLogged(result.logger, {
+        journeyId: result.journeyId,
+        err: failure
+      })
     })
 
     it('Should rethrow a programming error rather than re-rendering the page', async () => {
-      failingOnControllerCommit(async () => {
-        throw new TypeError('programming failure')
-      })
-
       await expect(
-        savedWith({ action: 'save', [fieldName]: TECH_IMPORTS })
+        savedWith(
+          { action: 'save', [fieldName]: TECH_IMPORTS_ID },
+          { saveFailure: new TypeError('programming failure') }
+        )
       ).rejects.toThrow(new TypeError('programming failure'))
     })
   })

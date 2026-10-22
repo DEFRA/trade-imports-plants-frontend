@@ -289,9 +289,10 @@ a named option that defaults to the overview. Update its run tests if you do.
 ## 7. Add check-answers and backend mapping when needed
 
 Add the page's rows to the matching check-answers card and their row labels to
-both check-answers copy bundles. A value label that the page itself already
-shows is read from that feature's label function (for example
-`meansOfTransportLabel`), never copied into the check-answers copy. Value
+both check-answers copy bundles. A stored code is shown through a copy lookup
+keyed by the stored value, as the review does with
+`copy.typeLabels[answers.commodityType]` and
+`copy.statusLabels[answers.arrivalStatus]`, never retyped into the row. Value
 labels only the review shows go in the check-answers copy bundles.
 
 Pass each obligation name to `row()` or `changeAction()` so the
@@ -350,12 +351,20 @@ Build test set-up from the shared helpers, and extend them rather than writing
 set-up in the test file:
 
 - controller tests:
-  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after
-  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
-  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
-  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
-  a locale pair
+  [`engine/test-support.js`](../../../engine/test-support.js) exports:
+  - `driveHandler` seeds a journey, runs one handler and returns the answers
+    before and after and the logger; its `openingRun` option (`RUN_ACTIVE` or
+    `RUN_COMPLETE`) records that phase of the opening run, and `saveFailure`
+    makes every save the handler makes fail with the error it is given
+  - `postHandlerOf` and `postHandlerEndingWith` return a feature module's POST
+    handler
+  - `journeyRequest`, `stubH`, `recordingH` and `recordingLogger` build the
+    request, toolkit and logger
+  - `expectBackLinkIsPage` and `expectBackLinkIsPath` assert the Back link
+  - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line
+  - `expectOneSaveFallbackLogged` asserts it holds exactly one save fallback line
+  - `unavailableBackendError` builds the error a save failure is given
+  - `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for a locale pair
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
@@ -367,7 +376,9 @@ set-up in the test file:
   with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
-  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
+  `installHighRiskPlantsJourney`, `useStubbedHighRiskPlantsJourney` (the stub
+  records, session and dispatch with a cleared store for a describe),
+  `COMPLETE_NOTIFICATION` and
   `COMPLETE_POTATO_CONSIGNMENT`
 - browser tests:
   [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)

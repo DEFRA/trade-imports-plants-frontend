@@ -15,7 +15,7 @@ import accessibleAutocomplete from 'accessible-autocomplete'
 
 const ARIA_DESCRIBEDBY = 'aria-describedby'
 const CONTAINER_CLASS = 'app-autocomplete'
-const MATCH_CLASS = 'app-autocomplete__match'
+const MATCH_CLASS = 'govuk-!-font-weight-bold'
 const BUTTON_CLASS = 'app-autocomplete__button'
 const LIBRARY_WRAPPER_CLASS = 'autocomplete__wrapper'
 

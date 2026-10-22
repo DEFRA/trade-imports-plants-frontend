@@ -1,4 +1,3 @@
-import { dashboardPath, hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -14,7 +13,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { hasCommittedNotificationAnswers } from '../../flow/entry-guard.js'
+import { entryBackLink } from '../../flow/entry-guard.js'
 import { CATEGORY, LINES } from '../commodities/fields.js'
 import { originPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -118,9 +117,7 @@ export const originErrors = async (current) =>
 
 const backLinkFor = (request, current) =>
   kit.runBackLink(request, page.id, current, {
-    fallback: hasCommittedNotificationAnswers(current.answers)
-      ? hubPath(current.journey.journeyId)
-      : dashboardPath()
+    fallback: entryBackLink(current.journey, current.answers)
   })
 
 const render = async (h, current, values, options = {}) => {

@@ -35,7 +35,7 @@ describe('#captured reference fixtures', () => {
     })
   })
 
-  it('Should flatten origin-page country options with subdivisions sorted by name', () => {
+  it('Should flatten countries and their subdivisions, sorted by name', () => {
     expect(countryAndSubdivisionEntries()).toContainEqual({
       code: 'ES-CN',
       name: 'Canary Islands'
