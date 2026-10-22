@@ -1,19 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { expectEveryLeafToBeCopy } from '../../../../../../../engine/test-support.js'
+import { itHoldsCopyAtEveryLeaf } from '../../../../../../../engine/test-support.js'
 import { originConstraints } from '../../../../../services/commodities/index.js'
 import { originLabel } from '../../../../../../../services/countries/index.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
 
 describe('#copy', () => {
-  it.each([
-    ['en', copy],
-    ['cy', cy]
-  ])(
-    'Should hold a non-empty string or copy function at every %s leaf',
-    expectEveryLeafToBeCopy
-  )
+  itHoldsCopyAtEveryLeaf(copy, cy)
 
   it.each([
     ['en', copy],

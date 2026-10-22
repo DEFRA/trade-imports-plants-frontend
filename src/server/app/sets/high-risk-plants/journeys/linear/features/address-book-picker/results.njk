@@ -1,0 +1,108 @@
+{#
+  addressBookPickerResults — the results block of an address-book picker: the
+  heading, the count, one fieldset holding the error and the table, and the
+  paging. With no rows the no-matches message takes the place of the count.
+
+  Params:
+    fieldName  (string)  the answer name: the radios' name, and the prefix of the
+                         error message's id
+    picker     (object)  the picker view model
+    pickerCopy (object)  the shared picker copy
+
+  Usage:
+  {% from "high-risk-plants/journeys/linear/features/address-book-picker/results.njk" import addressBookPickerResults %}
+  {{ addressBookPickerResults("consignor", picker, pickerCopy) }}
+#}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "govuk/components/fieldset/macro.njk" import govukFieldset %}
+{% from "govuk/components/pagination/macro.njk" import govukPagination %}
+
+{% macro pickerError(errorId, picker, pickerCopy) %}
+  <p id="{{ errorId }}" class="govuk-error-message">
+    <span class="govuk-visually-hidden">{{ pickerCopy.errorPrefix }}</span> {{ picker.error }}
+  </p>
+{% endmacro %}
+
+{% macro addressBookPickerResults(fieldName, picker, pickerCopy) %}
+  {% set errorId = fieldName + "-error" %}
+
+  <h2 class="govuk-heading-m">{{ pickerCopy.resultsHeading }}</h2>
+
+  {% if picker.rows.length %}
+    <p class="govuk-body">{{ picker.resultsCount }}</p>
+
+    {% set rows = [] %}
+    {% for row in picker.rows %}
+      {% set selectLabel %}<span class="govuk-visually-hidden">{{ pickerCopy.selectRowPrefix }} {{ row.name }}</span>{% endset %}
+      {% set selectCell %}
+        {{ govukRadios({
+          idPrefix: row.idPrefix,
+          name: fieldName,
+          classes: "govuk-radios--small",
+          items: [{
+            value: row.id,
+            html: selectLabel,
+            checked: row.checked
+          }]
+        }) }}
+      {% endset %}
+      {% set detailsCell %}
+        <details class="govuk-details">
+          <summary class="govuk-details__summary">
+            <span class="govuk-details__summary-text">{{ pickerCopy.viewDetails }}<span class="govuk-visually-hidden"> {{ pickerCopy.viewDetailsFor }} {{ row.name }}</span></span>
+          </summary>
+          <div class="govuk-details__text">
+            <ul class="govuk-list">
+              {% for line in row.detailLines %}
+                <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </details>
+      {% endset %}
+      {% set ignored = rows.push([
+        { html: selectCell },
+        { text: row.name },
+        { text: row.addressText },
+        { text: row.country },
+        { html: detailsCell }
+      ]) %}
+    {% endfor %}
+
+    {% set fieldsetContent %}
+      {% if picker.error %}
+        {{ pickerError(errorId, picker, pickerCopy) }}
+      {% endif %}
+      {{ govukTable({
+        head: [
+          { html: '<span class="govuk-visually-hidden">' + pickerCopy.table.selectHidden + '</span>' },
+          { text: pickerCopy.table.name },
+          { text: pickerCopy.table.address },
+          { text: pickerCopy.table.country },
+          { html: '<span class="govuk-visually-hidden">' + pickerCopy.table.actionsHidden + '</span>' }
+        ],
+        rows: rows
+      }) }}
+    {% endset %}
+
+    <div class="govuk-form-group{{ ' govuk-form-group--error' if picker.error }}">
+      {{ govukFieldset({
+        legend: { text: pickerCopy.resultsHeading, classes: "govuk-visually-hidden" },
+        describedBy: errorId if picker.error,
+        html: fieldsetContent
+      }) }}
+    </div>
+
+    {% if picker.pagination %}
+      {{ govukPagination(picker.pagination) }}
+    {% endif %}
+  {% else %}
+    <p class="govuk-body">{{ pickerCopy.noMatches }}</p>
+    {% if picker.error %}
+      <div class="govuk-form-group govuk-form-group--error">
+        {{ pickerError(errorId, picker, pickerCopy) }}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endmacro %}

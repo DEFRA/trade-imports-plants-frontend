@@ -7,8 +7,10 @@ import {
   describeSubmittedSearchPicker,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
+  postAnIdNotInTheBook,
   saveAndContinue,
   saveOrigin,
+  searchBox,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
@@ -16,6 +18,7 @@ import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
+import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
@@ -72,16 +75,15 @@ const startAtDestinationAlreadyArrived = async (page) => {
 
 describeSubmittedSearchPicker({
   pickerName: 'place of destination',
-  openPicker: startAtDestination,
-  copy
+  openPicker: startAtDestination
 })
 
 describeAddressPicker({
   pickerName: 'place-of-destination',
   openPicker: startAtDestination,
   pathOf: destinationPathOf,
-  copy,
-  missingAddressError: copy.errors.placeOfDestination,
+  notInBookError: copy.errors.placeOfDestination,
+  hubRowTitle: hubCopy.rows.destination.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
   afterSaveUrl: /\/identification-numbers$/,
@@ -107,11 +109,9 @@ test.describe('place-of-destination feature', () => {
     await expect(
       page.getByText(copy.descriptions.potatoes, { exact: true })
     ).toBeVisible()
+    await expect(searchBox(page)).toBeVisible()
     await expect(
-      page.getByLabel(copy.search.label, { exact: true })
-    ).toBeVisible()
-    await expect(
-      page.getByText(copy.search.hint, { exact: true })
+      page.getByText(pickerCopy.search.hint, { exact: true })
     ).toBeVisible()
   })
 
@@ -167,7 +167,7 @@ test.describe('place-of-destination — accessibility', () => {
     page
   }) => {
     await startAtDestination(page)
-    await saveAndContinue(page).click()
+    await postAnIdNotInTheBook(page)
     await expect(
       page.getByRole('alert').getByRole('link', {
         name: copy.errors.placeOfDestination

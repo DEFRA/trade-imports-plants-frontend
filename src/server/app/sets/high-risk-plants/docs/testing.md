@@ -75,10 +75,19 @@ readers `FORM_GROUP_ANCESTOR_XPATH`, `childTagsAndClassesOf` and
 `expectedFormGroupChildren`; `journeyFormOf`, which finds the page's journey
 form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
-`SECOND_PAGE_LINK`, `DENMARK`, `COPENHAGEN` and `MATCHES_NOTHING`; and
-`addressRowRadio` and `selectedAddressInset`, which find one address's radio
-and its selected-address inset on an address picker page given that page's
-copy. The type-ahead readers
+`SECOND_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
+`NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
+address picker page by the address's name, `selectedAddressInset`, which
+finds the selected-address inset by the address's name, and `searchBox`, which
+finds the picker's search box; `describeAddressPicker`,
+which registers the listing, searching, saving, moving-on and refusal tests for
+one single-address picker; `postAnIdNotInTheBook`, which posts a picker with its
+first address swapped for an id the book does not hold;
+`pickerResultsSummary`, which finds the paragraph straight after the results
+heading (the count, or the no-matches message), and
+`expectPickerResultsLayout`, which fails unless the count, the one radio group
+named "Select an address" and the link-free content under the page heading are
+as expected. The type-ahead readers
 `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, so the coverage report never counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.

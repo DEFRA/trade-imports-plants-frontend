@@ -2,6 +2,7 @@ import {
   ADDRESS_BOOK_PARTY,
   WOOD_LINE_FIELDS,
   addCommodityLine,
+  addressRowRadio,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
@@ -15,7 +16,6 @@ import {
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
-import { copy as contactCopy } from '../consignment-contact-select/copy/copy.en.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
@@ -39,12 +39,7 @@ const openContactEdit = async (page) => {
   await saveOrigin(page, reference, FRANCE)
   const contactPath = `${BASE}/notifications/${reference}/consignment/contact/select`
   await page.goto(contactPath)
-  await page
-    .getByRole('radio', {
-      name: `${contactCopy.selectRowPrefix} ${ADDRESS_BOOK_PARTY}`,
-      exact: true
-    })
-    .check()
+  await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
   await saveAndContinue(page).click()
   await page.goto(contactPath)
   await currentContactCard(page)

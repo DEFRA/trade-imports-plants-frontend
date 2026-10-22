@@ -6,8 +6,11 @@ import {
 } from '../../../../../../lib/http-status.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
-import { chosenFor, renderPicker } from '../address-book-picker/render.js'
+import { renderPicker } from '../address-book-picker/render.js'
+import {
+  resolveSelectionOnSave,
+  SELECTION
+} from '../address-book-picker/save-selection.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import { consignmentContactSelectPage as page } from './page.js'
 import { CONTACT_ADDRESS } from './fields.js'
@@ -15,19 +18,6 @@ import { pickerViewModel } from './view-model/index.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-/**
- * The contact for the consignment, picked from the organisation's address book.
- *
- * The whole page is one form. The search button and the primary are both
- * submits, told apart by their `action` value. Paging is a GET link; a small
- * progressive enhancement adds a newly ticked row to those links before the
- * browser follows them.
- *
- * The answer stored is a copy of the chosen record, as on the destination and
- * consignor pages. Unlike them, a blank save is allowed even before anything
- * is chosen: Save and continue with nothing ticked commits nothing and moves
- * on, leaving the task row not yet started.
- */
 export const meta = { ...page, collects: [CONTACT_ADDRESS] }
 
 const view = `${TEMPLATES}/features/consignment-contact-select/template`
@@ -46,8 +36,6 @@ const isSearch = (payload) => payload.action === SEARCH_ACTION
 
 const committedId = (answers) => answers[CONTACT_ADDRESS]?.pickedFromId
 
-// The page asks one question in one voice, so the heading and the description
-// are the page's own copy rather than chosen per notification.
 const render = (request, h, current, pageState) =>
   renderPicker(request, h, current, pageState, {
     view,
@@ -75,7 +63,6 @@ const post = async (request, h) => {
   const current = await state.get(request, h)
 
   if (isSearch(payload)) {
-    // A new search starts at the first page, whichever page it was run from.
     return render(request, h, current, {
       query,
       page: FIRST_PAGE,
@@ -83,12 +70,14 @@ const post = async (request, h) => {
     })
   }
 
-  if (!selectedId) {
+  const selection = await resolveSelectionOnSave(request, {
+    fieldName: CONTACT_ADDRESS,
+    selectedId
+  })
+  if (selection.outcome === SELECTION.nothingChosen) {
     return h.redirect(await kit.nextTarget(request, page, current.scope))
   }
-
-  const chosen = await chosenFor(organisationIdOf(request), selectedId)
-  if (!chosen) {
+  if (selection.outcome === SELECTION.notInBook) {
     return (
       await render(request, h, current, {
         query,
@@ -99,6 +88,7 @@ const post = async (request, h) => {
     ).code(HTTP_STATUS_BAD_REQUEST)
   }
 
+  const chosen = selection.record
   let committed
   const { failure } = await kit.recoverableSave(
     async () => {

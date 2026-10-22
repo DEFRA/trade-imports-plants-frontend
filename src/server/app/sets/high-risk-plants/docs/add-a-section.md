@@ -356,9 +356,19 @@ set-up in the test file:
 
 - controller tests:
   [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after;
-  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
-  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+  seeds a journey, runs one handler and returns the answers before and after
+  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
+  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
+  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
+  a locale pair
+- address-book picker tests:
+  [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
+  — `describeAddressBookPickerController` registers the controller tests every
+  picker shares;
+  [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
+  — `describePickerViewModel` registers the view model and paging tests, and
+  `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
+  with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
   `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and

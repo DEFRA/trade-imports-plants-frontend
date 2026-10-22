@@ -9,8 +9,10 @@ import {
   describeSubmittedSearchPicker,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
+  postAnIdNotInTheBook,
   saveAndContinue,
   saveOrigin,
+  searchBox,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE } from '../../../../../../../../../fit/set-base.js'
@@ -19,6 +21,7 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
+import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
@@ -28,10 +31,9 @@ const PAGE_URL = /\/notifications\/[^/]+\/consignors\/select/
 const FIRST_ROW_RADIO = '#consignor'
 
 const FRANCE = 'France'
+const POTATOES = 'potatoes'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
-
-const rowRadio = (page, name) => addressRowRadio(page, copy, name)
 
 const consignorPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignors/select`
@@ -46,18 +48,33 @@ const startAtConsignor = async (page) => {
   return reference
 }
 
+const saveTheAddressBookParty = async (page) => {
+  await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+  await saveAndContinue(page).click()
+}
+
+const switchCommodityType = async (page, reference, typeKey) => {
+  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
+  await page
+    .getByRole('radio', {
+      name: commodityTypeCopy.typeLabels[typeKey],
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
+}
+
 describeSubmittedSearchPicker({
   pickerName: 'consignor',
-  openPicker: startAtConsignor,
-  copy
+  openPicker: startAtConsignor
 })
 
 describeAddressPicker({
   pickerName: 'consignor-select',
   openPicker: startAtConsignor,
   pathOf: consignorPathOf,
-  copy,
-  missingAddressError: copy.errors.consignor,
+  notInBookError: copy.errors.consignor,
+  hubRowTitle: hubCopy.rows.consignor.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
   afterSaveUrl: /\/identification-numbers$/,
@@ -83,11 +100,9 @@ test.describe('consignor-select feature', () => {
     await expect(
       page.getByText(copy.description, { exact: true })
     ).toBeVisible()
+    await expect(searchBox(page)).toBeVisible()
     await expect(
-      page.getByLabel(copy.search.label, { exact: true })
-    ).toBeVisible()
-    await expect(
-      page.getByText(copy.search.hint, { exact: true })
+      page.getByText(pickerCopy.search.hint, { exact: true })
     ).toBeVisible()
   })
 
@@ -110,7 +125,7 @@ test.describe('consignor-select feature', () => {
     await page.getByRole('link', { name: hubCopy.rows.consignor.title }).click()
     await expect(page).toHaveURL(PAGE_URL)
 
-    await rowRadio(page, ADDRESS_BOOK_PARTY).check()
+    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
@@ -160,7 +175,7 @@ test.describe('consignor-select — accessibility', () => {
     page
   }) => {
     await startAtConsignor(page)
-    await saveAndContinue(page).click()
+    await postAnIdNotInTheBook(page)
     await expect(
       page.getByRole('alert').getByRole('link', {
         name: copy.errors.consignor
@@ -176,54 +191,29 @@ test.describe('consignor scope and invalid selections', () => {
     await signIn(page)
   })
 
-  test('rejects a missing address-book id and preserves the search', async ({
-    page
-  }) => {
-    await startAtConsignor(page)
-    await page.getByLabel(copy.search.label, { exact: true }).fill('Imports')
-    await page.locator(FIRST_ROW_RADIO).evaluate((input) => {
-      input.value = 'missing-address'
-      input.checked = true
-    })
-    await saveAndContinue(page).click()
-    await expect(
-      page.getByRole('alert').getByRole('link', { name: copy.errors.consignor })
-    ).toBeVisible()
-    await expect(
-      page.getByLabel(copy.search.label, { exact: true })
-    ).toHaveValue('Imports')
-  })
-
   test('hides the row and rejects a deep link after switching to potatoes', async ({
     page
   }) => {
     const reference = await startAtConsignor(page)
-    await rowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
-    await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-    await page
-      .getByRole('radio', {
-        name: commodityTypeCopy.typeLabels.potatoes,
-        exact: true
-      })
-      .check()
-    await saveAndContinue(page).click()
+    await saveTheAddressBookParty(page)
+    await switchCommodityType(page, reference, POTATOES)
     await page.goto(`${BASE}/notifications/${reference}`)
     await expect(
       page.getByRole('link', { name: hubCopy.rows.consignor.title })
     ).toHaveCount(0)
     await page.goto(consignorPathOf(reference))
     await expect(page).not.toHaveURL(PAGE_URL)
-    await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-    await page
-      .getByRole('radio', {
-        name: commodityTypeCopy.typeLabels[WOOD_AND_CUT_TREES],
-        exact: true
-      })
-      .check()
-    await saveAndContinue(page).click()
+  })
+
+  test('does not restore the saved consignor after switching back from potatoes', async ({
+    page
+  }) => {
+    const reference = await startAtConsignor(page)
+    await saveTheAddressBookParty(page)
+    await switchCommodityType(page, reference, POTATOES)
+    await switchCommodityType(page, reference, WOOD_AND_CUT_TREES)
     await page.goto(consignorPathOf(reference))
     await expect(page).toHaveURL(PAGE_URL)
-    await expect(rowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
+    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
   })
 })
