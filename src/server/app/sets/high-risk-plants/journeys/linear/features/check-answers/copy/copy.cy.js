@@ -37,7 +37,7 @@ export const copy = {
       commodities: 'Cwblhewch fanylion y nwydd',
       arrivalDetails: 'Cwblhewch y manylion cyrraedd',
       placeOfDestination: 'Cwblhewch y man cyrchfan',
-      consignor: 'Cwblhewch yr anfonwr neu’r allforiwr',
+      consignor: 'Cwblhewch yr anfonwr',
       identificationNumbers: 'Cwblhewch y rhifau adnabod',
       contact: 'Cwblhewch y cyswllt'
     }
@@ -55,7 +55,7 @@ export const copy = {
     import: 'Manylion mewnforio',
     commodity: 'Nwydd',
     arrival: 'Manylion cyrraedd',
-    consignor: 'Anfonwr neu allforiwr',
+    consignor: 'Anfonwr',
     identification: 'Rhifau adnabod',
     contact: 'Cyswllt'
   },

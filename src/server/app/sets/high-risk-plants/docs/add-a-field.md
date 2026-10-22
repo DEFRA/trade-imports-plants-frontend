@@ -171,7 +171,11 @@ copy test.
 ## 5. Add the check-answers row
 
 Add the row to the matching card under the check-answers feature's view model.
-Add its label and any displayed value labels to both check-answers copy bundles.
+Add its label to both check-answers copy bundles. A value label that the
+feature's own page already shows is read from that feature's label function
+(for example `meansOfTransportLabel` in the transport feature), never copied
+into the check-answers copy. Value labels only the review shows go in the
+check-answers copy bundles.
 
 Use `row()` for an editable scalar. Pass the obligation name so `changeAction()`
 resolves the owning page through the dispatch index. Use a service label function
@@ -245,9 +249,19 @@ set-up in the test file:
 
 - controller tests:
   [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after;
-  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
-  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+  seeds a journey, runs one handler and returns the answers before and after
+  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
+  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
+  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
+  a locale pair
+- address-book picker tests:
+  [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
+  — `describeAddressBookPickerController` registers the controller tests every
+  picker shares;
+  [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
+  — `pickerViewModelSuites` builds the view model and paging test cases, and
+  `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
+  with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
   `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and

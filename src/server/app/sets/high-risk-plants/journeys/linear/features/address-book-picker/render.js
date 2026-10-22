@@ -10,12 +10,9 @@ import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { addressText } from './address-lines.js'
 
-const cardCopy = copyFor({ en, cy })
+const pickerCopy = copyFor({ en, cy })
 
-/** A selection resolves only to a record the book still holds: a missing or
- * soft-deleted id is treated as no selection. An outage is not that — the
- * address book throws and the throw propagates, because an unavailable service
- * must never be indistinguishable from a deletion. */
+/** Resolves an address-book id to its record, or to undefined when the id is empty, missing or soft-deleted. */
 export const chosenFor = async (orgId, selectedId) => {
   if (!selectedId) {
     return undefined
@@ -39,7 +36,7 @@ const heldCopyOf = async (request, current, fieldName) => {
     ]
       .filter(Boolean)
       .join(', '),
-    editDetails: cardCopy.editDetails,
+    editDetails: pickerCopy.editDetails,
     editHref: partyEditHref(
       current.journey.journeyId,
       partyRegistryEntry,
@@ -50,12 +47,7 @@ const heldCopyOf = async (request, current, fieldName) => {
 }
 
 /**
- * Render one address-book picker page.
- *
- * Every picker renders the same surface — a search box, one page of results as
- * radios, the selection and the paging — so only the page's own identity, its
- * copy and its heading vary. Those arrive in `binding`; the rest is the same
- * page each time.
+ * Renders one address-book picker page.
  *
  * @param {object} request - the Hapi request.
  * @param {object} h - the Hapi response toolkit.
@@ -64,7 +56,7 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {string} state.query - the search term to run.
  * @param {number} state.page - the page of results to show.
  * @param {string} state.selectedId - the address-book id currently ticked.
- * @param {string} [state.error] - the refusal to render above the table.
+ * @param {string} [state.error] - the refusal to render with the results.
  * @param {boolean} [state.recoverableError] - whether a save has just failed.
  * @param {object} binding - what makes this picker its own page.
  * @param {string} binding.view - the template path.
@@ -86,8 +78,6 @@ export const renderPicker = async (
   const orgId = organisationIdOf(request)
   const found = await addressBook.search(orgId, { query, page: pageNumber })
   const tickedRecord = await chosenFor(orgId, selectedId)
-  // A record that no longer resolves must not travel as "Selected address" or
-  // in the paging links, so it counts as no selection here too.
   const effectiveSelectedId = tickedRecord ? selectedId : ''
 
   return h.view(view, {
@@ -100,6 +90,7 @@ export const renderPicker = async (
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
+    pickerCopy,
     heading,
     description,
     heldCopy: await heldCopyOf(request, current, fieldName),
@@ -109,7 +100,7 @@ export const renderPicker = async (
     picker: pickerViewModel(
       current.journey.journeyId,
       { query, selectedId: effectiveSelectedId, error, found, tickedRecord },
-      copy
+      pickerCopy
     )
   })
 }

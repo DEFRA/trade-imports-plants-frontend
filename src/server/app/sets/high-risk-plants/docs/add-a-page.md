@@ -109,8 +109,9 @@ Use `collects: []` only when the page owns no obligation or edits a collection
 whose root another page already owns.
 
 Use one `render()` helper for GET and POST errors. Build the common view with
-`kit.base()`. Pass `journey` so the shared reference strip renders, and `page`
-so the section caption does. The normal back link is `hubPath(journey.journeyId)`.
+`kit.base()`. Pass `journey` so the shared reference strip renders. A page that
+shows no status strip still passes `journey`, with `showJourneyStrip: false`.
+Pass `page` so the section caption renders. The normal back link is `hubPath(journey.journeyId)`.
 
 GET calls `state.get()` once and prefills from `answers`. POST:
 
@@ -129,11 +130,12 @@ rule, opt in to saving a blank answer on that exit by passing
 `{ allowMissing: kit.isHubExit(request) }` to `validate`, as
 [`journeys/linear/features/commodity-type/controller.js`](../journeys/linear/features/commodity-type/controller.js)
 does. Every other rule still refuses. An address-book picker does not call
-`validate`: it leaves without a commit when nothing is ticked and
-`kit.isHubExit(request)` is true, as
-[`journeys/linear/features/place-of-destination/controller.js`](../journeys/linear/features/place-of-destination/controller.js)
-does. These task-row pages offer no overview exit and stay strict on every
-submit:
+`validate`: it resolves the save through `resolveSelectionOnSave` in
+[`journeys/linear/features/address-book-picker/save-selection.js`](../journeys/linear/features/address-book-picker/save-selection.js),
+so a save with nothing ticked always leaves without a commit and an id the book
+does not hold is refused.
+
+These task-row pages offer no overview exit and stay strict on every submit:
 
 - the commodities list
   ([`journeys/linear/features/commodities/list/list.controller.js`](../journeys/linear/features/commodities/list/list.controller.js))
@@ -278,8 +280,13 @@ for potatoes. Update its run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 
-Add the page's fields to the matching check-answers card and both check-answers
-copy bundles. Pass each obligation name to `row()` or `changeAction()` so the
+Add the page's rows to the matching check-answers card and their row labels to
+both check-answers copy bundles. A value label that the page itself already
+shows is read from that feature's label function (for example
+`meansOfTransportLabel`), never copied into the check-answers copy. Value
+labels only the review shows go in the check-answers copy bundles.
+
+Pass each obligation name to `row()` or `changeAction()` so the
 dispatch index builds the Change URL. Extend the check-answers feature spec.
 
 Canonical persistence is complete once the feature binding is registered. If the
@@ -336,9 +343,19 @@ set-up in the test file:
 
 - controller tests:
   [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after;
-  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
-  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+  seeds a journey, runs one handler and returns the answers before and after
+  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
+  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
+  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
+  a locale pair
+- address-book picker tests:
+  [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
+  — `describeAddressBookPickerController` registers the controller tests every
+  picker shares;
+  [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
+  — `pickerViewModelSuites` builds the view model and paging test cases, and
+  `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
+  with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
   `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and

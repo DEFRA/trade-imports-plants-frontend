@@ -6,8 +6,11 @@ import {
 } from '../../../../../../lib/http-status.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
-import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
-import { chosenFor, renderPicker } from '../address-book-picker/render.js'
+import { renderPicker } from '../address-book-picker/render.js'
+import {
+  resolveSelectionOnSave,
+  SELECTION
+} from '../address-book-picker/save-selection.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import {
   ALREADY_ARRIVED,
@@ -20,16 +23,6 @@ import { pickerViewModel } from './view-model/index.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-/**
- * Where the consignment is going, picked from the organisation's address book.
- *
- * The whole page is one form. The search button and the primary are both
- * submits, told apart by their `action` value, and paging is a link — so the
- * picker needs no client JavaScript at all.
- *
- * The answer stored is a copy of the chosen record, so a later edit or
- * deletion in the address book does not change the notification.
- */
 export const meta = { ...page, collects: [PLACE_OF_DESTINATION] }
 
 const view = `${TEMPLATES}/features/place-of-destination/template`
@@ -46,15 +39,6 @@ const parsePageNumber = (value) => {
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
-/**
- * Which of the three questions this page is asking.
- *
- * Potatoes are never asked whether the consignment has arrived — reg 24A gives
- * them no post-arrival branch — so a notification with no arrival status in
- * scope is asked for the place of destination. Plants and wood take the state
- * from the arrival-status page; one that has not been answered yet is asked
- * the pre-arrival question, which is the one the journey opens on.
- */
 const destinationStateOf = (answers, scope) => {
   if (!scope.has(ARRIVAL_STATUS)) {
     return POTATO_DESTINATION
@@ -66,16 +50,6 @@ const destinationStateOf = (answers, scope) => {
 
 const committedId = (answers) => answers[PLACE_OF_DESTINATION]?.pickedFromId
 
-// An edited copy has no source record to tick, so a save with nothing ticked
-// must not lose it. 'Save and return to overview' with nothing ticked leaves
-// without refusing, as every other overview-linked page does
-// (docs/validation.md).
-const leavesUnchanged = (request, selectedId, answers) =>
-  !selectedId &&
-  (Boolean(answers[PLACE_OF_DESTINATION]) || kit.isHubExit(request))
-
-// The question means a different thing in each of the three states, so the
-// heading and the description are chosen per notification rather than fixed.
 const render = (request, h, current, pageState) => {
   const destinationState = destinationStateOf(current.answers, current.scope)
 
@@ -106,7 +80,6 @@ const post = async (request, h) => {
   const current = await state.get(request, h)
 
   if (isSearch(payload)) {
-    // A new search starts at the first page, whichever page it was run from.
     return render(request, h, current, {
       query,
       page: FIRST_PAGE,
@@ -114,12 +87,14 @@ const post = async (request, h) => {
     })
   }
 
-  if (leavesUnchanged(request, selectedId, current.answers)) {
+  const selection = await resolveSelectionOnSave(request, {
+    fieldName: PLACE_OF_DESTINATION,
+    selectedId
+  })
+  if (selection.outcome === SELECTION.nothingChosen) {
     return h.redirect(await kit.nextTarget(request, page, current.scope))
   }
-
-  const chosen = await chosenFor(organisationIdOf(request), selectedId)
-  if (!chosen) {
+  if (selection.outcome === SELECTION.notInBook) {
     return (
       await render(request, h, current, {
         query,
@@ -130,6 +105,7 @@ const post = async (request, h) => {
     ).code(HTTP_STATUS_BAD_REQUEST)
   }
 
+  const chosen = selection.record
   let committed
   const { failure } = await kit.recoverableSave(
     async () => {

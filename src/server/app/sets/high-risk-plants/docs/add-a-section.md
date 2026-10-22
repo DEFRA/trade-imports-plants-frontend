@@ -286,8 +286,10 @@ argument in both `routes-high-risk-plants.js` and the test fixture at
 ## 7. Add check-answers output
 
 Add a section or cards for the feature under the check-answers feature's view
-model. Add English and Welsh headings, row labels and value labels to the
-check-answers copy bundles.
+model. Add English and Welsh headings and row labels to the check-answers copy
+bundles. A value label that the feature's own page already shows is read from
+that feature's label function, never copied into the check-answers copy. Value
+labels only the review shows go in the check-answers copy bundles.
 
 Pass obligation names to `row()` and `changeAction()` so Change links resolve
 through dispatch. Use `scope` to omit out-of-scope rows. Extend the
@@ -354,9 +356,19 @@ set-up in the test file:
 
 - controller tests:
   [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after;
-  `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`, `postHandlerOf`
-  and `postHandlerEndingWith` build the request, toolkit, logger and handler
+  seeds a journey, runs one handler and returns the answers before and after
+  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
+  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
+  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
+  a locale pair
+- address-book picker tests:
+  [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
+  — `describeAddressBookPickerController` registers the controller tests every
+  picker shares;
+  [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
+  — `pickerViewModelSuites` builds the view model and paging test cases, and
+  `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
+  with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
   `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and

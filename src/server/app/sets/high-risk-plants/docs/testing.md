@@ -64,8 +64,30 @@ holds the steps more than one spec takes: `startNotification`,
 `chooseAutocompleteOption`, `saveAndContinue`, `startPotatoNotification`,
 `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
-`GOVUK_BLUE_SHADE_50` and `WHITE`, and `describeDatePickerLook`, which
-registers the four look tests for one date field. The type-ahead readers
+`GOVUK_BLUE_SHADE_50` and `WHITE`, `expectBlueIconButtonLook`, which checks
+the blue, white, hover and focus look of one icon button,
+`describeDatePickerLook`, which registers the four look tests for one date
+field, and `describeSubmittedSearchPicker`, which registers the look,
+no-JavaScript Enter search and three-state axe tests for one address picker's
+submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
+`POTATO_VARIETY`, `CHECK_ANSWERS_URL` and `WOOD_LINE_FIELDS`; the form-group
+readers `FORM_GROUP_ANCESTOR_XPATH`, `childTagsAndClassesOf` and
+`expectedFormGroupChildren`; `journeyFormOf`, which finds the page's journey
+form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
+values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
+`SECOND_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
+`NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
+address picker page by the address's name, `selectedAddressInset`, which
+finds the selected-address inset by the address's name, and `searchBox`, which
+finds the picker's search box; `describeAddressPicker`,
+which registers the listing, searching, saving, moving-on and refusal tests for
+one single-address picker; `postAnIdNotInTheBook`, which posts a picker with its
+first address swapped for an id the book does not hold;
+`pickerResultsSummary`, which finds the paragraph straight after the results
+heading (the count, or the no-matches message), and
+`expectPickerResultsLayout`, which fails unless the count, the one radio group
+named "Select an address" and the link-free content under the page heading are
+as expected. The type-ahead readers
 `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, so the coverage report never counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.

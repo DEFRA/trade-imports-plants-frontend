@@ -28,7 +28,8 @@ import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js
 import * as ports from '../../../../../../services/ports/index.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney
+  installHighRiskPlantsJourney,
+  TECH_IMPORTS_COPY
 } from '../../test-support.js'
 import {
   sectionEntry,
@@ -362,6 +363,29 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
     expect(
       cards.find(({ title }) => title === copy.cards.contact)
     ).toMatchObject({ anchor: 'contact', error: copy.errors.cards.contact })
+  })
+
+  it('Should call the consignor Consignor on its unfinished card and in its summary error', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: PLANTS_FOR_PLANTING, countryOfOrigin: 'FR' }
+    })
+    expect(cardsOf(result).map(({ title }) => title)).toContain('Consignor')
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toContain('Complete consignor')
+  })
+
+  it('Should name the consignor in the error for an answered consignor that breaks the address rules', async () => {
+    const result = await driveHandler(get, {
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: 'FR',
+        consignor: { ...TECH_IMPORTS_COPY, email: INVALID_EMAIL }
+      }
+    })
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toContain('Correct the address details for the consignor')
   })
 
   it('Should mark no card on a complete notification', async () => {

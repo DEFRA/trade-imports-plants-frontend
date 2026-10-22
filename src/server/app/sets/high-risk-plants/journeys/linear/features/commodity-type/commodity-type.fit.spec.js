@@ -4,6 +4,7 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
+  backLink,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -36,9 +37,6 @@ const HINT_DAYS = {
   'plants-for-planting': PLANTS_WOOD_DAYS_AFTER_ARRIVAL,
   'wood-and-cut-trees': PLANTS_WOOD_DAYS_AFTER_ARRIVAL
 }
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const radioFor = (page, value) =>
   page.getByRole('radio', { name: copy.typeLabels[value], exact: true })

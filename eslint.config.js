@@ -65,6 +65,13 @@ export default [
     }
   },
   {
+    files: ['src/**/*.test.js', 'src/**/*.fit.spec.js'],
+    plugins: { sonarjs },
+    rules: {
+      'sonarjs/no-empty-test-file': 'error'
+    }
+  },
+  {
     files: ['**/*.{js,cjs,mjs}'],
     plugins: { 'code-quality': codeQuality },
     rules: {

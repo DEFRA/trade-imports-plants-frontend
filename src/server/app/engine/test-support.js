@@ -1,4 +1,4 @@
-import { expect } from 'vitest'
+import { expect, it } from 'vitest'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
@@ -179,7 +179,8 @@ export const driveHandler = async (
     before: seed,
     after,
     response,
-    view: h.captured.view
+    view: h.captured.view,
+    logger: request.logger
   }
 }
 
@@ -196,3 +197,12 @@ export const expectEveryLeafToBeCopy = (locale, bundle) => {
     expect(isCopyLeaf(value), `${locale}: ${path} must be copy`).toBe(true)
   }
 }
+
+export const itHoldsCopyAtEveryLeaf = (en, cy) =>
+  it.each([
+    ['en', en],
+    ['cy', cy]
+  ])(
+    'Should hold a non-empty string or copy function at every %s leaf',
+    expectEveryLeafToBeCopy
+  )

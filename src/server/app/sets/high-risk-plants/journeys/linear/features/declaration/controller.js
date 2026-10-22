@@ -38,6 +38,7 @@ const render = (
     ...kit.base(copy.title, {
       backLink: pagePath(journey.journeyId, kit.CYA_SLUG),
       journey,
+      showJourneyStrip: false,
       page,
       recoverableError
     }),

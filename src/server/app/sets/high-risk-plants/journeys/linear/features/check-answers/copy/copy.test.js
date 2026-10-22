@@ -28,8 +28,6 @@ describe('checkAnswers copy module', () => {
     }
   })
 
-  // The review names every unfinished card with its errors.cards entry, so a
-  // new card cannot reach the review page without one.
   it('Should name an unfinished-card error for every review card, and no other', () => {
     const ids = REVIEW_CARDS.map((card) => card.id)
     expect(Object.keys(copy.errors.cards)).toEqual(ids)
