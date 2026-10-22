@@ -259,7 +259,7 @@ set-up in the test file:
   — `describeAddressBookPickerController` registers the controller tests every
   picker shares;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
-  — `describePickerViewModel` registers the view model and paging tests, and
+  — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
   with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
