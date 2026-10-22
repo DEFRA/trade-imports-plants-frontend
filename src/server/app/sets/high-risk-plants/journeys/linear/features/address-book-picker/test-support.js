@@ -214,6 +214,20 @@ const describePagingLinks = ({ pagination, slug }) => {
   })
 }
 
+export const rowIdPrefixesOnFirstPage = (pickerViewModel) =>
+  pickerViewModel(
+    JOURNEY_ID,
+    {
+      query: '',
+      selectedId: '',
+      found: found([
+        addressRecord(TECH_IMPORTS_ID, TECH_IMPORTS_NAME),
+        addressRecord(IMPORT_CO, 'Import Co UK')
+      ])
+    },
+    pickerCopy
+  ).rows.map((row) => row.idPrefix)
+
 const describeRows = ({ fieldName, pickerViewModel }) => {
   describe('#pickerViewModel', () => {
     const rows = [
@@ -227,15 +241,6 @@ const describeRows = ({ fieldName, pickerViewModel }) => {
         { query: '', selectedId, found: pagesFound },
         pickerCopy
       )
-
-    it('Should give the first row the field name so the error link focuses it', () => {
-      const picker = viewModelFor(found(rows))
-
-      expect(picker.rows.map((row) => row.idPrefix)).toEqual([
-        fieldName,
-        `${fieldName}-2`
-      ])
-    })
 
     it('Should give the first row of every page the bare field name so the error link resolves', () => {
       const picker = viewModelFor(found(rows, { page: 2, total: 7 }))
