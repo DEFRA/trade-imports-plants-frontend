@@ -946,10 +946,10 @@
         {
           "id": "consignor-select",
           "slug": "consignors/select",
-          "title": "Consignor or exporter",
+          "title": "Consignor",
           "gate": null,
           "collects": ["consignor"],
-          "titleCy": "Anfonwr neu allforiwr",
+          "titleCy": "Anfonwr",
           "animals": {
             "relation": "variant-of-animals",
             "page": "consignor",
@@ -1045,7 +1045,7 @@
           "sectionsCy": "1. Am y llwyth | 2. Cyrraedd a chyrchfan | 3. Partïon y llwyth",
           "submitBlock": "Now submit your notification | Continue to the declaration to submit your notification. | Continue",
           "readOnly": "SUBMITTED: no Change links, late-notification banner when lateNotificationIndicator is late, Delete button (link delete); AMEND: Cancel amendment link (link cancel-amend) and the amendment-cancelled banner after ?cancelled=1; no Copy as new button (parked, NNS-UN-041). Ruled c-030 — copied from animals check-answers deleteHref / cancelAmendHref with copyAction omitted.",
-          "errorCopy": "Correct the address details for the consignor or exporter | Correct the address details for the place of destination | Correct the contact address details for this consignment | Select a country of origin that matches the commodities in the consignment",
+          "errorCopy": "Correct the address details for the consignor | Correct the address details for the place of destination | Correct the contact address details for this consignment | Select a country of origin that matches the commodities in the consignment",
           "backLink": "hub",
           "notes": "copied from animals check-answers: sectioned summary cards with Change links (?change=1), Not provided for missing values, party cards carry Change and Edit details links, a party copy that breaks the edit-page address rules raises an error summary and POST refuses (the declaration refuses Submit on the same check), read-only rule when SUBMITTED, submit block. Builds the check-answers feature and its view-model/ (skeleton hub-and-check-answers-shape). Same id and slug (kit.CYA_SLUG). | Ruled at D1-territory-and-timing (d-006, c-035): lateWarning field added (DRAFT-only govukWarningText from the lateness helper with the request clock). | Ruled at D4-parties-and-contact (d-013, c-025): The Contact card's Telephone number and Email address rows are a plants-only addition (animals' card shows name and address only — party-row.js): grounded in annex:6/common-data/item:2,4 and NNS-UN-007; row labels are provisional copy, no Welsh invented. | Ruled at D4-parties-and-contact (d-014, c-026): no Consignor card renders for potatoes (carried by the sections string). | Ruled at D3-origin-values-and-validation (d-051, c-015): Row labels for arrivalDate and placeOfDestination come from labelByState (potatoes | not-yet-arrived | already-arrived) and the destination card heading from headingByState, never the generic label, so a potato notification never reads date of landing (c-015). | Ruled at D3-origin-values-and-validation (d-055, c-022): The view-model re-runs the origin narrowing over the stored countryOfOrigin and the lines now present; a mismatch raises the error summary with a Change link to origin and POST refuses until fixed — same mechanism as the party errors; closes the hole scope-and-wipe cannot (c-013, c-022). | Ruled at D5-reference-status-and-lifecycle (d-062, c-030): readOnly rewritten for the per-status action set.",
           "lateWarning": "DRAFT status only: govukWarningText above the submit block when lateness(now, answers) is late (c-035); the submit block and Continue are unchanged; the SUBMITTED read-only view shows the notification banner from the stored value instead (readOnly field)"
@@ -2309,8 +2309,8 @@
         "service": "services/address-book",
         "storage": "copy { pickedFromId, name, phone, email, address } taken at pick time, as placeOfDestination; edited for this notification only via Edit details (same copied-literal shape as animals consignor, EUDPA-660)"
       },
-      "label": "Consignor or exporter",
-      "labelCy": "Anfonwr neu allforiwr",
+      "label": "Consignor",
+      "labelCy": "Anfonwr",
       "hint": "This is the sender of the consignment.",
       "hintCy": "Dyma anfonwr y llwyth.",
       "errorCopy": "Select a consignor from the list",

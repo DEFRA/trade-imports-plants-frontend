@@ -28,8 +28,8 @@ export const copy = {
   viewDetailsFor: 'ar gyfer',
   parties: {
     consignor: {
-      title: 'Anfonwr neu allforiwr',
-      current: 'Anfonwr neu allforiwr presennol'
+      title: 'Anfonwr',
+      current: 'Anfonwr presennol'
     },
     placeOfDestination: {
       title: 'Man cyrchfan',

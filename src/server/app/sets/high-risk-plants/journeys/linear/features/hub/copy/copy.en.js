@@ -25,7 +25,7 @@ export const copy = {
     review: { title: 'Check and submit' },
     contact: { title: 'Contact address for consignment' },
     identificationNumbers: { title: 'Identification numbers' },
-    consignor: { title: 'Consignor or exporter' },
+    consignor: { title: 'Consignor' },
     commodities: { title: 'What are you importing?' },
     origin: { title: 'Where is this consignment coming from?' },
     arrival: { title: 'Arrival details' },

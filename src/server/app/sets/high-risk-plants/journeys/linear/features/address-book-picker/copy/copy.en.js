@@ -26,8 +26,8 @@ export const copy = {
   viewDetailsFor: 'for',
   parties: {
     consignor: {
-      title: 'Consignor or exporter',
-      current: 'Current consignor or exporter'
+      title: 'Consignor',
+      current: 'Current consignor'
     },
     placeOfDestination: {
       title: 'Place of destination',

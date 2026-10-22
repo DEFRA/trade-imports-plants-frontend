@@ -42,10 +42,11 @@ describe('GET consignor-select — the question it asks', () => {
   beforeAll(installStubs)
   beforeEach(() => store.clear())
 
-  it('Should title the page and caption the consignment parties section', async () => {
+  it('Should title and head the page Consignor and caption the consignment parties section', async () => {
     const result = await driveHandler(get, { seed: plants() })
 
-    expect(result.view.context.pageTitle).toBe('Consignor or exporter')
+    expect(result.view.context.pageTitle).toBe('Consignor')
+    expect(result.view.context.heading).toBe('Consignor')
     expect(result.view.context.caption).toBe('Consignment parties')
   })
 })
@@ -74,7 +75,7 @@ describe('GET consignor-select — the address this notification holds', () => {
     })
 
     expect(result.view.context.heldCopy).toEqual({
-      title: 'Current consignor or exporter',
+      title: 'Current consignor',
       name: EDITED_NAME,
       summary: '18 Dockside Road, London, E14 9GE, United Kingdom',
       editDetails: 'Edit details',
