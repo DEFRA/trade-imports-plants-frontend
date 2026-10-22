@@ -22,14 +22,6 @@ import {
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-/**
- * Whether the consignment has already arrived in Great Britain.
- *
- * The answer decides what the rest of the arrival section asks for, so it is
- * put before the dates and the destination. A potato notification never
- * reaches the page: `arrivalStatus` is out of scope for potatoes, which makes
- * the derived page gate fail and the opening run skip the step.
- */
 export const meta = { ...page, collects: [ARRIVAL_STATUS] }
 
 const view = `${TEMPLATES}/features/arrival-status/template`
@@ -41,10 +33,7 @@ const fields = () =>
     requiredOneOf(ARRIVAL_STATUS, ARRIVAL_STATUSES, copy.errors.arrivalStatus)
   )
 
-// Only the post-arrival hint quotes the notification window. The day count is
-// the timing-windows constant, so the sentence lives in the copy bundle and
-// the number is named once here.
-const hintTextFor = (value) =>
+const statusHintWithNotificationWindow = (value) =>
   value === ALREADY_ARRIVED
     ? copy.statusHints[value](PLANTS_WOOD_DAYS_AFTER_ARRIVAL)
     : copy.statusHints[value]
@@ -53,7 +42,7 @@ const statusOptions = (selected) =>
   ARRIVAL_STATUSES.map((value) => ({
     value,
     text: copy.statusLabels[value],
-    hint: { text: hintTextFor(value) },
+    hint: { text: statusHintWithNotificationWindow(value) },
     checked: value === selected
   }))
 
@@ -90,11 +79,13 @@ const post = async (request, h) => {
   })
   const current = await state.get(request, h)
   if (errors) {
+    kit.logRefusal(request, { fieldErrors: errors })
     return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)
   }
 
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(request, h, {
         [ARRIVAL_STATUS]: value[ARRIVAL_STATUS]

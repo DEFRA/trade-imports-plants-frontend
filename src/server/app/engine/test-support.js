@@ -1,8 +1,15 @@
 import { expect, it } from 'vitest'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
+import {
+  REFUSAL_LOG_MESSAGE,
+  SAVE_FALLBACK_LOG_MESSAGE
+} from '../shared/kit.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
-import { records } from './persistence/records.js'
+import { configureRecords, records } from './persistence/records.js'
+import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { records as recordsStub } from '../services/persistence/records/stub/index.js'
+import { currentSetId } from '../shared/set-context.js'
 
 export const authenticatedCredentials = Object.freeze({
   contactId: 2100010101,
@@ -93,6 +100,37 @@ export const recordingLogger = () => {
   }
 }
 
+/** Asserts the logger holds exactly one line. */
+export const expectOneLogged = (logger, { level, fields, message }) =>
+  expect(logger.entries).toEqual([{ level, fields, message }])
+
+const refusalEntry = ({ journeyId, errorCodes, ...details }) => ({
+  level: 'info',
+  message: REFUSAL_LOG_MESSAGE,
+  fields: expect.objectContaining({ journeyId, errorCodes, ...details })
+})
+
+export const expectOneRefusalLogged = (logger, refusal) =>
+  expectOneLogged(logger, refusalEntry(refusal))
+
+/** The log entry for a save fallback: the journey id, the caught error and
+ * any ids the page passed. */
+export const saveFallbackEntry = ({ journeyId, err, ...ids }) => ({
+  level: 'warn',
+  message: SAVE_FALLBACK_LOG_MESSAGE,
+  fields: expect.objectContaining({ journeyId, ...ids, err })
+})
+
+export const expectOneSaveFallbackLogged = (logger, fallback) =>
+  expectOneLogged(logger, saveFallbackEntry(fallback))
+
+/** The recoverable records error for a backend that answered 503 to `operation`. */
+export const unavailableBackendError = (operation) =>
+  new BackendRequestError(operation, {
+    status: 503,
+    statusText: 'Service Unavailable'
+  })
+
 export const journeyRequest = (
   journeyId,
   { knownJourneyIds, ...overrides } = {}
@@ -133,6 +171,13 @@ export const backendNotification = ({
     concurrencyToken
   })
 
+const recordsRejectingSaves = (failure) => ({
+  ...recordsStub,
+  replaceFulfilment: async () => {
+    throw failure
+  }
+})
+
 const requestLocation = (pathOf, journeyId, query) => {
   if (!pathOf) {
     return {}
@@ -147,7 +192,9 @@ const requestLocation = (pathOf, journeyId, query) => {
 
 /** Seeds a journey, runs one handler against it and reports the answers before
  * and after. `amend` submits the journey and opens an amendment first;
- * `pathOf(journeyId)` gives the request the path it was made to. */
+ * `pathOf(journeyId)` gives the request the path it was made to;
+ * `saveFailure` makes the records store refuse every save the handler makes
+ * with that error. */
 export const driveHandler = async (
   handler,
   {
@@ -156,6 +203,7 @@ export const driveHandler = async (
     params = {},
     query = {},
     amend = false,
+    saveFailure,
     pathOf
   } = {}
 ) => {
@@ -172,7 +220,15 @@ export const driveHandler = async (
     ...requestLocation(pathOf, journey.journeyId, query)
   })
   const h = stubH(request)
-  const response = await handler(request, h)
+  if (saveFailure) {
+    configureRecords(currentSetId(), recordsRejectingSaves(saveFailure))
+  }
+  let response
+  try {
+    response = await handler(request, h)
+  } finally {
+    configureRecords(currentSetId(), recordsStub)
+  }
   const after = (await store.get(journey.journeyId)).answers
   return {
     journeyId: journey.journeyId,

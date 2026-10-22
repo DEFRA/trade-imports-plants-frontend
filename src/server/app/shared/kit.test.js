@@ -6,8 +6,21 @@ import {
   itemsPage
 } from '../../../../test/fixtures/index.js'
 import { AMEND, DRAFT, SUBMITTED } from '../engine/index.js'
-import { journeyRequest, stubH } from '../engine/test-support.js'
-import { base, dateField, isHubExit, pageRoutes } from './kit.js'
+import {
+  expectOneRefusalLogged,
+  expectOneSaveFallbackLogged,
+  journeyRequest,
+  stubH,
+  unavailableBackendError
+} from '../engine/test-support.js'
+import {
+  base,
+  dateField,
+  isHubExit,
+  logRefusal,
+  pageRoutes,
+  recoverableSave
+} from './kit.js'
 
 describe('#isHubExit — the Save and return to overview submit', () => {
   const params = { journeyId: 'journey-1' }
@@ -174,5 +187,142 @@ describe('#pageRoutes — a save refused as stale', () => {
           'Save refused: the notification changed since the page was shown'
       }
     ])
+  })
+})
+
+describe('#recoverableSave', () => {
+  const fallbackResponse = { fallback: true }
+  const fallback = () => fallbackResponse
+
+  it('Should return the value of a save that succeeds and log nothing', async () => {
+    const request = journeyRequest('journey-1')
+
+    const outcome = await recoverableSave(
+      request,
+      async () => 'saved',
+      fallback
+    )
+
+    expect(outcome).toEqual({ value: 'saved' })
+    expect(request.logger.entries).toEqual([])
+  })
+
+  it('Should log one warning with the journey id and the error, then answer with the fallback, when the backend is unavailable', async () => {
+    const request = journeyRequest('journey-1')
+    const failure = unavailableBackendError('save answers')
+
+    const outcome = await recoverableSave(
+      request,
+      async () => {
+        throw failure
+      },
+      fallback
+    )
+
+    expect(outcome).toEqual({ failure: fallbackResponse })
+    expectOneSaveFallbackLogged(request.logger, {
+      journeyId: 'journey-1',
+      err: failure
+    })
+  })
+
+  it('Should log the ids the page passes beside the journey id', async () => {
+    const request = journeyRequest('journey-1')
+    const failure = unavailableBackendError('save answers')
+
+    await recoverableSave(
+      request,
+      async () => {
+        throw failure
+      },
+      fallback,
+      { action: 'remove-line', index: 2 }
+    )
+
+    expectOneSaveFallbackLogged(request.logger, {
+      journeyId: 'journey-1',
+      action: 'remove-line',
+      index: 2,
+      err: failure
+    })
+  })
+
+  it('Should rethrow a stale concurrency token without logging it', async () => {
+    const request = journeyRequest('journey-1')
+    const stale = Object.assign(new Error('stale'), {
+      code: 'STALE_CONCURRENCY_TOKEN'
+    })
+
+    await expect(
+      recoverableSave(
+        request,
+        async () => {
+          throw stale
+        },
+        fallback
+      )
+    ).rejects.toBe(stale)
+    expect(request.logger.entries).toEqual([])
+  })
+
+  it('Should rethrow an error that is not a recoverable backend failure without logging it', async () => {
+    const request = journeyRequest('journey-1')
+    const bug = new Error('bug')
+
+    await expect(
+      recoverableSave(
+        request,
+        async () => {
+          throw bug
+        },
+        fallback
+      )
+    ).rejects.toBe(bug)
+    expect(request.logger.entries).toEqual([])
+  })
+})
+
+describe('#logRefusal', () => {
+  it('Should log one line with the journey id and the field keys, never the messages', () => {
+    const request = journeyRequest('journey-1')
+
+    logRefusal(request, {
+      fieldErrors: {
+        postcode: 'Enter a postcode',
+        email: 'Enter an email address'
+      }
+    })
+
+    expectOneRefusalLogged(request.logger, {
+      journeyId: 'journey-1',
+      errorCodes: ['postcode', 'email']
+    })
+  })
+
+  it('Should carry the ids the refusal turned on', () => {
+    const request = journeyRequest('journey-1')
+
+    logRefusal(request, {
+      fieldErrors: { party: 'Select one' },
+      addressId: 'gone'
+    })
+
+    expectOneRefusalLogged(request.logger, {
+      journeyId: 'journey-1',
+      errorCodes: ['party'],
+      addressId: 'gone'
+    })
+  })
+
+  it('Should log no error codes and the named reason when the page shows no errors', () => {
+    const request = journeyRequest('journey-1')
+
+    logRefusal(request, { reason: 'no-line' })
+
+    expectOneRefusalLogged(request.logger, {
+      journeyId: 'journey-1',
+      errorCodes: [],
+      reason: 'no-line'
+    })
   })
 })

@@ -18,7 +18,10 @@ import { configureSession } from '../../../../../../engine/persistence/session.j
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import { records as realRecords } from '../../../../../../services/persistence/records/real/index.js'
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
-import { driveHandler } from '../../../../../../engine/test-support.js'
+import {
+  driveHandler,
+  expectOneRefusalLogged
+} from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
 import {
@@ -299,6 +302,12 @@ const describeAddressNotInTheBook = (pickerConfig) => {
         $(`#${fieldName}`).closest('fieldset').attr('aria-describedby')
       ).toBe(`${fieldName}-error`)
       expect(result.after[fieldName]).toBeUndefined()
+      expectOneRefusalLogged(result.logger, {
+        journeyId: result.journeyId,
+        errorCodes: [fieldName],
+        reason: 'not-in-address-book',
+        addressId: NOT_IN_THE_BOOK
+      })
     })
 
     it('Should refuse the id on Save and return to overview too', async () => {

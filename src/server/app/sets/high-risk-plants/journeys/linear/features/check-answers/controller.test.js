@@ -19,6 +19,7 @@ import { records as recordsStub } from '../../../../../../services/persistence/r
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
+  expectOneRefusalLogged,
   journeyRequest,
   postHandlerOf,
   stubH
@@ -153,6 +154,10 @@ describe('Check your answers', () => {
     expect(result.view.context.errorSummary.errorList).toEqual(
       invalidDestinationErrors(result)
     )
+    expectOneRefusalLogged(result.logger, {
+      journeyId: result.journeyId,
+      errorCodes: ['party:placeOfDestination']
+    })
   })
 
   it('Should name an unanswered destination as an outstanding task, not a party error', async () => {

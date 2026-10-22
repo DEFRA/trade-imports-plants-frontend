@@ -40,9 +40,6 @@ const COUNTRY_FIELD = 'countryOfOrigin'
 const countryValues = async () =>
   (await countries.originCountryOptions()).map(({ value }) => value)
 
-// The list feeds a type-ahead that enhances this select, so it carries only
-// the placeholder and the real countries — a scroll-only list would need a
-// divider rule under the placeholder, a searchable one does not.
 const countryItems = async () => [
   { value: '', text: copy.country.selectText },
   ...(await countries.originCountryOptions())
@@ -116,12 +113,10 @@ const errorsFor = async (
   return narrowing ? { [COUNTRY_FIELD]: narrowing } : null
 }
 
-// The back link is the one thing on this page told by what has been saved: a
-// notification with nothing saved has no overview worth returning to.
 export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
-const backLinkFor = (journey, answers) =>
+const backLinkForSavedState = (journey, answers) =>
   hasCommittedNotificationAnswers(answers)
     ? hubPath(journey.journeyId)
     : dashboardPath()
@@ -131,7 +126,7 @@ const render = async (h, current, values, options = {}) => {
   return h.view(view, {
     ...kit.base(copy.title, {
       request: h.request,
-      backLink: backLinkFor(current.journey, current.answers),
+      backLink: backLinkForSavedState(current.journey, current.answers),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -179,6 +174,7 @@ const post = async (request, h) => {
     allowMissing: kit.isHubExit(request)
   })
   if (errors) {
+    kit.logRefusal(request, { fieldErrors: errors })
     return (await render(h, current, values, { constraints, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
@@ -186,6 +182,7 @@ const post = async (request, h) => {
 
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(request, h, {
         [COUNTRY_FIELD]: values[COUNTRY_FIELD].trim()

@@ -35,8 +35,6 @@ const view = `${TEMPLATES}/features/commodity-type/template`
 
 const copy = copyFor({ en, cy })
 
-// Which timing window each type's hint quotes. The number itself is the
-// constants module's; this map only says which of the two applies.
 const HINT_DAYS = {
   potatoes: POTATO_DAYS_BEFORE_ARRIVAL,
   'plants-for-planting': PLANTS_WOOD_DAYS_AFTER_ARRIVAL,
@@ -60,9 +58,6 @@ const typeOptions = (selected) =>
     checked: value === selected
   }))
 
-// A page reachable before anything is committed has its back link told by what
-// has been saved: a notification with nothing committed has no overview worth
-// returning to, so it goes back to the dashboard instead.
 const backLinkFor = (journey, answers) =>
   hasCommittedNotificationAnswers(answers)
     ? hubPath(journey.journeyId)
@@ -71,9 +66,6 @@ const backLinkFor = (journey, answers) =>
 const linesOf = (current) =>
   state.collectionView(current.answers, [LINES], current.evaluation)
 
-// The categories partition by commodity type, so a line survives a change of
-// type only when its category belongs to the type now chosen — in practice,
-// only when the type has not really changed.
 const linesKeptBy = (lines, commodityType) => {
   const allowed = commodities.categoriesFor(commodityType)
   return lines
@@ -81,9 +73,7 @@ const linesKeptBy = (lines, commodityType) => {
     .filter((entry) => allowed.includes(entry[CATEGORY]))
 }
 
-// A blank type only reaches here on 'Save and return to overview' with no type
-// ever saved, so there is nothing to reconcile and no line is dropped.
-const linesDroppedBy = (lines, commodityType) => {
+const keepLinesAllowedBy = (lines, commodityType) => {
   if (!commodityType) {
     return { kept: [], removed: 0 }
   }
@@ -91,8 +81,6 @@ const linesDroppedBy = (lines, commodityType) => {
   return { kept, removed: lines.length - kept.length }
 }
 
-// Lines are reconciled by what identifies one to a trader, not by position: a
-// line they can still see keeps the rest of its answers.
 const keyOf = (entry) =>
   [entry[CATEGORY], entry[GENUS], entry[POTATO_VARIETY]].join('|')
 
@@ -130,16 +118,18 @@ const post = async (request, h) => {
   })
   const current = await state.get(request, h)
   if (errors) {
+    kit.logRefusal(request, { fieldErrors: errors })
     return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)
   }
 
-  const { kept, removed } = linesDroppedBy(
+  const { kept, removed } = keepLinesAllowedBy(
     linesOf(current),
     value.commodityType
   )
 
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(request, h, {
         commodityType: value.commodityType
@@ -157,8 +147,6 @@ const post = async (request, h) => {
     return failure
   }
 
-  // A change that dropped lines says so on the list page, whichever control
-  // was pressed — the trader has to see what went before they move on.
   if (removed > 0) {
     return h.redirect(listHref(request, { removed }))
   }

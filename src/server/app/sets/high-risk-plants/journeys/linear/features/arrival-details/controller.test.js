@@ -1,27 +1,14 @@
-import { SET_ID } from '../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { store } from '../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { records as realRecords } from '../../../../../../services/persistence/records/real/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
-  postHandlerOf
+  expectOneRefusalLogged,
+  postHandlerOf,
+  unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import { validatorDefaults } from '../../../../../../shared/copy.en.js'
-import { installHighRiskPlantsJourney } from '../../test-support.js'
+import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
 import { copy } from './copy/copy.en.js'
 import * as arrivalDetails from './controller.js'
@@ -52,12 +39,6 @@ const potatoPayload = (overrides = {}) => ({
   ...overrides
 })
 
-const installStubs = () => {
-  configureRecords(SET_ID, recordsStub)
-  configureSession(SET_ID, sessionStub)
-  installHighRiskPlantsJourney()
-}
-
 describe('#meta', () => {
   it('Should own the three arrival-details obligations', () => {
     expect(arrivalDetails.meta).toEqual({
@@ -69,8 +50,7 @@ describe('#meta', () => {
 })
 
 describe('GET arrival-details — the question it asks', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should title the page and caption the arrival section', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
@@ -156,8 +136,7 @@ describe('GET arrival-details — the question it asks', () => {
 })
 
 describe('GET arrival-details — the potato-only fields', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should show the time and the place of landing on a potato notification', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
@@ -219,8 +198,7 @@ describe('GET arrival-details — the potato-only fields', () => {
 describe('GET arrival-details — amend with a stored port the reader no longer offers', () => {
   const STALE_PORT = 'GB ZZZ'
 
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should blank the port in values so the select renders unselected under potatoes', async () => {
     const result = await driveHandler(get, {
@@ -264,8 +242,7 @@ describe('GET arrival-details — amend with a stored port the reader no longer 
 })
 
 describe('POST arrival-details — the answers it refuses', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should refuse a missing date', async () => {
     const result = await driveHandler(post, {
@@ -278,6 +255,10 @@ describe('POST arrival-details — the answers it refuses', () => {
       copy.errors.arrivalDate.required
     )
     expect(result.after.arrivalDate).toBeUndefined()
+    expectOneRefusalLogged(result.logger, {
+      journeyId: result.journeyId,
+      errorCodes: ['arrivalDate']
+    })
   })
 
   it('Should refuse a date that is not a real day', async () => {
@@ -418,8 +399,7 @@ describe('POST arrival-details — the answers it refuses', () => {
 })
 
 describe('POST arrival-details — accepted answers', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should commit the date as its parts, not as the typed text', async () => {
     const result = await driveHandler(post, {
@@ -475,8 +455,7 @@ describe('POST arrival-details — accepted answers', () => {
 })
 
 describe('POST arrival-details — Save and return to overview', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   const exitWith = (seed, payload) =>
     driveHandler(post, { seed, payload: { ...payload, exit: 'hub' } })
@@ -558,45 +537,13 @@ describe('POST arrival-details — Save and return to overview', () => {
 })
 
 describe('POST arrival-details — save failures', () => {
-  beforeAll(() => {
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-
-  beforeEach(() => {
-    store.clear()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      }))
-    )
-  })
-
-  afterEach(() => {
-    configureRecords(SET_ID, recordsStub)
-    vi.unstubAllGlobals()
-  })
-
-  const failingOnControllerCommit = (failure) => {
-    let replaceCalls = 0
-    configureRecords(SET_ID, {
-      ...recordsStub,
-      replaceFulfilment: (...args) => {
-        replaceCalls += 1
-        return replaceCalls === 1
-          ? recordsStub.replaceFulfilment(...args)
-          : failure(...args)
-      }
-    })
-  }
+  useStubbedHighRiskPlantsJourney()
 
   it('Should re-render a backend request failure at 500 with the banner and the values', async () => {
-    failingOnControllerCommit(realRecords.replaceFulfilment)
+    const failure = unavailableBackendError('save answers')
 
     const result = await driveHandler(post, {
+      saveFailure: failure,
       payload: { arrivalDate: A_DATE }
     })
 
@@ -606,12 +553,11 @@ describe('POST arrival-details — save failures', () => {
   })
 
   it('Should let a programming error escape to the promoted catch-all', async () => {
-    failingOnControllerCommit(async () => {
-      throw new TypeError('programming failure')
-    })
-
     await expect(
-      driveHandler(post, { payload: { arrivalDate: A_DATE } })
+      driveHandler(post, {
+        payload: { arrivalDate: A_DATE },
+        saveFailure: new TypeError('programming failure')
+      })
     ).rejects.toThrow(new TypeError('programming failure'))
   })
 })

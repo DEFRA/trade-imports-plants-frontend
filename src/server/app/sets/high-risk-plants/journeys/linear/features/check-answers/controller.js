@@ -137,6 +137,10 @@ const post = async (request, h) => {
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
   ) {
+    kit.logRefusal(request, {
+      fieldErrors: errors,
+      ...(Object.keys(errors).length === 0 && { reason: 'journey-not-ready' })
+    })
     return (await render(request, h, current, { continueRefused: true })).code(
       HTTP_STATUS_BAD_REQUEST
     )

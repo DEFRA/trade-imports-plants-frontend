@@ -80,7 +80,8 @@ const post = async (request, h) => {
 
   const selection = await resolveSelectionOnSave(request, {
     fieldName: CONSIGNOR,
-    selectedId
+    selectedId,
+    notInBookMessage: copy.errors.consignor
   })
   if (selection.outcome === SELECTION.nothingChosen) {
     return h.redirect(await kit.nextTarget(request, page, current.scope))
@@ -99,6 +100,7 @@ const post = async (request, h) => {
   const chosen = selection.record
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(request, h, {
         [CONSIGNOR]: answerForPickedParty(chosen)

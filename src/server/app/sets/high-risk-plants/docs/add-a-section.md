@@ -150,10 +150,12 @@ Follow [add-a-page.md](add-a-page.md) for each page. Each controller exports:
 - GET and POST handlers
 - `routes`, normally from `kit.pageRoutes(page, { get, post })`
 
-GET reads once through `state.get()`. POST validates raw input, returns 400 with
-raw values on error, commits cleaned values on success and redirects through
-`kit.nextTarget()`. Wrap every persistence write in `kit.recoverableSave()` and
-return the same form with status 500 for a marked failure.
+GET reads once through `state.get()`. POST validates raw input, calls
+`kit.logRefusal(request, { fieldErrors })` and returns 400 with raw values on error
+(`fieldErrors` is the map of field key to the message the page shows),
+commits cleaned values on success and redirects through `kit.nextTarget()`.
+Wrap every persistence write in `kit.recoverableSave(request, …)`, which logs a
+marked failure once, and return the same form with status 500 for it.
 
 Use `scope.has()` for conditional fields. Do not render, validate or commit a
 field that is out of scope. Let the evaluator purge a value when its obligation
@@ -386,11 +388,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal, a redirect away from
-the normal next page, a retry or a fallback — logs once through
-`request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+Every refusal that shows the page again logs through `kit.logRefusal()`, and every save fallback through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 

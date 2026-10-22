@@ -120,9 +120,11 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 4. commits cleaned values with `state.commit()`
 5. redirects through `await kit.nextTarget(request, page, committed.scope)`
 
-Wrap the write in `kit.recoverableSave()`. A marked persistence failure renders
-the same values with `recoverableError: true` and status 500. Unexpected errors
-must throw.
+Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
+failure is logged once by `recoverableSave`; render the same values with
+`recoverableError: true` and status 500. Unexpected errors must throw. When
+validation fails, call `kit.logRefusal(request, { fieldErrors })` before you render the
+page again with status 400.
 
 "Save and return to overview" posts `exit=hub`. When the page has a required
 rule, opt in to saving a blank answer on that exit by passing
@@ -369,11 +371,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal, a redirect away from
-the normal next page, a retry or a fallback — logs once through
-`request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+Every refusal that shows the page again logs through `kit.logRefusal()`, and every save fallback through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 

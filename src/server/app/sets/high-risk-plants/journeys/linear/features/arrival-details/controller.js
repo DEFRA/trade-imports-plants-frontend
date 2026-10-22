@@ -31,7 +31,6 @@ import {
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-/** The arrival-details page: the arrival date, and for potatoes the time and place of landing. */
 export const meta = {
   ...page,
   collects: [ARRIVAL_DATE, ARRIVAL_TIME, PROPOSED_PLACE_OF_LANDING]
@@ -171,6 +170,7 @@ const post = async (request, h) => {
     { allowMissing: kit.isHubExit(request) }
   )
   if (errors) {
+    kit.logRefusal(request, { fieldErrors: errors })
     return (await render(h, current, values, { bounds, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
@@ -178,6 +178,7 @@ const post = async (request, h) => {
 
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(
         request,

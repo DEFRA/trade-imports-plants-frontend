@@ -70,10 +70,12 @@ const post = async (request, h) => {
     allowMissing: kit.isHubExit(request)
   })
   if (errors) {
+    kit.logRefusal(request, { fieldErrors: errors })
     return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)
   }
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(
         request,

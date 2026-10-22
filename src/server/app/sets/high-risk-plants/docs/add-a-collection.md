@@ -474,11 +474,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal such as a capped add, a
-redirect away from the normal next page, a retry or a fallback — logs once
-through `request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+Every refusal that shows the page again logs through `kit.logRefusal()`, and every save fallback through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Hard limit
 

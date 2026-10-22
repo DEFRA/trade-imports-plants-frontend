@@ -1,29 +1,16 @@
-import { SET_ID } from '../../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { store } from '../../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../../services/persistence/records/stub/index.js'
-import { records as realRecords } from '../../../../../../../services/persistence/records/real/index.js'
-import { session as sessionStub } from '../../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
-  postHandlerOf
+  expectOneRefusalLogged,
+  postHandlerOf,
+  unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
 import { makeScope } from '../../../../../../../engine/index.js'
 import { pagePath } from '../../../../../../../shared/paths.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
-  installHighRiskPlantsJourney
+  useStubbedHighRiskPlantsJourney
 } from '../../../test-support.js'
 import * as details from './details.controller.js'
 
@@ -56,12 +43,6 @@ const POTATO_LINE = {
 
 const namesOf = (context) => context.fieldViews.map((field) => field.name)
 
-const install = () => {
-  configureRecords(SET_ID, recordsStub)
-  configureSession(SET_ID, sessionStub)
-  installHighRiskPlantsJourney()
-}
-
 describe('#meta', () => {
   it('Should collect nothing — the list page owns the group', () => {
     expect(details.meta).toEqual({
@@ -73,8 +54,7 @@ describe('#meta', () => {
 })
 
 describe('GET commodities/details', () => {
-  beforeAll(install)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should offer only the categories the notification’s type allows', async () => {
     const result = await driveHandler(get, {
@@ -218,8 +198,7 @@ describe('GET commodities/details', () => {
 })
 
 describe('POST commodities/details — choosing a category', () => {
-  beforeAll(install)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should create the line and come back for the fields it asks for', async () => {
     const result = await driveHandler(post, {
@@ -242,6 +221,10 @@ describe('POST commodities/details — choosing a category', () => {
     expect(result.response.statusCode).toBe(400)
     expect(result.view.context.errors.category).toBe(SELECT_THE_CATEGORY)
     expect(result.after).toEqual(result.before)
+    expectOneRefusalLogged(result.logger, {
+      journeyId: result.journeyId,
+      errorCodes: ['category']
+    })
   })
 
   it('Should refuse a category that belongs to another commodity type', async () => {
@@ -284,8 +267,7 @@ describe('POST commodities/details — choosing a category', () => {
 })
 
 describe('POST commodities/details — saving a line', () => {
-  beforeAll(install)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   const seededLine = {
     seed: {
@@ -347,6 +329,10 @@ describe('POST commodities/details — saving a line', () => {
     )
     expect(result.view.context.values.potatoVariety).toBe(MARIS_PIPER)
     expect(result.after.commodityLines).toEqual([{ category: SEED_POTATOES }])
+    expectOneRefusalLogged(result.logger, {
+      journeyId: result.journeyId,
+      errorCodes: ['quantity', 'potatoIntendedUse']
+    })
   })
 
   it('Should refuse a quantity that is not a whole number above zero', async () => {
@@ -488,45 +474,13 @@ describe('POST commodities/details — saving a line', () => {
 })
 
 describe('POST commodities/details — save failures', () => {
-  beforeAll(() => {
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-
-  beforeEach(() => {
-    store.clear()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      }))
-    )
-  })
-
-  afterEach(() => {
-    configureRecords(SET_ID, recordsStub)
-    vi.unstubAllGlobals()
-  })
-
-  const failingOnControllerCommit = (failure) => {
-    let replaceCalls = 0
-    configureRecords(SET_ID, {
-      ...recordsStub,
-      replaceFulfilment: (...args) => {
-        replaceCalls += 1
-        return replaceCalls === 1
-          ? recordsStub.replaceFulfilment(...args)
-          : failure(...args)
-      }
-    })
-  }
+  useStubbedHighRiskPlantsJourney()
 
   it('Should re-render a backend request failure at 500 with the banner', async () => {
-    failingOnControllerCommit(realRecords.replaceFulfilment)
+    const failure = unavailableBackendError('save answers')
 
     const result = await driveHandler(post, {
+      saveFailure: failure,
       seed: { commodityType: POTATOES },
       payload: { category: SEED_POTATOES }
     })
@@ -538,12 +492,9 @@ describe('POST commodities/details — save failures', () => {
   })
 
   it('Should let a programming error escape to the promoted catch-all', async () => {
-    failingOnControllerCommit(async () => {
-      throw new TypeError('programming failure')
-    })
-
     await expect(
       driveHandler(post, {
+        saveFailure: new TypeError('programming failure'),
         seed: { commodityType: POTATOES },
         payload: { category: SEED_POTATOES }
       })

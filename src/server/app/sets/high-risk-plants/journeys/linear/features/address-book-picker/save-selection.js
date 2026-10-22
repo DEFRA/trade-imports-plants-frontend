@@ -1,4 +1,5 @@
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
+import * as kit from '../../../../../../shared/kit.js'
 import { chosenFor } from './render.js'
 
 export const SELECTION = {
@@ -19,11 +20,12 @@ export const SELECTION = {
  * @param {object} selection
  * @param {string} selection.fieldName - the answer name the picker collects.
  * @param {string} selection.selectedId - the address-book id posted, or ''.
+ * @param {string} selection.notInBookMessage - the message the page shows for an id not in the book.
  * @returns {Promise<{ outcome: string, record?: object }>} the decision.
  */
 export const resolveSelectionOnSave = async (
   request,
-  { fieldName, selectedId }
+  { fieldName, selectedId, notInBookMessage }
 ) => {
   const { journeyId } = request.params
 
@@ -37,10 +39,11 @@ export const resolveSelectionOnSave = async (
 
   const record = await chosenFor(organisationIdOf(request), selectedId)
   if (!record) {
-    request.logger.info(
-      { journeyId, fieldName, addressId: selectedId },
-      'Address picker refused an address that is not in the address book'
-    )
+    kit.logRefusal(request, {
+      fieldErrors: { [fieldName]: notInBookMessage },
+      reason: 'not-in-address-book',
+      addressId: selectedId
+    })
     return { outcome: SELECTION.notInBook }
   }
 

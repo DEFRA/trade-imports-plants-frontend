@@ -11,7 +11,13 @@
  * Vitest gives each file its own module registry, so nothing leaks to another
  * file and there is nothing to restore.
  */
+import { beforeAll, beforeEach } from 'vitest'
 import { registerSetMount } from '../../../../shared/set-context.js'
+import { store } from '../../../../engine/store.js'
+import { configureRecords } from '../../../../engine/persistence/records.js'
+import { configureSession } from '../../../../engine/persistence/session.js'
+import { records as recordsStub } from '../../../../services/persistence/records/stub/index.js'
+import { session as sessionStub } from '../../../../services/persistence/session/stub.js'
 import { SET_BASE, SET_ID } from '../../set.js'
 import { configureReadyForCheckYourAnswers } from '../../../../bridge/readiness-config.js'
 import { readyForCheckYourAnswers } from '../../../../flow/section-status.js'
@@ -101,4 +107,13 @@ export const installHighRiskPlantsJourney = () => {
     layout: LAYOUT
   })
   buildDispatch(SET_ID, dispatchPages)
+}
+
+export const useStubbedHighRiskPlantsJourney = () => {
+  beforeAll(() => {
+    configureRecords(SET_ID, recordsStub)
+    configureSession(SET_ID, sessionStub)
+    installHighRiskPlantsJourney()
+  })
+  beforeEach(() => store.clear())
 }

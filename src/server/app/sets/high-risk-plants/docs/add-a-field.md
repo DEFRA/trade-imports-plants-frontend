@@ -130,9 +130,12 @@ For a conditional field, use `scope.has(fieldName)` to decide whether to render
 and validate it. Do not commit a hidden value. The evaluator removes stored data
 when the obligation leaves scope.
 
-Wrap the write in `kit.recoverableSave()`. On a marked persistence failure,
-render the same values with `recoverableError: true` and return 500. Let other
-errors throw.
+Wrap the write in `kit.recoverableSave(request, …)`. On a marked persistence
+failure it logs the fallback once; render the same values with
+`recoverableError: true` and return 500. Let other errors throw. When
+validation fails, call `kit.logRefusal(request, { fieldErrors })` before you render the
+page again with status 400. `fieldErrors` is the map of field key to the message
+the page shows.
 
 Run `npm run test:high-risk-plants`. `buildDispatch` should now pass. Update the
 existing case for this controller in `src/server/app/contract.test.js`: add the
@@ -276,11 +279,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal, a redirect away from
-the normal next page, a retry or a fallback — logs once through
-`request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+Every refusal that shows the page again logs through `kit.logRefusal()`, and every save fallback through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 
