@@ -1,6 +1,7 @@
 import {
   CHECK_ANSWERS_URL,
   chooseCommodityType,
+  backLink,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
   startWoodNotificationWithOriginSaved
@@ -24,9 +25,6 @@ const HUB_URL = setUrl('/notifications/[^/]+$')
 const PAGE_URL = setUrl('/notifications/[^/]+/identification-numbers')
 
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const openOverviewFromReview = async (page) => {
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)

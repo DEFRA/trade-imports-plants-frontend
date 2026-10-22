@@ -64,8 +64,21 @@ holds the steps more than one spec takes: `startNotification`,
 `chooseAutocompleteOption`, `saveAndContinue`, `startPotatoNotification`,
 `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
-`GOVUK_BLUE_SHADE_50` and `WHITE`, and `describeDatePickerLook`, which
-registers the four look tests for one date field. The type-ahead readers
+`GOVUK_BLUE_SHADE_50` and `WHITE`, `expectBlueIconButtonLook`, which checks
+the blue, white, hover and focus look of one icon button,
+`describeDatePickerLook`, which registers the four look tests for one date
+field, and `describeSubmittedSearchPicker`, which registers the look,
+no-JavaScript Enter search and three-state axe tests for one address picker's
+submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
+`POTATO_VARIETY`, `CHECK_ANSWERS_URL` and `WOOD_LINE_FIELDS`; the form-group
+readers `FORM_GROUP_ANCESTOR_XPATH`, `childTagsAndClassesOf` and
+`expectedFormGroupChildren`; `journeyFormOf`, which finds the page's journey
+form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
+values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
+`SECOND_PAGE_LINK`, `DENMARK`, `COPENHAGEN` and `MATCHES_NOTHING`; and
+`addressRowRadio` and `selectedAddressInset`, which find one address's radio
+and its selected-address inset on an address picker page given that page's
+copy. The type-ahead readers
 `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, so the coverage report never counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.

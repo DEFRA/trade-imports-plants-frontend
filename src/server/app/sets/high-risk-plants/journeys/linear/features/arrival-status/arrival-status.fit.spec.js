@@ -1,6 +1,7 @@
 import {
   addCommodityLine,
   chooseCommodityType,
+  backLink,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -38,9 +39,6 @@ const WARE_POTATO_LINE_FIELDS = {
   quantity: '250',
   potatoIntendedUse: 'Eating'
 }
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const radioFor = (page, value) =>
   page.getByRole('radio', { name: copy.statusLabels[value], exact: true })

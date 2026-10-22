@@ -1,8 +1,21 @@
 import {
+  ADDRESS_BOOK_PARTY,
+  ALPINE,
   CHECK_ANSWERS_URL,
+  COPENHAGEN,
+  DENMARK,
+  IMPORT_CO,
+  MATCHES_NOTHING,
+  SECOND_PAGE_LINK,
+  STUB_BOOK_SIZE,
+  addressRowRadio,
+  backLink,
+  describeSubmittedSearchPicker,
   expectNoSeriousOrCriticalViolations,
+  expectSelectedAddressCarriedToSecondPage,
   expectThreeSaveControls,
   saveAndContinue,
+  selectedAddressInset,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE } from '../../../../../../../../../fit/set-base.js'
@@ -19,32 +32,12 @@ import { copy } from './copy/copy.en.js'
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
 
-const TECH_IMPORTS = 'Tech Imports Ltd'
-const IMPORT_CO = 'Import Co UK'
-const ALPINE = 'Alpine Supplies GmbH'
-const STUB_BOOK_SIZE = 13
-const SECOND_PAGE_LINK = 'Page 2'
-const DENMARK = 'Denmark'
-const COPENHAGEN = 'Copenhagen Exports ApS'
-const MATCHES_NOTHING = 'nothing matches this'
 const NOT_IN_THE_BOOK = 'not-in-this-book'
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const saveAndReturn = (page) =>
   page.getByRole('button', {
     name: sharedCopy.saveActions.saveAndReturnToHub
   })
-
-const rowRadio = (page, name) =>
-  page.getByRole('radio', {
-    name: `${copy.selectRowPrefix} ${name}`,
-    exact: true
-  })
-
-const selectedInset = (page, name) =>
-  page.getByText(`${copy.selectedAddressPrefix} ${name}`, { exact: true })
 
 const errorSummaryLink = (page) =>
   page
@@ -88,6 +81,12 @@ const postAnIdNotInTheBook = async (page) => {
     }, NOT_IN_THE_BOOK)
   await saveAndContinue(page).click()
 }
+
+describeSubmittedSearchPicker({
+  pickerName: 'consignment contact',
+  openPicker: startAtContact,
+  copy
+})
 
 test.describe('consignment-contact-select feature', () => {
   test.beforeEach(async ({ page }) => {
@@ -138,8 +137,8 @@ test.describe('consignment-contact-select feature', () => {
       })
     ).toBeVisible()
     await expect(page.getByRole('radio')).toHaveCount(PAGE_SIZE)
-    await expect(rowRadio(page, TECH_IMPORTS)).toBeVisible()
-    await expect(rowRadio(page, ALPINE)).toHaveCount(0)
+    await expect(addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)).toBeVisible()
+    await expect(addressRowRadio(page, copy, ALPINE)).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
     ).toBeVisible()
@@ -168,8 +167,8 @@ test.describe('consignment-contact-select feature', () => {
     await page.getByLabel(copy.search.label, { exact: true }).fill(DENMARK)
     await page.getByRole('button', { name: copy.search.button }).click()
 
-    await expect(rowRadio(page, COPENHAGEN)).toBeVisible()
-    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
+    await expect(addressRowRadio(page, copy, COPENHAGEN)).toBeVisible()
+    await expect(addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)).toHaveCount(0)
   })
 
   test('says so rather than showing an empty table when nothing matches', async ({
@@ -190,39 +189,31 @@ test.describe('consignment-contact-select feature', () => {
   }) => {
     await startAtContact(page)
 
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await page.getByLabel(copy.search.label, { exact: true }).fill(DENMARK)
     await page.getByRole('button', { name: copy.search.button }).click()
 
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
+    await expect(
+      selectedAddressInset(page, copy, ADDRESS_BOOK_PARTY)
+    ).toBeVisible()
   })
 
   test('carries a saved address through the paging links', async ({ page }) => {
     const reference = await startAtContact(page)
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
     await page.goto(contactPathOf(reference))
 
-    await page
-      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-      .click()
-
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
-    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
+    await expectSelectedAddressCarriedToSecondPage(page, copy)
   })
 
   test('carries a newly ticked address through the paging links', async ({
     page
   }) => {
     await startAtContact(page)
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
 
-    await page
-      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-      .click()
-
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
-    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
+    await expectSelectedAddressCarriedToSecondPage(page, copy)
   })
 })
 
@@ -236,15 +227,17 @@ test.describe('consignment-contact-select — saving an address', () => {
   }) => {
     const reference = await startAtContact(page)
 
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
 
     await page.goto(contactPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
+    await expect(addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)).toBeChecked()
+    await expect(
+      selectedAddressInset(page, copy, ADDRESS_BOOK_PARTY)
+    ).toBeVisible()
   })
 
   test('a row ticked on the second page saves, and re-entering shows it as the selected address', async ({
@@ -254,33 +247,35 @@ test.describe('consignment-contact-select — saving an address', () => {
     await page
       .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
       .click()
-    await expect(rowRadio(page, COPENHAGEN)).toBeVisible()
+    await expect(addressRowRadio(page, copy, COPENHAGEN)).toBeVisible()
 
-    await rowRadio(page, COPENHAGEN).check()
+    await addressRowRadio(page, copy, COPENHAGEN).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
 
     await page.goto(contactPathOf(reference))
-    await expect(selectedInset(page, COPENHAGEN)).toBeVisible()
-    await expect(rowRadio(page, COPENHAGEN)).toHaveCount(0)
+    await expect(selectedAddressInset(page, copy, COPENHAGEN)).toBeVisible()
+    await expect(addressRowRadio(page, copy, COPENHAGEN)).toHaveCount(0)
   })
 
   test('replaces the address already saved rather than keeping both', async ({
     page
   }) => {
     const reference = await startAtContact(page)
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
     await page.goto(contactPathOf(reference))
 
-    await rowRadio(page, IMPORT_CO).check()
+    await addressRowRadio(page, copy, IMPORT_CO).check()
     await saveAndContinue(page).click()
     await page.goto(contactPathOf(reference))
 
-    await expect(rowRadio(page, IMPORT_CO)).toBeChecked()
-    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
+    await expect(addressRowRadio(page, copy, IMPORT_CO)).toBeChecked()
+    await expect(
+      addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+    ).not.toBeChecked()
   })
 
   test('Save and return to overview saves the address and reaches the overview', async ({
@@ -288,14 +283,14 @@ test.describe('consignment-contact-select — saving an address', () => {
   }) => {
     const reference = await startAtContact(page)
 
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await saveAndReturn(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
 
     await page.goto(contactPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
+    await expect(addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)).toBeChecked()
   })
 
   test('Cancel and return to overview reaches the overview without saving', async ({
@@ -303,7 +298,7 @@ test.describe('consignment-contact-select — saving an address', () => {
   }) => {
     const reference = await startAtContact(page)
 
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await page
       .getByRole('link', {
         name: sharedCopy.saveActions.cancelAndReturnToHub
@@ -314,7 +309,9 @@ test.describe('consignment-contact-select — saving an address', () => {
     await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
 
     await page.goto(contactPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
+    await expect(
+      addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+    ).not.toBeChecked()
   })
 })
 
@@ -328,7 +325,7 @@ test.describe('consignment-contact-select — the end of the opening run', () =>
   }) => {
     await startInTheRunAtContact(page)
 
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(CHECK_ANSWERS_URL)
@@ -407,7 +404,7 @@ test.describe('consignment-contact-select — the answers it refuses', () => {
     await postAnIdNotInTheBook(page)
     await expect(errorSummaryLink(page)).toBeVisible()
 
-    await rowRadio(page, TECH_IMPORTS).check()
+    await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(HUB_URL)

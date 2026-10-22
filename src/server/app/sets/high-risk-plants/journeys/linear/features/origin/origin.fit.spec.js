@@ -4,6 +4,7 @@ import {
   chooseCountryOfOrigin,
   FORM_GROUP_ANCESTOR_XPATH,
   childTagsAndClassesOf,
+  backLink,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   expectedFormGroupChildren,
@@ -37,9 +38,6 @@ const SPAIN = 'Spain'
 const WARE_POTATOES = 'ware-potatoes'
 const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
 const EU_MEMBER_STATES = 'eu-member-states'
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const originPathOf = (reference) => `${BASE}/notifications/${reference}/origin`
 

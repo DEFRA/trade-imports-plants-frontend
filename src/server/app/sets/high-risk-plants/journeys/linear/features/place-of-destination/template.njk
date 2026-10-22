@@ -1,6 +1,5 @@
 {% extends "shared/layout.njk" %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "submitted-search/macro.njk" import appSubmittedSearch %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/pagination/macro.njk" import govukPagination %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
@@ -25,20 +24,14 @@
       <input type="hidden" name="selected" value="{{ picker.tickedRecord.id }}" />
     {% endif %}
 
-    {{ govukInput({
+    {{ appSubmittedSearch({
       id: "q",
       name: "q",
-      classes: "govuk-!-width-two-thirds",
-      label: { text: copy.search.label, classes: "govuk-label--s" },
+      value: picker.query,
+      label: { text: copy.search.label },
       hint: { text: copy.search.hint },
-      value: picker.query
-    }) }}
-
-    {{ govukButton({
-      text: copy.search.button,
-      classes: "govuk-button--secondary",
-      name: "action",
-      value: "search"
+      button: { text: copy.search.button },
+      wrapperClasses: "govuk-!-width-one-half"
     }) }}
 
     {% if picker.tickedRecord %}

@@ -2,7 +2,9 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
+import { signIn } from './sign-in.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
+import { PAGE_SIZE } from '../src/server/app/services/address-book/index.js'
 import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/copy/copy.en.js'
 import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/copy/copy.en.js'
@@ -90,20 +92,193 @@ const openDatePicker = async (page, label) => {
   return dialog
 }
 
-const expectDateToggleLook = async (page, label) => {
-  const toggle = dateToggleOf(page, label)
-  await expect(toggle).toHaveCSS('background-color', GOVUK_BLUE)
-  await expect(toggle).toHaveCSS('color', WHITE)
-  await expect(toggle).toHaveCSS('border-bottom-width', '0px')
-  await expect(toggle).toHaveCSS('box-shadow', BLUE_ICON_BUTTON_EDGE)
+/**
+ * Fails unless the button is GOV.UK blue with a white icon, darkens on hover
+ * and turns the GOV.UK focus yellow when focused.
+ *
+ * @param {import('@playwright/test').Locator} button
+ */
+export const expectBlueIconButtonLook = async (button) => {
+  await expect(button).toHaveCSS('background-color', GOVUK_BLUE)
+  await expect(button).toHaveCSS('color', WHITE)
+  await expect(button).toHaveCSS('border-bottom-width', '0px')
+  await expect(button).toHaveCSS('box-shadow', BLUE_ICON_BUTTON_EDGE)
 
-  await toggle.hover()
-  await expect(toggle).toHaveCSS('background-color', GOVUK_BLUE_SHADE_25)
-  await expect(toggle).toHaveCSS('color', WHITE)
+  await button.hover()
+  await expect(button).toHaveCSS('background-color', GOVUK_BLUE_SHADE_25)
+  await expect(button).toHaveCSS('color', WHITE)
 
-  await toggle.focus()
-  await expect(toggle).toHaveCSS('background-color', GOVUK_FOCUS)
-  await expect(toggle).toHaveCSS('color', GOVUK_FOCUS_TEXT)
+  await button.focus()
+  await expect(button).toHaveCSS('background-color', GOVUK_FOCUS)
+  await expect(button).toHaveCSS('color', GOVUK_FOCUS_TEXT)
+}
+
+const contentWidthOf = (locator) =>
+  locator.evaluate((el) => {
+    const style = window.getComputedStyle(el)
+    return (
+      el.clientWidth -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight)
+    )
+  })
+
+export const JOURNEY_FORM_SELECTOR = 'form[method="post"]'
+
+/**
+ * The page's journey form, the one that posts the page's answers.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {import('@playwright/test').Locator}
+ */
+export const journeyFormOf = (page) => page.locator(JOURNEY_FORM_SELECTOR)
+
+const MEDIUM_LABEL_FONT_SIZE = '24px'
+const BOLD_FONT_WEIGHT = '700'
+const WIDTH_TOLERANCE_PX = 1
+
+const expectSubmittedSearchLook = async (page, { search, expectedWidth }) => {
+  const box = page.getByLabel(search.label, { exact: true })
+  const button = page.getByRole('button', {
+    name: search.button,
+    exact: true
+  })
+  const wrapper = page.locator('.moj-search__input-wrapper', { has: box })
+  const label = box.locator(FORM_GROUP_ANCESTOR_XPATH).locator('label')
+
+  await expect(box).toHaveAccessibleDescription(search.hint)
+  await expect(label).toHaveCSS('font-size', MEDIUM_LABEL_FONT_SIZE)
+  await expect(label).toHaveCSS('font-weight', BOLD_FONT_WEIGHT)
+  await expect(wrapper.getByRole('button')).toHaveCount(1)
+  await expect(button.locator('svg')).toBeVisible()
+  await expectBlueIconButtonLook(button)
+
+  const boxEdge = await box.evaluate((el) => el.getBoundingClientRect().right)
+  const buttonEdge = await button.evaluate(
+    (el) => el.getBoundingClientRect().left
+  )
+  expect(buttonEdge).toBeCloseTo(boxEdge, 0)
+
+  const { width } = await wrapper.boundingBox()
+  expect(Math.abs(width - expectedWidth)).toBeLessThanOrEqual(
+    WIDTH_TOLERANCE_PX
+  )
+}
+
+/**
+ * Presses Enter in the box with JavaScript off and fails unless the server
+ * keeps the term and refuses nothing.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ search: { label: string }, term: string }} options
+ */
+const searchByPressingEnter = async (page, { search, term }) => {
+  const box = page.getByLabel(search.label, { exact: true })
+  await box.fill(term)
+  await Promise.all([page.waitForEvent('load'), box.press('Enter')])
+  await expect(box).toHaveValue(term)
+  await expect(page.getByRole('alert')).toHaveCount(0)
+}
+
+export const DENMARK = 'Denmark'
+export const COPENHAGEN = 'Copenhagen Exports ApS'
+export const MATCHES_NOTHING = 'nothing matches this'
+export const IMPORT_CO = 'Import Co UK'
+export const ALPINE = 'Alpine Supplies GmbH'
+export const STUB_BOOK_SIZE = 13
+export const SECOND_PAGE_LINK = 'Page 2'
+
+/**
+ * The back link of a journey page.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export const backLink = (page) =>
+  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
+
+/**
+ * Declares the tests every address picker's submitted search box shares: its
+ * look, searching by pressing Enter without JavaScript, and axe on the empty,
+ * searched and no-match states.
+ *
+ * @param {object} options
+ * @param {string} options.pickerName - names the picker in the test titles
+ * @param {(page: import('@playwright/test').Page) => Promise<unknown>} options.openPicker
+ *   - opens the picker page for a signed-in page
+ * @param {object} options.copy - the picker page's copy
+ */
+export const describeSubmittedSearchPicker = ({
+  pickerName,
+  openPicker,
+  copy
+}) => {
+  test.describe(`${pickerName} submitted search`, () => {
+    test.beforeEach(async ({ page }) => {
+      await signIn(page)
+      await openPicker(page)
+    })
+
+    test(`the ${pickerName} search box is medium-labelled, hinted, half the column wide and joined to a blue icon button`, async ({
+      page
+    }) => {
+      const columnWidth = await contentWidthOf(journeyFormOf(page))
+
+      await expectSubmittedSearchLook(page, {
+        search: copy.search,
+        expectedWidth: columnWidth / 2
+      })
+    })
+
+    test(`the ${pickerName} picker has no serious or critical axe violations empty, searched and with no matches`, async ({
+      page
+    }) => {
+      const box = page.getByLabel(copy.search.label, { exact: true })
+      const searchButton = page.getByRole('button', {
+        name: copy.search.button,
+        exact: true
+      })
+      await expectNoSeriousOrCriticalViolations(page, `${pickerName} empty`)
+
+      await box.fill(DENMARK)
+      await searchButton.click()
+      await expectNoSeriousOrCriticalViolations(page, `${pickerName} searched`)
+
+      await box.fill(MATCHES_NOTHING)
+      await searchButton.click()
+      await expectNoSeriousOrCriticalViolations(
+        page,
+        `${pickerName} with no matches`
+      )
+    })
+  })
+
+  test(`pressing Enter in the ${pickerName} search box narrows the list on the server without JavaScript`, async ({
+    page,
+    browser
+  }) => {
+    await signIn(page)
+    await openPicker(page)
+    const withoutJavaScript = await browser.newContext({
+      javaScriptEnabled: false,
+      storageState: await page.context().storageState()
+    })
+    try {
+      const plainPage = await withoutJavaScript.newPage()
+      await plainPage.goto(page.url())
+
+      await searchByPressingEnter(plainPage, {
+        search: copy.search,
+        term: DENMARK
+      })
+
+      await expect(addressRowRadio(plainPage, copy, COPENHAGEN)).toBeVisible()
+      await expect(
+        addressRowRadio(plainPage, copy, ADDRESS_BOOK_PARTY)
+      ).toHaveCount(0)
+    } finally {
+      await withoutJavaScript.close()
+    }
+  })
 }
 
 const expectCalendarEndsAboveNextQuestion = async (
@@ -178,7 +353,7 @@ export const describeDatePickerLook = ({
   test(`the ${fieldName} button that opens the calendar is GOV.UK blue with a white icon, darkens on hover and turns yellow when focused`, async ({
     page
   }) => {
-    await expectDateToggleLook(page, label)
+    await expectBlueIconButtonLook(dateToggleOf(page, label))
   })
 
   test(`the ${fieldName} calendar ends above the next question`, async ({
@@ -356,7 +531,7 @@ export const startNotificationAtOrigin = async (page) => {
   return reference
 }
 
-const WOOD_LINE_FIELDS = {
+export const WOOD_LINE_FIELDS = {
   commodityCode: '06042020',
   quantity: '40',
   sizeOfTree: '3.5',
@@ -504,3 +679,284 @@ export const addressRowRadio = (page, pickerCopy, name) =>
  */
 export const selectedAddressInset = (page, pickerCopy, name) =>
   page.getByText(`${pickerCopy.selectedAddressPrefix} ${name}`, { exact: true })
+
+const searchAddressBook = async (page, pickerCopy, term) => {
+  await page.getByLabel(pickerCopy.search.label, { exact: true }).fill(term)
+  await page.getByRole('button', { name: pickerCopy.search.button }).click()
+}
+
+/**
+ * Follows the second page link and fails unless the address ticked on the
+ * first page is still named as the selected address, and no longer listed.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ selectRowPrefix: string, selectedAddressPrefix: string }} pickerCopy - the picker page's copy
+ */
+export const expectSelectedAddressCarriedToSecondPage = async (
+  page,
+  pickerCopy
+) => {
+  await page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true }).click()
+
+  await expect(
+    selectedAddressInset(page, pickerCopy, ADDRESS_BOOK_PARTY)
+  ).toBeVisible()
+  await expect(
+    addressRowRadio(page, pickerCopy, ADDRESS_BOOK_PARTY)
+  ).toHaveCount(0)
+}
+
+/**
+ * Declares the tests every single-address picker shares: listing and counting
+ * the address book, searching and paging it, saving and leaving the page, and
+ * refusing a save with no address chosen.
+ *
+ * @param {object} options
+ * @param {string} options.pickerName - names the picker in the test group titles
+ * @param {(page: import('@playwright/test').Page) => Promise<string>} options.openPicker
+ *   - opens the picker page for a signed-in page and returns the notification's reference
+ * @param {(reference: string) => string} options.pathOf - the picker page's address for a notification
+ * @param {object} options.copy - the picker page's copy
+ * @param {string} options.missingAddressError - the error shown when nothing is chosen
+ * @param {RegExp | string} options.hubUrl - the overview's address
+ * @param {RegExp | string} options.pageUrl - the picker page's address
+ * @param {RegExp | string} options.afterSaveUrl - where Save and continue goes
+ * @param {string} options.firstRowRadio - selector of the first address in the list
+ */
+export const describeAddressPicker = ({
+  pickerName,
+  openPicker,
+  pathOf,
+  copy,
+  missingAddressError,
+  hubUrl,
+  pageUrl,
+  afterSaveUrl,
+  firstRowRadio
+}) => {
+  const searchBox = (page) =>
+    page.getByLabel(copy.search.label, { exact: true })
+  const missingAddressLink = (page) =>
+    page.getByRole('alert').getByRole('link', { name: missingAddressError })
+
+  test.describe(`${pickerName} — listing, searching and paging`, () => {
+    test.beforeEach(async ({ page }) => {
+      await signIn(page)
+    })
+
+    test('shows the first page of the organisation address book with its count', async ({
+      page
+    }) => {
+      await openPicker(page)
+
+      await expect(
+        page.getByText(copy.resultsCaption(PAGE_SIZE, STUB_BOOK_SIZE), {
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+      ).toBeVisible()
+      await expect(addressRowRadio(page, copy, ALPINE)).toHaveCount(0)
+    })
+
+    test('narrows the results to the search term', async ({ page }) => {
+      await openPicker(page)
+
+      await searchAddressBook(page, copy, DENMARK)
+
+      await expect(addressRowRadio(page, copy, COPENHAGEN)).toBeVisible()
+      await expect(addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)).toHaveCount(
+        0
+      )
+    })
+
+    test('says so rather than showing an empty table when nothing matches', async ({
+      page
+    }) => {
+      await openPicker(page)
+
+      await searchAddressBook(page, copy, MATCHES_NOTHING)
+
+      await expect(
+        page.getByText(copy.noMatches, { exact: true })
+      ).toBeVisible()
+    })
+
+    test('keeps a ticked row while the search narrows the results', async ({
+      page
+    }) => {
+      await openPicker(page)
+
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await searchAddressBook(page, copy, DENMARK)
+
+      await expect(
+        selectedAddressInset(page, copy, ADDRESS_BOOK_PARTY)
+      ).toBeVisible()
+    })
+
+    test('carries a saved address through the paging links', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await saveAndContinue(page).click()
+      await page.goto(pathOf(reference))
+
+      await expectSelectedAddressCarriedToSecondPage(page, copy)
+    })
+  })
+
+  test.describe(`${pickerName} — saving an address`, () => {
+    test.beforeEach(async ({ page }) => {
+      await signIn(page)
+    })
+
+    test('saves the chosen address, continues to identification numbers and shows it again on return', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await saveAndContinue(page).click()
+
+      await expect(page).toHaveURL(afterSaveUrl)
+
+      await page.goto(pathOf(reference))
+      await expect(
+        addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+      ).toBeChecked()
+      await expect(
+        selectedAddressInset(page, copy, ADDRESS_BOOK_PARTY)
+      ).toBeVisible()
+    })
+
+    test('replaces the address already saved rather than keeping both', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await saveAndContinue(page).click()
+      await page.goto(pathOf(reference))
+
+      await addressRowRadio(page, copy, IMPORT_CO).check()
+      await saveAndContinue(page).click()
+      await page.goto(pathOf(reference))
+
+      await expect(addressRowRadio(page, copy, IMPORT_CO)).toBeChecked()
+      await expect(
+        addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+      ).not.toBeChecked()
+    })
+
+    test('Save and return to overview saves the address and reaches the overview', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await page
+        .getByRole('button', {
+          name: sharedCopy.saveActions.saveAndReturnToHub
+        })
+        .click()
+
+      await expect(page).toHaveURL(hubUrl)
+
+      await page.goto(pathOf(reference))
+      await expect(
+        addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+      ).toBeChecked()
+    })
+
+    test('Save and return to overview with nothing chosen reaches the overview without an error', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+
+      await page
+        .getByRole('button', {
+          name: sharedCopy.saveActions.saveAndReturnToHub
+        })
+        .click()
+
+      await expect(page).toHaveURL(hubUrl)
+
+      await page.goto(pathOf(reference))
+      await expect(
+        addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+      ).not.toBeChecked()
+      await expect(page.getByRole('alert')).toHaveCount(0)
+    })
+
+    test('Cancel and return to overview reaches the overview without saving', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await page
+        .getByRole('link', {
+          name: sharedCopy.saveActions.cancelAndReturnToHub
+        })
+        .click()
+
+      await expect(page).toHaveURL(hubUrl)
+
+      await page.goto(pathOf(reference))
+      await expect(
+        addressRowRadio(page, copy, ADDRESS_BOOK_PARTY)
+      ).not.toBeChecked()
+    })
+  })
+
+  test.describe(`${pickerName} — the answers it refuses`, () => {
+    test.beforeEach(async ({ page }) => {
+      await signIn(page)
+    })
+
+    test('continuing with nothing chosen shows the error and focuses the first row', async ({
+      page
+    }) => {
+      await openPicker(page)
+
+      await saveAndContinue(page).click()
+
+      await expect(page).toHaveURL(pageUrl)
+      await expect(missingAddressLink(page)).toBeVisible()
+
+      await missingAddressLink(page).click()
+      await expect(page.locator(firstRowRadio)).toBeFocused()
+    })
+
+    test('recovers from the error once an address is chosen', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await saveAndContinue(page).click()
+      await expect(missingAddressLink(page)).toBeVisible()
+
+      await addressRowRadio(page, copy, ADDRESS_BOOK_PARTY).check()
+      await saveAndContinue(page).click()
+
+      await expect(page).toHaveURL(afterSaveUrl)
+    })
+
+    test('continuing with nothing found focuses the search box', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await searchAddressBook(page, copy, MATCHES_NOTHING)
+      await expect(
+        page.getByText(copy.noMatches, { exact: true })
+      ).toBeVisible()
+
+      await saveAndContinue(page).click()
+
+      await expect(missingAddressLink(page)).toBeVisible()
+      await missingAddressLink(page).click()
+      await expect(searchBox(page)).toBeFocused()
+    })
+  })
+}

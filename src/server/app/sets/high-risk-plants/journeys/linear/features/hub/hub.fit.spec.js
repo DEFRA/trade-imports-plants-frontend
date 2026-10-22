@@ -4,7 +4,10 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import { copy as typeCopy } from '../commodity-type/copy/copy.en.js'
-import { expectNoSeriousOrCriticalViolations } from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import {
+  backLink,
+  expectNoSeriousOrCriticalViolations
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -25,9 +28,6 @@ const RENDERED_GROUP_COUNT = RENDERED_GROUP_IDS.length
 
 // Exact, because the phase banner's "give your feedback by email" link also
 // contains the word.
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-
 const taskRow = (page, title) =>
   page
     .getByRole('listitem')

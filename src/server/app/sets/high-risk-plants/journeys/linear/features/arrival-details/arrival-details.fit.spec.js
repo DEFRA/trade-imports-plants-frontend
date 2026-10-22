@@ -3,11 +3,13 @@ import {
   chooseAutocompleteOption,
   chooseCommodityType,
   describeDatePickerLook,
+  backLink,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
   saveOrigin,
-  startNotification
+  startNotification,
+  WOOD_LINE_FIELDS
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -52,16 +54,6 @@ const WARE_POTATO_LINE_FIELDS = {
   quantity: '250',
   potatoIntendedUse: 'Eating'
 }
-
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const arrivalDetailsPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-details`
