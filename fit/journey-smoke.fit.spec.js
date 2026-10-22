@@ -83,6 +83,15 @@ const fillSteps = {
     chooseRadio(page, `Select ${shape.partyName}`)
 }
 
+const answerStepAndContinue = async (page, step, shape) => {
+  await fillSteps[step.slug](page, seedFields(step), shape)
+  const button =
+    step.slug === 'commodities/details' && step.fields.index === undefined
+      ? commodityCopy.details.continue
+      : sharedCopy.saveActions.saveAndContinue
+  await page.getByRole('button', { name: button, exact: true }).click()
+}
+
 for (const [name, shape] of Object.entries(happyPaths)) {
   test(`${name}: ${shape.useCase} reaches confirmation`, async ({ page }) => {
     await signIn(page)
@@ -92,12 +101,7 @@ for (const [name, shape] of Object.entries(happyPaths)) {
       await test.step(step.slug, async () => {
         const path = `${BASE}/notifications/${reference}/${step.slug}`
         await expect(page).toHaveURL((url) => url.pathname === path)
-        await fillSteps[step.slug](page, seedFields(step), shape)
-        const button =
-          step.slug === 'commodities/details' && step.fields.index === undefined
-            ? commodityCopy.details.continue
-            : sharedCopy.saveActions.saveAndContinue
-        await page.getByRole('button', { name: button, exact: true }).click()
+        await answerStepAndContinue(page, step, shape)
       })
     }
 
@@ -131,6 +135,47 @@ for (const [name, shape] of Object.entries(happyPaths)) {
       page.getByRole('heading', { name: confirmationCopy.late.heading })
     ).toHaveCount(shape.late ? 1 : 0)
     await expectNoSeriousOrCriticalViolations(page, `${name} confirmation`)
+  })
+}
+
+const OPENING_RUN_BACK_TARGETS = {
+  warePotatoes: {
+    commodities: 'commodity-type',
+    'arrival-details': 'origin',
+    'identification-numbers': 'destinations/select',
+    'consignment/contact/select': 'identification-numbers'
+  },
+  woodWithoutBark: {
+    commodities: 'commodity-type',
+    'arrival-details': 'arrival-status',
+    'identification-numbers': 'consignors/select',
+    'consignment/contact/select': 'identification-numbers'
+  }
+}
+
+for (const [name, backTargets] of Object.entries(OPENING_RUN_BACK_TARGETS)) {
+  test(`${name}: Back on the commodities list, arrival details, identification numbers and contact opens the step the opening run came from`, async ({
+    page
+  }) => {
+    const shape = happyPaths[name]
+    await signIn(page)
+    const reference = await startNotification(page)
+    const pathOf = (slug) => `${BASE}/notifications/${reference}/${slug}`
+
+    for (const step of shape.steps) {
+      const backTarget = backTargets[step.slug]
+      if (backTarget) {
+        await test.step(`Back from ${step.slug}`, async () => {
+          await backLink(page).click()
+          await expect(page).toHaveURL(pathOf(backTarget))
+          await page.goBack()
+          await expect(page).toHaveURL(pathOf(step.slug))
+        })
+      }
+      await answerStepAndContinue(page, step, shape)
+    }
+
+    await expect(page).toHaveURL(pathOf('notification-view'))
   })
 }
 
