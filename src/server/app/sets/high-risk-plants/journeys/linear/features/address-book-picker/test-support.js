@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SET_BASE } from '../../../../set.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 
-export const JOURNEY_ID = 'HRP-0001'
+const JOURNEY_ID = 'HRP-0001'
 const PAGE_SIZE = 5
 const LABELS = pickerCopy.pagination
 const PAGES_IN_A_SHORT_BOOK = 3
@@ -92,10 +92,9 @@ const found = (results, { page = 1, total = results.length } = {}) => ({
   pageSize: PAGE_SIZE
 })
 
-export const pagePathFor = (slug) =>
-  `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
+const pagePathFor = (slug) => `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
 
-const describeResultsHref = ({ resultsHref }) => {
+const describeResultsHref = ({ resultsHref, slug }) => {
   describe('#resultsHref', () => {
     it('Should carry the search term, the page and the ticked row', () => {
       expect(
@@ -104,13 +103,21 @@ const describeResultsHref = ({ resultsHref }) => {
           page: 3,
           selectedId: TECH_IMPORTS_ID
         })
-      ).toContain(`?q=imports&page=3&selected=${TECH_IMPORTS_ID}`)
+      ).toBe(
+        `${pagePathFor(slug)}?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
+      )
     })
 
     it('Should leave out a search term and a selection it does not have', () => {
       expect(
         resultsHref(JOURNEY_ID, { query: '', page: 2, selectedId: '' })
-      ).toMatch(/\?page=2$/)
+      ).toBe(`${pagePathFor(slug)}?page=2`)
+    })
+
+    it('Should point at the select page of the address', () => {
+      expect(
+        resultsHref(JOURNEY_ID, { query: '', page: 1, selectedId: '' })
+      ).toBe(`${pagePathFor(slug)}?page=1`)
     })
   })
 }
@@ -163,7 +170,7 @@ const describePagination = ({ pagination }) => {
   })
 }
 
-const describePagingLinks = ({ pagination }) => {
+const describePagingLinks = ({ pagination, slug }) => {
   describe('#pagination links', () => {
     it('Should carry the search term and the ticked row into every paging link', () => {
       const paged = pagination(
@@ -175,14 +182,16 @@ const describePagingLinks = ({ pagination }) => {
         })
       )
 
-      expect(paged.previous.href).toContain(
-        `?q=imports&page=1&selected=${TECH_IMPORTS_ID}`
+      const pagePath = pagePathFor(slug)
+
+      expect(paged.previous.href).toBe(
+        `${pagePath}?q=imports&page=1&selected=${TECH_IMPORTS_ID}`
       )
-      expect(paged.next.href).toContain(
-        `?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
+      expect(paged.next.href).toBe(
+        `${pagePath}?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
       )
-      expect(paged.items[0].href).toContain(
-        `?q=imports&page=1&selected=${TECH_IMPORTS_ID}`
+      expect(paged.items[0].href).toBe(
+        `${pagePath}?q=imports&page=1&selected=${TECH_IMPORTS_ID}`
       )
     })
 
@@ -270,6 +279,7 @@ const describeRows = ({ fieldName, pickerViewModel }) => {
  *
  * @param {object} picker
  * @param {string} picker.fieldName - the answer name the page collects
+ * @param {string} picker.slug - the page's path under the notification
  * @param {Function} picker.pickerViewModel - the page's bound view model
  * @param {Function} picker.pagination - the page's bound pagination builder
  * @param {Function} picker.resultsHref - the page's bound results link builder
