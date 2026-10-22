@@ -330,6 +330,16 @@ const describeAddressNotInTheBook = (pickerConfig) => {
       expect(result.view.context.picker.error).toBe(errorText)
       expect(result.after).toEqual(result.before)
     })
+  })
+}
+
+const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
+  const { pickerName, fieldName, errorText } = pickerConfig
+  const savedWith = savedWithFor(pickerConfig)
+
+  describe(`POST ${pickerName} — a refused save keeps the search and page`, () => {
+    beforeAll(installStubs)
+    beforeEach(() => store.clear())
 
     it('Should keep the refused search term so the results are still there', async () => {
       const result = await savedWith({
@@ -549,6 +559,7 @@ export const describeAddressBookPickerController = (picker) => {
   describeSearching(picker)
   describeNothingChosen(picker)
   describeAddressNotInTheBook(picker)
+  describeRefusalKeepsSearchAndPage(picker)
   describeDeletedRecord(picker)
   describeAcceptedAnswers(picker)
   describeSaveFailures(picker)
