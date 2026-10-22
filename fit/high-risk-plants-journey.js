@@ -613,15 +613,15 @@ export const startPotatoNotification = async (page) => {
 }
 
 /**
- * Walks a seed-potato notification through every task and lands on check
- * answers, ready to continue to the declaration.
+ * Walks a seed-potato notification through the opening run as far as the
+ * consignment contact page.
  *
  * @param {import('@playwright/test').Page} page
  * @param {{ late?: boolean }} [options] - `late` arrives today, inside the
  *   potato notice period, so the notification is late
  * @returns {Promise<string>} the notification's reference
  */
-export const completePotatoNotification = async (
+export const startPotatoNotificationAtContact = async (
   page,
   { late = false } = {}
 ) => {
@@ -653,6 +653,20 @@ export const completePotatoNotification = async (
     .fill('C123')
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  return reference
+}
+
+/**
+ * Walks a seed-potato notification through every task and lands on check
+ * answers, ready to continue to the declaration.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ late?: boolean }} [options] - passed to
+ *   `startPotatoNotificationAtContact`
+ * @returns {Promise<string>} the notification's reference
+ */
+export const completePotatoNotification = async (page, options) => {
+  const reference = await startPotatoNotificationAtContact(page, options)
   await pickAddressBookParty(page)
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
   await expect(
@@ -773,6 +787,34 @@ export const postAnIdNotInTheBook = async (page) => {
 }
 
 /**
+ * Searches for a term nothing matches, then posts the picker with an id the
+ * address book does not hold.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} firstRowRadio - selector of the first address in the list,
+ *   whose name the posted id is sent under
+ */
+export const postAnIdNotInTheBookAfterAnEmptySearch = async (
+  page,
+  firstRowRadio
+) => {
+  const fieldName = await page.locator(firstRowRadio).getAttribute('name')
+  await searchAddressBook(page, MATCHES_NOTHING)
+  await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
+  await journeyFormOf(page).evaluate(
+    (form, { name, id }) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = name
+      input.value = id
+      form.append(input)
+    },
+    { name: fieldName, id: NOT_IN_THE_BOOK }
+  )
+  await saveAndContinue(page).click()
+}
+
+/**
  * Follows the second page link and fails unless the address ticked on the
  * first page is still named as the selected address, and no longer listed.
  *
@@ -858,6 +900,25 @@ export const describeAddressPicker = ({
       await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
     })
 
+    test('clearing the search and searching with nothing entered lists the whole book again, paged as before', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await searchAddressBook(page, DENMARK)
+      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toHaveCount(0)
+
+      await searchAddressBook(page, '')
+
+      await expectPickerResultsLayout(
+        page,
+        pickerCopy.resultsCount(PAGE_SIZE, STUB_BOOK_SIZE)
+      )
+      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeVisible()
+      await expect(
+        page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
+      ).toBeVisible()
+    })
+
     test('keeps a ticked row while the search narrows the results', async ({
       page
     }) => {
@@ -878,6 +939,24 @@ export const describeAddressPicker = ({
       await page.goto(pathOf(reference))
 
       await expectSelectedAddressCarriedToSecondPage(page)
+    })
+
+    test('an address chosen on a later page is saved, and reopening names it although its row is not on the first page', async ({
+      page
+    }) => {
+      const reference = await openPicker(page)
+      await page
+        .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
+        .click()
+      await page.getByRole('link', { name: 'Page 3', exact: true }).click()
+      await addressRowRadio(page, ALPINE).check()
+
+      await saveAndContinue(page).click()
+      await expect(page).toHaveURL(afterSaveUrl)
+      await page.goto(pathOf(reference))
+
+      await expect(selectedAddressInset(page, ALPINE)).toBeVisible()
+      await expect(addressRowRadio(page, ALPINE)).toHaveCount(0)
     })
   })
 
@@ -1017,6 +1096,20 @@ export const describeAddressPicker = ({
       await expect(searchBox(page)).toHaveValue(DENMARK)
       await notInBookLink(page).click()
       await expect(page.locator(firstRowRadio)).toBeFocused()
+    })
+
+    test('an address not in the book after a search that found nothing is refused, focusing the search box, which keeps the term', async ({
+      page
+    }) => {
+      await openPicker(page)
+
+      await postAnIdNotInTheBookAfterAnEmptySearch(page, firstRowRadio)
+
+      await expect(page).toHaveURL(pageUrl)
+      await expect(notInBookLink(page)).toBeVisible()
+      await notInBookLink(page).click()
+      await expect(searchBox(page)).toBeFocused()
+      await expect(searchBox(page)).toHaveValue(MATCHES_NOTHING)
     })
 
     test('choosing an address after that refusal moves on', async ({

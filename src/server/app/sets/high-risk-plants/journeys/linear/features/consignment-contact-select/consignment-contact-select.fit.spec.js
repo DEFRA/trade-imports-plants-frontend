@@ -10,6 +10,7 @@ import {
   expectThreeSaveControls,
   saveAndContinue,
   selectedAddressInset,
+  startPotatoNotificationAtContact,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE } from '../../../../../../../../../fit/set-base.js'
@@ -250,4 +251,29 @@ test.describe('consignment-contact-select — a blank save', () => {
       await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
     })
   }
+})
+
+test('a potatoes notification is asked for the consignment contact in the opening run, and cannot go on from the review while its Overview task is not started', async ({
+  page
+}) => {
+  await signIn(page)
+  const reference = await startPotatoNotificationAtContact(page)
+
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await page
+    .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
+    .click()
+
+  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(
+    page.getByRole('alert').getByRole('link', {
+      name: checkAnswersCopy.errors.cards.contact,
+      exact: true
+    })
+  ).toBeVisible()
+  await page.goto(`${BASE}/notifications/${reference}`)
+  await expect(contactRow(page).locator('.govuk-task-list__status')).toHaveText(
+    hubCopy.statuses.notYetStarted
+  )
 })
