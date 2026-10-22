@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SET_BASE } from '../../../../set.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 
-const JOURNEY_ID = 'HRP-0001'
+export const JOURNEY_ID = 'HRP-0001'
 const PAGE_SIZE = 5
 const LABELS = pickerCopy.pagination
 const PAGES_IN_A_SHORT_BOOK = 3
@@ -18,7 +18,7 @@ const POSTCODE = 'E14 9GE'
 const COUNTRY = 'United Kingdom'
 const ONE_LINE = `${LINE_1}, Unit 4, London, Greater London, ${POSTCODE}`
 
-const TECH_IMPORTS_ID = 'tech-imports-ltd'
+export const TECH_IMPORTS_ID = 'tech-imports-ltd'
 const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
@@ -92,53 +92,29 @@ const found = (results, { page = 1, total = results.length } = {}) => ({
   pageSize: PAGE_SIZE
 })
 
-/**
- * Declares the tests every address picker's view model and pagination share.
- *
- * @param {object} picker
- * @param {string} picker.slug - the picker page's slug, as it appears in its address
- * @param {string} picker.fieldName - the answer name the page collects
- * @param {Function} picker.pickerViewModel - the page's bound view model
- * @param {Function} picker.pagination - the page's bound pagination builder
- * @param {Function} picker.resultsHref - the page's bound results link builder
- */
-export const describePickerViewModel = ({
-  slug,
-  fieldName,
-  pickerViewModel,
-  pagination,
-  resultsHref
-}) => {
+const describeResultsHref = ({ slug, resultsHref }) => {
   const pagePath = `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
 
   describe('#resultsHref', () => {
-    it('Should carry the search term, the page and the ticked row', () => {
-      expect(
-        resultsHref(JOURNEY_ID, {
-          query: 'imports',
-          page: 3,
-          selectedId: TECH_IMPORTS_ID
-        })
-      ).toBe(`${pagePath}?q=imports&page=3&selected=${TECH_IMPORTS_ID}`)
-    })
-
     it('Should leave out a search term and a selection it does not have', () => {
       expect(
         resultsHref(JOURNEY_ID, { query: '', page: 2, selectedId: '' })
       ).toBe(`${pagePath}?page=2`)
     })
   })
+}
 
+const pagingState = (overrides) => ({
+  query: '',
+  page: 1,
+  totalPages: 3,
+  selectedId: '',
+  labels: LABELS,
+  ...overrides
+})
+
+const describePagination = ({ pagination }) => {
   describe('#pagination', () => {
-    const pagingState = (overrides) => ({
-      query: '',
-      page: 1,
-      totalPages: 3,
-      selectedId: '',
-      labels: LABELS,
-      ...overrides
-    })
-
     it('Should render nothing while one page holds every result', () => {
       expect(pagination(JOURNEY_ID, pagingState({ totalPages: 1 }))).toBeNull()
     })
@@ -173,7 +149,13 @@ export const describePickerViewModel = ({
       expect(paged.previous.text).toBe('Blaenorol')
       expect(paged.next.text).toBe('Nesaf')
     })
+  })
+}
 
+const describePagingLinks = ({ slug, pagination }) => {
+  const pagePath = `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
+
+  describe('#pagination links', () => {
     it('Should carry the search term and the ticked row into every paging link', () => {
       const paged = pagination(
         JOURNEY_ID,
@@ -212,7 +194,9 @@ export const describePickerViewModel = ({
       ])
     })
   })
+}
 
+const describeRows = ({ fieldName, pickerViewModel }) => {
   describe('#pickerViewModel', () => {
     const rows = [
       addressRecord(TECH_IMPORTS_ID, TECH_IMPORTS_NAME),
@@ -270,4 +254,21 @@ export const describePickerViewModel = ({
       expect(picker.rows[0].addressText).toBe(ONE_LINE)
     })
   })
+}
+
+/**
+ * Declares the tests every address picker's view model and pagination share.
+ *
+ * @param {object} picker
+ * @param {string} picker.slug - the picker page's slug, as it appears in its address
+ * @param {string} picker.fieldName - the answer name the page collects
+ * @param {Function} picker.pickerViewModel - the page's bound view model
+ * @param {Function} picker.pagination - the page's bound pagination builder
+ * @param {Function} picker.resultsHref - the page's bound results link builder
+ */
+export const describePickerViewModel = (picker) => {
+  describeResultsHref(picker)
+  describePagination(picker)
+  describePagingLinks(picker)
+  describeRows(picker)
 }

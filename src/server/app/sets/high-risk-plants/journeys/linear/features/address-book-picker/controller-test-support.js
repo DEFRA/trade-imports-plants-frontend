@@ -77,9 +77,7 @@ const renderPageFor = (template) => (context) =>
     ...context
   })
 
-const describePageServed = ({ pickerName, template, get, seed, fieldName }) => {
-  const renderPage = renderPageFor(template)
-
+const describePageServed = ({ pickerName, get, seed }) => {
   describe(`GET ${pickerName} — the page it serves`, () => {
     beforeAll(installStubs)
     beforeEach(() => store.clear())
@@ -136,6 +134,21 @@ const describePageServed = ({ pickerName, template, get, seed, fieldName }) => {
       expect(result.view.context.picker.rows).toEqual([])
       expect(result.view.context.picker.pagination).toBeNull()
     })
+  })
+}
+
+const describeSelectionShown = ({
+  pickerName,
+  template,
+  get,
+  seed,
+  fieldName
+}) => {
+  const renderPage = renderPageFor(template)
+
+  describe(`GET ${pickerName} — the selection it shows`, () => {
+    beforeAll(installStubs)
+    beforeEach(() => store.clear())
 
     it('Should tick the record the copy was picked from', async () => {
       const result = await driveHandler(get, {
@@ -358,8 +371,8 @@ const describeDeletedRecord = (picker) => {
 
     beforeAll(installStubs)
 
-    beforeEach(() => {
-      store.clear()
+    beforeEach(async () => {
+      await store.clear()
       config.set('stubMode', false)
       vi.stubGlobal('fetch', bookHoldingADeletedRecord())
     })
@@ -453,8 +466,8 @@ const describeSaveFailures = (picker) => {
   describe(`POST ${pickerName} — save failures`, () => {
     beforeAll(installStubs)
 
-    beforeEach(() => {
-      store.clear()
+    beforeEach(async () => {
+      await store.clear()
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => ({
@@ -523,6 +536,7 @@ const describeSaveFailures = (picker) => {
  */
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)
+  describeSelectionShown(picker)
   describeSearching(picker)
   describeNothingChosen(picker)
   describeAddressNotInTheBook(picker)
