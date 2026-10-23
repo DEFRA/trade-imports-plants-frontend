@@ -26,42 +26,11 @@ const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
 const COUNTRY_OF_ORIGIN_INPUT = 'input#countryOfOrigin'
 
-export const FORM_GROUP_ANCESTOR_XPATH =
-  'xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'
-
-export const childTagsAndClassesOf = (formGroup) =>
-  formGroup.evaluate((group) =>
-    [...group.children].map(({ tagName, className }) => ({
-      tagName,
-      className
-    }))
-  )
-
-export const expectedFormGroupChildren = ({
-  hint,
-  labelSize,
-  enhanced = false
-}) => [
-  { tagName: 'LABEL', className: `govuk-label govuk-label--${labelSize}` },
-  ...(hint ? [{ tagName: 'DIV', className: 'govuk-hint' }] : []),
-  ...(enhanced ? [{ tagName: 'DIV', className: 'app-autocomplete' }] : []),
-  { tagName: 'SELECT', className: 'govuk-select' }
-]
-
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 const BLOCKING_IMPACTS = ['serious', 'critical']
 const JSON_INDENT = 2
 
 const DAYS_AHEAD_ON_TIME = 7
-
-export const GOVUK_BLUE = 'rgb(29, 112, 184)'
-export const GOVUK_BLUE_SHADE_50 = 'rgb(15, 56, 92)'
-export const WHITE = 'rgb(255, 255, 255)'
-const GOVUK_BLUE_SHADE_25 = 'rgb(22, 84, 138)'
-const GOVUK_FOCUS = 'rgb(255, 221, 0)'
-const GOVUK_FOCUS_TEXT = 'rgb(11, 12, 12)'
-const GOVUK_BORDER_WIDTH = '2px'
-const BLUE_ICON_BUTTON_EDGE = `${GOVUK_BLUE_SHADE_50} 0px -2px 0px 0px inset`
 
 export const saveAndContinue = (page) =>
   page.getByRole('button', {
@@ -81,6 +50,16 @@ const computedStyle = (locator, property) =>
     property
   )
 
+const govukColourOf = (page, token) =>
+  page.evaluate((name) => {
+    const reference = document.createElement('span')
+    reference.style.color = `var(--govuk-${name}-colour)`
+    document.body.append(reference)
+    const { color } = window.getComputedStyle(reference)
+    reference.remove()
+    return color
+  }, token)
+
 const datePickerOf = (page, label) =>
   page.locator('.moj-datepicker', { has: page.getByLabel(label) })
 
@@ -94,25 +73,32 @@ const openDatePicker = async (page, label) => {
   return dialog
 }
 
-/**
- * Fails unless the button is GOV.UK blue with a white icon, darkens on hover
- * and turns the GOV.UK focus yellow when focused.
- *
- * @param {import('@playwright/test').Locator} button
- */
-export const expectBlueIconButtonLook = async (button) => {
-  await expect(button).toHaveCSS('background-color', GOVUK_BLUE)
-  await expect(button).toHaveCSS('color', WHITE)
-  await expect(button).toHaveCSS('border-bottom-width', '0px')
-  await expect(button).toHaveCSS('box-shadow', BLUE_ICON_BUTTON_EDGE)
+const expectBrandButtonThatChangesOnHoverAndTakesFocusColours = async (
+  page,
+  button
+) => {
+  await expect(button).toHaveCSS(
+    'background-color',
+    await govukColourOf(page, 'brand')
+  )
+  await expect(button).toHaveCSS(
+    'color',
+    await govukColourOf(page, 'inverse-text')
+  )
+  const restingBackground = await computedStyle(button, 'background-color')
 
   await button.hover()
-  await expect(button).toHaveCSS('background-color', GOVUK_BLUE_SHADE_25)
-  await expect(button).toHaveCSS('color', WHITE)
+  await expect(button).not.toHaveCSS('background-color', restingBackground)
 
   await button.focus()
-  await expect(button).toHaveCSS('background-color', GOVUK_FOCUS)
-  await expect(button).toHaveCSS('color', GOVUK_FOCUS_TEXT)
+  await expect(button).toHaveCSS(
+    'background-color',
+    await govukColourOf(page, 'focus')
+  )
+  await expect(button).toHaveCSS(
+    'color',
+    await govukColourOf(page, 'focus-text')
+  )
 }
 
 const contentWidthOf = (locator) =>
@@ -135,32 +121,18 @@ export const JOURNEY_FORM_SELECTOR = 'form[method="post"]'
  */
 export const journeyFormOf = (page) => page.locator(JOURNEY_FORM_SELECTOR)
 
-const MEDIUM_LABEL_FONT_SIZE = '24px'
-const BOLD_FONT_WEIGHT = '700'
 const WIDTH_TOLERANCE_PX = 1
-const SEARCH_ICON_SIZE = '20px'
 
-const expectSubmittedSearchLook = async (page, { search, expectedWidth }) => {
+const expectSubmittedSearchLayout = async (page, { search, expectedWidth }) => {
   const box = page.getByLabel(search.label, { exact: true })
   const button = page.getByRole('button', {
     name: search.button,
     exact: true
   })
   const wrapper = page.locator('.moj-search__input-wrapper', { has: box })
-  const label = box.locator(FORM_GROUP_ANCESTOR_XPATH).locator('label')
 
   await expect(box).toHaveAccessibleDescription(search.hint)
-  await expect(label).toHaveCSS('font-size', MEDIUM_LABEL_FONT_SIZE)
-  await expect(label).toHaveCSS('font-weight', BOLD_FONT_WEIGHT)
   await expect(wrapper.getByRole('button')).toHaveCount(1)
-  const icon = await button.evaluate((el) => {
-    const { maskImage, width, height } = window.getComputedStyle(el, '::before')
-    return { maskImage, width, height }
-  })
-  expect(icon.maskImage).toContain('svg')
-  expect(icon.width).toBe(SEARCH_ICON_SIZE)
-  expect(icon.height).toBe(SEARCH_ICON_SIZE)
-  await expectBlueIconButtonLook(button)
 
   const boxEdge = await box.evaluate((el) => el.getBoundingClientRect().right)
   const buttonEdge = await button.evaluate(
@@ -242,7 +214,7 @@ export const withoutJavaScript = async (page, browser, use) => {
 
 /**
  * Declares the tests every address picker's submitted search box shares: its
- * look, searching by pressing Enter without JavaScript, and axe on the empty,
+ * hint, width and joined button, searching by pressing Enter without JavaScript, and axe on the empty,
  * searched and no-match states.
  *
  * @param {object} options
@@ -257,12 +229,12 @@ export const describeSubmittedSearchPicker = ({ pickerName, openPicker }) => {
       await openPicker(page)
     })
 
-    test(`the ${pickerName} search box is medium-labelled, hinted, half the column wide and joined to a blue icon button`, async ({
+    test(`the ${pickerName} search box is hinted, half the column wide and joined flush to its one search button`, async ({
       page
     }) => {
       const columnWidth = await contentWidthOf(journeyFormOf(page))
 
-      await expectSubmittedSearchLook(page, {
+      await expectSubmittedSearchLayout(page, {
         search: pickerCopy.search,
         expectedWidth: columnWidth / 2
       })
@@ -323,55 +295,30 @@ const expectCalendarEndsAboveNextQuestion = async (
   expect(calendarBottom).toBeLessThanOrEqual(nextQuestionTop)
 }
 
-const restingBackgroundOfButton = (page, name) =>
-  computedStyle(
-    page.getByRole('button', { name, exact: true }),
-    'background-color'
-  )
-
-const expectMouseOpenedCalendarLook = async (page, label) => {
-  const primaryBackground = await restingBackgroundOfButton(
-    page,
-    sharedCopy.saveActions.saveAndContinue
-  )
-  const secondaryBackground = await restingBackgroundOfButton(
-    page,
-    sharedCopy.saveActions.saveAndReturnToHub
-  )
+const expectMouseOpenedCalendarFocusesOpenedOnDay = async (page, label) => {
   const dialog = await openDatePicker(page, label)
 
-  await expect(dialog).toHaveCSS('outline-style', 'solid')
-  await expect(dialog).toHaveCSS('outline-width', GOVUK_BORDER_WIDTH)
-  await expect(dialog).toHaveCSS('outline-color', GOVUK_FOCUS_TEXT)
-
-  const openedOnDay = dialog.locator('.moj-datepicker__button--selected')
-  await expect(openedOnDay).toBeFocused()
-  await expect(openedOnDay).toHaveCSS('background-color', GOVUK_BLUE)
-  await expect(openedOnDay).toHaveCSS('color', WHITE)
-  await expect(dialog.locator('tbody')).toHaveCSS('outline-style', 'none')
-
   await expect(
-    dialog.getByRole('button', { name: 'Select', exact: true })
-  ).toHaveCSS('background-color', primaryBackground)
-  await expect(
-    dialog.getByRole('button', { name: 'Close', exact: true })
-  ).toHaveCSS('background-color', secondaryBackground)
+    dialog.locator('.moj-datepicker__button--selected')
+  ).toBeFocused()
 }
 
-const expectKeyboardOpenedCalendarLook = async (page, label) => {
+const expectKeyboardOpenedCalendarInFocusColours = async (page, label) => {
   await dateToggleOf(page, label).focus()
   await page.keyboard.press('Enter')
   const dialog = datePickerOf(page, label).getByRole('dialog')
   await expect(dialog).toBeVisible()
+  const focusColour = await govukColourOf(page, 'focus')
+  const calendarBody = dialog.locator('tbody')
 
   const focusedDay = dialog.locator('.moj-datepicker__button:focus')
-  await expect(focusedDay).toHaveCSS('background-color', GOVUK_FOCUS)
-  await expect(focusedDay).toHaveCSS('color', GOVUK_FOCUS_TEXT)
-  await expect(dialog.locator('tbody')).toHaveCSS(
-    'outline-width',
-    GOVUK_BORDER_WIDTH
+  await expect(focusedDay).toHaveCSS('background-color', focusColour)
+  await expect(focusedDay).toHaveCSS(
+    'color',
+    await govukColourOf(page, 'focus-text')
   )
-  await expect(dialog.locator('tbody')).toHaveCSS('outline-color', GOVUK_FOCUS)
+  await expect(calendarBody).not.toHaveCSS('outline-style', 'none')
+  await expect(calendarBody).toHaveCSS('outline-color', focusColour)
 }
 
 export const describeDatePickerLook = ({
@@ -379,10 +326,13 @@ export const describeDatePickerLook = ({
   label,
   nextQuestionLabel
 }) => {
-  test(`the ${fieldName} button that opens the calendar is GOV.UK blue with a white icon, darkens on hover and turns yellow when focused`, async ({
+  test(`the ${fieldName} button that opens the calendar is in the GOV.UK brand colour with an inverse-text icon, changes on hover and takes the GOV.UK focus colours`, async ({
     page
   }) => {
-    await expectBlueIconButtonLook(dateToggleOf(page, label))
+    await expectBrandButtonThatChangesOnHoverAndTakesFocusColours(
+      page,
+      dateToggleOf(page, label)
+    )
   })
 
   test(`the ${fieldName} calendar ends above the next question`, async ({
@@ -395,16 +345,16 @@ export const describeDatePickerLook = ({
     )
   })
 
-  test(`the ${fieldName} calendar opened with the mouse has a 2px black outline, the opened-on day in GOV.UK blue with white text, and Select and Close buttons matching the page's primary and secondary buttons`, async ({
+  test(`the ${fieldName} calendar opened with the mouse puts focus on the opened-on day`, async ({
     page
   }) => {
-    await expectMouseOpenedCalendarLook(page, label)
+    await expectMouseOpenedCalendarFocusesOpenedOnDay(page, label)
   })
 
-  test(`the ${fieldName} calendar opened with the keyboard shows the focused day and calendar body in the GOV.UK focus yellow`, async ({
+  test(`the ${fieldName} calendar opened with the keyboard shows the focused day and an outline round the calendar body in the GOV.UK focus colours`, async ({
     page
   }) => {
-    await expectKeyboardOpenedCalendarLook(page, label)
+    await expectKeyboardOpenedCalendarInFocusColours(page, label)
   })
 }
 

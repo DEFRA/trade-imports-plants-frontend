@@ -2,13 +2,10 @@ import {
   addCommodityLine,
   chooseCommodityType,
   chooseCountryOfOrigin,
-  FORM_GROUP_ANCESTOR_XPATH,
-  childTagsAndClassesOf,
   backLink,
   openFromOverview,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
-  expectedFormGroupChildren,
   saveAndContinue,
   startNotification,
   startNotificationAtOrigin
@@ -61,11 +58,14 @@ test.describe('origin feature', () => {
     await expect(
       page.getByText(copy.country.label, { exact: true })
     ).toBeVisible()
-    expect(
-      await childTagsAndClassesOf(
-        page.locator(COUNTRY_INPUT).locator(FORM_GROUP_ANCESTOR_XPATH)
-      )
-    ).toEqual(expectedFormGroupChildren({ labelSize: 'm', enhanced: true }))
+    const country = page.locator(COUNTRY_INPUT)
+    const typeAheadInstruction = await page
+      .locator('#countryOfOrigin__assistiveHint')
+      .textContent()
+    await expect(country).toHaveAccessibleName(copy.country.label)
+    await expect(country).toHaveAccessibleDescription(
+      typeAheadInstruction.trim()
+    )
   })
 
   test('invites a search in the empty box', async ({ page }) => {

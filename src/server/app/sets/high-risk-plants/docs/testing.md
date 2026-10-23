@@ -63,16 +63,14 @@ holds the steps more than one spec takes: `startNotification`,
 `addCommodityLine`, `saveOrigin`, `chooseCountryOfOrigin`,
 `chooseAutocompleteOption`, `saveAndContinue`, `startPotatoNotification`,
 `completePotatoNotification`, `openDeclaration`,
-`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
-`GOVUK_BLUE_SHADE_50` and `WHITE`, `expectBlueIconButtonLook`, which checks
-the blue, white, hover and focus look of one icon button,
-`describeDatePickerLook`, which registers the four look tests for one date
-field, and `describeSubmittedSearchPicker`, which registers the look,
-no-JavaScript Enter search and three-state axe tests for one address picker's
-submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
-`POTATO_VARIETY`, `CHECK_ANSWERS_URL` and `WOOD_LINE_FIELDS`; the form-group
-readers `FORM_GROUP_ANCESTOR_XPATH`, `childTagsAndClassesOf` and
-`expectedFormGroupChildren`; `journeyFormOf`, which finds the page's journey
+`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`,
+`describeDatePickerLook`, which registers the button, position, mouse-focus
+and keyboard-focus tests for one date field, and
+`describeSubmittedSearchPicker`, which registers the hint, width and joined
+button, no-JavaScript Enter search and three-state axe tests for one address
+picker's submitted search box. It also holds
+`startWoodNotificationWithOriginSaved`, `POTATO_VARIETY`, `CHECK_ANSWERS_URL`
+and `WOOD_LINE_FIELDS`; `journeyFormOf`, which finds the page's journey
 form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
 `SECOND_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
@@ -87,10 +85,19 @@ first address swapped for an id the book does not hold;
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count, the one radio group
 named "Select an address" and the link-free content under the page heading are
-as expected. The type-ahead readers
+as expected. The type-ahead readers `FORM_GROUP_ANCESTOR_XPATH`,
 `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, so the coverage report never counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.
+
+The browser tests here prove appearance only by position, size relative to
+another element, or a colour read from a GOV.UK colour token at run time. Exact
+colours, font sizes and icons are proved by the screenshot tests in
+`trade-imports-ins-tests` under `tests/plants/e2e/visual/`: the origin country
+type-ahead at rest and with suggestions, the arrival calendar opened with the
+mouse, and the place of destination search box. Do not add `rgb()`,
+`box-shadow`, pixel font sizes or exact class lists to a fit spec; add a
+screenshot there instead.
 
 Things that are easy to get wrong:
 

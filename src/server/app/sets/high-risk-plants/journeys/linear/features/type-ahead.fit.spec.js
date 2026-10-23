@@ -1,15 +1,9 @@
 import { expect, test } from '@playwright/test'
 
 import {
-  FORM_GROUP_ANCESTOR_XPATH,
-  GOVUK_BLUE,
-  GOVUK_BLUE_SHADE_50,
-  WHITE,
-  childTagsAndClassesOf,
   chooseCommodityCategory,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
-  expectedFormGroupChildren,
   startNotification,
   startNotificationAtOrigin,
   startPotatoNotification,
@@ -23,6 +17,8 @@ import { copy as originCopy } from './origin/copy/copy.en.js'
 
 const AUTOCOMPLETE_CONTAINER =
   'xpath=ancestor::*[contains(@class,"app-autocomplete")][1]'
+const FORM_GROUP_ANCESTOR_XPATH =
+  'xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'
 const COUNTRY_SELECT = 'select#countryOfOrigin-select'
 const DOVER_OPTION = 'Port of Dover - GB DVR'
 const countries = countryAndSubdivisionEntries()
@@ -114,7 +110,7 @@ for (const typeAhead of typeAheads) {
       })
     }
 
-    test('shows the joined blue magnifying glass button flush with the box and no dropdown arrow', async ({
+    test('shows a square button flush with the right of the box and no dropdown arrow', async ({
       page
     }) => {
       const measurements = await measureJoinedSearchButton(
@@ -122,10 +118,6 @@ for (const typeAhead of typeAheads) {
       )
 
       expect(measurements.arrowDisplay).toBe('none')
-      expect(measurements.background).toBe(GOVUK_BLUE)
-      expect(measurements.iconColour).toBe(WHITE)
-      expect(measurements.boxShadow).toContain(GOVUK_BLUE_SHADE_50)
-      expect(measurements.borderWidth).toBe('0px')
       expect(measurements.buttonWidth).toBe(measurements.buttonHeight)
       expect(measurements.buttonTop).toBe(measurements.inputTop)
       expect(measurements.buttonBottom).toBe(measurements.inputBottom)
@@ -193,14 +185,17 @@ for (const typeAhead of typeAheads) {
 
         await expect(select).toHaveJSProperty('tagName', 'SELECT')
         await expect(select).toBeVisible()
+        await expect(select).toHaveAccessibleName(label)
+        await expect(select).toHaveAccessibleDescription(hint ?? '')
+        await expect(formGroup.locator('label')).toHaveClass(
+          new RegExp(`govuk-label--${labelSize}`)
+        )
         await expect(select.locator('option').first()).toHaveText(selectText)
         await expect(select.locator('option').first()).toHaveJSProperty(
           'value',
           ''
         )
-        expect(await childTagsAndClassesOf(formGroup)).toEqual(
-          expectedFormGroupChildren({ hint, labelSize })
-        )
+        await expect(formGroup.getByRole('button')).toHaveCount(0)
         await expect(
           noJavaScript.locator(
             '.autocomplete__wrapper, .app-autocomplete__button'
@@ -272,7 +267,6 @@ const measureJoinedSearchButton = (input) =>
     const arrow = container.querySelector('.autocomplete__dropdown-arrow-down')
     const inputEdges = inputElement.getBoundingClientRect()
     const buttonEdges = button.getBoundingClientRect()
-    const buttonStyle = window.getComputedStyle(button)
     return {
       arrowDisplay: window.getComputedStyle(arrow).display,
       inputTop: inputEdges.top,
@@ -282,11 +276,7 @@ const measureJoinedSearchButton = (input) =>
       buttonBottom: buttonEdges.bottom,
       buttonRight: buttonEdges.right,
       buttonWidth: buttonEdges.width,
-      buttonHeight: buttonEdges.height,
-      background: buttonStyle.backgroundColor,
-      boxShadow: buttonStyle.boxShadow,
-      borderWidth: buttonStyle.borderTopWidth,
-      iconColour: window.getComputedStyle(button, '::before').backgroundColor
+      buttonHeight: buttonEdges.height
     }
   })
 
