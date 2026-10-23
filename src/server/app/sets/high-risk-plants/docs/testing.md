@@ -59,11 +59,51 @@ run.
 
 [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
 holds the steps more than one spec takes: `startNotification`,
-`chooseCommodityType`, `addCommodityLine`, `saveOrigin`,
-`chooseCountryOfOrigin`, `chooseAutocompleteOption`, `saveAndContinue`,
-`startPotatoNotification`, `completePotatoNotification`, `openDeclaration` and
-`expectNoSeriousOrCriticalViolations`. When a second spec needs a step, move it
-there in the same change and delete every local copy.
+`startNotificationAtOrigin`, `chooseCommodityType`, `changeCommodityType`, `chooseCommodityCategory`,
+`addCommodityLine`, `saveOrigin`, `chooseCountryOfOrigin`,
+`chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
+`startPotatoNotificationAtContact`, `completePotatoNotification`, `openDeclaration`,
+`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which also proves the primary and
+Save and return to overview sit in the button group and Cancel and return to overview follows it,
+`govukColourOf`, which reads one GOV.UK colour token at run time,
+`describeDatePickerLook`, which registers the button, position, mouse-focus
+and keyboard-focus tests for one date field, and
+`describeSubmittedSearchPicker`, which registers the hint, width and joined
+button, search button colour, no-JavaScript Enter search and three-state axe tests for one address
+picker's submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
+`POTATO_VARIETY`, `CHECK_ANSWERS_URL` and `WOOD_LINE_FIELDS`; the form-group
+reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
+form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
+values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
+`SECOND_PAGE_LINK`, `THIRD_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
+`NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
+address picker page by the address's name, `selectedAddressInset`, which
+finds the selected-address inset by the address's name, and `searchBox`, which
+finds the picker's search box; `describeAddressPicker`,
+which registers the listing, searching, saving, moving-on and refusal tests for
+one single-address picker; `postAnIdNotInTheBook`, which posts a picker with an id the
+book does not hold, appended as a hidden input under the first radio's name;
+`postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;
+`expectSelectedAddressCarriedToSecondPage`, which follows the second page link and fails unless the ticked address is still the selected address;
+`withoutJavaScript`, which reopens the page in a context with JavaScript switched off;
+`pickerResultsSummary`, which finds the paragraph straight after the results
+heading (the count, or the no-matches message), and
+`expectPickerResultsLayout`, which fails unless the count, the one radio group
+named "Select an address" and the link-free content under the page heading are
+as expected. The type-ahead style tests (typography, focus indicator, error border), which compare the
+enhanced input with a plain GOV.UK input read at run time, and the readers
+`govukInputStyleOf`, `measureJoinedSearchButton` and `boldLettersOf` live in
+`type-ahead.fit.spec.js`, so the coverage report never counts them as source.
+When a second spec needs a step, move it there in the same change and delete every local copy.
+
+The browser tests here prove appearance only by position, size relative to
+another element, or a colour read from a GOV.UK colour token at run time. Exact
+colours, font sizes and icons are proved by the screenshot tests in
+`trade-imports-ins-tests` under `tests/plants/e2e/visual/`: the origin country
+type-ahead at rest and with suggestions, the arrival calendar opened with the
+mouse, and the place of destination search box. Do not add `rgb()`,
+`box-shadow`, pixel font sizes or exact class lists to a fit spec; add a
+screenshot there instead.
 
 Things that are easy to get wrong:
 

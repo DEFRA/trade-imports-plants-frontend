@@ -57,8 +57,11 @@ const JOURNEY_REFUSAL = Object.freeze({
   NOT_EDITABLE: 'not-editable'
 })
 
-const logRefusal = (request, { action, journeyId, refusal, ...fields }) => {
-  request.logger.info({ journeyId, refusal, ...fields }, `${action} refused`)
+const logJourneyActionRefused = (
+  request,
+  { action, journeyId, reason, ...fields }
+) => {
+  request.logger.info({ journeyId, reason, ...fields }, `${action} refused`)
 }
 
 const JOURNEY_MEMO = Symbol('currentJourney')
@@ -155,20 +158,20 @@ const editableFromStatus = async (journey, journeyId, actor) => {
 export const amendJourney = async (request, h, journeyId) => {
   const journey = await loadAndRememberJourney(request, h, journeyId)
   if (!journey) {
-    logRefusal(request, {
+    logJourneyActionRefused(request, {
       action: 'Amend',
       journeyId,
-      refusal: JOURNEY_REFUSAL.NOT_FOUND
+      reason: JOURNEY_REFUSAL.NOT_FOUND
     })
     return undefined
   }
   const actor = buildActor(request.auth.credentials)
   const editable = await editableFromStatus(journey, journeyId, actor)
   if (!editable) {
-    logRefusal(request, {
+    logJourneyActionRefused(request, {
       action: 'Amend',
       journeyId,
-      refusal: JOURNEY_REFUSAL.NOT_EDITABLE,
+      reason: JOURNEY_REFUSAL.NOT_EDITABLE,
       status: journey.status
     })
     return undefined

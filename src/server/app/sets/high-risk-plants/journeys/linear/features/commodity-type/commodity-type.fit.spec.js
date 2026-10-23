@@ -4,7 +4,9 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
+  backLink,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
@@ -35,9 +37,6 @@ const HINT_DAYS = {
   'plants-for-planting': PLANTS_WOOD_DAYS_AFTER_ARRIVAL,
   'wood-and-cut-trees': PLANTS_WOOD_DAYS_AFTER_ARRIVAL
 }
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const radioFor = (page, value) =>
   page.getByRole('radio', { name: copy.typeLabels[value], exact: true })
@@ -99,17 +98,7 @@ test.describe('commodity-type feature', () => {
   })
 
   test('offers the three save controls', async ({ page }) => {
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
   })
 
   test('sends Back to the dashboard while the notification has no answer', async ({

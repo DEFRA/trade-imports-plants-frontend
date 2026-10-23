@@ -19,16 +19,21 @@ import { records as recordsStub } from '../../../../../../services/persistence/r
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
+  expectBackLinkIsPath,
+  expectOneRefusalLogged,
   journeyRequest,
   postHandlerOf,
   stubH
 } from '../../../../../../engine/test-support.js'
+import { hubPath } from '../../../../../../shared/paths.js'
+import * as cancelAmend from '../cancel-amend/controller.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import * as ports from '../../../../../../services/ports/index.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney
+  installHighRiskPlantsJourney,
+  TECH_IMPORTS_COPY
 } from '../../test-support.js'
 import {
   sectionEntry,
@@ -152,6 +157,10 @@ describe('Check your answers', () => {
     expect(result.view.context.errorSummary.errorList).toEqual(
       invalidDestinationErrors(result)
     )
+    expectOneRefusalLogged(result.logger, {
+      journeyId: result.journeyId,
+      errorCodes: ['party:placeOfDestination']
+    })
   })
 
   it('Should name an unanswered destination as an outstanding task, not a party error', async () => {
@@ -364,6 +373,29 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
     ).toMatchObject({ anchor: 'contact', error: copy.errors.cards.contact })
   })
 
+  it('Should call the consignor Consignor on its unfinished card and in its summary error', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: PLANTS_FOR_PLANTING, countryOfOrigin: 'FR' }
+    })
+    expect(cardsOf(result).map(({ title }) => title)).toContain('Consignor')
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toContain('Complete consignor')
+  })
+
+  it('Should name the consignor in the error for an answered consignor that breaks the address rules', async () => {
+    const result = await driveHandler(get, {
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: 'FR',
+        consignor: { ...TECH_IMPORTS_COPY, email: INVALID_EMAIL }
+      }
+    })
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toContain('Correct the address details for the consignor')
+  })
+
   it('Should mark no card on a complete notification', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(result.view.context.errorSummary).toBeNull()
@@ -506,6 +538,48 @@ describe('Check your answers lateness', () => {
     expect(result.response).toEqual({
       redirect: `${SET_BASE}/notifications/${result.journeyId}/declaration`
     })
+  })
+})
+
+describe('Check your answers — the Back link', () => {
+  const submittedViewWith = async (query = {}) => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    const h = stubH()
+    await get(journeyRequest(journeyId, { query }), h)
+    return h.captured.view
+  }
+
+  it('Should send Back from a submitted notification to the notification list', async () => {
+    const view = await submittedViewWith()
+    expect(view.context.backLink).toBe(SET_BASE)
+  })
+
+  it('Should send Back from the submitted view shown after an amendment is cancelled to the notification list', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    await recordsStub.amend(journeyId)
+    await store.seedAnswers(journeyId, {
+      ...COMPLETE_NOTIFICATION,
+      producerIdentificationNumber: 'P999'
+    })
+    const cancelRequest = journeyRequest(journeyId)
+    await postHandlerOf(cancelAmend)(cancelRequest, stubH(cancelRequest))
+
+    const h = stubH()
+    await get(journeyRequest(journeyId, { query: { cancelled: '1' } }), h)
+
+    expect(h.captured.view.context.backLink).toBe(SET_BASE)
+  })
+
+  it('Should send Back from the review of an amendment to the overview', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_NOTIFICATION,
+      amend: true
+    })
+    expectBackLinkIsPath(result, hubPath(result.journeyId))
   })
 })
 

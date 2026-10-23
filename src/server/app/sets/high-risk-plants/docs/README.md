@@ -68,7 +68,7 @@ collide; `npm run test:fit:ci` does this for you.
 | `journeys/linear/flow/flow.js`                   | `FLOW_ONLY_KEYS`, `sections`                  | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/task-rows.js`              | `taskRows`, `rowStatus`                       | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/section-captions/index.js` | `captionSections`, `sectionCaptionOf`         | `configureJourneyFlow`                                      |
-| `journeys/linear/flow/run.js`                    | `nextRunTarget`                               | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/run.js`                    | `nextRunTarget`, `previousRunTarget`          | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/entry-guard.js`            | `entryGuardTarget`                            | `server.ext('onPreHandler')`                                |
 
 This set's gateway,
@@ -90,12 +90,20 @@ identification numbers and consignment contact. The destination, consignor
 and consignment contact pages are all the same address-book picker — a search
 box over the organisation's book, five rows a page with a radio per row, and
 paging links — sharing its shell through
-`journeys/linear/features/address-book-picker/`; the contact page differs in
-storing a copy of the record it picks and in allowing a blank save. The
-commodities feature has a list page and an entry sub-page for adding or
+`journeys/linear/features/address-book-picker/`. The three pickers alike store a
+copy of the record they pick and allow a blank save, and share their results
+partial and their save rule through that directory.
+
+A stored copy keeps later address-book edits off the notification. A picker
+resolves a selection only to a record the book still holds. An empty selection
+leaves with nothing committed. An id the book no longer holds is refused with
+the party error. An address-book outage throws and is never read as a deletion.
+
+The commodities feature has a list page and an entry sub-page for adding or
 editing a line. Scope controls
 which questions apply: for example, potato notifications skip arrival status
-and go straight to arrival details.
+and go straight to arrival details, so their place of destination is always the
+pre-arrival one.
 
 The review section contains check answers, declaration and confirmation;
 readiness gates entry to it. Registered actions also support amending,

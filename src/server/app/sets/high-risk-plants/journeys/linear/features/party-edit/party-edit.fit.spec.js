@@ -1,5 +1,8 @@
 import {
+  ADDRESS_BOOK_PARTY,
+  WOOD_LINE_FIELDS,
   addCommodityLine,
+  addressRowRadio,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
@@ -13,7 +16,6 @@ import {
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
-import { copy as contactCopy } from '../consignment-contact-select/copy/copy.en.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
@@ -23,15 +25,7 @@ const EDIT_URL = /\/notifications\/[^/]+\/consignment\/contact\/edit\?/
 const FRANCE = 'France'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
-
-const TECH_IMPORTS = 'Tech Imports Ltd'
-const TECH_IMPORTS_POSTCODE = 'E14 9GE'
+const ADDRESS_BOOK_PARTY_POSTCODE = 'E14 9GE'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const CURRENT_CONTACT = pickerCopy.parties.contactAddress.current
 
@@ -45,12 +39,7 @@ const openContactEdit = async (page) => {
   await saveOrigin(page, reference, FRANCE)
   const contactPath = `${BASE}/notifications/${reference}/consignment/contact/select`
   await page.goto(contactPath)
-  await page
-    .getByRole('radio', {
-      name: `${contactCopy.selectRowPrefix} ${TECH_IMPORTS}`,
-      exact: true
-    })
-    .check()
+  await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
   await saveAndContinue(page).click()
   await page.goto(contactPath)
   await currentContactCard(page)
@@ -74,7 +63,9 @@ test.describe('edit a copied address', () => {
     await expect(
       page.getByText(pickerCopy.parties.contactAddress.title, { exact: true })
     ).toBeVisible()
-    await expect(page.getByLabel(copy.fields.name)).toHaveValue(TECH_IMPORTS)
+    await expect(page.getByLabel(copy.fields.name)).toHaveValue(
+      ADDRESS_BOOK_PARTY
+    )
     await expect(page.getByLabel(copy.fields.county)).toBeVisible()
     await expect(page.getByLabel(copy.fields.countryCode)).toHaveValue('GB')
   })
@@ -106,8 +97,10 @@ test.describe('edit a copied address', () => {
     await page.goto(
       `${BASE}/notifications/${journeyIdFromPage(page)}/consignment/contact/select`
     )
-    await expect(currentContactCard(page)).toContainText(TECH_IMPORTS)
-    await expect(currentContactCard(page)).toContainText(TECH_IMPORTS_POSTCODE)
+    await expect(currentContactCard(page)).toContainText(ADDRESS_BOOK_PARTY)
+    await expect(currentContactCard(page)).toContainText(
+      ADDRESS_BOOK_PARTY_POSTCODE
+    )
     await expect(currentContactCard(page)).not.toContainText(EDITED_NAME)
   })
 
@@ -116,7 +109,7 @@ test.describe('edit a copied address', () => {
     await page.getByRole('button', { name: copy.cancel }).click()
 
     await expect(page).toHaveURL(CONTACT_URL)
-    await expect(currentContactCard(page)).toContainText(TECH_IMPORTS)
+    await expect(currentContactCard(page)).toContainText(ADDRESS_BOOK_PARTY)
     await expect(currentContactCard(page)).not.toContainText(EDITED_NAME)
   })
 

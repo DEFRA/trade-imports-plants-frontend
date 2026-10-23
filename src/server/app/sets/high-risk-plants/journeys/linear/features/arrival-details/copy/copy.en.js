@@ -22,8 +22,9 @@ export const copy = {
   },
   placeOfLanding: {
     label: 'Proposed place of landing',
-    hint: 'Where the potatoes will enter Great Britain. Start typing to search by port name or code.',
-    placeholder: 'Select a place of landing',
+    hint: 'Select where the potatoes will enter Great Britain. Start typing to search by port or airport name or code.',
+    selectText: 'Select a place of landing',
+    searchPlaceholder: 'Select a place of landing',
     noResults: 'No ports found'
   },
   errors: {

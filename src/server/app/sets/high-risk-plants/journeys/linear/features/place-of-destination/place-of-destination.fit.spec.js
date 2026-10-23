@@ -1,18 +1,25 @@
 import {
+  WOOD_LINE_FIELDS,
   addCommodityLine,
+  backLink,
+  visitOverviewThenOpen,
   chooseCommodityType,
+  describeAddressPicker,
+  describeSubmittedSearchPicker,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
+  postAnIdNotInTheBook,
   saveAndContinue,
   saveOrigin,
+  searchBox,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
-import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
+import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
@@ -35,34 +42,6 @@ const SEED_POTATO_LINE_FIELDS = {
   quantity: '250',
   potatoIntendedUse: 'Planting'
 }
-
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
-
-const TECH_IMPORTS = 'Tech Imports Ltd'
-const IMPORT_CO = 'Import Co UK'
-const ALPINE = 'Alpine Supplies GmbH'
-const STUB_BOOK_SIZE = 13
-const SECOND_PAGE_LINK = 'Page 2'
-const DENMARK = 'Denmark'
-const COPENHAGEN = 'Copenhagen Exports ApS'
-const MATCHES_NOTHING = 'nothing matches this'
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-
-const rowRadio = (page, name) =>
-  page.getByRole('radio', {
-    name: `${copy.selectRowPrefix} ${name}`,
-    exact: true
-  })
-
-const selectedInset = (page, name) =>
-  page.getByText(`${copy.selectedAddressPrefix} ${name}`, { exact: true })
 
 const destinationPathOf = (reference) =>
   `${BASE}/notifications/${reference}/destinations/select`
@@ -95,6 +74,23 @@ const startAtDestinationAlreadyArrived = async (page) => {
   return reference
 }
 
+describeSubmittedSearchPicker({
+  pickerName: 'place of destination',
+  openPicker: startAtDestination
+})
+
+describeAddressPicker({
+  pickerName: 'place-of-destination',
+  openPicker: startAtDestination,
+  pathOf: destinationPathOf,
+  notInBookError: copy.errors.placeOfDestination,
+  hubRowTitle: hubCopy.rows.destination.title,
+  hubUrl: HUB_URL,
+  pageUrl: PAGE_URL,
+  afterSaveUrl: /\/identification-numbers$/,
+  firstRowRadio: FIRST_ROW_RADIO
+})
+
 test.describe('place-of-destination feature', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -114,11 +110,9 @@ test.describe('place-of-destination feature', () => {
     await expect(
       page.getByText(copy.descriptions.potatoes, { exact: true })
     ).toBeVisible()
+    await expect(searchBox(page)).toBeVisible()
     await expect(
-      page.getByLabel(copy.search.label, { exact: true })
-    ).toBeVisible()
-    await expect(
-      page.getByText(copy.search.hint, { exact: true })
+      page.getByText(pickerCopy.search.hint, { exact: true })
     ).toBeVisible()
   })
 
@@ -135,246 +129,34 @@ test.describe('place-of-destination feature', () => {
     await expect(page).toHaveURL(PAGE_URL)
   })
 
-  test('shows the first page of the organisation address book with its count', async ({
-    page
-  }) => {
-    await startAtDestination(page)
-
-    await expect(
-      page.getByText(copy.resultsCaption(PAGE_SIZE, STUB_BOOK_SIZE), {
-        exact: true
-      })
-    ).toBeVisible()
-    await expect(rowRadio(page, TECH_IMPORTS)).toBeVisible()
-    await expect(rowRadio(page, ALPINE)).toHaveCount(0)
-  })
-
   test('offers the three save controls', async ({ page }) => {
     await startAtDestination(page)
 
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
   })
 
-  test('sends Back to the overview', async ({ page }) => {
+  test('sends Back to the arrival details in the opening run', async ({
+    page
+  }) => {
     const reference = await startAtDestination(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/arrival-details`
+    )
+  })
+
+  test('sends Back to the overview when opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startAtDestination(page)
+
+    await visitOverviewThenOpen(page, reference, destinationPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',
       `${BASE}/notifications/${reference}`
     )
-  })
-
-  test('narrows the results to the search term', async ({ page }) => {
-    await startAtDestination(page)
-
-    await page.getByLabel(copy.search.label, { exact: true }).fill(DENMARK)
-    await page.getByRole('button', { name: copy.search.button }).click()
-
-    await expect(rowRadio(page, COPENHAGEN)).toBeVisible()
-    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
-  })
-
-  test('says so rather than showing an empty table when nothing matches', async ({
-    page
-  }) => {
-    await startAtDestination(page)
-
-    await page
-      .getByLabel(copy.search.label, { exact: true })
-      .fill(MATCHES_NOTHING)
-    await page.getByRole('button', { name: copy.search.button }).click()
-
-    await expect(page.getByText(copy.noMatches, { exact: true })).toBeVisible()
-  })
-
-  test('keeps a ticked row while the search narrows the results', async ({
-    page
-  }) => {
-    await startAtDestination(page)
-
-    await rowRadio(page, TECH_IMPORTS).check()
-    await page.getByLabel(copy.search.label, { exact: true }).fill(DENMARK)
-    await page.getByRole('button', { name: copy.search.button }).click()
-
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
-  })
-
-  test('carries a saved address through the paging links', async ({ page }) => {
-    const reference = await startAtDestination(page)
-    await rowRadio(page, TECH_IMPORTS).check()
-    await saveAndContinue(page).click()
-    await page.goto(destinationPathOf(reference))
-
-    await page
-      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-      .click()
-
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
-    await expect(rowRadio(page, TECH_IMPORTS)).toHaveCount(0)
-  })
-})
-
-test.describe('place-of-destination — saving an address', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page)
-  })
-
-  test('saves the chosen address, continues to identification numbers and shows it again on return', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-
-    await rowRadio(page, TECH_IMPORTS).check()
-    await saveAndContinue(page).click()
-
-    await expect(page).toHaveURL(/\/identification-numbers$/)
-
-    await page.goto(destinationPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
-    await expect(selectedInset(page, TECH_IMPORTS)).toBeVisible()
-  })
-
-  test('replaces the address already saved rather than keeping both', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-    await rowRadio(page, TECH_IMPORTS).check()
-    await saveAndContinue(page).click()
-    await page.goto(destinationPathOf(reference))
-
-    await rowRadio(page, IMPORT_CO).check()
-    await saveAndContinue(page).click()
-    await page.goto(destinationPathOf(reference))
-
-    await expect(rowRadio(page, IMPORT_CO)).toBeChecked()
-    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
-  })
-
-  test('Save and return to overview saves the address and reaches the overview', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-
-    await rowRadio(page, TECH_IMPORTS).check()
-    await page
-      .getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-      .click()
-
-    await expect(page).toHaveURL(HUB_URL)
-
-    await page.goto(destinationPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).toBeChecked()
-  })
-
-  test('Save and return to overview with nothing chosen reaches the overview without an error', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-
-    await page
-      .getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-      .click()
-
-    await expect(page).toHaveURL(HUB_URL)
-
-    await page.goto(destinationPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
-    await expect(page.getByRole('alert')).toHaveCount(0)
-  })
-
-  test('Cancel and return to overview reaches the overview without saving', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-
-    await rowRadio(page, TECH_IMPORTS).check()
-    await page
-      .getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-      .click()
-
-    await expect(page).toHaveURL(HUB_URL)
-
-    await page.goto(destinationPathOf(reference))
-    await expect(rowRadio(page, TECH_IMPORTS)).not.toBeChecked()
-  })
-})
-
-test.describe('place-of-destination — the answers it refuses', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page)
-  })
-
-  test('continuing with nothing chosen shows the error and focuses the first row', async ({
-    page
-  }) => {
-    await startAtDestination(page)
-
-    await saveAndContinue(page).click()
-
-    await expect(page).toHaveURL(PAGE_URL)
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.errors.placeOfDestination })
-    await expect(summaryLink).toBeVisible()
-
-    await summaryLink.click()
-    await expect(page.locator(FIRST_ROW_RADIO)).toBeFocused()
-  })
-
-  test('recovers from the error once an address is chosen', async ({
-    page
-  }) => {
-    await startAtDestination(page)
-    await saveAndContinue(page).click()
-    await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.placeOfDestination
-      })
-    ).toBeVisible()
-
-    await rowRadio(page, TECH_IMPORTS).check()
-    await saveAndContinue(page).click()
-
-    await expect(page).toHaveURL(/\/identification-numbers$/)
-  })
-
-  test('continuing with nothing found focuses the search box', async ({
-    page
-  }) => {
-    await startAtDestination(page)
-    await page
-      .getByLabel(copy.search.label, { exact: true })
-      .fill(MATCHES_NOTHING)
-    await page.getByRole('button', { name: copy.search.button }).click()
-    await expect(page.getByText(copy.noMatches, { exact: true })).toBeVisible()
-
-    await saveAndContinue(page).click()
-
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.errors.placeOfDestination })
-    await expect(summaryLink).toBeVisible()
-
-    await summaryLink.click()
-    await expect(
-      page.getByLabel(copy.search.label, { exact: true })
-    ).toBeFocused()
   })
 })
 
@@ -401,7 +183,7 @@ test.describe('place-of-destination — accessibility', () => {
     page
   }) => {
     await startAtDestination(page)
-    await saveAndContinue(page).click()
+    await postAnIdNotInTheBook(page)
     await expect(
       page.getByRole('alert').getByRole('link', {
         name: copy.errors.placeOfDestination

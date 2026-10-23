@@ -1,11 +1,11 @@
 import {
   CHECK_ANSWERS_URL,
-  addCommodityLine,
   chooseCommodityType,
+  backLink,
+  changeCommodityType,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
-  saveOrigin,
-  startNotification
+  startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -13,9 +13,8 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
-import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
+import { copy as hubCopy } from '../hub/copy/copy.en.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 
@@ -25,19 +24,7 @@ const COMMODITY_REMOVED_URL = setUrl(
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const PAGE_URL = setUrl('/notifications/[^/]+/identification-numbers')
 
-const FRANCE = 'France'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
-const CUT_CONIFEROUS_TREES = 'cut-coniferous-trees'
-
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
-}
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const openOverviewFromReview = async (page) => {
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
@@ -48,23 +35,8 @@ const openOverviewFromReview = async (page) => {
 const identificationPathOf = (reference) =>
   `${BASE}/notifications/${reference}/identification-numbers`
 
-const changeCommodityTypeTo = async (page, reference, commodityType) => {
-  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_REMOVED_URL)
-}
-
 const startAtIdentification = async (page) => {
-  const reference = await startNotification(page)
-  await chooseCommodityType(page, WOOD_AND_CUT_TREES)
-  await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
-  await saveOrigin(page, reference, FRANCE)
+  const reference = await startWoodNotificationWithOriginSaved(page)
   await page.goto(identificationPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
   return reference
@@ -87,7 +59,8 @@ const branches = [
 const selectBranch = async (page, commodityType) => {
   const reference = await startAtIdentification(page)
   if (commodityType !== WOOD_AND_CUT_TREES) {
-    await changeCommodityTypeTo(page, reference, commodityType)
+    await changeCommodityType(page, reference, commodityType)
+    await expect(page).toHaveURL(COMMODITY_REMOVED_URL)
     await page.goto(identificationPathOf(reference))
   }
   await expect(page).toHaveURL(PAGE_URL)

@@ -30,11 +30,7 @@ const indexSubDivisions = (countries) => {
 }
 
 /**
- * Loads the SPS country list from reference data unless it is already loaded
- * or the service runs in stub mode.
- *
- * @throws {import('@hapi/boom').Boom} a 503 when the load fails; the next call
- * tries again.
+ * @throws {import('@hapi/boom').Boom} a 503 when the load fails.
  */
 export const ensureLoaded = async () => {
   if (isStubMode() || loaded) {
@@ -77,7 +73,10 @@ const subdivisionDisplayLabel = (code) => {
   return parentName ? `${subdivisionName} (${parentName})` : subdivisionName
 }
 
-/** A country or subdivision as a review row shows it, a subdivision named with its parent country. */
+/**
+ * @param {string | null | undefined} code
+ * @returns {Promise<string>}
+ */
 export const countryDisplayLabel = async (code) => {
   await ensureLoaded()
   if (code == null || code === '') {
@@ -109,11 +108,9 @@ const countryAndSubdivisionOptions = async (subdivisionText) => {
   )
 }
 
-/** Flat country and subdivision entries for the origin page only. */
 export const originCountryOptions = () =>
   countryAndSubdivisionOptions((code) => subdivisionLabels[code])
 
-/** Countries and their subdivisions for a destination select, one alphabetical list, each subdivision named with its parent country. */
 export const destinationCountryOptions = () =>
   countryAndSubdivisionOptions(subdivisionDisplayLabel)
 
@@ -152,7 +149,10 @@ export const addressBookCountryName = async (code) =>
   (await addressBookCountries()).find((option) => option.code === code)?.name ??
   code
 
-/** The ISO code for a country's display name, `GB` for "United Kingdom". */
+/**
+ * @param {string} name
+ * @returns {Promise<string | undefined>}
+ */
 export const countryCodeOf = async (name) => {
   await ensureLoaded()
   return name === UNITED_KINGDOM

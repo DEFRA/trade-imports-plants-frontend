@@ -38,6 +38,7 @@ const render = (
     ...kit.base(copy.title, {
       backLink: pagePath(journey.journeyId, kit.CYA_SLUG),
       journey,
+      showJourneyStrip: false,
       page,
       recoverableError
     }),
@@ -94,6 +95,7 @@ const post = async (request, h) => {
 
   let result
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       await state.commit(request, h, {
         declaration: value.declaration,

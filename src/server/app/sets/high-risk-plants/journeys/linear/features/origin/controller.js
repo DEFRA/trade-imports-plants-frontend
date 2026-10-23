@@ -1,4 +1,3 @@
-import { dashboardPath, hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -14,7 +13,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { hasCommittedNotificationAnswers } from '../../flow/entry-guard.js'
+import { entryBackLink } from '../../flow/entry-guard.js'
 import { CATEGORY, LINES } from '../commodities/fields.js'
 import { originPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -40,11 +39,8 @@ const COUNTRY_FIELD = 'countryOfOrigin'
 const countryValues = async () =>
   (await countries.originCountryOptions()).map(({ value }) => value)
 
-// The list feeds a type-ahead that enhances this select, so it carries only
-// the placeholder and the real countries — a scroll-only list would need a
-// divider rule under the placeholder, a searchable one does not.
 const countryItems = async () => [
-  { value: '', text: copy.country.placeholder },
+  { value: '', text: copy.country.selectText },
   ...(await countries.originCountryOptions())
 ]
 
@@ -116,22 +112,20 @@ const errorsFor = async (
   return narrowing ? { [COUNTRY_FIELD]: narrowing } : null
 }
 
-// The back link is the one thing on this page told by what has been saved: a
-// notification with nothing saved has no overview worth returning to.
 export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
-const backLinkFor = (journey, answers) =>
-  hasCommittedNotificationAnswers(answers)
-    ? hubPath(journey.journeyId)
-    : dashboardPath()
+const backLinkFor = (request, current) =>
+  kit.runBackLink(request, page.id, current, {
+    fallback: entryBackLink(current.journey, current.answers)
+  })
 
 const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
       request: h.request,
-      backLink: backLinkFor(current.journey, current.answers),
+      backLink: options.backLink,
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -162,6 +156,7 @@ const get = async (request, h) => {
     current,
     { [COUNTRY_FIELD]: staleCountry ? '' : stored },
     {
+      backLink: await backLinkFor(request, current),
       constraints: constraintsOn(categoriesOf(current)),
       errors: staleCountry
         ? { [COUNTRY_FIELD]: copy.errors.countryNoLongerAvailable }
@@ -174,18 +169,20 @@ const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { [COUNTRY_FIELD]: payload[COUNTRY_FIELD] ?? '' }
   const current = await state.get(request, h)
+  const backLink = await backLinkFor(request, current)
   const constraints = constraintsOn(categoriesOf(current))
   const errors = await errorsFor(payload, constraints, {
     allowMissing: kit.isHubExit(request)
   })
   if (errors) {
-    return (await render(h, current, values, { constraints, errors })).code(
-      HTTP_STATUS_BAD_REQUEST
-    )
+    return (
+      await render(h, current, values, { backLink, constraints, errors })
+    ).code(HTTP_STATUS_BAD_REQUEST)
   }
 
   let committed
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       committed = await state.commit(request, h, {
         [COUNTRY_FIELD]: values[COUNTRY_FIELD].trim()
@@ -194,6 +191,7 @@ const post = async (request, h) => {
     async () =>
       (
         await render(h, current, values, {
+          backLink,
           constraints,
           recoverableError: true
         })

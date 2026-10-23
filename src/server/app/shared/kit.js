@@ -5,6 +5,7 @@ import { nextInTaskRow } from '../flow/navigation.js'
 import {
   journeyLayout,
   journeyNextRunTarget,
+  journeyPreviousRunTarget,
   journeySectionCaption
 } from '../flow/journey-flow.js'
 import { inOpeningRun } from '../flow/run-state.js'
@@ -116,6 +117,30 @@ export const errorSummary = (
 export const fieldError = (fieldErrors, field) =>
   fieldErrors?.[field] ? { text: fieldErrors[field] } : undefined
 
+export const REFUSAL_LOG_MESSAGE = 'Answer refused, page shown again'
+export const SAVE_FALLBACK_LOG_MESSAGE =
+  'Save failed on a recoverable backend error, fallback response sent'
+
+/**
+ * Logs a refusal once at info. The error codes are the field keys, never the
+ * messages.
+ *
+ * @param {object} request - the request being answered.
+ * @param {object} [options] - other keys (the named reason, ids) are logged as given.
+ * @param {object} [options.fieldErrors] - map of field key to the message the
+ * page shows (may be empty).
+ */
+export const logRefusal = (request, { fieldErrors = {}, ...details } = {}) =>
+  request.logger.info(
+    {
+      ...details,
+      journeyId: request.params.journeyId,
+      route: request.route?.path,
+      errorCodes: Object.keys(fieldErrors)
+    },
+    REFUSAL_LOG_MESSAGE
+  )
+
 export const hubExitTarget = (request) =>
   request.payload?.exit === 'hub' ? hubPath(request.params.journeyId) : null
 
@@ -136,6 +161,21 @@ export const runTarget = async (request, stepId, scope) =>
   (await inOpeningRun(request, request.params.journeyId))
     ? journeyNextRunTarget(stepId, scope, request.params.journeyId)
     : null
+
+export const runBackLink = async (
+  request,
+  stepId,
+  { journey, scope },
+  { fallback = hubPath(journey.journeyId) } = {}
+) => {
+  const previousRunTarget = (await inOpeningRun(
+    request,
+    request.params.journeyId
+  ))
+    ? journeyPreviousRunTarget(stepId, scope, request.params.journeyId)
+    : null
+  return previousRunTarget ?? fallback
+}
 
 export const nextTarget = async (request, page, scope) =>
   exitTarget(
@@ -190,7 +230,8 @@ export const chromeFor = (title, requestPath) => {
  * @param {object} [options.request] - the request being answered. Supply it
  * on a page that ends with `saveActions`, and the view gains `amend`: the two
  * form actions its save buttons carry while the journey is being amended, or
- * null otherwise. A template passes it on as `amend = amend`.
+ * null otherwise.
+ * @param {boolean} [options.showJourneyStrip] - false leaves the status strip off the page.
  * @returns {object} the common view model.
  */
 export const base = (
@@ -202,6 +243,7 @@ export const base = (
     page,
     recoverableError = false,
     offerCancelAmend = true,
+    showJourneyStrip = true,
     request
   } = {}
 ) => {
@@ -214,7 +256,9 @@ export const base = (
     backLink,
     homeUrl: dashboardPath(),
     hubHref: hasJourney ? hubPath(journeyId) : undefined,
-    journeyStrip: journeyStrip(journey, { offerCancelAmend }),
+    journeyStrip: showJourneyStrip
+      ? journeyStrip(journey, { offerCancelAmend })
+      : null,
     amending,
     amend:
       amending && request
@@ -227,7 +271,24 @@ export const base = (
   }
 }
 
-export const recoverableSave = async (saveThunk, onRecoverableFailure) => {
+/**
+ * Runs a save and answers a recoverable backend failure with the page's
+ * fallback, logging the failure once at warn.
+ *
+ * @param {object} request - the request being answered.
+ * @param {() => Promise<*>} saveThunk - makes the save.
+ * @param {() => *} onRecoverableFailure - builds the response for a
+ * recoverable backend failure.
+ * @param {object} [ids] - ids to log beside the journey id.
+ * @returns {Promise<{value: *}|{failure: *}>} the save's value, or the
+ * fallback's response as `failure`.
+ */
+export const recoverableSave = async (
+  request,
+  saveThunk,
+  onRecoverableFailure,
+  ids = {}
+) => {
   try {
     return { value: await saveThunk() }
   } catch (error) {
@@ -235,6 +296,15 @@ export const recoverableSave = async (saveThunk, onRecoverableFailure) => {
       throw error
     }
     if (isRecoverableBackendError(error)) {
+      request.logger.warn(
+        {
+          ...ids,
+          journeyId: request.params.journeyId,
+          route: request.route?.path,
+          err: error
+        },
+        SAVE_FALLBACK_LOG_MESSAGE
+      )
       return { failure: await onRecoverableFailure() }
     }
     throw error
@@ -298,30 +368,51 @@ const dateInputValue = (value) =>
         .join('/')
 
 /**
- * The view model for a date-picker text field.
+ * The view model for a date-picker text field. The form group always carries
+ * the house date-picker class.
  *
  * @param {string} name
  * @param {object} [options]
+ * @param {string} [options.label] - the label text.
+ * @param {string} [options.hint] - the hint text. No hint shows when absent.
+ * @param {string|{day?: string, month?: string, year?: string}} [options.value]
+ * the answer, shown as `d/m/yyyy` text.
+ * @param {string} [options.error] - the error message text. No error shows
+ * when absent.
  * @param {string} [options.minDate] - the earliest date as `d/m/yyyy` text,
  * never a Date.
  * @param {string} [options.maxDate] - the latest date as `d/m/yyyy` text.
- * @param {string} [options.formGroupClasses] - classes for the field's form
- * group.
+ * @param {string} [options.formGroupClasses] - extra classes for the form
+ * group, added after the house date-picker class.
+ * @param {string} [options.labelClasses] - classes for the label. The GOV.UK
+ * small label unless the page asks for another.
+ * @returns {object} the view model for the MoJ date picker macro.
  */
 export const dateField = (
   name,
-  { label, hint, value = {}, error, minDate, maxDate, formGroupClasses } = {}
+  {
+    label,
+    hint,
+    value = {},
+    error,
+    minDate,
+    maxDate,
+    formGroupClasses,
+    labelClasses = 'govuk-label--s'
+  } = {}
 ) => {
   return {
     id: name,
     name,
     classes: 'govuk-input--width-10',
-    label: { text: label, classes: 'govuk-label--s' },
+    label: { text: label, classes: labelClasses },
     hint: hint ? { text: hint } : undefined,
     errorMessage: error ? { text: error } : undefined,
     value: dateInputValue(value),
     minDate,
     maxDate,
-    formGroup: formGroupClasses ? { classes: formGroupClasses } : undefined
+    formGroup: {
+      classes: ['app-date-picker', formGroupClasses].filter(Boolean).join(' ')
+    }
   }
 }

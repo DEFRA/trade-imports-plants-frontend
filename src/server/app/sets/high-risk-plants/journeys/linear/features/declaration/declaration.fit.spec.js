@@ -38,6 +38,52 @@ test('renders the plants declaration and Back navigation with no serious accessi
   )
 })
 
+test('shows the confirmation as a small checkbox in a group whose legend only screen readers get', async ({
+  page
+}) => {
+  await openDeclaration(page)
+  const group = page.getByRole('group', {
+    name: declarationCopy.declarationLegend
+  })
+
+  await expect(group.locator('legend')).toHaveClass(/govuk-visually-hidden/)
+  await expect(group.locator('.govuk-checkboxes')).toHaveClass(
+    /govuk-checkboxes--small/
+  )
+  await expect(
+    group.getByRole('checkbox', { name: declarationCopy.declarationLabel })
+  ).toBeVisible()
+})
+
+test('shows the date of declaration in bold', async ({ page }) => {
+  await openDeclaration(page)
+  const date = page
+    .locator('p.govuk-body', { hasText: declarationCopy.dateOfDeclaration })
+    .locator('strong')
+
+  await expect(date).toHaveText(/^\d{1,2} [A-Z][a-z]+ \d{4}$/)
+  await expect(date).toHaveCSS('font-weight', '700')
+})
+
+test('starts the page with the heading', async ({ page }) => {
+  await openDeclaration(page)
+
+  await expect(
+    page.locator('main .govuk-grid-column-two-thirds > :first-child')
+  ).toHaveText(declarationCopy.title)
+})
+
+test('carries the journey concurrency token in a hidden field of the form', async ({
+  page
+}) => {
+  await openDeclaration(page)
+
+  await expect(page.locator('input[name="concurrencyToken"]')).toHaveAttribute(
+    'value',
+    /.+/
+  )
+})
+
 test('requires confirmation, focuses the checkbox from the summary and has an accessible error state', async ({
   page
 }) => {

@@ -27,22 +27,19 @@ const DECLARATION_SLUG = 'declaration'
 const CONFIRMATION_SLUG = 'confirmation'
 const DECLARATION_VALUE = 'confirmed'
 
-// The browser smoke and Lighthouse seed the same five complete use cases.
 export const SEED_SHAPES = happyPaths
 
 const fieldsFor = (step, page) => {
   const fields = seedFields(step)
-  // The real address book has generated ids; use a rendered choice there.
-  // In stub mode the fixture's named party is available and stays selected.
   for (const name of ['placeOfDestination', 'consignor', 'contactAddress']) {
     if (fields[name]) {
-      const choices = page.$(`input[type="radio"][name="${name}"]`)
-      const matching = choices.filter(
-        (index, input) => page.$(input).attr('value') === fields[name]
+      const choices = [
+        ...page.dom.querySelectorAll(`input[type="radio"][name="${name}"]`)
+      ]
+      const matching = choices.find(
+        (input) => input.getAttribute('value') === fields[name]
       )
-      fields[name] = (matching.length ? matching : choices)
-        .first()
-        .attr('value')
+      fields[name] = (matching ?? choices[0])?.getAttribute('value')
       if (!fields[name]) {
         throw new Error(`Seed step ${step.slug} has no address to select`)
       }

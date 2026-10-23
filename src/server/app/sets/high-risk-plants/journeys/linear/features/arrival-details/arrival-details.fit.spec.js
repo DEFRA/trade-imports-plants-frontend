@@ -1,11 +1,17 @@
 import {
   addCommodityLine,
-  chooseAutocompleteOption,
+  chooseTypeAheadOption,
   chooseCommodityType,
+  describeDatePickerLook,
+  backLink,
+  changeCommodityType,
+  visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
+  expectThreeSaveControls,
   saveAndContinue,
   saveOrigin,
-  startNotification
+  startNotification,
+  WOOD_LINE_FIELDS
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -18,7 +24,6 @@ import {
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
@@ -44,6 +49,10 @@ const A_DATE = '27/3/2026'
 const A_PAST_DATE = '1/1/2020'
 const A_TIME = '14:30'
 const DOVER = 'Port of Dover - GB DVR'
+const DOVER_PLACE_OF_LANDING = {
+  label: copy.placeOfLanding.label,
+  optionName: DOVER
+}
 
 const WARE_POTATO_LINE_FIELDS = {
   potatoVariety: 'Maris Piper',
@@ -51,21 +60,15 @@ const WARE_POTATO_LINE_FIELDS = {
   potatoIntendedUse: 'Eating'
 }
 
-const WOOD_LINE_FIELDS = {
-  commodityCode: '06042020',
-  quantity: '40',
-  sizeOfTree: '3.5',
-  phytosanitaryTreatments: 'Heat treatment'
+const answerArrivalAndSave = async (page) => {
+  await page.locator(DATE_INPUT).fill(A_DATE)
+  await page.locator(TIME_INPUT).fill(A_TIME)
+  await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
+  await saveAndContinue(page).click()
 }
-
-const backLink = (page) =>
-  page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
 const arrivalDetailsPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-details`
-
-const chooseFromAutocomplete = (page, selector, name) =>
-  chooseAutocompleteOption(page, page.locator(selector), name)
 
 const selectPortMissingFromTheList = (page, code) =>
   page.locator(PORT_SELECT).evaluate((select, portCode) => {
@@ -101,17 +104,6 @@ const startAtWoodDetails = async (page, status) => {
   return reference
 }
 
-const changeCommodityType = async (page, reference, commodityType) => {
-  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-}
-
 test.describe('arrival-details — a potato notification', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -120,7 +112,7 @@ test.describe('arrival-details — a potato notification', () => {
   test('renders the caption, the heading and the three save controls', async ({
     page
   }) => {
-    const reference = await startAtPotatoDetails(page)
+    await startAtPotatoDetails(page)
 
     await expect(
       page.getByText(captionsCopy.sections.arrival, { exact: true })
@@ -128,17 +120,29 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
-    await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-    ).toBeVisible()
+    await expectThreeSaveControls(page)
+  })
+
+  test('sends Back to origin in the opening run', async ({ page }) => {
+    const reference = await startAtPotatoDetails(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/origin`
+    )
+  })
+
+  test('sends Back to the overview when opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startAtPotatoDetails(page)
+
+    await visitOverviewThenOpen(
+      page,
+      reference,
+      arrivalDetailsPathOf(reference)
+    )
+
     await expect(backLink(page)).toHaveAttribute(
       'href',
       `${BASE}/notifications/${reference}`
@@ -165,12 +169,28 @@ test.describe('arrival-details — a potato notification', () => {
     await expect(page.getByText(copy.placeOfLanding.hint)).toBeVisible()
   })
 
+  for (const fieldId of [
+    'arrivalDate',
+    'arrivalTime',
+    'proposedPlaceOfLanding'
+  ]) {
+    test(`sets the ${fieldId} question label in the medium GOV.UK label size`, async ({
+      page
+    }) => {
+      await startAtPotatoDetails(page)
+
+      await expect(page.locator(`label[for="${fieldId}"]`)).toHaveClass(
+        /govuk-label--m/
+      )
+    })
+  }
+
   test('offers the ports the reference-data service holds', async ({
     page
   }) => {
     await startAtPotatoDetails(page)
 
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
+    await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
 
     await expect(page.locator(PORT_INPUT)).toHaveValue(DOVER)
   })
@@ -180,10 +200,7 @@ test.describe('arrival-details — a potato notification', () => {
   }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
 
     await expect(page).toHaveURL(DESTINATION_URL)
 
@@ -196,10 +213,7 @@ test.describe('arrival-details — a potato notification', () => {
   test('completes the arrival row on the overview', async ({ page }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
     await page.goto(`${BASE}/notifications/${reference}`)
 
     const taskList = page.locator('.govuk-task-list')
@@ -237,6 +251,19 @@ test.describe('arrival-details — a potato notification', () => {
   })
 })
 
+test.describe('arrival-details — the arrival date calendar', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+    await startAtPotatoDetails(page)
+  })
+
+  describeDatePickerLook({
+    fieldName: 'arrival date',
+    label: copy.dateLabels[POTATOES],
+    nextQuestionLabel: (page) => page.locator('label[for="arrivalTime"]')
+  })
+})
+
 test.describe('arrival-details — the question a plants notification is asked', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -262,6 +289,18 @@ test.describe('arrival-details — the question a plants notification is asked',
     ).toBeVisible()
   })
 
+  for (const status of [NOT_YET_ARRIVED, ALREADY_ARRIVED]) {
+    test(`sets the arrival date label in the medium GOV.UK label size when the status is ${status}`, async ({
+      page
+    }) => {
+      await startAtWoodDetails(page, status)
+
+      await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
+        /govuk-label--m/
+      )
+    })
+  }
+
   test('asks for no time and no place of landing', async ({ page }) => {
     await startAtWoodDetails(page, NOT_YET_ARRIVED)
 
@@ -269,9 +308,7 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(page.locator(PORT_INPUT)).toHaveCount(0)
   })
 
-  test('keeps the date when the status switches, because the date is always asked', async ({
-    page
-  }) => {
+  test('keeps the date when the status switches', async ({ page }) => {
     const reference = await startAtWoodDetails(page, NOT_YET_ARRIVED)
     await page.locator(DATE_INPUT).fill(A_PAST_DATE)
     await saveAndContinue(page).click()
@@ -289,9 +326,7 @@ test.describe('arrival-details — the question a plants notification is asked',
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_PAST_DATE)
   })
 
-  test('accepts a past date, because a late notification is recorded not refused', async ({
-    page
-  }) => {
+  test('accepts a past date', async ({ page }) => {
     const reference = await startAtWoodDetails(page, ALREADY_ARRIVED)
 
     await page.locator(DATE_INPUT).fill(A_PAST_DATE)
@@ -342,7 +377,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await page.locator(DATE_INPUT).fill('31/2/2026')
     await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
+    await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
     await saveAndContinue(page).click()
 
     await expect(
@@ -375,7 +410,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await page.locator(DATE_INPUT).fill(A_DATE)
     await page.locator(TIME_INPUT).fill('2.30pm')
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
+    await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
     await saveAndContinue(page).click()
 
     const summaryLink = page
@@ -409,10 +444,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await saveAndContinue(page).click()
     await expect(page.getByRole('alert')).toBeVisible()
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
 
     await expect(page).toHaveURL(DESTINATION_URL)
   })
@@ -489,10 +521,7 @@ test.describe('arrival-details — answers that leave scope when the commodity t
   }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
     await expect(page).toHaveURL(DESTINATION_URL)
 
     await changeCommodityType(page, reference, WOOD_AND_CUT_TREES)

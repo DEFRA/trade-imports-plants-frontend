@@ -160,7 +160,7 @@
       "id": "select-and-autocomplete-widgets",
       "source": "live-animals",
       "status": "adopted",
-      "detail": "Long lists that need type-ahead (countryOfOrigin, genus, proposedPlaceOfLanding) use appAccessibleAutocomplete over a select with showAllValues and a noResults message, listing only a placeholder plus the real options; short fixed lists (commodityType, category, arrivalStatus) are govukRadios with per-option hints. Countries store ISO alpha-2 codes; ports display as {name} - {code} with value = code; genus stores the SI spelling as the code until a reference service assigns ids. The accessible-autocomplete component already ships under common/components in the plants engine. Source: live-animals select-and-autocomplete-widgets (origin/template.njk:18); skeleton templates-and-nunjucks-roots."
+      "detail": "Long lists that need type-ahead (countryOfOrigin, genus, proposedPlaceOfLanding) use appAccessibleAutocomplete over a select with showAllValues and a noResults message, listing only the select text option plus the real options; short fixed lists (commodityType, category, arrivalStatus) are govukRadios with per-option hints. Countries store ISO alpha-2 codes; ports display as {name} - {code} with value = code; genus stores the SI spelling as the code until a reference service assigns ids. The accessible-autocomplete component already ships under common/components in the plants engine. Source: live-animals select-and-autocomplete-widgets (origin/template.njk:18); skeleton templates-and-nunjucks-roots."
     },
     {
       "id": "layout-chrome",
@@ -847,7 +847,7 @@
           "taskRow": "origin",
           "hubGroup": "about-the-consignment",
           "runStep": "3",
-          "backLink": "hub (not the entry page — commodity-type is the plants entry page)",
+          "backLink": "the previous run step during the opening run; otherwise the overview, or the dashboard while nothing is committed",
           "saveActions": "three controls",
           "notes": "Title and titleCy copied verbatim from animals origin. Section id is 'origin' so the generator labels this increment M0 as it did for animals. The per-category origin narrowing (ware potatoes four countries; conifer wood without bark four countries) is validation inside POST from the set-owned service, with guidance text for 'Spain (excluding the Balearic Islands)' (spain-excludes-balearic-islands); not a modelGap. | Ruled at D2-commodity-model (d-031, potato-scope-guidance), superseding \"with guidance text for 'Spain (excluding the Balearic Islands)' (spain-excludes-balearic-islands); not a modelGap.\": with a govukInsetText rendered above the autocomplete when any commodityLines[i].category = ware-potatoes (provisional copy, plants-only, reg 24A(1)(b) and 24A(3)): \"Notify ware potatoes grown, or suspected to have been grown, in Poland, Portugal, Romania or Spain. Spain does not include the Balearic Islands.\" The countryOfOrigin hint itself stays verbatim animals (potato-scope-guidance); not a modelGap. | Ruled at D3-origin-values-and-validation (d-054, c-021): provisionalCopy: true (the Balearic inset and the narrowing error sentences are invented copy); the spain-excludes-balearic-islands reference is repointed to potato-scope-guidance. | Ruled at D6-chrome-and-journey-shape (d-069, c-034): runStep 3 (was 4).",
           "provisionalCopy": true
@@ -946,10 +946,10 @@
         {
           "id": "consignor-select",
           "slug": "consignors/select",
-          "title": "Consignor or exporter",
+          "title": "Consignor",
           "gate": null,
           "collects": ["consignor"],
-          "titleCy": "Anfonwr neu allforiwr",
+          "titleCy": "Anfonwr",
           "animals": {
             "relation": "variant-of-animals",
             "page": "consignor",
@@ -1045,8 +1045,8 @@
           "sectionsCy": "1. Am y llwyth | 2. Cyrraedd a chyrchfan | 3. Partïon y llwyth",
           "submitBlock": "Now submit your notification | Continue to the declaration to submit your notification. | Continue",
           "readOnly": "SUBMITTED: no Change links, late-notification banner when lateNotificationIndicator is late, Delete button (link delete); AMEND: Cancel amendment link (link cancel-amend) and the amendment-cancelled banner after ?cancelled=1; no Copy as new button (parked, NNS-UN-041). Ruled c-030 — copied from animals check-answers deleteHref / cancelAmendHref with copyAction omitted.",
-          "errorCopy": "Correct the address details for the consignor or exporter | Correct the address details for the place of destination | Correct the contact address details for this consignment | Select a country of origin that matches the commodities in the consignment",
-          "backLink": "hub",
+          "errorCopy": "Correct the address details for the consignor | Correct the address details for the place of destination | Correct the contact address details for this consignment | Select a country of origin that matches the commodities in the consignment",
+          "backLink": "a submitted notification, including one shown after a cancelled amendment, goes back to the notification list; a draft's review or an amendment goes back to the overview",
           "notes": "copied from animals check-answers: sectioned summary cards with Change links (?change=1), Not provided for missing values, party cards carry Change and Edit details links, a party copy that breaks the edit-page address rules raises an error summary and POST refuses (the declaration refuses Submit on the same check), read-only rule when SUBMITTED, submit block. Builds the check-answers feature and its view-model/ (skeleton hub-and-check-answers-shape). Same id and slug (kit.CYA_SLUG). | Ruled at D1-territory-and-timing (d-006, c-035): lateWarning field added (DRAFT-only govukWarningText from the lateness helper with the request clock). | Ruled at D4-parties-and-contact (d-013, c-025): The Contact card's Telephone number and Email address rows are a plants-only addition (animals' card shows name and address only — party-row.js): grounded in annex:6/common-data/item:2,4 and NNS-UN-007; row labels are provisional copy, no Welsh invented. | Ruled at D4-parties-and-contact (d-014, c-026): no Consignor card renders for potatoes (carried by the sections string). | Ruled at D3-origin-values-and-validation (d-051, c-015): Row labels for arrivalDate and placeOfDestination come from labelByState (potatoes | not-yet-arrived | already-arrived) and the destination card heading from headingByState, never the generic label, so a potato notification never reads date of landing (c-015). | Ruled at D3-origin-values-and-validation (d-055, c-022): The view-model re-runs the origin narrowing over the stored countryOfOrigin and the lines now present; a mismatch raises the error summary with a Change link to origin and POST refuses until fixed — same mechanism as the party errors; closes the hole scope-and-wipe cannot (c-013, c-022). | Ruled at D5-reference-status-and-lifecycle (d-062, c-030): readOnly rewritten for the per-status action set.",
           "lateWarning": "DRAFT status only: govukWarningText above the submit block when lateness(now, answers) is late (c-035); the submit block and Continue are unchanged; the SUBMITTED read-only view shows the notification banner from the stored value instead (readOnly field)"
         },
@@ -1857,7 +1857,7 @@
       "mandateRaw": "the country from which the plants or wood originate [reg 26(2)(e)]; the country from which the potatoes originate [reg 24A(2)(ab)]",
       "input": {
         "widget": "autocomplete",
-        "widgetDetail": "appAccessibleAutocomplete over a select; showAllValues; placeholder Select a country; noResults No countries found; govuk-label--m",
+        "widgetDetail": "appAccessibleAutocomplete over a select; showAllValues; select text Select a country; search placeholder Search for a country (Chwiliwch am wlad in Welsh); noResults No countries found; govuk-label--m",
         "service": "services/countries originCountries() over reference-data /countries?blocks=GBNAG_SPS_EX (captured membership: EU-27 plus IS, LI, NO, CH) — stores ISO 3166-1 alpha-2; the per-category narrowing lists come from sets/high-risk-plants/services/commodities originCountriesFor(category)",
         "valueConstraints": {
           "seed-potatoes": "ANY_PRIMED_COUNTRY",
@@ -1874,8 +1874,6 @@
       },
       "label": "Country of origin",
       "labelCy": "Gwlad tarddiad",
-      "hint": "Start typing to search for a country.",
-      "hintCy": "Dechreuwch deipio i chwilio am wlad.",
       "errorCopy": "Select the country where the consignment originates from",
       "validationRaw": "requiredOneOf(originCountries values) copied from animals, then requiredOneOf over the effective narrowed list from the set-owned commodities service — both built inside POST (skeleton validation-library); ENFORCED_AT_CONTINUE as in animals",
       "enforcedAtContinue": "true",
@@ -2162,11 +2160,11 @@
       "wipeOnExit": true,
       "input": {
         "widget": "autocomplete",
-        "widgetDetail": "appAccessibleAutocomplete; showAllValues; placeholder Select a place of landing; noResults No ports found; items name (code), value = code — copied from animals portOfEntry",
+        "widgetDetail": "appAccessibleAutocomplete; showAllValues; select text and search placeholder Select a place of landing, shown in the empty search box and as the no-JavaScript list first option; noResults No ports found; items name (code), value = code — copied from animals portOfEntry",
         "service": "services/ports list() — reference-data GET /ports-of-entry (built: PortsOfEntryController over MdmService.getPortsOfEntry(), PortsOfEntryControllerIT); stub from the captured ports-of-entry.json fixture (77 MDM entries including Dover, Folkestone, Portsmouth, Harwich, Hull, Holyhead, Newhaven, Poole, Purfleet, Tilbury 2 Ro-Ro); stores the port code"
       },
       "label": "Proposed place of landing",
-      "hint": "Where the potatoes will enter Great Britain. Start typing to search by port name or code.",
+      "hint": "Select where the potatoes will enter Great Britain. Start typing to search by port or airport name or code.",
       "errorCopy": "Select the proposed place of landing",
       "validationRaw": "requiredOneOf(port codes) built inside POST; none given by any source",
       "typeRaw": "not stated (place)",
@@ -2199,7 +2197,7 @@
         "page": "port-of-entry",
         "divergence": "animals always collects the port of entry for every notification; plants collects a proposed place of landing only for potatoes (the plants/wood matters have no landing element), over the same ports-of-entry list, which carries the Channel and North Sea ro-ro ports EU road freight uses"
       },
-      "notes": "Widget and validation copied from animals portOfEntry; label from the SI. Animals' hint ('Choose where the transporter will enter...') replaced because plants has no transporter section. | Ruled at D3-origin-values-and-validation (d-053, c-020): Ruled c-020: potatoes only (annex:5/reg:24A(2)(aa); reg 26(2) has no landing element). The ports list is a closed list against a statutory matter with no list in law, so before go-live confirm it covers the road, ro-ro and rail entry points potatoes actually use (Eurotunnel is present as Folkestone). input.service no longer says 'an endpoint reference-data marks as not built (skeleton); value source is a gate question'."
+      "notes": "Widget and validation copied from animals portOfEntry; label from the SI. The hint does not reuse the animals port of entry hint because plants has no transporter section. | Ruled at D3-origin-values-and-validation (d-053, c-020): Ruled c-020: potatoes only (annex:5/reg:24A(2)(aa); reg 26(2) has no landing element). The ports list is a closed list against a statutory matter with no list in law, so before go-live confirm it covers the road, ro-ro and rail entry points potatoes actually use (Eurotunnel is present as Folkestone). input.service no longer says 'an endpoint reference-data marks as not built (skeleton); value source is a gate question'."
     },
     {
       "id": "placeOfDestination",
@@ -2311,8 +2309,8 @@
         "service": "services/address-book",
         "storage": "copy { pickedFromId, name, phone, email, address } taken at pick time, as placeOfDestination; edited for this notification only via Edit details (same copied-literal shape as animals consignor, EUDPA-660)"
       },
-      "label": "Consignor or exporter",
-      "labelCy": "Anfonwr neu allforiwr",
+      "label": "Consignor",
+      "labelCy": "Anfonwr",
       "hint": "This is the sender of the consignment.",
       "hintCy": "Dyma anfonwr y llwyth.",
       "errorCopy": "Select a consignor from the list",

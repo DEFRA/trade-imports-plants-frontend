@@ -1,6 +1,17 @@
+import { expect, it } from 'vitest'
+import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
+import {
+  REFUSAL_LOG_MESSAGE,
+  SAVE_FALLBACK_LOG_MESSAGE
+} from '../shared/kit.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
-import { records } from './persistence/records.js'
+import { configureRecords, records } from './persistence/records.js'
+import { openingRunCookie } from './persistence/session.js'
+import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { records as recordsStub } from '../services/persistence/records/stub/index.js'
+import { currentSetId } from '../shared/set-context.js'
+import { pagePath } from '../shared/paths.js'
 
 export const authenticatedCredentials = Object.freeze({
   contactId: 2100010101,
@@ -91,6 +102,42 @@ export const recordingLogger = () => {
   }
 }
 
+/** Asserts the logger holds exactly one line. */
+export const expectOneLogged = (logger, { level, fields, message }) =>
+  expect(logger.entries).toEqual([{ level, fields, message }])
+
+const refusalEntry = ({ journeyId, errorCodes, ...details }) => ({
+  level: 'info',
+  message: REFUSAL_LOG_MESSAGE,
+  fields: expect.objectContaining({ journeyId, errorCodes, ...details })
+})
+
+export const expectNoRefusalLogged = (logger) =>
+  expect(
+    logger.entries.filter(({ message }) => message === REFUSAL_LOG_MESSAGE)
+  ).toEqual([])
+
+export const expectOneRefusalLogged = (logger, refusal) =>
+  expectOneLogged(logger, refusalEntry(refusal))
+
+/** The log entry for a save fallback: the journey id, the caught error and
+ * any ids the page passed. */
+export const saveFallbackEntry = ({ journeyId, err, ...ids }) => ({
+  level: 'warn',
+  message: SAVE_FALLBACK_LOG_MESSAGE,
+  fields: expect.objectContaining({ journeyId, ...ids, err })
+})
+
+export const expectOneSaveFallbackLogged = (logger, fallback) =>
+  expectOneLogged(logger, saveFallbackEntry(fallback))
+
+/** The recoverable records error for a backend that answered 503 to `operation`. */
+export const unavailableBackendError = (operation) =>
+  new BackendRequestError(operation, {
+    status: 503,
+    statusText: 'Service Unavailable'
+  })
+
 export const journeyRequest = (
   journeyId,
   { knownJourneyIds, ...overrides } = {}
@@ -131,6 +178,13 @@ export const backendNotification = ({
     concurrencyToken
   })
 
+const recordsRejectingSaves = (failure) => ({
+  ...recordsStub,
+  replaceFulfilment: async () => {
+    throw failure
+  }
+})
+
 const requestLocation = (pathOf, journeyId, query) => {
   if (!pathOf) {
     return {}
@@ -145,7 +199,10 @@ const requestLocation = (pathOf, journeyId, query) => {
 
 /** Seeds a journey, runs one handler against it and reports the answers before
  * and after. `amend` submits the journey and opens an amendment first;
- * `pathOf(journeyId)` gives the request the path it was made to. */
+ * `openingRun` (`RUN_ACTIVE` or `RUN_COMPLETE`) records that phase of the
+ * opening run for the journey; `pathOf(journeyId)` gives the request the path
+ * it was made to; `saveFailure` makes the records store refuse every save the
+ * handler makes with that error. */
 export const driveHandler = async (
   handler,
   {
@@ -154,6 +211,8 @@ export const driveHandler = async (
     params = {},
     query = {},
     amend = false,
+    openingRun,
+    saveFailure,
     pathOf
   } = {}
 ) => {
@@ -167,17 +226,29 @@ export const driveHandler = async (
     payload,
     params,
     query,
+    state: openingRun
+      ? { [openingRunCookie()]: { [journey.journeyId]: openingRun } }
+      : {},
     ...requestLocation(pathOf, journey.journeyId, query)
   })
   const h = stubH(request)
-  const response = await handler(request, h)
+  if (saveFailure) {
+    configureRecords(currentSetId(), recordsRejectingSaves(saveFailure))
+  }
+  let response
+  try {
+    response = await handler(request, h)
+  } finally {
+    configureRecords(currentSetId(), recordsStub)
+  }
   const after = (await store.get(journey.journeyId)).answers
   return {
     journeyId: journey.journeyId,
     before: seed,
     after,
     response,
-    view: h.captured.view
+    view: h.captured.view,
+    logger: request.logger
   }
 }
 
@@ -188,3 +259,24 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
   featureModule.routes.find(
     (route) => route.method === 'POST' && route.path.endsWith(pathSuffix)
   ).handler
+
+export const expectBackLinkIsPath = (result, path) =>
+  expect(result.view.context.backLink).toBe(path)
+
+export const expectBackLinkIsPage = (result, slug) =>
+  expectBackLinkIsPath(result, pagePath(result.journeyId, slug))
+
+export const expectEveryLeafToBeCopy = (locale, bundle) => {
+  for (const { path, value } of leaves(bundle)) {
+    expect(isCopyLeaf(value), `${locale}: ${path} must be copy`).toBe(true)
+  }
+}
+
+export const itHoldsCopyAtEveryLeaf = (en, cy) =>
+  it.each([
+    ['en', en],
+    ['cy', cy]
+  ])(
+    'Should hold a non-empty string or copy function at every %s leaf',
+    expectEveryLeafToBeCopy
+  )
