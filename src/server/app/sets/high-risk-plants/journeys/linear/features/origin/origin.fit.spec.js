@@ -5,6 +5,7 @@ import {
   FORM_GROUP_ANCESTOR_XPATH,
   childTagsAndClassesOf,
   backLink,
+  visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   expectedFormGroupChildren,
@@ -28,8 +29,6 @@ const ARRIVAL_DETAILS_URL = setUrl('/notifications/[^/]+/arrival-details$')
 
 const COUNTRY_INPUT = 'input#countryOfOrigin'
 const COUNTRY_SELECT = 'select[name="countryOfOrigin"]'
-const AUTOCOMPLETE_OPTION = '.autocomplete__option'
-const ERROR_MESSAGE = '.govuk-error-message'
 
 const FRANCE = 'France'
 const NORWAY = 'Norway'
@@ -85,7 +84,7 @@ test.describe('origin feature', () => {
     await expect(page).toHaveURL(ORIGIN_URL)
   })
 
-  test('offers a placeholder ahead of every country and territory the service primes, by name', async ({
+  test('offers the select text ahead of every country and territory the service primes, by name', async ({
     page
   }) => {
     await startNotificationAtOrigin(page)
@@ -111,10 +110,23 @@ test.describe('origin feature', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to the overview once the notification has an answer', async ({
+  test('sends Back to the commodities list in the opening run', async ({
     page
   }) => {
     const reference = await startNotificationAtOrigin(page)
+
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/commodities`
+    )
+  })
+
+  test('sends Back to the overview once the notification has an answer and the page is opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startNotificationAtOrigin(page)
+
+    await visitOverviewThenOpen(page, reference, originPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',
@@ -274,122 +286,6 @@ test.describe('country of origin without JavaScript', () => {
 
     await page.goto(originPathOf(reference))
     await expect(select.locator('option:checked')).toHaveText(FRANCE)
-  })
-})
-
-test.describe('origin accessible-autocomplete styles', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page)
-  })
-
-  test('uses GOV.UK typography for the enhanced input and its options', async ({
-    page
-  }) => {
-    await startNotificationAtOrigin(page)
-    const input = page.getByRole('combobox', { name: copy.country.label })
-    await input.fill('Fr')
-    await expect(
-      page.getByRole('option', { name: FRANCE, exact: true })
-    ).toBeVisible()
-
-    const typography = await page.evaluate(
-      ({ inputSelector, optionSelector }) => {
-        const enhancedInput = document.querySelector(inputSelector)
-        const option = document.querySelector(optionSelector)
-        const reference = document.createElement('input')
-        reference.className = 'govuk-input'
-        document.body.append(reference)
-
-        const inputStyle = getComputedStyle(enhancedInput)
-        const optionStyle = getComputedStyle(option)
-        const referenceStyle = getComputedStyle(reference)
-        const result = {
-          inputFamily: inputStyle.fontFamily,
-          inputSize: inputStyle.fontSize,
-          optionFamily: optionStyle.fontFamily,
-          optionSize: optionStyle.fontSize,
-          referenceFamily: referenceStyle.fontFamily,
-          referenceSize: referenceStyle.fontSize
-        }
-        reference.remove()
-        return result
-      },
-      { inputSelector: COUNTRY_INPUT, optionSelector: AUTOCOMPLETE_OPTION }
-    )
-
-    expect(typography.inputFamily).toBe(typography.referenceFamily)
-    expect(typography.optionFamily).toBe(typography.referenceFamily)
-    expect(typography.inputFamily).toMatch(/^"?GDS Transport/)
-    expect(typography.inputSize).toBe(typography.referenceSize)
-    expect(typography.optionSize).toBe(typography.referenceSize)
-  })
-
-  test('keeps the upstream focus indicator on the enhanced input', async ({
-    page
-  }) => {
-    await startNotificationAtOrigin(page)
-    const input = page.getByRole('combobox', { name: copy.country.label })
-
-    await input.focus()
-
-    const indicator = await input.evaluate((enhancedInput) => {
-      const reference = document.createElement('span')
-      reference.style.color = 'var(--govuk-focus-colour)'
-      document.body.append(reference)
-      const inputStyle = getComputedStyle(enhancedInput)
-      const result = {
-        boxShadow: inputStyle.boxShadow,
-        focusColour: getComputedStyle(reference).color,
-        outlineColour: inputStyle.outlineColor,
-        outlineWidth: inputStyle.outlineWidth
-      }
-      reference.remove()
-      return result
-    })
-
-    expect(indicator.outlineColour).toBe(indicator.focusColour)
-    expect(indicator.outlineWidth).toBe('3px')
-    expect(indicator.boxShadow).toContain('inset')
-  })
-
-  test('gives the enhanced input the standard GOV.UK error border', async ({
-    page
-  }) => {
-    await startNotificationAtOrigin(page)
-    await saveAndContinue(page).click()
-    await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.countryRequired
-      })
-    ).toBeVisible()
-
-    const borders = await page.evaluate(
-      ({ inputSelector, errorSelector }) => {
-        const enhancedInput = document.querySelector(inputSelector)
-        const errorMessage = document.querySelector(errorSelector)
-        const reference = document.createElement('input')
-        reference.className = 'govuk-input govuk-input--error'
-        document.body.append(reference)
-
-        const inputStyle = getComputedStyle(enhancedInput)
-        const errorStyle = getComputedStyle(errorMessage)
-        const referenceStyle = getComputedStyle(reference)
-        const result = {
-          inputColour: inputStyle.borderTopColor,
-          inputWidth: inputStyle.borderTopWidth,
-          errorColour: errorStyle.color,
-          referenceColour: referenceStyle.borderTopColor,
-          referenceWidth: referenceStyle.borderTopWidth
-        }
-        reference.remove()
-        return result
-      },
-      { inputSelector: COUNTRY_INPUT, errorSelector: ERROR_MESSAGE }
-    )
-
-    expect(borders.inputColour).toBe(borders.errorColour)
-    expect(borders.inputColour).toBe(borders.referenceColour)
-    expect(borders.inputWidth).toBe(borders.referenceWidth)
   })
 })
 

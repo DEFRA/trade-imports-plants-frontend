@@ -19,7 +19,10 @@ import {
   taskRows
 } from './sets/high-risk-plants/journeys/linear/flow/task-rows.js'
 import { sectionCaptionOf } from './sets/high-risk-plants/journeys/linear/flow/section-captions/index.js'
-import { nextRunTarget } from './sets/high-risk-plants/journeys/linear/flow/run.js'
+import {
+  nextRunTarget,
+  previousRunTarget
+} from './sets/high-risk-plants/journeys/linear/flow/run.js'
 import { entryGuardTarget } from './sets/high-risk-plants/journeys/linear/flow/entry-guard.js'
 import {
   LAYOUT,
@@ -52,10 +55,6 @@ export const highRiskPlants = {
     register: async (server) => {
       registerSetMount(SET_ID, SET_BASE)
       await withSetContext(SET_ID, async () => {
-        // Every extension below is sandboxed to this plugin's realm. Without
-        // `{ sandbox: 'plugin' }` Hapi registers it server-wide, so a second
-        // set's routes would run this set's guards and the last registration
-        // would win. Pinned by co-residency.test.js.
         server.ext(
           'onPreAuth',
           (_request, h) => {
@@ -71,6 +70,7 @@ export const highRiskPlants = {
           taskRows,
           rowStatus,
           nextRunTarget,
+          previousRunTarget,
           flowOnlyKeys: FLOW_ONLY_KEYS,
           entryGuardTarget,
           sectionCaption: sectionCaptionOf,
@@ -86,10 +86,6 @@ export const highRiskPlants = {
         server.ext(
           'onPreHandler',
           async (request, h) => {
-            // Wrapped, not left to the onPreAuth above: authentication crosses
-            // an async boundary in between, and `enterWith` does not always
-            // survive it. Bare, this resolves only by the sole-set fallback and
-            // throws the moment a second set mounts.
             const target = await withSetContext(SET_ID, () =>
               journeyEntryGuardTarget(request, h)
             )
@@ -100,9 +96,6 @@ export const highRiskPlants = {
         server.route(
           allRoutes.map((route) => routeWithSetContext(SET_ID, route))
         )
-        // Last act of the registration: a seam this set never configured would
-        // otherwise answer with its fallback at request time, and three of
-        // those fallbacks are silent. Refusing here stops the server instead.
         assertSetConfigured(server, SET_ID)
       })
     }

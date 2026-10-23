@@ -61,10 +61,14 @@ run.
 holds the steps more than one spec takes: `startNotification`,
 `startNotificationAtOrigin`, `chooseCommodityType`, `chooseCommodityCategory`,
 `addCommodityLine`, `saveOrigin`, `chooseCountryOfOrigin`,
-`chooseAutocompleteOption`, `saveAndContinue`, `startPotatoNotification`,
+`chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
 `completePotatoNotification`, `openDeclaration`,
-`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, the colour values `GOVUK_BLUE`,
-`GOVUK_BLUE_SHADE_50` and `WHITE`, `expectBlueIconButtonLook`, which checks
+`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which also proves the primary and
+Save and return to overview sit in the button group and Cancel and return to overview follows it, the GOV.UK style values `GOVUK_BLUE`,
+`GOVUK_BLUE_SHADE_50`, `WHITE`, `GOVUK_FOCUS`, `GOVUK_FOCUS_OUTLINE_WIDTH`,
+`GOVUK_FOCUS_INSET_SHADOW`, `GOVUK_ERROR`, `GOVUK_FONT_FAMILY`,
+`GOVUK_BODY_FONT_SIZE`, `GOVUK_BORDER_WIDTH` and `BLUE_ICON_BUTTON_EDGE`,
+`expectBlueIconButtonLook`, which checks
 the blue, white, hover and focus look of one icon button,
 `describeDatePickerLook`, which registers the four look tests for one date
 field, and `describeSubmittedSearchPicker`, which registers the look,
@@ -75,19 +79,19 @@ readers `FORM_GROUP_ANCESTOR_XPATH`, `childTagsAndClassesOf` and
 `expectedFormGroupChildren`; `journeyFormOf`, which finds the page's journey
 form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
-`SECOND_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
+`SECOND_PAGE_LINK`, `THIRD_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
 `NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
 address picker page by the address's name, `selectedAddressInset`, which
 finds the selected-address inset by the address's name, and `searchBox`, which
 finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
-one single-address picker; `postAnIdNotInTheBook`, which posts a picker with its
-first address swapped for an id the book does not hold;
+one single-address picker; `postAnIdNotInTheBook`, which posts a picker with an id the
+book does not hold, appended as a hidden input under the first radio's name;
 `pickerResultsSummary`, which finds the paragraph straight after the results
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count, the one radio group
 named "Select an address" and the link-free content under the page heading are
-as expected. The type-ahead readers
+as expected. The type-ahead style tests (typography, focus indicator, error border) and the readers
 `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, so the coverage report never counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.

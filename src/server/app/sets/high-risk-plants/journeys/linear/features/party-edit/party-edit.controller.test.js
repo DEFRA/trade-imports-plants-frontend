@@ -14,12 +14,17 @@ import { configureRecords } from '../../../../../../engine/persistence/records.j
 import { configureSession } from '../../../../../../engine/persistence/session.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
-import { driveHandler } from '../../../../../../engine/test-support.js'
-import * as state from '../../../../../../engine/index.js'
+import {
+  driveHandler,
+  expectOneSaveFallbackLogged,
+  unavailableBackendError
+} from '../../../../../../engine/test-support.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import * as countries from '../../../../../../services/countries/index.js'
-import { HTTP_STATUS_INTERNAL_SERVER_ERROR } from '../../../../../../lib/http-status.js'
-import { BackendRequestError } from '../../../../../../services/persistence/records/errors.js'
+import {
+  HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR
+} from '../../../../../../lib/http-status.js'
 import { pagePath } from '../../../../../../shared/paths.js'
 import { installHighRiskPlantsJourney } from '../../test-support.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
@@ -174,7 +179,7 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
       payload: { ...FORM, postcode: '', email: 'not-an-email' }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors).toEqual({
       postcode: 'Enter a postcode',
       email: 'Enter an email address in the correct format'
@@ -287,18 +292,21 @@ describe('Edit address details — where the trader returns to', () => {
     })
   })
 
-  it('Should re-render the form when saving fails', async () => {
-    vi.spyOn(state, 'commit').mockRejectedValue(
-      new BackendRequestError('save answers', {
-        status: 503,
-        statusText: 'Service Unavailable'
-      })
-    )
+  it('Should re-render the form and log the save fallback once when saving fails', async () => {
+    const failure = unavailableBackendError('save answers')
 
-    const result = await driveHandler(post, { seed, payload: FORM })
+    const result = await driveHandler(post, {
+      seed,
+      payload: FORM,
+      saveFailure: failure
+    })
 
     expect(result.response.statusCode).toBe(HTTP_STATUS_INTERNAL_SERVER_ERROR)
     expect(result.view.context.recoverableError).toBe(true)
     expect(result.after.consignor).toEqual(STORED)
+    expectOneSaveFallbackLogged(result.logger, {
+      journeyId: result.journeyId,
+      err: failure
+    })
   })
 })

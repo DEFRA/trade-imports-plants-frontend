@@ -15,7 +15,12 @@ import { configureSession } from '../../../../../../engine/persistence/session.j
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import { records as realRecords } from '../../../../../../services/persistence/records/real/index.js'
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
-import { journeyRequest, stubH } from '../../../../../../engine/test-support.js'
+import {
+  expectOneLogged,
+  expectOneRefusalLogged,
+  journeyRequest,
+  stubH
+} from '../../../../../../engine/test-support.js'
 import {
   COMPLETE_NOTIFICATION,
   installHighRiskPlantsJourney
@@ -109,6 +114,10 @@ describe('declaration', () => {
         { text: copy.errors.declarationRequired, href: '#declaration' }
       ])
       expect((await store.get(id)).answers).toEqual(COMPLETE_NOTIFICATION)
+      expectOneRefusalLogged(request.logger, {
+        journeyId: id,
+        errorCodes: ['declaration']
+      })
     }
   )
 
@@ -151,17 +160,15 @@ describe('declaration', () => {
       redirect: `${SET_BASE}/notifications/${id}/notification-view`
     })
     expect((await store.get(id)).status).toBe(state.DRAFT)
-    expect(request.logger.entries).toEqual([
-      {
-        level: 'info',
-        fields: {
-          journeyId: id,
-          refusal: DECLARATION_REFUSAL.review,
-          concurrencyToken: expect.any(Number)
-        },
-        message: 'Declaration refused'
-      }
-    ])
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: {
+        journeyId: id,
+        refusal: DECLARATION_REFUSAL.review,
+        concurrencyToken: expect.any(Number)
+      },
+      message: 'Declaration refused'
+    })
   })
 
   it('Should send a copied address that breaks the address-book rules back to check answers, unsubmitted', async () => {

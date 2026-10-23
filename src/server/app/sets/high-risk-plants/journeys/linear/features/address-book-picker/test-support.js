@@ -1,25 +1,25 @@
 import { expect, vi } from 'vitest'
 
 import { SET_BASE } from '../../../../set.js'
+import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 
 const JOURNEY_ID = 'HRP-0001'
-const PAGE_SIZE = 5
 const LABELS = pickerCopy.pagination
 const PAGES_IN_A_SHORT_BOOK = 3
 const FIRST_THREE_PAGES = Array.from(
   { length: PAGES_IN_A_SHORT_BOOK },
   (_, index) => index + 1
 )
-const IMPORT_CO = 'import-co-uk'
+export const IMPORT_CO = 'import-co-uk'
 
 const LINE_1 = '18 Dockside Road'
 const POSTCODE = 'E14 9GE'
 const COUNTRY = 'United Kingdom'
 const ONE_LINE = `${LINE_1}, Unit 4, London, Greater London, ${POSTCODE}`
 
-const TECH_IMPORTS_ID = 'tech-imports-ltd'
-const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
+export const TECH_IMPORTS_ID = 'tech-imports-ltd'
+export const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
 export const DELETED_ID = 'closed-depot-ltd'
@@ -117,14 +117,6 @@ const resultsHrefCases = ({ resultsHref, slug }) => ({
         expect(
           resultsHref(JOURNEY_ID, { query: '', page: 2, selectedId: '' })
         ).toBe(`${pagePathFor(slug)}?page=2`)
-      }
-    },
-    {
-      title: 'Should point at the select page of the address',
-      check: () => {
-        expect(
-          resultsHref(JOURNEY_ID, { query: '', page: 1, selectedId: '' })
-        ).toBe(`${pagePathFor(slug)}?page=1`)
       }
     }
   ]

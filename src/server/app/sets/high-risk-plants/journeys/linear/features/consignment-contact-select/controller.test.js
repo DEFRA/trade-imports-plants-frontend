@@ -1,15 +1,17 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { store } from '../../../../../../engine/store.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import {
+  COMPLETE_PLANTS_NOTIFICATION,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
 import {
   driveHandler,
   postHandlerOf
 } from '../../../../../../engine/test-support.js'
 import {
   copied,
-  describeAddressBookPickerController,
-  installStubs
+  describeAddressBookPickerController
 } from '../address-book-picker/controller-test-support.js'
 import { copy } from './copy/copy.en.js'
 import * as contact from './controller.js'
@@ -37,8 +39,7 @@ describe('#meta', () => {
 })
 
 describe('GET contact — the question it asks', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should title the page, head it with the question and render no caption', async () => {
     const result = await driveHandler(get, { seed: plants() })
@@ -57,13 +58,16 @@ describeAddressBookPickerController({
   get,
   post,
   seed: plants,
+  previousStep: {
+    slug: 'identification-numbers',
+    seed: COMPLETE_PLANTS_NOTIFICATION
+  },
   fieldName: 'contactAddress',
   errorText: copy.errors.contactAddress
 })
 
 describe('POST contact — what it commits', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should commit the chosen record’s name, contact details and address', async () => {
     const result = await driveHandler(post, {
@@ -87,8 +91,7 @@ describe('POST contact — what it commits', () => {
 })
 
 describe('GET contact — the address this notification holds', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should show the copy held with a link to edit its details', async () => {
     const result = await driveHandler(get, {

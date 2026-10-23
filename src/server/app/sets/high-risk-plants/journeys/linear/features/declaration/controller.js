@@ -88,6 +88,7 @@ const post = async (request, h) => {
   const values = { declaration: payload.declaration ?? '' }
   const { errors, value } = validate(fields, payload)
   if (errors) {
+    kit.logRefusal(request, { fieldErrors: errors })
     return render(request, h, journey, values, { errors }).code(
       HTTP_STATUS_BAD_REQUEST
     )
@@ -95,6 +96,7 @@ const post = async (request, h) => {
 
   let result
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       await state.commit(request, h, {
         declaration: value.declaration,

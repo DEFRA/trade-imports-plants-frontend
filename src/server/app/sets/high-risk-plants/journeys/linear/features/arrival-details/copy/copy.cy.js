@@ -19,7 +19,8 @@ export const copy = {
   placeOfLanding: {
     label: 'Man glanio arfaethedig',
     hint: 'Dewiswch ble bydd y tatws yn dod i mewn i Brydain Fawr. Dechreuwch deipio i chwilio yn ôl enw neu god y porthladd neu’r maes awyr.',
-    placeholder: 'Dewiswch fan glanio',
+    selectText: 'Dewiswch fan glanio',
+    searchPlaceholder: 'Dewiswch fan glanio',
     noResults: 'Dim porthladdoedd wedi’u darganfod'
   },
   errors: {

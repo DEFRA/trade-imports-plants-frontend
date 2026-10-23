@@ -1,4 +1,3 @@
-import { hubPath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import {
@@ -31,7 +30,6 @@ import {
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-/** The arrival-details page: the arrival date, and for potatoes the time and place of landing. */
 export const meta = {
   ...page,
   collects: [ARRIVAL_DATE, ARRIVAL_TIME, PROPOSED_PLACE_OF_LANDING]
@@ -55,7 +53,7 @@ const dateStateOf = (answers, scope) => {
 }
 
 const portItems = async () => [
-  { value: '', text: copy.placeOfLanding.placeholder },
+  { value: '', text: copy.placeOfLanding.selectText },
   ...(await ports.portOptions())
 ]
 
@@ -99,14 +97,14 @@ const valuesFrom = (source, scope) => ({
 const boundsFor = (answers, scope) =>
   arrivalBounds(dateStateOf(answers, scope) === ALREADY_ARRIVED)
 
-const render = async (h, current, values, options = {}) => {
+const render = async (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   const bounds = options.bounds ?? boundsFor(current.answers, current.scope)
   const dateState = dateStateOf(current.answers, current.scope)
   return h.view(view, {
     ...kit.base(copy.title, {
-      request: h.request,
-      backLink: hubPath(current.journey.journeyId),
+      request,
+      backLink: await kit.runBackLink(request, page.id, current),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -152,7 +150,7 @@ const get = async (request, h) => {
           copy.errors.proposedPlaceOfLandingNoLongerAvailable
       }
     : {}
-  return render(h, current, values, { errors })
+  return render(request, h, current, values, { errors })
 }
 
 const committedValues = (cleaned, scope) => ({
@@ -171,23 +169,21 @@ const post = async (request, h) => {
     { allowMissing: kit.isHubExit(request) }
   )
   if (errors) {
-    return (await render(h, current, values, { bounds, errors })).code(
+    kit.logRefusal(request, { fieldErrors: errors })
+    return (await render(request, h, current, values, { bounds, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }
 
-  let committed
-  const { failure } = await kit.recoverableSave(
-    async () => {
-      committed = await state.commit(
-        request,
-        h,
-        committedValues(value, current.scope)
-      )
-    },
+  const { value: committed, failure } = await kit.recoverableSave(
+    request,
+    () => state.commit(request, h, committedValues(value, current.scope)),
     async () =>
       (
-        await render(h, current, values, { bounds, recoverableError: true })
+        await render(request, h, current, values, {
+          bounds,
+          recoverableError: true
+        })
       ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
   )
   if (failure) {

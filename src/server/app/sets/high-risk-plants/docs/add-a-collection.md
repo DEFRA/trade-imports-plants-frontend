@@ -453,7 +453,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares;
+  picker shares, and a picker's call also names the previous run step's slug and
+  the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
@@ -474,11 +475,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal such as a capped add, a
-redirect away from the normal next page, a retry or a fallback — logs once
-through `request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+A user's own field errors shown back on the form are not logged. A refusal that is not the user's input error (a state refusal, a bare 400, another service refusing) logs once through `kit.logRefusal()` with the journey id, and every save fallback logs through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Hard limit
 

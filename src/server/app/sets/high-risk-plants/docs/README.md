@@ -68,7 +68,7 @@ collide; `npm run test:fit:ci` does this for you.
 | `journeys/linear/flow/flow.js`                   | `FLOW_ONLY_KEYS`, `sections`                  | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/task-rows.js`              | `taskRows`, `rowStatus`                       | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/section-captions/index.js` | `captionSections`, `sectionCaptionOf`         | `configureJourneyFlow`                                      |
-| `journeys/linear/flow/run.js`                    | `nextRunTarget`                               | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/run.js`                    | `nextRunTarget`, `previousRunTarget`          | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/entry-guard.js`            | `entryGuardTarget`                            | `server.ext('onPreHandler')`                                |
 
 This set's gateway,

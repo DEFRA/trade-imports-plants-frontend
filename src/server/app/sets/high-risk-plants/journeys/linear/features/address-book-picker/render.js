@@ -1,4 +1,3 @@
-import { hubPath } from '../../../../../../shared/paths.js'
 import * as kit from '../../../../../../shared/kit.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
@@ -83,7 +82,7 @@ export const renderPicker = async (
   return h.view(view, {
     ...kit.base(copy.title, {
       request,
-      backLink: hubPath(current.journey.journeyId),
+      backLink: await kit.runBackLink(request, page.id, current),
       journey: current.journey,
       page,
       recoverableError

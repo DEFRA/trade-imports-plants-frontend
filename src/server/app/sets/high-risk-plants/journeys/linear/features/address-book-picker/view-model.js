@@ -1,4 +1,5 @@
 import { addressText, detailLines } from './address-lines.js'
+import { pickerTableRows } from './table-rows.js'
 
 const idPrefixFor = (fieldName) => (from, index) =>
   index === 0 ? fieldName : `${fieldName}-${from + index + 1}`
@@ -33,6 +34,7 @@ export const pickerViewModelFor = ({ fieldName, pagination }) => {
     pickerCopy
   ) => {
     const from = (found.page - 1) * found.pageSize
+    const rows = found.results.map(resultRow(idPrefix, from, selectedId))
 
     return {
       query,
@@ -40,7 +42,8 @@ export const pickerViewModelFor = ({ fieldName, pagination }) => {
       error,
       tickedRecord,
       resultsCount: pickerCopy.resultsCount(found.results.length, found.total),
-      rows: found.results.map(resultRow(idPrefix, from, selectedId)),
+      rows,
+      tableRows: pickerTableRows(fieldName, rows, pickerCopy),
       pagination: pagination(journeyId, {
         query,
         page: found.page,

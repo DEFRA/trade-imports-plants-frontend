@@ -1,18 +1,27 @@
 import { expect, test } from '@playwright/test'
 
 import {
+  BLUE_ICON_BUTTON_EDGE,
   FORM_GROUP_ANCESTOR_XPATH,
   GOVUK_BLUE,
-  GOVUK_BLUE_SHADE_50,
+  GOVUK_BODY_FONT_SIZE,
+  GOVUK_BORDER_WIDTH,
+  GOVUK_ERROR,
+  GOVUK_FOCUS,
+  GOVUK_FOCUS_INSET_SHADOW,
+  GOVUK_FOCUS_OUTLINE_WIDTH,
+  GOVUK_FONT_FAMILY,
   WHITE,
   childTagsAndClassesOf,
   chooseCommodityCategory,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
   expectedFormGroupChildren,
+  saveAndContinue,
   startNotification,
   startNotificationAtOrigin,
-  startPotatoNotification
+  startPotatoNotification,
+  withoutJavaScript
 } from '../../../../../../../../fit/high-risk-plants-journey.js'
 import { signIn } from '../../../../../../../../fit/sign-in.js'
 import { countryAndSubdivisionEntries } from '../../../../../services/_capture/fixtures.js'
@@ -20,6 +29,7 @@ import { copy as arrivalCopy } from './arrival-details/copy/copy.en.js'
 import { copy as commodityCopy } from './commodities/copy/copy.en.js'
 import { copy as originCopy } from './origin/copy/copy.en.js'
 
+const AUTOCOMPLETE_BUTTON = '.app-autocomplete__button'
 const AUTOCOMPLETE_CONTAINER =
   'xpath=ancestor::*[contains(@class,"app-autocomplete")][1]'
 const COUNTRY_SELECT = 'select#countryOfOrigin-select'
@@ -46,7 +56,7 @@ const typeAheads = [
     suggestion: france.name,
     bold: 'Fra',
     selectText: originCopy.country.selectText,
-    emptyBoxText: originCopy.country.searchPlaceholder,
+    searchPlaceholder: originCopy.country.searchPlaceholder,
     open: startNotificationAtOrigin
   },
   {
@@ -58,8 +68,8 @@ const typeAheads = [
     typed: 'dov',
     suggestion: DOVER_OPTION,
     bold: 'Dov',
-    selectText: arrivalCopy.placeOfLanding.placeholder,
-    emptyBoxText: arrivalCopy.placeOfLanding.placeholder,
+    selectText: arrivalCopy.placeOfLanding.selectText,
+    searchPlaceholder: arrivalCopy.placeOfLanding.searchPlaceholder,
     open: startPotatoNotification
   },
   {
@@ -71,7 +81,8 @@ const typeAheads = [
     typed: 'cast',
     suggestion: commodityCopy.genusLabels.Castanea,
     bold: 'Cast',
-    selectText: commodityCopy.details.genusPlaceholder,
+    selectText: commodityCopy.details.genusSelectText,
+    searchPlaceholder: '',
     open: openGenusDetails
   }
 ]
@@ -94,7 +105,7 @@ for (const typeAhead of typeAheads) {
     suggestion,
     bold,
     selectText,
-    emptyBoxText,
+    searchPlaceholder,
     open
   } = typeAhead
 
@@ -104,27 +115,30 @@ for (const typeAhead of typeAheads) {
       await open(page)
     })
 
-    if (emptyBoxText !== undefined) {
-      test('shows the empty search box text and no value', async ({ page }) => {
-        const input = inputFor(page, inputId)
+    test('carries the configured search placeholder and no value', async ({
+      page
+    }) => {
+      const input = inputFor(page, inputId)
 
-        await expect(input).toHaveAttribute('placeholder', emptyBoxText)
-        await expect(input).toHaveValue('')
-      })
-    }
+      await expect(input).toHaveAttribute('placeholder', searchPlaceholder)
+      await expect(input).toHaveValue('')
+    })
 
     test('shows the joined blue magnifying glass button flush with the box and no dropdown arrow', async ({
       page
     }) => {
-      const measurements = await measureJoinedSearchButton(
-        inputFor(page, inputId)
-      )
+      const input = inputFor(page, inputId)
+      const container = input.locator(AUTOCOMPLETE_CONTAINER)
+      const button = container.locator(AUTOCOMPLETE_BUTTON)
+      await expect(
+        container.locator('.autocomplete__dropdown-arrow-down')
+      ).toHaveCSS('display', 'none')
+      await expect(button).toHaveCSS('background-color', GOVUK_BLUE)
+      await expect(button).toHaveCSS('box-shadow', BLUE_ICON_BUTTON_EDGE)
+      await expect(button).toHaveCSS('border-top-width', '0px')
 
-      expect(measurements.arrowDisplay).toBe('none')
-      expect(measurements.background).toBe(GOVUK_BLUE)
+      const measurements = await measureJoinedSearchButton(input)
       expect(measurements.iconColour).toBe(WHITE)
-      expect(measurements.boxShadow).toContain(GOVUK_BLUE_SHADE_50)
-      expect(measurements.borderWidth).toBe('0px')
       expect(measurements.buttonWidth).toBe(measurements.buttonHeight)
       expect(measurements.buttonTop).toBe(measurements.inputTop)
       expect(measurements.buttonBottom).toBe(measurements.inputBottom)
@@ -137,12 +151,12 @@ for (const typeAhead of typeAheads) {
       const input = inputFor(page, inputId)
       const button = input
         .locator(AUTOCOMPLETE_CONTAINER)
-        .locator('.app-autocomplete__button')
+        .locator(AUTOCOMPLETE_BUTTON)
       const urlBeforeClick = page.url()
 
       await expect(button).toHaveAttribute('aria-hidden', 'true')
       await expect(button).not.toHaveAttribute('tabindex')
-      expect(await button.evaluate((element) => element.tagName)).toBe('SPAN')
+      await expect(button).toHaveJSProperty('tagName', 'SPAN')
 
       await input.focus()
       await page.keyboard.press('Tab')
@@ -184,14 +198,7 @@ for (const typeAhead of typeAheads) {
     }) => {
       await signIn(page)
       await open(page)
-      const context = await browser.newContext({
-        javaScriptEnabled: false,
-        storageState: await page.context().storageState()
-      })
-
-      try {
-        const noJavaScript = await context.newPage()
-        await noJavaScript.goto(page.url())
+      await withoutJavaScript(page, browser, async (noJavaScript) => {
         const formGroup = noJavaScript
           .locator(`select#${inputId}`)
           .locator(FORM_GROUP_ANCESTOR_XPATH)
@@ -207,14 +214,7 @@ for (const typeAhead of typeAheads) {
         expect(await childTagsAndClassesOf(formGroup)).toEqual(
           expectedFormGroupChildren({ hint, labelSize })
         )
-        await expect(
-          noJavaScript.locator(
-            '.autocomplete__wrapper, .app-autocomplete__button'
-          )
-        ).toHaveCount(0)
-      } finally {
-        await context.close()
-      }
+      })
     })
   })
 }
@@ -273,16 +273,67 @@ test.describe('country of origin change announcement', () => {
   })
 })
 
+test.describe('country of origin type-ahead styles', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+  })
+
+  test('uses GOV.UK typography for the enhanced input and its options', async ({
+    page
+  }) => {
+    await startNotificationAtOrigin(page)
+    const input = inputFor(page, 'countryOfOrigin')
+    await input.fill('Fr')
+    const option = page.getByRole('option', { name: france.name, exact: true })
+    await expect(option).toBeVisible()
+
+    for (const element of [input, option]) {
+      await expect(element).toHaveCSS('font-family', GOVUK_FONT_FAMILY)
+      await expect(element).toHaveCSS('font-size', GOVUK_BODY_FONT_SIZE)
+    }
+  })
+
+  test('keeps the upstream focus indicator on the enhanced input', async ({
+    page
+  }) => {
+    await startNotificationAtOrigin(page)
+    const input = inputFor(page, 'countryOfOrigin')
+
+    await input.focus()
+
+    await expect(input).toHaveCSS('outline-color', GOVUK_FOCUS)
+    await expect(input).toHaveCSS('outline-width', GOVUK_FOCUS_OUTLINE_WIDTH)
+    await expect(input).toHaveCSS('box-shadow', GOVUK_FOCUS_INSET_SHADOW)
+  })
+
+  test('gives the enhanced input the standard GOV.UK error border', async ({
+    page
+  }) => {
+    await startNotificationAtOrigin(page)
+    await saveAndContinue(page).click()
+    await expect(
+      page.getByRole('alert').getByRole('link', {
+        name: originCopy.errors.countryRequired
+      })
+    ).toBeVisible()
+
+    const input = inputFor(page, 'countryOfOrigin')
+    await expect(input).toHaveCSS('border-top-color', GOVUK_ERROR)
+    await expect(input).toHaveCSS('border-top-width', GOVUK_BORDER_WIDTH)
+    await expect(page.locator('#countryOfOrigin-error')).toHaveCSS(
+      'color',
+      GOVUK_ERROR
+    )
+  })
+})
+
 const measureJoinedSearchButton = (input) =>
   input.evaluate((inputElement) => {
     const container = inputElement.closest('.app-autocomplete')
     const button = container.querySelector('.app-autocomplete__button')
-    const arrow = container.querySelector('.autocomplete__dropdown-arrow-down')
     const inputEdges = inputElement.getBoundingClientRect()
     const buttonEdges = button.getBoundingClientRect()
-    const buttonStyle = window.getComputedStyle(button)
     return {
-      arrowDisplay: window.getComputedStyle(arrow).display,
       inputTop: inputEdges.top,
       inputBottom: inputEdges.bottom,
       inputRight: inputEdges.right,
@@ -291,9 +342,6 @@ const measureJoinedSearchButton = (input) =>
       buttonRight: buttonEdges.right,
       buttonWidth: buttonEdges.width,
       buttonHeight: buttonEdges.height,
-      background: buttonStyle.backgroundColor,
-      boxShadow: buttonStyle.boxShadow,
-      borderWidth: buttonStyle.borderTopWidth,
       iconColour: window.getComputedStyle(button, '::before').backgroundColor
     }
   })

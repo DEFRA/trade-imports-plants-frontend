@@ -13,7 +13,6 @@
   {% from "high-risk-plants/journeys/linear/features/address-book-picker/results.njk" import addressBookPickerResults %}
   {{ addressBookPickerResults("consignor", picker, pickerCopy) }}
 #}
-{% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/table/macro.njk" import govukTable %}
 {% from "govuk/components/fieldset/macro.njk" import govukFieldset %}
 {% from "govuk/components/pagination/macro.njk" import govukPagination %}
@@ -32,44 +31,6 @@
   {% if picker.rows.length %}
     <p class="govuk-body">{{ picker.resultsCount }}</p>
 
-    {% set rows = [] %}
-    {% for row in picker.rows %}
-      {% set selectLabel %}<span class="govuk-visually-hidden">{{ pickerCopy.selectRowPrefix }} {{ row.name }}</span>{% endset %}
-      {% set selectCell %}
-        {{ govukRadios({
-          idPrefix: row.idPrefix,
-          name: fieldName,
-          classes: "govuk-radios--small",
-          items: [{
-            value: row.id,
-            html: selectLabel,
-            checked: row.checked
-          }]
-        }) }}
-      {% endset %}
-      {% set detailsCell %}
-        <details class="govuk-details">
-          <summary class="govuk-details__summary">
-            <span class="govuk-details__summary-text">{{ pickerCopy.viewDetails }}<span class="govuk-visually-hidden"> {{ pickerCopy.viewDetailsFor }} {{ row.name }}</span></span>
-          </summary>
-          <div class="govuk-details__text">
-            <ul class="govuk-list">
-              {% for line in row.detailLines %}
-                <li>{{ line }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-        </details>
-      {% endset %}
-      {% set ignored = rows.push([
-        { html: selectCell },
-        { text: row.name },
-        { text: row.addressText },
-        { text: row.country },
-        { html: detailsCell }
-      ]) %}
-    {% endfor %}
-
     {% set fieldsetContent %}
       {% if picker.error %}
         {{ pickerError(errorId, picker, pickerCopy) }}
@@ -82,7 +43,7 @@
           { text: pickerCopy.table.country },
           { html: '<span class="govuk-visually-hidden">' + pickerCopy.table.actionsHidden + '</span>' }
         ],
-        rows: rows
+        rows: picker.tableRows
       }) }}
     {% endset %}
 

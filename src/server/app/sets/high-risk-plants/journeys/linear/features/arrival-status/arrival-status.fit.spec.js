@@ -2,6 +2,7 @@ import {
   addCommodityLine,
   chooseCommodityType,
   backLink,
+  visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -97,12 +98,25 @@ test.describe('arrival-status feature', () => {
     await expect(group).toContainText(copy.statusHints[NOT_YET_ARRIVED])
   })
 
-  test('offers the three save controls and sends Back to the overview', async ({
+  test('offers the three save controls and sends Back to origin in the opening run', async ({
     page
   }) => {
     const reference = await startAtArrivalStatus(page)
 
     await expectThreeSaveControls(page)
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      `${BASE}/notifications/${reference}/origin`
+    )
+  })
+
+  test('sends Back to the overview when opened from the overview', async ({
+    page
+  }) => {
+    const reference = await startAtArrivalStatus(page)
+
+    await visitOverviewThenOpen(page, reference, arrivalStatusPathOf(reference))
+
     await expect(backLink(page)).toHaveAttribute(
       'href',
       `${BASE}/notifications/${reference}`

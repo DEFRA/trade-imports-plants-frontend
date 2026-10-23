@@ -1,16 +1,18 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import * as commodityTypeController from '../commodity-type/controller.js'
-import { store } from '../../../../../../engine/store.js'
 import {
   driveHandler,
   postHandlerOf
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import {
+  COMPLETE_PLANTS_NOTIFICATION,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
+import {
   copied,
-  describeAddressBookPickerController,
-  installStubs
+  describeAddressBookPickerController
 } from '../address-book-picker/controller-test-support.js'
 import { copy } from './copy/copy.en.js'
 import * as consignor from './controller.js'
@@ -39,8 +41,7 @@ describe('#meta', () => {
 })
 
 describe('GET consignor-select — the question it asks', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should title and head the page Consignor and caption the consignment parties section', async () => {
     const result = await driveHandler(get, { seed: plants() })
@@ -58,13 +59,16 @@ describeAddressBookPickerController({
   get,
   post,
   seed: plants,
+  previousStep: {
+    slug: 'destinations/select',
+    seed: COMPLETE_PLANTS_NOTIFICATION
+  },
   fieldName: 'consignor',
   errorText: copy.errors.consignor
 })
 
 describe('GET consignor-select — the address this notification holds', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should show the copy, as edited, with a link to edit its details', async () => {
     const edited = { ...copied(TECH_IMPORTS), name: EDITED_NAME }
@@ -91,8 +95,7 @@ describe('GET consignor-select — the address this notification holds', () => {
 })
 
 describe('consignor scope', () => {
-  beforeAll(installStubs)
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should purge the reference on switching to potatoes and not restore it on switching back', async () => {
     const changed = await driveHandler(postHandlerOf(commodityTypeController), {

@@ -27,6 +27,18 @@ reference-data outage at start-up does not stop the service serving. A failed
 load throws a 503 through `referenceDataUnavailable()` and the next read tries
 again. In stub mode they read their seeded lists and never call reference data.
 
+The `address-book` client keeps three facts out of its code:
+
+- The page size is the address book's own, not a request parameter. The
+  service re-slices to it and reads it back from each response.
+- The organisation id in the path and in the organisation header always comes
+  from the signed-in session, never from a payload or a stored field. A read
+  without one is refused, not sent: the path would name an organisation
+  literally called "undefined", which the address book answers with an empty
+  book and which would read as "no saved addresses".
+- A deleted address answers as a record marked deleted, not as a 404, so a
+  deletion is told apart from a record that never existed.
+
 The origin page reads the SPS country list (`GBNAG_SPS_EX`). The address book
 validates against the unfiltered list. "United Kingdom" is not on the SPS list,
 so address forms offer it first and store it as `GB`.

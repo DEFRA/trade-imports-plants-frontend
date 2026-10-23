@@ -38,12 +38,12 @@
 
     {{ addressBookPickerResults("contactAddress", picker, pickerCopy) }}
 
-    {{ saveActions(
-      hubHref,
-      { text: sharedCopy.saveActions.saveAndContinue, name: "action", value: "save" },
-      sharedCopy.saveActions,
-      amend = amend,
-      hubExitWhileAmending = false
-    ) }}
+    {{ saveActions({
+      hubHref: hubHref,
+      primary: { text: sharedCopy.saveActions.saveAndContinue, name: "action", value: "save" },
+      copy: sharedCopy.saveActions,
+      amend: amend,
+      hubExitWhileAmending: false
+    }) }}
   </form>
 {% endblock %}

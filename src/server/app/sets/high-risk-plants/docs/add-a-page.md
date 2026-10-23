@@ -112,6 +112,9 @@ Use one `render()` helper for GET and POST errors. Build the common view with
 `kit.base()`. Pass `journey` so the shared reference strip renders. A page that
 shows no status strip still passes `journey`, with `showJourneyStrip: false`.
 Pass `page` so the section caption renders. The normal back link is `hubPath(journey.journeyId)`.
+A page that is a step of the opening run takes its back link from
+`kit.runBackLink()`, which opens the previous run step while the run is active
+and falls back to the overview.
 
 GET calls `state.get()` once and prefills from `answers`. POST:
 
@@ -121,9 +124,13 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 4. commits cleaned values with `state.commit()`
 5. redirects through `await kit.nextTarget(request, page, committed.scope)`
 
-Wrap the write in `kit.recoverableSave()`. A marked persistence failure renders
-the same values with `recoverableError: true` and status 500. Unexpected errors
-must throw.
+Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
+failure is logged once by `recoverableSave`; render the same values with
+`recoverableError: true` and status 500. Unexpected errors must throw. When
+validation fails, render the page again with status 400 and log nothing: a user's
+own field errors shown back on the form are not logged. A refusal that is not the
+user's input error (a state refusal, a bare 400, another service refusing) logs
+once through `kit.logRefusal(request, { …details })` with the journey id.
 
 "Save and return to overview" posts `exit=hub`. When the page has a required
 rule, opt in to saving a blank answer on that exit by passing
@@ -276,14 +283,19 @@ that rule cannot express the page.
 Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
 only when it belongs in the opening run — that is, add it to `RUN_STEPS` in
 journey order. A step whose derived gate fails is skipped, as arrival-status is
-for potatoes. Update its run tests if you do.
+for potatoes. A run step names its `backCandidates`, the earlier steps its Back
+link may open, nearest first. Inserting a step mid-run updates the following
+step's `backCandidates`. The controller's `render` takes its Back link from
+`kit.runBackLink(request, page.id, current, { fallback })`, where `fallback` is
+a named option that defaults to the overview. Update its run tests if you do.
 
 ## 7. Add check-answers and backend mapping when needed
 
 Add the page's rows to the matching check-answers card and their row labels to
-both check-answers copy bundles. A value label that the page itself already
-shows is read from that feature's label function (for example
-`meansOfTransportLabel`), never copied into the check-answers copy. Value
+both check-answers copy bundles. A stored code is shown through a copy lookup
+keyed by the stored value, as the review does with
+`copy.typeLabels[answers.commodityType]` and
+`copy.statusLabels[answers.arrivalStatus]`, never retyped into the row. Value
 labels only the review shows go in the check-answers copy bundles.
 
 Pass each obligation name to `row()` or `changeAction()` so the
@@ -342,23 +354,34 @@ Build test set-up from the shared helpers, and extend them rather than writing
 set-up in the test file:
 
 - controller tests:
-  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after
-  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
-  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
-  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
-  a locale pair
+  [`engine/test-support.js`](../../../engine/test-support.js) exports:
+  - `driveHandler` seeds a journey, runs one handler and returns the answers
+    before and after and the logger; its `openingRun` option (`RUN_ACTIVE` or
+    `RUN_COMPLETE`) records that phase of the opening run, and `saveFailure`
+    makes every save the handler makes fail with the error it is given
+  - `postHandlerOf` and `postHandlerEndingWith` return a feature module's POST
+    handler
+  - `journeyRequest`, `stubH`, `recordingH` and `recordingLogger` build the
+    request, toolkit and logger
+  - `expectBackLinkIsPage` and `expectBackLinkIsPath` assert the Back link
+  - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line
+  - `expectOneSaveFallbackLogged` asserts it holds exactly one save fallback line
+  - `unavailableBackendError` builds the error a save failure is given
+  - `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for a locale pair
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares;
+  picker shares, and a picker's call also names the previous run step's slug and
+  the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
   with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
-  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
+  `installHighRiskPlantsJourney`, `useStubbedHighRiskPlantsJourney` (the stub
+  records, session and dispatch with a cleared store for a describe),
+  `COMPLETE_NOTIFICATION` and
   `COMPLETE_POTATO_CONSIGNMENT`
 - browser tests:
   [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
@@ -370,11 +393,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal, a redirect away from
-the normal next page, a retry or a fallback — logs once through
-`request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+A user's own field errors shown back on the form are not logged. A refusal that is not the user's input error (a state refusal, a bare 400, another service refusing) logs once through `kit.logRefusal()` with the journey id, and every save fallback logs through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 
@@ -396,7 +415,7 @@ Cover:
 - preservation of entered values on error
 - every error-summary link moving focus to its control
 - back, Save and return to overview, Cancel and Change navigation as applicable
-- on every page in a task row's `pages` (`journeys/linear/flow/task-rows.js`) and on every party picker, `amend = amend` on `saveActions`, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. `kit.base()` supplies `amend` when the controller passes it the request (`request`, or `h.request` where the render has only the toolkit). The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending = false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment. A page reached from another page (`showReturnControls = false`, such as the commodities list) also passes `amend`, and shows only Save and return and Save and continue while amending. A collection-entry sub-page (commodities details) keeps its own write actions and passes no `amend`: it saves back to its list, which carries the row's amend ending. `features/amend-endings.test.js` renders every task-row page while amending and fails if one loses the ending.
+- on every page in a task row's `pages` (`journeys/linear/flow/task-rows.js`) and on every party picker, `amend: amend` in the object `saveActions` takes, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. `kit.base()` supplies `amend` when the controller passes it the request (`request`, or `h.request` where the render has only the toolkit). The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending: false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment. A page reached from another page (`showReturnControls: false`, such as the commodities list) also passes `amend`, and shows only Save and return and Save and continue while amending. A collection-entry sub-page (commodities details) keeps its own write actions and passes no `amend`: it saves back to its list, which carries the row's amend ending. `features/amend-endings.test.js` renders every task-row page while amending and fails if one loses the ending.
 - conditional scope, skip and purge behaviour
 - the check-answers rows and Change links
 

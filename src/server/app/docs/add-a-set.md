@@ -185,6 +185,12 @@ session seam, so the cookies Hapi registers and the ones the set actually uses
 cannot drift apart. Call it inside the set context, after `registerSetMount`
 and `configureSession` — it throws if the session seam is not configured yet.
 
+The gateway ends its registration with the completeness check, which stops the
+server when a seam is unconfigured, because a seam's fallback otherwise answers
+at request time and some fallbacks answer silently. A second-set test fixture
+ends its registration the same way, so a seam it stops configuring fails the
+co-residency suite.
+
 ## 5. Mount it
 
 In [`../../router.js`](../../router.js):

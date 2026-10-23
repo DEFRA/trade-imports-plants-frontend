@@ -71,6 +71,33 @@ copy is listed in [Copy status](copy-status.md).
 and [`src/server/app/copy-parity.test.js`](../../../copy-parity.test.js) hold
 the enforceable detail. Read them when a copy test fails.
 
+## How a page ends
+
+`shared/save-actions.njk` owns a page's ending.
+
+- A page the overview links to directly ends with all three controls: the
+  primary and "Save and return to overview" side by side, then "Cancel and
+  return to overview" on its own line below them, so a trader can stop and
+  leave from where the overview sent them.
+- The two return controls name the page they lead to, which is headed
+  "Overview". "Hub" is the internal name for it and never appears on screen.
+- A page reached from another page ends with the primary alone
+  (`showReturnControls: false`), and the trader leaves the way they came in.
+- While a notification is being amended, a page passes `amend` and ends with
+  "Save and return" (back to the review, posting with `?change=1`) and "Save
+  and continue" (on, never back to the review) side by side, then a secondary
+  "Save and return to overview" button on its own line below them, with no
+  cancel link. Each save button carries its own `formaction`, so no new field
+  is posted. A page reached from another page or a picker
+  (`hubExitWhileAmending: false`) ends with the first two only.
+
+## Party edit
+
+The party edit page reads `return` from the query string and accepts only the
+check answers slug and the party pickers' slugs, a closed list, so a link
+cannot send the trader to an arbitrary path. A party dropped by a change of
+commodity type has nothing to edit, so the page sends the trader to the picker.
+
 ## Bindings
 
 Each collecting feature imports high-risk-plants obligation objects into its

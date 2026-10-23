@@ -130,9 +130,13 @@ For a conditional field, use `scope.has(fieldName)` to decide whether to render
 and validate it. Do not commit a hidden value. The evaluator removes stored data
 when the obligation leaves scope.
 
-Wrap the write in `kit.recoverableSave()`. On a marked persistence failure,
-render the same values with `recoverableError: true` and return 500. Let other
-errors throw.
+Wrap the write in `kit.recoverableSave(request, …)`. On a marked persistence
+failure it logs the fallback once; render the same values with
+`recoverableError: true` and return 500. Let other errors throw. When
+validation fails, render the page again with status 400 and log nothing: a user's
+own field errors shown back on the form are not logged. A refusal that is not the
+user's input error (a state refusal, a bare 400, another service refusing) logs
+once through `kit.logRefusal(request, { …details })` with the journey id.
 
 Run `npm run test:high-risk-plants`. `buildDispatch` should now pass. Update the
 existing case for this controller in `src/server/app/contract.test.js`: add the
@@ -171,11 +175,11 @@ copy test.
 ## 5. Add the check-answers row
 
 Add the row to the matching card under the check-answers feature's view model.
-Add its label to both check-answers copy bundles. A value label that the
-feature's own page already shows is read from that feature's label function
-(for example `meansOfTransportLabel` in the transport feature), never copied
-into the check-answers copy. Value labels only the review shows go in the
-check-answers copy bundles.
+Add its label to both check-answers copy bundles. A stored code is shown through
+a copy lookup keyed by the stored value, as the review does with
+`copy.typeLabels[answers.commodityType]` and
+`copy.statusLabels[answers.arrivalStatus]`, never retyped into the row. Value
+labels only the review shows go in the check-answers copy bundles.
 
 Use `row()` for an editable scalar. Pass the obligation name so `changeAction()`
 resolves the owning page through the dispatch index. Use a service label function
@@ -257,7 +261,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares;
+  picker shares, and a picker's call also names the previous run step's slug and
+  the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
@@ -276,11 +281,7 @@ helper is fine.
 
 ## Logging
 
-A branch that changes what the request does — a refusal, a redirect away from
-the normal next page, a retry or a fallback — logs once through
-`request.logger` with `journeyId` and the reason. A validation 400 that
-re-renders the page does not log. See "Logging" in
-[`architecture.md`](../../../docs/architecture.md).
+A user's own field errors shown back on the form are not logged. A refusal that is not the user's input error (a state refusal, a bare 400, another service refusing) logs once through `kit.logRefusal()` with the journey id, and every save fallback logs through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 

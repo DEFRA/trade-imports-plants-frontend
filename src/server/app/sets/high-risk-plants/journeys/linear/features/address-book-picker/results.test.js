@@ -3,6 +3,7 @@ import { JSDOM } from 'jsdom'
 
 import { nunjucksConfig } from '../../../../../../../../config/nunjucks/nunjucks.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
+import { pickerTableRows } from './table-rows.js'
 
 const environment = nunjucksConfig.options.compileOptions.environment
 
@@ -30,6 +31,7 @@ const render = (picker) =>
 
 const rowsWith = (rows, extra = {}) => ({
   rows,
+  tableRows: pickerTableRows(FIELD_NAME, rows, pickerCopy),
   resultsCount: pickerCopy.resultsCount(rows.length, rows.length),
   ...extra
 })

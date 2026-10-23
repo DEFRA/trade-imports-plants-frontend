@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { config } from '../../../../../../../../config/config.js'
-import { journeyRequest } from '../../../../../../engine/test-support.js'
+import {
+  expectOneLogged,
+  expectOneRefusalLogged,
+  journeyRequest
+} from '../../../../../../engine/test-support.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 import {
@@ -13,9 +17,14 @@ import {
 const JOURNEY_ID = 'HRP-0001'
 const FIELD_NAME = 'consignor'
 const TECH_IMPORTS = 'tech-imports-ltd'
+const NOT_IN_BOOK_MESSAGE = 'Select a consignor from the address book'
 
 const save = (request, selectedId) =>
-  resolveSelectionOnSave(request, { fieldName: FIELD_NAME, selectedId })
+  resolveSelectionOnSave(request, {
+    fieldName: FIELD_NAME,
+    selectedId,
+    notInBookMessage: NOT_IN_BOOK_MESSAGE
+  })
 
 describe('#resolveSelectionOnSave', () => {
   let request
@@ -28,32 +37,23 @@ describe('#resolveSelectionOnSave', () => {
     const selection = await save(request, '')
 
     expect(selection).toEqual({ outcome: SELECTION.nothingChosen })
-    expect(request.logger.entries).toEqual([
-      {
-        level: 'info',
-        fields: { journeyId: JOURNEY_ID, fieldName: FIELD_NAME },
-        message:
-          'Address picker saved with no address chosen, nothing committed'
-      }
-    ])
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: { journeyId: JOURNEY_ID, fieldName: FIELD_NAME },
+      message: 'Address picker saved with no address chosen, nothing committed'
+    })
   })
 
   it('Should refuse an id the address book does not hold, logging the refused id', async () => {
     const selection = await save(request, NOT_IN_THE_BOOK)
 
     expect(selection).toEqual({ outcome: SELECTION.notInBook })
-    expect(request.logger.entries).toEqual([
-      {
-        level: 'info',
-        fields: {
-          journeyId: JOURNEY_ID,
-          fieldName: FIELD_NAME,
-          addressId: NOT_IN_THE_BOOK
-        },
-        message:
-          'Address picker refused an address that is not in the address book'
-      }
-    ])
+    expectOneRefusalLogged(request.logger, {
+      journeyId: JOURNEY_ID,
+      errorCodes: [FIELD_NAME],
+      reason: 'not-in-address-book',
+      addressId: NOT_IN_THE_BOOK
+    })
   })
 
   it('Should give the record the posted id names, logging nothing', async () => {

@@ -242,6 +242,22 @@ test.describe('without JavaScript', () => {
   })
 })
 
+test('Back from the restored submitted view opens the notification list', async ({
+  page
+}) => {
+  await page.getByRole('button', { name: cancelCopy.confirmButton }).click()
+  await expect(page).toHaveURL(/\/notification-view\?cancelled=1$/)
+
+  await page
+    .getByRole('link', { name: sharedCopy.layout.back, exact: true })
+    .click()
+
+  await expect(page).toHaveURL(BASE)
+  await expect(
+    page.getByRole('heading', { name: dashboardCopy.notificationsHeading })
+  ).toBeVisible()
+})
+
 test('confirmation restores the submitted snapshot and an accessible success view', async ({
   page
 }) => {

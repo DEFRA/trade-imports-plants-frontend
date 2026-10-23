@@ -12,6 +12,7 @@ journey from commodity selection through declaration and confirmation.
 
 - [Platform documentation](src/server/app/docs/README.md)
 - [High-risk-plants set and journey documentation](src/server/app/sets/high-risk-plants/docs/README.md)
+- [Accessible autocomplete guide](src/server/common/components/accessible-autocomplete/README.md)
 
 Run the set's unit suite from the repo root: `npm run test:high-risk-plants`.
 
