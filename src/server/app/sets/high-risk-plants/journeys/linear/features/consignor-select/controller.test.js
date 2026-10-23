@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import * as commodityTypeController from '../commodity-type/controller.js'
 import {
   driveHandler,
+  expectOneRefusalLogged,
   postHandlerOf
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
@@ -55,7 +56,7 @@ describe('GET consignor-select — the question it asks', () => {
 describeAddressBookPickerController({
   pickerName: CONSIGNOR_SELECT,
   template:
-    'high-risk-plants/journeys/linear/features/consignor-select/template.njk',
+    'high-risk-plants/journeys/linear/features/address-book-picker/template.njk',
   get,
   post,
   seed: plants,
@@ -124,4 +125,23 @@ describe('consignor scope', () => {
     expect(saved.after.consignor).toBeUndefined()
     expect(saved.response.redirect).toBe(hubPath(saved.journeyId))
   })
+
+  it.each([
+    ['GET', get, undefined],
+    ['POST', post, { consignor: TECH_IMPORTS }]
+  ])(
+    'Should log the redirect once with the journey id and reason on a potato notification %s',
+    async (_method, handler, payload) => {
+      const result = await driveHandler(handler, {
+        seed: { commodityType: 'potatoes' },
+        payload
+      })
+
+      expectOneRefusalLogged(result.logger, {
+        journeyId: result.journeyId,
+        errorCodes: [],
+        reason: 'consignor-out-of-scope'
+      })
+    }
+  )
 })

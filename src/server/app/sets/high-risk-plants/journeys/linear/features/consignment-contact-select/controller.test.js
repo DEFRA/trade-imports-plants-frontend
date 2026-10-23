@@ -54,7 +54,7 @@ describe('GET contact — the question it asks', () => {
 describeAddressBookPickerController({
   pickerName: 'contact',
   template:
-    'high-risk-plants/journeys/linear/features/consignment-contact-select/template.njk',
+    'high-risk-plants/journeys/linear/features/address-book-picker/template.njk',
   get,
   post,
   seed: plants,

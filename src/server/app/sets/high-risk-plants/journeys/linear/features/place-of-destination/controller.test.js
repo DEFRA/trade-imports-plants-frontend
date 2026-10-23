@@ -90,7 +90,7 @@ describe('GET place-of-destination — the question it asks', () => {
 describeAddressBookPickerController({
   pickerName: PLACE_OF_DESTINATION_SELECT,
   template:
-    'high-risk-plants/journeys/linear/features/place-of-destination/template.njk',
+    'high-risk-plants/journeys/linear/features/address-book-picker/template.njk',
   get,
   post,
   seed: potatoes,

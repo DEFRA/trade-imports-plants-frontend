@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectOneRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
 import { makeScope } from '../../../../../../../engine/index.js'
 import { pagePath } from '../../../../../../../shared/paths.js'
+import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../../lib/http-status.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
   useStubbedHighRiskPlantsJourney
@@ -218,13 +218,9 @@ describe('POST commodities/details — choosing a category', () => {
       payload: { category: '' }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.category).toBe(SELECT_THE_CATEGORY)
     expect(result.after).toEqual(result.before)
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['category']
-    })
   })
 
   it('Should refuse a category that belongs to another commodity type', async () => {
@@ -233,7 +229,7 @@ describe('POST commodities/details — choosing a category', () => {
       payload: { category: PLANTS }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errorSummary.errorList).toEqual([
       { text: SELECT_THE_CATEGORY, href: '#category' }
     ])
@@ -249,7 +245,7 @@ describe('POST commodities/details — choosing a category', () => {
       payload: { index: '0', category: 'constructor' }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.category).toBe(SELECT_THE_CATEGORY)
   })
 
@@ -322,17 +318,13 @@ describe('POST commodities/details — saving a line', () => {
       }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.quantity).toBe('Enter the quantity')
     expect(result.view.context.errors.potatoIntendedUse).toBe(
       'Enter the intended use'
     )
     expect(result.view.context.values.potatoVariety).toBe(MARIS_PIPER)
     expect(result.after.commodityLines).toEqual([{ category: SEED_POTATOES }])
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['quantity', 'potatoIntendedUse']
-    })
   })
 
   it('Should refuse a quantity that is not a whole number above zero', async () => {
@@ -347,7 +339,7 @@ describe('POST commodities/details — saving a line', () => {
       }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.quantity).toBe(
       'Enter a whole number greater than 0'
     )
@@ -369,7 +361,7 @@ describe('POST commodities/details — saving a line', () => {
       }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.genus).toBe('Select the genus')
   })
 
@@ -427,7 +419,7 @@ describe('POST commodities/details — saving a line', () => {
       payload: { index: '0', category: '', genus: FRAXINUS }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(namesOf(result.view.context)).toEqual([
       'genus',
       'commodityCode',

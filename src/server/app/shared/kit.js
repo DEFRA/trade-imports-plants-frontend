@@ -231,6 +231,7 @@ export const chromeFor = (title, requestPath) => {
  * on a page that ends with `saveActions`, and the view gains `amend`: the two
  * form actions its save buttons carry while the journey is being amended, or
  * null otherwise.
+ * @param {boolean} [options.showJourneyStrip] - false leaves the status strip off the page.
  * @returns {object} the common view model.
  */
 export const base = (
@@ -242,6 +243,7 @@ export const base = (
     page,
     recoverableError = false,
     offerCancelAmend = true,
+    showJourneyStrip = true,
     request
   } = {}
 ) => {
@@ -254,7 +256,9 @@ export const base = (
     backLink,
     homeUrl: dashboardPath(),
     hubHref: hasJourney ? hubPath(journeyId) : undefined,
-    journeyStrip: journeyStrip(journey, { offerCancelAmend }),
+    journeyStrip: showJourneyStrip
+      ? journeyStrip(journey, { offerCancelAmend })
+      : null,
     amending,
     amend:
       amending && request

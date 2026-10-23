@@ -109,8 +109,9 @@ Use `collects: []` only when the page owns no obligation or edits a collection
 whose root another page already owns.
 
 Use one `render()` helper for GET and POST errors. Build the common view with
-`kit.base()`. Pass `journey` so the shared reference strip renders, and `page`
-so the section caption does. The normal back link is `hubPath(journey.journeyId)`.
+`kit.base()`. Pass `journey` so the shared reference strip renders. A page that
+shows no status strip still passes `journey`, with `showJourneyStrip: false`.
+Pass `page` so the section caption renders. The normal back link is `hubPath(journey.journeyId)`.
 A page that is a step of the opening run takes its back link from
 `kit.runBackLink()`, which opens the previous run step while the run is active
 and falls back to the overview.
@@ -126,8 +127,10 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
 failure is logged once by `recoverableSave`; render the same values with
 `recoverableError: true` and status 500. Unexpected errors must throw. When
-validation fails, call `kit.logRefusal(request, { fieldErrors })` before you render the
-page again with status 400.
+validation fails, render the page again with status 400 and log nothing: a user's
+own field errors shown back on the form are not logged. A refusal that is not the
+user's input error (a state refusal, a bare 400, another service refusing) logs
+once through `kit.logRefusal(request, { …details })` with the journey id.
 
 "Save and return to overview" posts `exit=hub`. When the page has a required
 rule, opt in to saving a blank answer on that exit by passing
@@ -390,7 +393,7 @@ helper is fine.
 
 ## Logging
 
-Every refusal that shows the page again logs through `kit.logRefusal()`, and every save fallback through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
+A user's own field errors shown back on the form are not logged. A refusal that is not the user's input error (a state refusal, a bare 400, another service refusing) logs once through `kit.logRefusal()` with the journey id, and every save fallback logs through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 
@@ -412,7 +415,7 @@ Cover:
 - preservation of entered values on error
 - every error-summary link moving focus to its control
 - back, Save and return to overview, Cancel and Change navigation as applicable
-- on every page in a task row's `pages` (`journeys/linear/flow/task-rows.js`) and on every party picker, `amend = amend` on `saveActions`, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. `kit.base()` supplies `amend` when the controller passes it the request (`request`, or `h.request` where the render has only the toolkit). The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending = false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment. A page reached from another page (`showReturnControls = false`, such as the commodities list) also passes `amend`, and shows only Save and return and Save and continue while amending. A collection-entry sub-page (commodities details) keeps its own write actions and passes no `amend`: it saves back to its list, which carries the row's amend ending. `features/amend-endings.test.js` renders every task-row page while amending and fails if one loses the ending.
+- on every page in a task row's `pages` (`journeys/linear/flow/task-rows.js`) and on every party picker, `amend: amend` in the object `saveActions` takes, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. `kit.base()` supplies `amend` when the controller passes it the request (`request`, or `h.request` where the render has only the toolkit). The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending: false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment. A page reached from another page (`showReturnControls: false`, such as the commodities list) also passes `amend`, and shows only Save and return and Save and continue while amending. A collection-entry sub-page (commodities details) keeps its own write actions and passes no `amend`: it saves back to its list, which carries the row's amend ending. `features/amend-endings.test.js` renders every task-row page while amending and fails if one loses the ending.
 - conditional scope, skip and purge behaviour
 - the check-answers rows and Change links
 

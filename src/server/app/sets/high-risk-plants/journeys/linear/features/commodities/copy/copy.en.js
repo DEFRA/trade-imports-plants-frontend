@@ -81,7 +81,7 @@ export const copy = {
       'wood-and-cut-trees':
         'Preservative-treated wood does not need to be notified, unless it is cut coniferous trees more than 3 metres high.'
     },
-    genusPlaceholder: 'Select a genus',
+    genusSelectText: 'Select a genus',
     genusNoResults: 'No genera found',
     fields: {
       genus: {

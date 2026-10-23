@@ -39,11 +39,11 @@
         autocomplete: {
           showAllValues: true,
           noResults: copy.placeOfLanding.noResults,
-          placeholder: copy.placeOfLanding.placeholder
+          placeholder: copy.placeOfLanding.searchPlaceholder
         }
       }) }}
     {% endif %}
 
-    {{ saveActions(hubHref, copy = sharedCopy.saveActions, amend = amend) }}
+    {{ saveActions({ hubHref: hubHref, copy: sharedCopy.saveActions, amend: amend }) }}
   </form>
 {% endblock %}

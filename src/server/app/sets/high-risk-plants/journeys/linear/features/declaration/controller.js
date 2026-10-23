@@ -38,6 +38,7 @@ const render = (
     ...kit.base(copy.title, {
       backLink: pagePath(journey.journeyId, kit.CYA_SLUG),
       journey,
+      showJourneyStrip: false,
       page,
       recoverableError
     }),
@@ -87,7 +88,6 @@ const post = async (request, h) => {
   const values = { declaration: payload.declaration ?? '' }
   const { errors, value } = validate(fields, payload)
   if (errors) {
-    kit.logRefusal(request, { fieldErrors: errors })
     return render(request, h, journey, values, { errors }).code(
       HTTP_STATUS_BAD_REQUEST
     )

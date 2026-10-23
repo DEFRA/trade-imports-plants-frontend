@@ -1,19 +1,11 @@
 import { copyFor } from '../../../../../../../../shared/copy.js'
+import { escapeHtml } from '../../../../../../../../shared/escape-html.js'
 import { copy as en } from '../../copy/copy.en.js'
 import { copy as cy } from '../../copy/copy.cy.js'
 import { readOnlyRow } from './summary-row.js'
 import { valueText } from './value-text.js'
 
 const copy = copyFor({ en, cy })
-
-const escapeHtml = (value) =>
-  value
-    .toString()
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
 
 /** A summary list has no error state of its own, so the message sits in the
  * value cell with the markup govukErrorMessage gives a form field. */

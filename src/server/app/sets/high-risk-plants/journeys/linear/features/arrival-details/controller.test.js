@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
@@ -162,13 +162,13 @@ describe('GET arrival-details — the potato-only fields', () => {
     expect(result.view.context.values).toEqual({ arrivalDate: '' })
   })
 
-  it('Should offer the ports the service holds behind a placeholder', async () => {
+  it('Should offer the ports the service holds behind the select text', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
-    const [placeholder, ...ports] = result.view.context.portItems
-    expect(placeholder).toEqual({
+    const [selectText, ...ports] = result.view.context.portItems
+    expect(selectText).toEqual({
       value: '',
-      text: copy.placeOfLanding.placeholder
+      text: copy.placeOfLanding.selectText
     })
     expect(ports).toContainEqual({
       value: DOVER,
@@ -290,10 +290,7 @@ describe('POST arrival-details — the answers it refuses', () => {
       copy.errors.arrivalDate.required
     )
     expect(result.after.arrivalDate).toBeUndefined()
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['arrivalDate']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse a date that is not a real day', async () => {

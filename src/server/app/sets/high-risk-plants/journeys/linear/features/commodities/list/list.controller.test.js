@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
+  expectNoRefusalLogged,
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   postHandlerOf,
@@ -202,10 +203,7 @@ describe('POST commodities — continuing', () => {
     expect(result.view.context.errorSummary.errorList).toEqual([
       { text: ADD_AT_LEAST_ONE, href: '#commodityLines' }
     ])
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['commodityLines']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should commit nothing of its own', async () => {

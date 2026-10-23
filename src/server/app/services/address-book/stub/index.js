@@ -26,3 +26,5 @@ export const STUB_BOOK = [
   'kilkenny-traders-ltd|Kilkenny Traders Ltd|Castle Road 9|Kilkenny|R95 F2X8|Ireland|IE',
   'iberian-commerce-sa|Iberian Commerce SA|Calle Mayor 44|Huesca|22001|Spain|ES'
 ].map(fromRow)
+
+export const STUB_BOOK_SIZE = STUB_BOOK.length

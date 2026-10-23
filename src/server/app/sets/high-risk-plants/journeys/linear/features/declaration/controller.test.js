@@ -17,7 +17,7 @@ import { records as realRecords } from '../../../../../../services/persistence/r
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   expectOneLogged,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   journeyRequest,
   stubH
 } from '../../../../../../engine/test-support.js'
@@ -80,6 +80,28 @@ describe('declaration', () => {
     expect(h.captured.view.context.caption).toBeUndefined()
   })
 
+  it('Should render no status strip on a draft', async () => {
+    const { request, h } = await setup()
+    await get(request, h)
+    expect(h.captured.view.context.journeyStrip).toBeNull()
+  })
+
+  it('Should carry the journey concurrency token to the form', async () => {
+    const { request, h, id } = await setup()
+    await get(request, h)
+    expect(h.captured.view.context.concurrencyToken).toBe(
+      (await store.get(id)).concurrencyToken
+    )
+  })
+
+  it('Should render no status strip on an amendment', async () => {
+    const { request, h, id } = await setup()
+    await store.submit(id)
+    await recordsStub.amend(id)
+    await get(request, h)
+    expect(h.captured.view.context.journeyStrip).toBeNull()
+  })
+
   it.each(['', 'no', ['confirmed', 'no']])(
     'Should refuse invalid declaration %j without writing and preserve the input',
     async (declaration) => {
@@ -92,10 +114,7 @@ describe('declaration', () => {
         { text: copy.errors.declarationRequired, href: '#declaration' }
       ])
       expect((await store.get(id)).answers).toEqual(COMPLETE_NOTIFICATION)
-      expectOneRefusalLogged(request.logger, {
-        journeyId: id,
-        errorCodes: ['declaration']
-      })
+      expectNoRefusalLogged(request.logger)
     }
   )
 

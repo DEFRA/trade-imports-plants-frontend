@@ -2,7 +2,7 @@ import {
   addCommodityLine,
   chooseCommodityType,
   backLink,
-  openFromOverview,
+  visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -115,7 +115,7 @@ test.describe('arrival-status feature', () => {
   }) => {
     const reference = await startAtArrivalStatus(page)
 
-    await openFromOverview(page, reference, arrivalStatusPathOf(reference))
+    await visitOverviewThenOpen(page, reference, arrivalStatusPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',

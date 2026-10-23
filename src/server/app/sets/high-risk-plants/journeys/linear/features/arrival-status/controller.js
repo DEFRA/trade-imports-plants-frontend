@@ -32,7 +32,7 @@ const fields = () =>
     requiredOneOf(ARRIVAL_STATUS, ARRIVAL_STATUSES, copy.errors.arrivalStatus)
   )
 
-const statusHintWithNotificationWindow = (value) =>
+const statusHintOf = (value) =>
   value === ALREADY_ARRIVED
     ? copy.statusHints[value](PLANTS_WOOD_DAYS_AFTER_ARRIVAL)
     : copy.statusHints[value]
@@ -41,7 +41,7 @@ const statusOptions = (selected) =>
   ARRIVAL_STATUSES.map((value) => ({
     value,
     text: copy.statusLabels[value],
-    hint: { text: statusHintWithNotificationWindow(value) },
+    hint: { text: statusHintOf(value) },
     checked: value === selected
   }))
 
@@ -78,7 +78,6 @@ const post = async (request, h) => {
   })
   const current = await state.get(request, h)
   if (errors) {
-    kit.logRefusal(request, { fieldErrors: errors })
     return (await render(request, h, current, values, { errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )

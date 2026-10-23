@@ -16,15 +16,15 @@ import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants
 import { copy as confirmationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/confirmation/copy/copy.en.js'
 import {
   backLink,
-  chooseAutocompleteOption,
+  chooseCountryOfOrigin,
+  chooseTypeAheadOption,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
   startNotification,
   startPotatoNotification
 } from './high-risk-plants-journey.js'
 
-const chooseOption = (page, name) =>
-  chooseAutocompleteOption(page, page.getByRole('combobox'), name)
+const pathOf = (reference, slug) => `${BASE}/notifications/${reference}/${slug}`
 
 const chooseRadio = (page, name) =>
   page.getByRole('radio', { name, exact: true }).check()
@@ -37,7 +37,10 @@ const fillCommodity = async (page, fields) => {
   for (const [field, value] of Object.entries(fields)) {
     if (field === 'index' || field === 'category') continue
     if (field === 'genus') {
-      await chooseOption(page, commodityCopy.genusLabels[value])
+      await chooseTypeAheadOption(page, {
+        label: commodityCopy.details.fields.genus.label,
+        optionName: commodityCopy.genusLabels[value]
+      })
     } else {
       await page
         .getByLabel(commodityCopy.details.fields[field].label, { exact: true })
@@ -55,7 +58,10 @@ const fillArrival = async (page, fields) => {
     await page
       .getByLabel(arrivalCopy.time.label, { exact: true })
       .fill(fields.arrivalTime)
-    await chooseOption(page, 'Port of Dover - GB DVR')
+    await chooseTypeAheadOption(page, {
+      label: arrivalCopy.placeOfLanding.label,
+      optionName: 'Port of Dover - GB DVR'
+    })
   }
 }
 
@@ -64,7 +70,8 @@ const fillSteps = {
     chooseRadio(page, commodityCopy.typeLabels[fields.commodityType]),
   'commodities/details': fillCommodity,
   commodities: async () => {},
-  origin: (page, fields, shape) => chooseOption(page, shape.countryName),
+  origin: (page, fields, shape) =>
+    chooseCountryOfOrigin(page, shape.countryName),
   'arrival-status': (page, fields) =>
     chooseRadio(page, statusCopy.statusLabels[fields.arrivalStatus]),
   'arrival-details': fillArrival,
@@ -160,50 +167,45 @@ for (const [name, backTargets] of Object.entries(OPENING_RUN_BACK_TARGETS)) {
     const shape = happyPaths[name]
     await signIn(page)
     const reference = await startNotification(page)
-    const pathOf = (slug) => `${BASE}/notifications/${reference}/${slug}`
 
     for (const step of shape.steps) {
       const backTarget = backTargets[step.slug]
       if (backTarget) {
         await test.step(`Back from ${step.slug}`, async () => {
           await backLink(page).click()
-          await expect(page).toHaveURL(pathOf(backTarget))
+          await expect(page).toHaveURL(pathOf(reference, backTarget))
           await page.goBack()
-          await expect(page).toHaveURL(pathOf(step.slug))
+          await expect(page).toHaveURL(pathOf(reference, step.slug))
         })
       }
       await answerStepAndContinue(page, step, shape)
     }
 
-    await expect(page).toHaveURL(pathOf('notification-view'))
+    await expect(page).toHaveURL(pathOf(reference, 'notification-view'))
   })
-}
-
-const startPotatoNotificationAtArrivalDetails = async (page) => {
-  await signIn(page)
-  const reference = await startPotatoNotification(page)
-  return (slug) => `${BASE}/notifications/${reference}/${slug}`
 }
 
 test('following Back through the opening run and choosing Save and continue carries on to the next step, not the overview', async ({
   page
 }) => {
-  const pathOf = await startPotatoNotificationAtArrivalDetails(page)
+  await signIn(page)
+  const reference = await startPotatoNotification(page)
 
   await backLink(page).click()
-  await expect(page).toHaveURL(pathOf('origin'))
+  await expect(page).toHaveURL(pathOf(reference, 'origin'))
 
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(pathOf('arrival-details'))
+  await expect(page).toHaveURL(pathOf(reference, 'arrival-details'))
 })
 
 test('following Back from the arrival details reaches origin and then the commodities list', async ({
   page
 }) => {
-  const pathOf = await startPotatoNotificationAtArrivalDetails(page)
+  await signIn(page)
+  const reference = await startPotatoNotification(page)
 
   for (const slug of ['origin', 'commodities']) {
     await backLink(page).click()
-    await expect(page).toHaveURL(pathOf(slug))
+    await expect(page).toHaveURL(pathOf(reference, slug))
   }
 })

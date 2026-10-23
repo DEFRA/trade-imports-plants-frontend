@@ -11,6 +11,7 @@ import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
 import { entryIndexOf } from '../entry-index.js'
 import { detailsHref, listHref } from '../links.js'
+import { commodityTableRows } from './table-rows.js'
 import { CATEGORY, GENUS, LINES, POTATO_VARIETY, QUANTITY } from '../fields.js'
 
 export const meta = { ...page, collects: [LINES] }
@@ -44,6 +45,7 @@ const rowsOf = (lines, request) =>
   }))
 
 const buildView = (request, h, model) => {
+  const rows = rowsOf(model.lines, request)
   const errors = model.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -57,7 +59,8 @@ const buildView = (request, h, model) => {
     copy,
     errors,
     errorSummary: kit.errorSummary(errors),
-    rows: rowsOf(model.lines, request),
+    rows,
+    tableRows: commodityTableRows(rows, copy),
     addAnotherHref: detailsHref(request),
     removedCount: model.removedCount,
     removedMessage:
@@ -123,7 +126,6 @@ const post = async (request, h) => {
   }
   if (current.lines.length === 0) {
     const errors = { [LINES]: copy.errors.commodityLines }
-    kit.logRefusal(request, { fieldErrors: errors })
     return buildView(request, h, { ...current, errors }).code(
       HTTP_STATUS_BAD_REQUEST
     )

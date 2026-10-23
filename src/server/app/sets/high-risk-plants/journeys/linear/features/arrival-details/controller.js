@@ -53,7 +53,7 @@ const dateStateOf = (answers, scope) => {
 }
 
 const portItems = async () => [
-  { value: '', text: copy.placeOfLanding.placeholder },
+  { value: '', text: copy.placeOfLanding.selectText },
   ...(await ports.portOptions())
 ]
 
@@ -169,22 +169,14 @@ const post = async (request, h) => {
     { allowMissing: kit.isHubExit(request) }
   )
   if (errors) {
-    kit.logRefusal(request, { fieldErrors: errors })
     return (await render(request, h, current, values, { bounds, errors })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }
 
-  let committed
-  const { failure } = await kit.recoverableSave(
+  const { value: committed, failure } = await kit.recoverableSave(
     request,
-    async () => {
-      committed = await state.commit(
-        request,
-        h,
-        committedValues(value, current.scope)
-      )
-    },
+    () => state.commit(request, h, committedValues(value, current.scope)),
     async () =>
       (
         await render(request, h, current, values, {

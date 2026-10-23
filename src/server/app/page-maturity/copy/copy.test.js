@@ -2,19 +2,13 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
+import { leaves } from '../../shared/copy-leaves.js'
 import { LEVELS } from '../levels.js'
 import { copy as cy } from './copy.cy.js'
 import { copy as en } from './copy.en.js'
 
 const MACHINE_DRAFT_MARKER =
   '// MACHINE-DRAFT Welsh — not reviewed by a translator. Do not ship user-facing without Welsh Language Standards sign-off.'
-
-const leaves = (node, path = []) =>
-  typeof node === 'object' && node !== null
-    ? Object.entries(node).flatMap(([key, value]) =>
-        leaves(value, [...path, key])
-      )
-    : [{ path: path.join('.'), value: node }]
 
 describe('page maturity copy', () => {
   it('Should have the same leaf paths in Welsh as in English', () => {

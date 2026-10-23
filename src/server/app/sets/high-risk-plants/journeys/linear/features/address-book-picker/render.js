@@ -8,17 +8,12 @@ import { partyEditHref } from '../party-edit/edit-href.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { addressText } from './address-lines.js'
+import { chosenFor } from './save-selection.js'
+import { TEMPLATES } from '../../config.js'
 
 const pickerCopy = copyFor({ en, cy })
 
-/** Resolves an address-book id to its record, or to undefined when the id is empty, missing or soft-deleted. */
-export const chosenFor = async (orgId, selectedId) => {
-  if (!selectedId) {
-    return undefined
-  }
-  const record = await addressBook.party(orgId, selectedId)
-  return record && !record.deleted ? record : undefined
-}
+const view = `${TEMPLATES}/features/address-book-picker/template`
 
 const heldCopyOf = async (request, current, fieldName) => {
   const partyDisplayValues = await toDisplayParty(current.answers[fieldName])
@@ -58,7 +53,6 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {string} [state.error] - the refusal to render with the results.
  * @param {boolean} [state.recoverableError] - whether a save has just failed.
  * @param {object} binding - what makes this picker its own page.
- * @param {string} binding.view - the template path.
  * @param {object} binding.page - the page's id and slug.
  * @param {object} binding.copy - the page's resolved copy bundle.
  * @param {string} binding.fieldName - the answer name the page collects.
@@ -72,7 +66,7 @@ export const renderPicker = async (
   h,
   current,
   { query, page: pageNumber, selectedId, error, recoverableError = false },
-  { view, page, copy, fieldName, pickerViewModel, heading, description }
+  { page, copy, fieldName, pickerViewModel, heading, description }
 ) => {
   const orgId = organisationIdOf(request)
   const found = await addressBook.search(orgId, { query, page: pageNumber })
@@ -89,6 +83,7 @@ export const renderPicker = async (
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
+    fieldName,
     pickerCopy,
     heading,
     description,

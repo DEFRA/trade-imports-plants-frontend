@@ -27,7 +27,6 @@ import {
   widgetOf
 } from '../line-form.js'
 
-/** One commodity line, added or edited. */
 export const meta = { ...page, collects: [] }
 
 const view = `${TEMPLATES}/features/commodities/details/details`
@@ -55,7 +54,7 @@ const categoryItems = (commodityType, selected) =>
   }))
 
 const genusItems = (category, selected) => [
-  { value: '', text: copy.genusPlaceholder },
+  { value: '', text: copy.genusSelectText },
   ...commodities.generaFor(category).map((value) => ({
     value,
     text: bundle.genusLabels[value],
@@ -144,12 +143,8 @@ const get = async (request, h) => {
   return buildView(request, h, modelFor(current, index, entry))
 }
 
-const logRefusalAndRender = (request, h, model, errors) => {
-  kit.logRefusal(request, { fieldErrors: errors })
-  return buildView(request, h, { ...model, errors }).code(
-    HTTP_STATUS_BAD_REQUEST
-  )
-}
+const renderRejected = (request, h, model, errors) =>
+  buildView(request, h, { ...model, errors }).code(HTTP_STATUS_BAD_REQUEST)
 
 const commitAndRedirect = async (request, h, model, write) => {
   const { failure, value } = await kit.recoverableSave(
@@ -187,7 +182,7 @@ const saveLine = async (request, h, current, index, category, payload) => {
     payload
   )
   if (errors) {
-    return logRefusalAndRender(request, h, model, errors)
+    return renderRejected(request, h, model, errors)
   }
   return commitAndRedirect(request, h, model, async () => {
     await state.updateEntryAt(
@@ -217,7 +212,7 @@ const post = async (request, h) => {
   )
   if (errors) {
     const model = modelFor(current, index, payload, stored[CATEGORY])
-    return logRefusalAndRender(request, h, model, errors)
+    return renderRejected(request, h, model, errors)
   }
   if (index === null) {
     return addLine(

@@ -5,6 +5,7 @@ import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
 import { signIn } from './sign-in.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
 import { PAGE_SIZE } from '../src/server/app/services/address-book/index.js'
+import { STUB_BOOK_SIZE } from '../src/server/app/services/address-book/stub/index.js'
 import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/copy/copy.en.js'
 import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/copy/copy.en.js'
@@ -13,6 +14,7 @@ import { copy as idsCopy } from '../src/server/app/sets/high-risk-plants/journey
 import { copy as checkAnswersCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/check-answers/copy/copy.en.js'
 import { copy as pickerCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/hub/copy/copy.en.js'
+import { copy as originCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/copy/copy.en.js'
 
 export const POTATO_VARIETY = 'Maris Piper'
 export const ADDRESS_BOOK_PARTY = 'Tech Imports Ltd'
@@ -24,7 +26,9 @@ const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
 const COMMODITY_DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details')
 const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
-const COUNTRY_OF_ORIGIN_INPUT = 'input#countryOfOrigin'
+
+export const FORM_GROUP_ANCESTOR_XPATH =
+  'xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 const BLOCKING_IMPACTS = ['serious', 'critical']
@@ -50,7 +54,14 @@ const computedStyle = (locator, property) =>
     property
   )
 
-const govukColourOf = (page, token) =>
+/**
+ * The computed value of one GOV.UK colour token on the page.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} token - the token's name, such as `focus` for `--govuk-focus-colour`
+ * @returns {Promise<string>} the colour as `rgb(…)`
+ */
+export const govukColourOf = (page, token) =>
   page.evaluate((name) => {
     const reference = document.createElement('span')
     reference.style.color = `var(--govuk-${name}-colour)`
@@ -155,13 +166,6 @@ const expectSubmittedSearchLayout = async (page, { search, expectedWidth }) => {
   )
 }
 
-/**
- * Presses Enter in the box with JavaScript off and fails unless the server
- * keeps the term and refuses nothing.
- *
- * @param {import('@playwright/test').Page} page
- * @param {{ search: { label: string }, term: string }} options
- */
 const searchByPressingEnter = async (page, { search, term }) => {
   const box = page.getByLabel(search.label, { exact: true })
   await box.fill(term)
@@ -175,8 +179,9 @@ export const COPENHAGEN = 'Copenhagen Exports ApS'
 export const MATCHES_NOTHING = 'nothing matches this'
 export const IMPORT_CO = 'Import Co UK'
 export const ALPINE = 'Alpine Supplies GmbH'
-export const STUB_BOOK_SIZE = 13
+export { STUB_BOOK_SIZE }
 export const SECOND_PAGE_LINK = 'Page 2'
+export const THIRD_PAGE_LINK = 'Page 3'
 
 /**
  * The back link of a journey page.
@@ -186,7 +191,7 @@ export const SECOND_PAGE_LINK = 'Page 2'
 export const backLink = (page) =>
   page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
 
-export const openFromOverview = async (page, reference, path) => {
+export const visitOverviewThenOpen = async (page, reference, path) => {
   await page.goto(`${BASE}/notifications/${reference}`)
   await page.goto(path)
 }
@@ -381,40 +386,61 @@ export const describeDatePickerLook = ({
 }
 
 /**
- * Fails unless the page offers Save and continue, Save and return to overview
- * and Cancel and return to overview.
+ * Fails unless the page offers Save and continue and Save and return to
+ * overview in its button group and Cancel and return to overview in the
+ * paragraph after the group.
  *
  * @param {import('@playwright/test').Page} page
  */
 export const expectThreeSaveControls = async (page) => {
-  await expect(saveAndContinue(page)).toBeVisible()
+  const buttonGroup = page.locator('.govuk-button-group', {
+    has: saveAndContinue(page)
+  })
+
+  await expect(buttonGroup.getByRole('button')).toHaveText([
+    sharedCopy.saveActions.saveAndContinue,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
   await expect(
-    page.getByRole('button', {
-      name: sharedCopy.saveActions.saveAndReturnToHub
-    })
-  ).toBeVisible()
-  await expect(
-    page.getByRole('link', {
-      name: sharedCopy.saveActions.cancelAndReturnToHub
-    })
+    buttonGroup
+      .locator('xpath=following-sibling::p[1]')
+      .getByRole('link', { name: sharedCopy.saveActions.cancelAndReturnToHub })
   ).toBeVisible()
 }
 
 /**
- * Types into an accessible-autocomplete input and picks the option named.
+ * Chooses a type-ahead option by its field's visible label: the enhanced
+ * search box with JavaScript, the native select without it.
  *
  * @param {import('@playwright/test').Page} page
- * @param {import('@playwright/test').Locator} input - the autocomplete's combobox
- * @param {string} optionName - the option's full accessible name
+ * @param {{ label: string, optionName: string, query?: string, inputId?: string }} field
+ *   - `query` is the text typed into the search box, defaulting to the option's name.
+ *   - `inputId` scopes the label lookup to one form group when the page shows
+ *   the same label more than once.
  */
-export const chooseAutocompleteOption = async (page, input, optionName) => {
-  await input.click()
-  await input.fill(optionName)
+export const chooseTypeAheadOption = async (
+  page,
+  { label, optionName, query = optionName, inputId }
+) => {
+  await page.waitForLoadState('domcontentloaded')
+  const scope = inputId
+    ? page.locator(`#${inputId}`).locator(FORM_GROUP_ANCESTOR_XPATH)
+    : page
+  const field = scope.getByLabel(label, { exact: true })
+  if ((await field.evaluate((el) => el.tagName)) === 'SELECT') {
+    await field.selectOption({ label: optionName })
+    return
+  }
+  await field.click()
+  await field.fill(query)
   await page.getByRole('option', { name: optionName, exact: true }).click()
 }
 
 export const chooseCountryOfOrigin = (page, country) =>
-  chooseAutocompleteOption(page, page.locator(COUNTRY_OF_ORIGIN_INPUT), country)
+  chooseTypeAheadOption(page, {
+    label: originCopy.country.label,
+    optionName: country
+  })
 
 /**
  * Fails the test on any serious or critical WCAG 2.0, 2.1 or 2.2 violation.
@@ -462,6 +488,24 @@ export const chooseCommodityType = async (page, commodityType) => {
     .check()
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+}
+
+/**
+ * Changes the commodity type of an existing notification and saves.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} reference - the notification's reference
+ * @param {string} commodityType - a commodity-type value, such as `potatoes`
+ */
+export const changeCommodityType = async (page, reference, commodityType) => {
+  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
+  await page
+    .getByRole('radio', {
+      name: commodityTypeCopy.typeLabels[commodityType],
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
 }
 
 /**
@@ -578,7 +622,7 @@ export const startPotatoNotification = async (page) => {
   })
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(ORIGIN_URL)
-  await chooseAutocompleteOption(page, page.getByRole('combobox'), 'France')
+  await chooseCountryOfOrigin(page, 'France')
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(/\/arrival-details$/)
   return reference
@@ -606,11 +650,10 @@ export const startPotatoNotificationAtContact = async (
       `${arrival.getDate()}/${arrival.getMonth() + 1}/${arrival.getFullYear()}`
     )
   await page.getByLabel(arrivalCopy.time.label, { exact: true }).fill('14:30')
-  await chooseAutocompleteOption(
-    page,
-    page.getByRole('combobox'),
-    'Port of Dover - GB DVR'
-  )
+  await chooseTypeAheadOption(page, {
+    label: arrivalCopy.placeOfLanding.label,
+    optionName: 'Port of Dover - GB DVR'
+  })
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(/\/destinations\/select$/)
   await pickAddressBookParty(page)
@@ -741,21 +784,29 @@ export const expectPickerResultsLayout = async (page, count) => {
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
 
+const postUnknownAddressId = async (page, fieldName) => {
+  await journeyFormOf(page).evaluate(
+    (form, { name, id }) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = name
+      input.value = id
+      form.append(input)
+    },
+    { name: fieldName, id: NOT_IN_THE_BOOK }
+  )
+  await saveAndContinue(page).click()
+}
+
 /**
- * Posts the picker with its first address replaced by an id the address book
- * does not hold.
+ * Posts the picker with an id the address book does not hold, under the name
+ * of the first listed address's radio.
  *
  * @param {import('@playwright/test').Page} page
  */
 export const postAnIdNotInTheBook = async (page) => {
-  await page
-    .getByRole('radio')
-    .first()
-    .evaluate((input, id) => {
-      input.value = id
-      input.checked = true
-    }, NOT_IN_THE_BOOK)
-  await saveAndContinue(page).click()
+  const fieldName = await page.getByRole('radio').first().getAttribute('name')
+  await postUnknownAddressId(page, fieldName)
 }
 
 /**
@@ -773,17 +824,7 @@ export const postAnIdNotInTheBookAfterAnEmptySearch = async (
   const fieldName = await page.locator(firstRowRadio).getAttribute('name')
   await searchAddressBook(page, MATCHES_NOTHING)
   await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
-  await journeyFormOf(page).evaluate(
-    (form, { name, id }) => {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = name
-      input.value = id
-      form.append(input)
-    },
-    { name: fieldName, id: NOT_IN_THE_BOOK }
-  )
-  await saveAndContinue(page).click()
+  await postUnknownAddressId(page, fieldName)
 }
 
 /**
@@ -872,7 +913,7 @@ export const describeAddressPicker = ({
       await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
     })
 
-    test('clearing the search and searching with nothing entered lists the whole book again, paged as before', async ({
+    test('clearing the search and searching with nothing entered lists the whole book, showing the first page and a link to the second', async ({
       page
     }) => {
       await openPicker(page)
@@ -920,7 +961,9 @@ export const describeAddressPicker = ({
       await page
         .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
         .click()
-      await page.getByRole('link', { name: 'Page 3', exact: true }).click()
+      await page
+        .getByRole('link', { name: THIRD_PAGE_LINK, exact: true })
+        .click()
       await addressRowRadio(page, ALPINE).check()
 
       await saveAndContinue(page).click()

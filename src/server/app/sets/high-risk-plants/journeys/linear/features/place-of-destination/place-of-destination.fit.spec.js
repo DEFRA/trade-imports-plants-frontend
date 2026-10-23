@@ -2,7 +2,7 @@ import {
   WOOD_LINE_FIELDS,
   addCommodityLine,
   backLink,
-  openFromOverview,
+  visitOverviewThenOpen,
   chooseCommodityType,
   describeAddressPicker,
   describeSubmittedSearchPicker,
@@ -151,7 +151,7 @@ test.describe('place-of-destination feature', () => {
   }) => {
     const reference = await startAtDestination(page)
 
-    await openFromOverview(page, reference, destinationPathOf(reference))
+    await visitOverviewThenOpen(page, reference, destinationPathOf(reference))
 
     await expect(backLink(page)).toHaveAttribute(
       'href',

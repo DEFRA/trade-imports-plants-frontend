@@ -112,7 +112,6 @@ const post = async (request, h) => {
   })
   const current = await state.get(request, h)
   if (errors) {
-    kit.logRefusal(request, { fieldErrors: errors })
     return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)
   }
 

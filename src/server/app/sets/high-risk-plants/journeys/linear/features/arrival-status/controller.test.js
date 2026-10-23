@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
@@ -154,10 +154,7 @@ describe('POST arrival-status — the answers it refuses', () => {
     )
     expect(result.view.context.values).toEqual({ arrivalStatus: '' })
     expect(result.after.arrivalStatus).toBeUndefined()
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['arrivalStatus']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse a status the page does not offer', async () => {

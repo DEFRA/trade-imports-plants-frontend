@@ -1,10 +1,11 @@
 import {
   addCommodityLine,
-  chooseAutocompleteOption,
+  chooseTypeAheadOption,
   chooseCommodityType,
   describeDatePickerLook,
   backLink,
-  openFromOverview,
+  changeCommodityType,
+  visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
@@ -23,7 +24,6 @@ import {
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
@@ -49,6 +49,10 @@ const A_DATE = '27/3/2026'
 const A_PAST_DATE = '1/1/2020'
 const A_TIME = '14:30'
 const DOVER = 'Port of Dover - GB DVR'
+const DOVER_PLACE_OF_LANDING = {
+  label: copy.placeOfLanding.label,
+  optionName: DOVER
+}
 
 const WARE_POTATO_LINE_FIELDS = {
   potatoVariety: 'Maris Piper',
@@ -56,11 +60,15 @@ const WARE_POTATO_LINE_FIELDS = {
   potatoIntendedUse: 'Eating'
 }
 
+const answerArrivalAndSave = async (page) => {
+  await page.locator(DATE_INPUT).fill(A_DATE)
+  await page.locator(TIME_INPUT).fill(A_TIME)
+  await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
+  await saveAndContinue(page).click()
+}
+
 const arrivalDetailsPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-details`
-
-const chooseFromAutocomplete = (page, selector, name) =>
-  chooseAutocompleteOption(page, page.locator(selector), name)
 
 const selectPortMissingFromTheList = (page, code) =>
   page.locator(PORT_SELECT).evaluate((select, portCode) => {
@@ -96,17 +104,6 @@ const startAtWoodDetails = async (page, status) => {
   return reference
 }
 
-const changeCommodityType = async (page, reference, commodityType) => {
-  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
-}
-
 test.describe('arrival-details — a potato notification', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
@@ -140,7 +137,11 @@ test.describe('arrival-details — a potato notification', () => {
   }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await openFromOverview(page, reference, arrivalDetailsPathOf(reference))
+    await visitOverviewThenOpen(
+      page,
+      reference,
+      arrivalDetailsPathOf(reference)
+    )
 
     await expect(backLink(page)).toHaveAttribute(
       'href',
@@ -189,7 +190,7 @@ test.describe('arrival-details — a potato notification', () => {
   }) => {
     await startAtPotatoDetails(page)
 
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
+    await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
 
     await expect(page.locator(PORT_INPUT)).toHaveValue(DOVER)
   })
@@ -199,10 +200,7 @@ test.describe('arrival-details — a potato notification', () => {
   }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
 
     await expect(page).toHaveURL(DESTINATION_URL)
 
@@ -215,10 +213,7 @@ test.describe('arrival-details — a potato notification', () => {
   test('completes the arrival row on the overview', async ({ page }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
     await page.goto(`${BASE}/notifications/${reference}`)
 
     const taskList = page.locator('.govuk-task-list')
@@ -382,7 +377,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await page.locator(DATE_INPUT).fill('31/2/2026')
     await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
+    await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
     await saveAndContinue(page).click()
 
     await expect(
@@ -415,7 +410,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await page.locator(DATE_INPUT).fill(A_DATE)
     await page.locator(TIME_INPUT).fill('2.30pm')
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
+    await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
     await saveAndContinue(page).click()
 
     const summaryLink = page
@@ -449,10 +444,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await saveAndContinue(page).click()
     await expect(page.getByRole('alert')).toBeVisible()
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
 
     await expect(page).toHaveURL(DESTINATION_URL)
   })
@@ -529,10 +521,7 @@ test.describe('arrival-details — answers that leave scope when the commodity t
   }) => {
     const reference = await startAtPotatoDetails(page)
 
-    await page.locator(DATE_INPUT).fill(A_DATE)
-    await page.locator(TIME_INPUT).fill(A_TIME)
-    await chooseFromAutocomplete(page, PORT_INPUT, DOVER)
-    await saveAndContinue(page).click()
+    await answerArrivalAndSave(page)
     await expect(page).toHaveURL(DESTINATION_URL)
 
     await changeCommodityType(page, reference, WOOD_AND_CUT_TREES)

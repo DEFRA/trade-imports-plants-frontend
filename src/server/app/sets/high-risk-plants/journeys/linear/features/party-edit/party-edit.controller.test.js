@@ -16,13 +16,15 @@ import { records as recordsStub } from '../../../../../../services/persistence/r
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
-  expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 import * as countries from '../../../../../../services/countries/index.js'
-import { HTTP_STATUS_INTERNAL_SERVER_ERROR } from '../../../../../../lib/http-status.js'
+import {
+  HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR
+} from '../../../../../../lib/http-status.js'
 import { pagePath } from '../../../../../../shared/paths.js'
 import { installHighRiskPlantsJourney } from '../../test-support.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
@@ -177,7 +179,7 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
       payload: { ...FORM, postcode: '', email: 'not-an-email' }
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors).toEqual({
       postcode: 'Enter a postcode',
       email: 'Enter an email address in the correct format'
@@ -191,10 +193,6 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
     ])
     expect(result.view.context.values.postcode).toBe('')
     expect(result.after[party.id]).toEqual(STORED)
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['postcode', 'email']
-    })
   })
 
   it('Should leave the copy unchanged on Cancel and return to the picker', async () => {

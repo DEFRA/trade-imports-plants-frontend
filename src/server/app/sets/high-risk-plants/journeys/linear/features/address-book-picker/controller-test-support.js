@@ -18,10 +18,14 @@ import {
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
 import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
-import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
+import {
+  STUB_BOOK,
+  STUB_BOOK_SIZE
+} from '../../../../../../services/address-book/stub/index.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
+import { pickerTableRows } from './table-rows.js'
 import {
   bookHoldingADeletedRecord,
   DELETED_ID,
@@ -31,7 +35,6 @@ import {
   TECH_IMPORTS_NAME
 } from './test-support.js'
 
-const STUB_BOOK_SIZE = 13
 const LAST_PAGE = 3
 const DENMARK = 'Denmark'
 const DENMARK_ROWS = ['copenhagen-exports-aps', 'aarhus-trading-aps']
@@ -176,11 +179,13 @@ const describeSelectionShown = ({
       const result = await driveHandler(get, { seed: seed() })
       const { picker } = result.view.context
 
+      const rows = [{ ...picker.rows[0], name: MARKUP_IN_A_NAME }]
       const html = renderPage({
         ...result.view.context,
         picker: {
           ...picker,
-          rows: [{ ...picker.rows[0], name: MARKUP_IN_A_NAME }]
+          rows,
+          tableRows: pickerTableRows(fieldName, rows, pickerCopy)
         }
       })
 

@@ -150,10 +150,11 @@ Follow [add-a-page.md](add-a-page.md) for each page. Each controller exports:
 - GET and POST handlers
 - `routes`, normally from `kit.pageRoutes(page, { get, post })`
 
-GET reads once through `state.get()`. POST validates raw input, calls
-`kit.logRefusal(request, { fieldErrors })` and returns 400 with raw values on error
-(`fieldErrors` is the map of field key to the message the page shows),
-commits cleaned values on success and redirects through `kit.nextTarget()`.
+GET reads once through `state.get()`. POST validates raw input and, on error,
+returns 400 with the raw values and logs nothing for a user's own field errors
+(a refusal that is not the user's input error logs once through `kit.logRefusal`
+with the journey id); on success it commits cleaned values and redirects through
+`kit.nextTarget()`.
 Wrap every persistence write in `kit.recoverableSave(request, …)`, which logs a
 marked failure once, and return the same form with status 500 for it.
 
@@ -390,7 +391,7 @@ helper is fine.
 
 ## Logging
 
-Every refusal that shows the page again logs through `kit.logRefusal()`, and every save fallback through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
+A user's own field errors shown back on the form are not logged. A refusal that is not the user's input error (a state refusal, a bare 400, another service refusing) logs once through `kit.logRefusal()` with the journey id, and every save fallback logs through `kit.recoverableSave()`; see "Logging" in [`architecture.md`](../../../docs/architecture.md).
 
 ## Playwright feature test
 

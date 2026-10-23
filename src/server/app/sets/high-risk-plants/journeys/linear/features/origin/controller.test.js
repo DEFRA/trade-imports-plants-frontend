@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
@@ -73,7 +73,7 @@ describe('GET origin', () => {
     expect(result.view.context.caption).toBe('About the consignment')
   })
 
-  it('Should offer a placeholder ahead of every country and territory the service primes', async () => {
+  it('Should offer the select text ahead of every country and territory the service primes', async () => {
     const result = await driveHandler(get)
 
     expect(result.view.context.countryItems[0]).toEqual({
@@ -208,10 +208,7 @@ describe('POST origin — a rejected answer', () => {
       copy.errors.countryRequired
     )
     expect(result.after).toEqual(result.before)
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['countryOfOrigin']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should answer 400 for a country the origin block does not offer', async () => {
@@ -262,10 +259,7 @@ describe('POST origin — the per-category narrowing', () => {
       copy.errors.narrowing[EU_MEMBER_STATES]
     )
     expect(result.after).toEqual(result.before)
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['countryOfOrigin']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse an EU country outside the four ware-potato countries', async () => {
