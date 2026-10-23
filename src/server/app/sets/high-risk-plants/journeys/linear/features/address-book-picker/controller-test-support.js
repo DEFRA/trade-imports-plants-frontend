@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { load } from 'cheerio'
+import { JSDOM } from 'jsdom'
 
 import { config } from '../../../../../../../../config/config.js'
 import { nunjucksConfig } from '../../../../../../../../config/nunjucks/nunjucks.js'
@@ -288,10 +288,14 @@ const describeAddressNotInTheBook = (pickerConfig) => {
       expect(result.view.context.errorSummary.errorList).toEqual([
         { text: errorText, href: `#${fieldName}` }
       ])
-      const $ = load(renderPage(result.view.context))
-      expect($(`#${fieldName}-error`)).toHaveLength(1)
+      const document = new JSDOM(renderPage(result.view.context)).window
+        .document
+      expect(document.querySelectorAll(`#${fieldName}-error`)).toHaveLength(1)
       expect(
-        $(`#${fieldName}`).closest('fieldset').attr('aria-describedby')
+        document
+          .querySelector(`#${fieldName}`)
+          .closest('fieldset')
+          .getAttribute('aria-describedby')
       ).toBe(`${fieldName}-error`)
       expect(result.after[fieldName]).toBeUndefined()
       expectOneRefusalLogged(result.logger, {

@@ -1,4 +1,4 @@
-import { load } from 'cheerio'
+import { JSDOM } from 'jsdom'
 
 const FORM_ENCODED = 'application/x-www-form-urlencoded'
 
@@ -28,13 +28,16 @@ export const createJourneyClient = (baseUrl, cookies = []) => {
 
   const document = async (path) => {
     const response = await request(path)
-    const body = response.ok ? load(await response.text()) : load('')
+    const dom = new JSDOM(response.ok ? await response.text() : '').window
+      .document
     return {
       status: response.status,
       location: response.headers.get('location'),
-      $: body,
-      crumb: body('meta[name="csrf-token"]').attr('content') ?? '',
-      heading: body('h1').first().text().trim()
+      dom,
+      crumb:
+        dom.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ??
+        '',
+      heading: dom.querySelector('h1')?.textContent.trim() ?? ''
     }
   }
 

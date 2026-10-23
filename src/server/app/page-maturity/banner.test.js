@@ -1,4 +1,4 @@
-import { load } from 'cheerio'
+import { JSDOM } from 'jsdom'
 import {
   afterAll,
   afterEach,
@@ -52,35 +52,44 @@ const renderLayout = (context = {}) =>
 
 const normalised = (text) => text.replace(/\s+/g, ' ').trim()
 
+const parse = (html) => new JSDOM(html).window.document
+
+const textOf = (elements) =>
+  [...elements].map((element) => element.textContent).join('')
+
 describe('page maturity banner in the layout', () => {
   describe('when the page has no level', () => {
     it('Should show one Alpha phase banner exactly as before', () => {
-      const $ = load(renderLayout())
-      const banner = $(PHASE_BANNER)
+      const banners = parse(renderLayout()).querySelectorAll(PHASE_BANNER)
 
-      expect(banner).toHaveLength(1)
-      expect(banner.find(TAG)).toHaveLength(1)
-      expect(normalised(banner.text())).toBe(`Alpha ${SERVICE_SENTENCE}`)
+      expect(banners).toHaveLength(1)
+      expect(banners[0].querySelectorAll(TAG)).toHaveLength(1)
+      expect(normalised(banners[0].textContent)).toBe(
+        `Alpha ${SERVICE_SENTENCE}`
+      )
       expect(environment.render('page-maturity/banner.njk', {})).toBe('')
     })
   })
 
   describe('when the page has a level', () => {
-    const levelBannerOf = () =>
-      load(renderLayout({ pageMaturity: exploring }))(PHASE_BANNER)
+    const levelBannersOf = () =>
+      parse(renderLayout({ pageMaturity: exploring })).querySelectorAll(
+        PHASE_BANNER
+      )
 
     it('Should add a second phase banner for the level, after the Alpha one', () => {
-      const banners = levelBannerOf()
-      const alpha = banners.eq(0)
-      const level = banners.eq(1)
-      const levelTag = level.find(TAG)
+      const banners = levelBannersOf()
+      const [alpha, level] = banners
+      const levelTags = level.querySelectorAll(TAG)
 
       expect(banners).toHaveLength(2)
-      expect(normalised(alpha.text())).toBe(`Alpha ${SERVICE_SENTENCE}`)
-      expect(levelTag).toHaveLength(1)
-      expect(levelTag.hasClass(TAG_CLASSES.exploring)).toBe(true)
-      expect(levelTag.hasClass('govuk-phase-banner__content__tag')).toBe(true)
-      expect(normalised(level.text())).toBe(
+      expect(normalised(alpha.textContent)).toBe(`Alpha ${SERVICE_SENTENCE}`)
+      expect(levelTags).toHaveLength(1)
+      expect(levelTags[0].classList.contains(TAG_CLASSES.exploring)).toBe(true)
+      expect(
+        levelTags[0].classList.contains('govuk-phase-banner__content__tag')
+      ).toBe(true)
+      expect(normalised(level.textContent)).toBe(
         `${copy.hiddenPrefix} ${copy.levels.exploring.tag}. ${copy.levels.exploring.text}`
       )
     })
@@ -88,49 +97,51 @@ describe('page maturity banner in the layout', () => {
     it.each(Object.values(LEVELS))(
       'Should give the %s row its own modifier class and tag colour',
       (levelId) => {
-        const banners = load(
+        const [alpha, level] = parse(
           renderLayout({ pageMaturity: pageMaturityFor(levelId) })
-        )(PHASE_BANNER)
+        ).querySelectorAll(PHASE_BANNER)
 
-        expect(banners.eq(1).hasClass(BANNER_CLASSES[levelId])).toBe(true)
-        expect(banners.eq(1).find(TAG).hasClass(TAG_CLASSES[levelId])).toBe(
-          true
-        )
-        expect(banners.eq(0).attr('class')).not.toContain('app-page-maturity')
+        expect(level.classList.contains(BANNER_CLASSES[levelId])).toBe(true)
+        expect(
+          level.querySelector(TAG).classList.contains(TAG_CLASSES[levelId])
+        ).toBe(true)
+        expect(alpha.getAttribute('class')).not.toContain('app-page-maturity')
       }
     )
 
     it('Should leave no line break or spacing utilities in the level row', () => {
-      const level = levelBannerOf().eq(1)
+      const level = levelBannersOf()[1]
 
-      expect(level.find('br')).toHaveLength(0)
-      expect(level.html()).not.toContain('govuk-!-margin')
+      expect(level.querySelectorAll('br')).toHaveLength(0)
+      expect(level.innerHTML).not.toContain('govuk-!-margin')
     })
 
     it('Should keep exactly one link, the feedback email', () => {
-      const links = levelBannerOf().find('a')
+      const links = [...levelBannersOf()].flatMap((banner) => [
+        ...banner.querySelectorAll('a')
+      ])
 
       expect(links).toHaveLength(1)
-      expect(links.attr('href')).toMatch(/^mailto:/)
+      expect(links[0].getAttribute('href')).toMatch(/^mailto:/)
     })
 
     it('Should read the hidden status prefix inside the tag, before the level', () => {
-      const level = levelBannerOf().eq(1)
-      const tag = level.find(TAG)
+      const level = levelBannersOf()[1]
+      const tag = level.querySelector(TAG)
 
-      expect(tag.find('.govuk-visually-hidden').first().text().trim()).toBe(
-        copy.hiddenPrefix
-      )
-      expect(normalised(tag.text())).toBe(
+      expect(
+        tag.querySelector('.govuk-visually-hidden').textContent.trim()
+      ).toBe(copy.hiddenPrefix)
+      expect(normalised(tag.textContent)).toBe(
         `${copy.hiddenPrefix} ${copy.levels.exploring.tag}.`
       )
-      expect(level.find('.govuk-phase-banner__text').text()).not.toContain(
-        copy.hiddenPrefix
-      )
+      expect(
+        textOf(level.querySelectorAll('.govuk-phase-banner__text'))
+      ).not.toContain(copy.hiddenPrefix)
     })
 
     it('Should keep the service sentence in the Alpha row', () => {
-      expect(normalised(levelBannerOf().eq(0).text())).toContain(
+      expect(normalised(levelBannersOf()[0].textContent)).toContain(
         SERVICE_SENTENCE
       )
     })
@@ -159,16 +170,16 @@ describe('page maturity banner on a served page', () => {
       url: SET_BASE,
       auth: { strategy: 'session', credentials: authenticatedCredentials }
     })
-    return load(response.result)
+    return parse(response.result)
   }
 
   it('Should show the level in the phase banner when the switch is on', async () => {
-    const $ = await getDashboard()
-    const tags = $(PHASE_BANNER).find(TAG)
+    const document = await getDashboard()
+    const tags = document.querySelectorAll(`${PHASE_BANNER} ${TAG}`)
 
-    expect($(PHASE_BANNER)).toHaveLength(2)
+    expect(document.querySelectorAll(PHASE_BANNER)).toHaveLength(2)
     expect(tags).toHaveLength(2)
-    expect(normalised($(tags[1]).text())).toBe(
+    expect(normalised(tags[1].textContent)).toBe(
       `${copy.hiddenPrefix} ${copy.levels.exploring.tag}.`
     )
   })
@@ -176,10 +187,12 @@ describe('page maturity banner on a served page', () => {
   it('Should show only the Alpha tag when the switch is off', async () => {
     config.set('pageMaturityBanner.enabled', false)
 
-    const $ = await getDashboard()
+    const document = await getDashboard()
 
-    expect($(PHASE_BANNER).find(TAG)).toHaveLength(1)
-    expect($(PHASE_BANNER).text()).not.toContain(copy.levels.exploring.tag)
+    expect(document.querySelectorAll(`${PHASE_BANNER} ${TAG}`)).toHaveLength(1)
+    expect(textOf(document.querySelectorAll(PHASE_BANNER))).not.toContain(
+      copy.levels.exploring.tag
+    )
   })
 
   it('Should show only the Alpha tag on the not found page of a listed route', async () => {
@@ -188,10 +201,12 @@ describe('page maturity banner on a served page', () => {
       url: `${SET_BASE}/notifications/no-such-notification/origin`,
       auth: { strategy: 'session', credentials: authenticatedCredentials }
     })
-    const $ = load(response.result)
+    const document = parse(response.result)
 
     expect(response.statusCode).toBe(statusCodes.notFound)
-    expect($(PHASE_BANNER).find(TAG)).toHaveLength(1)
-    expect($(PHASE_BANNER).text()).not.toContain(copy.levels.detailing.text)
+    expect(document.querySelectorAll(`${PHASE_BANNER} ${TAG}`)).toHaveLength(1)
+    expect(textOf(document.querySelectorAll(PHASE_BANNER))).not.toContain(
+      copy.levels.detailing.text
+    )
   })
 })
