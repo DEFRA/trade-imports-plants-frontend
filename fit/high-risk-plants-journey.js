@@ -73,7 +73,12 @@ const openDatePicker = async (page, label) => {
   return dialog
 }
 
-const expectBrandButtonThatChangesOnHoverAndTakesFocusColours = async (
+const luminanceOf = (cssColour) => {
+  const [red, green, blue] = cssColour.match(/\d+(\.\d+)?/g).map(Number)
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+const expectBrandButtonThatDarkensOnHoverAndTakesFocusColours = async (
   page,
   button
 ) => {
@@ -89,6 +94,10 @@ const expectBrandButtonThatChangesOnHoverAndTakesFocusColours = async (
 
   await button.hover()
   await expect(button).not.toHaveCSS('background-color', restingBackground)
+  const hoverBackground = await computedStyle(button, 'background-color')
+  expect(luminanceOf(hoverBackground)).toBeLessThan(
+    luminanceOf(restingBackground)
+  )
 
   await button.focus()
   await expect(button).toHaveCSS(
@@ -214,8 +223,9 @@ export const withoutJavaScript = async (page, browser, use) => {
 
 /**
  * Declares the tests every address picker's submitted search box shares: its
- * hint, width and joined button, searching by pressing Enter without JavaScript, and axe on the empty,
- * searched and no-match states.
+ * hint, width and joined button, the search button's colours at rest, on hover
+ * and on focus, searching by pressing Enter without JavaScript, and axe on the
+ * empty, searched and no-match states.
  *
  * @param {object} options
  * @param {string} options.pickerName - names the picker in the test titles
@@ -238,6 +248,18 @@ export const describeSubmittedSearchPicker = ({ pickerName, openPicker }) => {
         search: pickerCopy.search,
         expectedWidth: columnWidth / 2
       })
+    })
+
+    test(`the ${pickerName} search button is in the GOV.UK brand colour, darkens on hover and takes the GOV.UK focus colours`, async ({
+      page
+    }) => {
+      await expectBrandButtonThatDarkensOnHoverAndTakesFocusColours(
+        page,
+        page.getByRole('button', {
+          name: pickerCopy.search.button,
+          exact: true
+        })
+      )
     })
 
     test(`the ${pickerName} picker has no serious or critical axe violations empty, searched and with no matches`, async ({
@@ -326,10 +348,10 @@ export const describeDatePickerLook = ({
   label,
   nextQuestionLabel
 }) => {
-  test(`the ${fieldName} button that opens the calendar is in the GOV.UK brand colour with an inverse-text icon, changes on hover and takes the GOV.UK focus colours`, async ({
+  test(`the ${fieldName} button that opens the calendar is in the GOV.UK brand colour with an inverse-text icon, darkens on hover and takes the GOV.UK focus colours`, async ({
     page
   }) => {
-    await expectBrandButtonThatChangesOnHoverAndTakesFocusColours(
+    await expectBrandButtonThatDarkensOnHoverAndTakesFocusColours(
       page,
       dateToggleOf(page, label)
     )

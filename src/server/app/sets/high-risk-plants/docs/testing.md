@@ -67,7 +67,7 @@ holds the steps more than one spec takes: `startNotification`,
 `describeDatePickerLook`, which registers the button, position, mouse-focus
 and keyboard-focus tests for one date field, and
 `describeSubmittedSearchPicker`, which registers the hint, width and joined
-button, no-JavaScript Enter search and three-state axe tests for one address
+button, search button colour, no-JavaScript Enter search and three-state axe tests for one address
 picker's submitted search box. It also holds
 `startWoodNotificationWithOriginSaved`, `POTATO_VARIETY`, `CHECK_ANSWERS_URL`
 and `WOOD_LINE_FIELDS`; `journeyFormOf`, which finds the page's journey
