@@ -58,12 +58,12 @@ describe('#copy', () => {
     expect(cy.errors.countryRequired).not.toContain('anifail')
   })
 
-  it('Should carry the spec label, hint and autocomplete strings', () => {
+  it('Should carry the spec label and autocomplete strings, with no hint', () => {
     expect(copy.title).toBe('Origin of the import')
     expect(copy.country).toEqual({
       label: 'Country of origin',
-      hint: 'Start typing to search for a country.',
       placeholder: 'Select a country',
+      searchPlaceholder: 'Search for a country',
       noResults: 'No countries found'
     })
   })
@@ -84,6 +84,9 @@ describe('#copy', () => {
     expect(cy.title).toBe('Tarddiad y mewnforyn')
     expect(cy.country.label).toBe('Gwlad tarddiad')
     expect(cy.country.noResults).toBe('Dim gwledydd wedi’u darganfod')
+    expect(cy.country.searchPlaceholder).toBe('Chwiliwch am wlad')
+    expect(cy.country.placeholder).toBe('Dewiswch wlad')
+    expect(cy.country.hint).toBeUndefined()
   })
 
   // `eu-member-states` is exempt: its sentence names the bloc, not its 27
