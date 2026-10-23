@@ -28,6 +28,133 @@ const postedPageState = (payload, extra) => ({
   ...extra
 })
 
+const renderPickerPage = (picker, request, h, current, pageState) =>
+  renderPicker(request, h, current, pageState, {
+    page: picker.page,
+    copy: picker.copy,
+    fieldName: picker.fieldName,
+    pickerViewModel: picker.pickerViewModel,
+    heading: picker.heading(current),
+    description: picker.description(current)
+  })
+
+const redirectOutOfScope = (picker, request, h, current) => {
+  logOutOfScope(request, picker.fieldName)
+  return h.redirect(hubPath(current.journey.journeyId))
+}
+
+const renderNotInBook = async (picker, request, h, current, payload) =>
+  (
+    await renderPickerPage(
+      picker,
+      request,
+      h,
+      current,
+      postedPageState(payload, {
+        selectedId: '',
+        error: picker.copy.errors[picker.fieldName]
+      })
+    )
+  ).code(HTTP_STATUS_BAD_REQUEST)
+
+const renderSaveFailure = async (
+  picker,
+  request,
+  h,
+  current,
+  chosen,
+  payload
+) =>
+  (
+    await renderPickerPage(
+      picker,
+      request,
+      h,
+      current,
+      postedPageState(payload, {
+        selectedId: chosen.id,
+        recoverableError: true
+      })
+    )
+  ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+
+const commitSelection = async (
+  picker,
+  request,
+  h,
+  current,
+  chosen,
+  payload
+) => {
+  let committed
+  const { failure } = await kit.recoverableSave(
+    request,
+    async () => {
+      committed = await state.commit(request, h, {
+        [picker.fieldName]: answerForPickedParty(chosen)
+      })
+    },
+    () => renderSaveFailure(picker, request, h, current, chosen, payload)
+  )
+  return (
+    failure ??
+    h.redirect(await kit.nextTarget(request, picker.page, committed.scope))
+  )
+}
+
+const getPicker = async (picker, request, h) => {
+  const current = await state.get(request, h)
+  if (!picker.inScope(current)) {
+    return redirectOutOfScope(picker, request, h, current)
+  }
+  return renderPickerPage(picker, request, h, current, {
+    query: request.query.q ?? '',
+    page: parsePageNumber(request.query.page),
+    selectedId:
+      request.query.selected ?? current.answers[picker.fieldName]?.pickedFromId
+  })
+}
+
+const saveSelection = async (
+  picker,
+  request,
+  h,
+  current,
+  payload,
+  selectedId
+) => {
+  const selection = await resolveSelectionOnSave(request, {
+    fieldName: picker.fieldName,
+    selectedId,
+    notInBookMessage: picker.copy.errors[picker.fieldName]
+  })
+  if (selection.outcome === SELECTION.nothingChosen) {
+    return h.redirect(await kit.nextTarget(request, picker.page, current.scope))
+  }
+  if (selection.outcome === SELECTION.notInBook) {
+    return renderNotInBook(picker, request, h, current, payload)
+  }
+  return commitSelection(picker, request, h, current, selection.record, payload)
+}
+
+const postPicker = async (picker, request, h) => {
+  const payload = request.payload ?? {}
+  const current = await state.get(request, h)
+  if (!picker.inScope(current)) {
+    return redirectOutOfScope(picker, request, h, current)
+  }
+
+  const selectedId = payload[picker.fieldName] || payload.selected || ''
+  if (isSearch(payload)) {
+    return renderPickerPage(picker, request, h, current, {
+      query: payload.q ?? '',
+      page: FIRST_PAGE,
+      selectedId
+    })
+  }
+  return saveSelection(picker, request, h, current, payload, selectedId)
+}
+
 /**
  * The GET and POST routes of one address-book picker page.
  *
@@ -41,113 +168,10 @@ const postedPageState = (payload, extra) => ({
  * @param {Function} [picker.inScope] - tells from the journey state whether the page applies; out of scope it redirects to the overview.
  * @returns {object[]} the Hapi routes.
  */
-export const pickerRoutes = ({
-  page,
-  fieldName,
-  copy,
-  pickerViewModel,
-  heading,
-  description,
-  inScope = () => true
-}) => {
-  const render = (request, h, current, pageState) =>
-    renderPicker(request, h, current, pageState, {
-      page,
-      copy,
-      fieldName,
-      pickerViewModel,
-      heading: heading(current),
-      description: description(current)
-    })
-
-  const redirectOutOfScope = (request, h, current) => {
-    logOutOfScope(request, fieldName)
-    return h.redirect(hubPath(current.journey.journeyId))
-  }
-
-  const renderNotInBook = async (request, h, current, payload) =>
-    (
-      await render(
-        request,
-        h,
-        current,
-        postedPageState(payload, {
-          selectedId: '',
-          error: copy.errors[fieldName]
-        })
-      )
-    ).code(HTTP_STATUS_BAD_REQUEST)
-
-  const commitSelection = async (request, h, current, chosen, payload) => {
-    let committed
-    const { failure } = await kit.recoverableSave(
-      request,
-      async () => {
-        committed = await state.commit(request, h, {
-          [fieldName]: answerForPickedParty(chosen)
-        })
-      },
-      async () =>
-        (
-          await render(
-            request,
-            h,
-            current,
-            postedPageState(payload, {
-              selectedId: chosen.id,
-              recoverableError: true
-            })
-          )
-        ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
-    )
-    return (
-      failure ??
-      h.redirect(await kit.nextTarget(request, page, committed.scope))
-    )
-  }
-
-  const get = async (request, h) => {
-    const current = await state.get(request, h)
-    if (!inScope(current)) {
-      return redirectOutOfScope(request, h, current)
-    }
-    return render(request, h, current, {
-      query: request.query.q ?? '',
-      page: parsePageNumber(request.query.page),
-      selectedId:
-        request.query.selected ?? current.answers[fieldName]?.pickedFromId
-    })
-  }
-
-  const post = async (request, h) => {
-    const payload = request.payload ?? {}
-    const current = await state.get(request, h)
-    if (!inScope(current)) {
-      return redirectOutOfScope(request, h, current)
-    }
-
-    const selectedId = payload[fieldName] || payload.selected || ''
-    if (isSearch(payload)) {
-      return render(request, h, current, {
-        query: payload.q ?? '',
-        page: FIRST_PAGE,
-        selectedId
-      })
-    }
-
-    const selection = await resolveSelectionOnSave(request, {
-      fieldName,
-      selectedId,
-      notInBookMessage: copy.errors[fieldName]
-    })
-    if (selection.outcome === SELECTION.nothingChosen) {
-      return h.redirect(await kit.nextTarget(request, page, current.scope))
-    }
-    if (selection.outcome === SELECTION.notInBook) {
-      return renderNotInBook(request, h, current, payload)
-    }
-    return commitSelection(request, h, current, selection.record, payload)
-  }
-
-  return kit.pageRoutes(page, { get, post })
+export const pickerRoutes = ({ inScope = () => true, ...settings }) => {
+  const picker = { ...settings, inScope }
+  return kit.pageRoutes(picker.page, {
+    get: (request, h) => getPicker(picker, request, h),
+    post: (request, h) => postPicker(picker, request, h)
+  })
 }
