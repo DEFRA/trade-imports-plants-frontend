@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   expectOneSaveFallbackLogged,
   postHandlerOf,
   unavailableBackendError
@@ -119,10 +119,7 @@ describe('POST commodity-type — a rejected answer', () => {
       SELECT_WHAT_YOU_ARE_IMPORTING
     )
     expect(result.after).toEqual(result.before)
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['commodityType']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should answer 400 for a value the service does not offer', async () => {

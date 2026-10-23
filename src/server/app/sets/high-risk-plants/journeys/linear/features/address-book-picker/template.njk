@@ -1,9 +1,9 @@
-{% extends "shared/layout.njk" %}
 {% from "submitted-search/macro.njk" import appSubmittedSearch %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "high-risk-plants/journeys/linear/features/address-book-picker/results.njk" import addressBookPickerResults %}
 {% from "shared/save-actions.njk" import saveActions %}
 {% from "shared/section-caption.njk" import sectionCaption %}
+{% extends "shared/layout.njk" %}
 
 {% block journeyContent %}
   {% include "shared/error-summary.njk" %}
@@ -14,7 +14,7 @@
 
   {% include "high-risk-plants/journeys/linear/features/address-book-picker/held-copy.njk" %}
 
-  <form method="post" novalidate>
+  <form method="post" novalidate data-module="app-address-book-picker">
     <input type="hidden" name="crumb" value="{{ crumb }}" />
     <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
     <input type="hidden" name="page" value="{{ picker.page }}" />
@@ -36,7 +36,7 @@
       {{ govukInsetText({ text: pickerCopy.selectedAddressPrefix + " " + picker.tickedRecord.name }) }}
     {% endif %}
 
-    {{ addressBookPickerResults("consignor", picker, pickerCopy) }}
+    {{ addressBookPickerResults(fieldName, picker, pickerCopy) }}
 
     {{ saveActions({
       hubHref: hubHref,

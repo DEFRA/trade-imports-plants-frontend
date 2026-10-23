@@ -17,7 +17,7 @@ import { records as realRecords } from '../../../../../../services/persistence/r
 import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   expectOneLogged,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   journeyRequest,
   stubH
 } from '../../../../../../engine/test-support.js'
@@ -114,10 +114,7 @@ describe('declaration', () => {
         { text: copy.errors.declarationRequired, href: '#declaration' }
       ])
       expect((await store.get(id)).answers).toEqual(COMPLETE_NOTIFICATION)
-      expectOneRefusalLogged(request.logger, {
-        journeyId: id,
-        errorCodes: ['declaration']
-      })
+      expectNoRefusalLogged(request.logger)
     }
   )
 

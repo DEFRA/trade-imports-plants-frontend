@@ -18,7 +18,10 @@ import {
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
 import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
-import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
+import {
+  STUB_BOOK,
+  STUB_BOOK_SIZE
+} from '../../../../../../services/address-book/stub/index.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
@@ -32,7 +35,6 @@ import {
   TECH_IMPORTS_NAME
 } from './test-support.js'
 
-const STUB_BOOK_SIZE = 13
 const LAST_PAGE = 3
 const DENMARK = 'Denmark'
 const DENMARK_ROWS = ['copenhagen-exports-aps', 'aarhus-trading-aps']

@@ -126,7 +126,6 @@ const post = async (request, h) => {
   }
   if (current.lines.length === 0) {
     const errors = { [LINES]: copy.errors.commodityLines }
-    kit.logRefusal(request, { fieldErrors: errors })
     return buildView(request, h, { ...current, errors }).code(
       HTTP_STATUS_BAD_REQUEST
     )

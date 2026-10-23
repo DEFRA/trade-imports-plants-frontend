@@ -1,6 +1,15 @@
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 import * as kit from '../../../../../../shared/kit.js'
-import { chosenFor } from './render.js'
+import * as addressBook from '../../../../../../services/address-book/index.js'
+
+/** Resolves an address-book id to its record, or to undefined when the id is empty, missing or soft-deleted. */
+export const chosenFor = async (orgId, selectedId) => {
+  if (!selectedId) {
+    return undefined
+  }
+  const record = await addressBook.party(orgId, selectedId)
+  return record && !record.deleted ? record : undefined
+}
 
 export const SELECTION = {
   nothingChosen: 'nothing-chosen',

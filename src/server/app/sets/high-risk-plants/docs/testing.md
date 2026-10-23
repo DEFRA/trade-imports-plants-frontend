@@ -59,10 +59,10 @@ run.
 
 [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
 holds the steps more than one spec takes: `startNotification`,
-`startNotificationAtOrigin`, `chooseCommodityType`, `chooseCommodityCategory`,
+`startNotificationAtOrigin`, `chooseCommodityType`, `changeCommodityType`, `chooseCommodityCategory`,
 `addCommodityLine`, `saveOrigin`, `chooseCountryOfOrigin`,
 `chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
-`completePotatoNotification`, `openDeclaration`,
+`startPotatoNotificationAtContact`, `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which also proves the primary and
 Save and return to overview sit in the button group and Cancel and return to overview follows it, the GOV.UK style values `GOVUK_BLUE`,
 `GOVUK_BLUE_SHADE_50`, `WHITE`, `GOVUK_FOCUS`, `GOVUK_FOCUS_OUTLINE_WIDTH`,
@@ -87,6 +87,9 @@ finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
 one single-address picker; `postAnIdNotInTheBook`, which posts a picker with an id the
 book does not hold, appended as a hidden input under the first radio's name;
+`postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;
+`expectSelectedAddressCarriedToSecondPage`, which follows the second page link and fails unless the ticked address is still the selected address;
+`withoutJavaScript`, which reopens the page in a context with JavaScript switched off;
 `pickerResultsSummary`, which finds the paragraph straight after the results
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count, the one radio group

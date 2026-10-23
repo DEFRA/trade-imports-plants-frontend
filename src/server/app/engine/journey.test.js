@@ -218,7 +218,7 @@ describe('#amendJourney', () => {
         level: 'info',
         fields: {
           journeyId: journey.journeyId,
-          refusal: 'not-editable',
+          reason: 'not-editable',
           status: 'deleted'
         },
         message: 'Amend refused'
@@ -252,7 +252,7 @@ describe('#amendJourney against the backend', () => {
     expect(request.logger.entries).toEqual([
       {
         level: 'info',
-        fields: { journeyId: backendJourneyId, refusal: 'not-found' },
+        fields: { journeyId: backendJourneyId, reason: 'not-found' },
         message: 'Amend refused'
       }
     ])

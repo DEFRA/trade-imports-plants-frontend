@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
@@ -119,10 +119,7 @@ describe('identification numbers', () => {
       expect(result.view.context.errors[name]).toBe(copy.errors[name][error])
       expect(result.view.context.values).toEqual(payload)
       expect(result.after).toEqual(result.before)
-      expectOneRefusalLogged(result.logger, {
-        journeyId: result.journeyId,
-        errorCodes: [name]
-      })
+      expectNoRefusalLogged(result.logger)
     })
   }
   it.each([

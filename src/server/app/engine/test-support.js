@@ -112,6 +112,11 @@ const refusalEntry = ({ journeyId, errorCodes, ...details }) => ({
   fields: expect.objectContaining({ journeyId, errorCodes, ...details })
 })
 
+export const expectNoRefusalLogged = (logger) =>
+  expect(
+    logger.entries.filter(({ message }) => message === REFUSAL_LOG_MESSAGE)
+  ).toEqual([])
+
 export const expectOneRefusalLogged = (logger, refusal) =>
   expectOneLogged(logger, refusalEntry(refusal))
 

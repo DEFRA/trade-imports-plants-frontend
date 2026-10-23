@@ -4,6 +4,7 @@ import {
   chooseCommodityType,
   describeDatePickerLook,
   backLink,
+  changeCommodityType,
   visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
@@ -23,7 +24,6 @@ import {
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
@@ -102,17 +102,6 @@ const startAtWoodDetails = async (page, status) => {
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(PAGE_URL)
   return reference
-}
-
-const changeCommodityType = async (page, reference, commodityType) => {
-  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[commodityType],
-      exact: true
-    })
-    .check()
-  await saveAndContinue(page).click()
 }
 
 test.describe('arrival-details — a potato notification', () => {

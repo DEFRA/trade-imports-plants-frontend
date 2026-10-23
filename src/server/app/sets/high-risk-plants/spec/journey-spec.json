@@ -160,7 +160,7 @@
       "id": "select-and-autocomplete-widgets",
       "source": "live-animals",
       "status": "adopted",
-      "detail": "Long lists that need type-ahead (countryOfOrigin, genus, proposedPlaceOfLanding) use appAccessibleAutocomplete over a select with showAllValues and a noResults message, listing only a placeholder plus the real options; short fixed lists (commodityType, category, arrivalStatus) are govukRadios with per-option hints. Countries store ISO alpha-2 codes; ports display as {name} - {code} with value = code; genus stores the SI spelling as the code until a reference service assigns ids. The accessible-autocomplete component already ships under common/components in the plants engine. Source: live-animals select-and-autocomplete-widgets (origin/template.njk:18); skeleton templates-and-nunjucks-roots."
+      "detail": "Long lists that need type-ahead (countryOfOrigin, genus, proposedPlaceOfLanding) use appAccessibleAutocomplete over a select with showAllValues and a noResults message, listing only the select text option plus the real options; short fixed lists (commodityType, category, arrivalStatus) are govukRadios with per-option hints. Countries store ISO alpha-2 codes; ports display as {name} - {code} with value = code; genus stores the SI spelling as the code until a reference service assigns ids. The accessible-autocomplete component already ships under common/components in the plants engine. Source: live-animals select-and-autocomplete-widgets (origin/template.njk:18); skeleton templates-and-nunjucks-roots."
     },
     {
       "id": "layout-chrome",
@@ -1857,7 +1857,7 @@
       "mandateRaw": "the country from which the plants or wood originate [reg 26(2)(e)]; the country from which the potatoes originate [reg 24A(2)(ab)]",
       "input": {
         "widget": "autocomplete",
-        "widgetDetail": "appAccessibleAutocomplete over a select; showAllValues; placeholder Select a country; search placeholder Search for a country (Chwiliwch am wlad in Welsh); noResults No countries found; govuk-label--m",
+        "widgetDetail": "appAccessibleAutocomplete over a select; showAllValues; select text Select a country; search placeholder Search for a country (Chwiliwch am wlad in Welsh); noResults No countries found; govuk-label--m",
         "service": "services/countries originCountries() over reference-data /countries?blocks=GBNAG_SPS_EX (captured membership: EU-27 plus IS, LI, NO, CH) — stores ISO 3166-1 alpha-2; the per-category narrowing lists come from sets/high-risk-plants/services/commodities originCountriesFor(category)",
         "valueConstraints": {
           "seed-potatoes": "ANY_PRIMED_COUNTRY",
@@ -2160,7 +2160,7 @@
       "wipeOnExit": true,
       "input": {
         "widget": "autocomplete",
-        "widgetDetail": "appAccessibleAutocomplete; showAllValues; placeholder Select a place of landing, shown in the empty search box and as the no-JavaScript list first option; noResults No ports found; items name (code), value = code — copied from animals portOfEntry",
+        "widgetDetail": "appAccessibleAutocomplete; showAllValues; select text and search placeholder Select a place of landing, shown in the empty search box and as the no-JavaScript list first option; noResults No ports found; items name (code), value = code — copied from animals portOfEntry",
         "service": "services/ports list() — reference-data GET /ports-of-entry (built: PortsOfEntryController over MdmService.getPortsOfEntry(), PortsOfEntryControllerIT); stub from the captured ports-of-entry.json fixture (77 MDM entries including Dover, Folkestone, Portsmouth, Harwich, Hull, Holyhead, Newhaven, Poole, Purfleet, Tilbury 2 Ro-Ro); stores the port code"
       },
       "label": "Proposed place of landing",

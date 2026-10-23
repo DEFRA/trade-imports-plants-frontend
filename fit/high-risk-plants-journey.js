@@ -5,6 +5,7 @@ import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
 import { signIn } from './sign-in.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
 import { PAGE_SIZE } from '../src/server/app/services/address-book/index.js'
+import { STUB_BOOK_SIZE } from '../src/server/app/services/address-book/stub/index.js'
 import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/copy/copy.en.js'
 import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/copy/copy.en.js'
@@ -192,7 +193,7 @@ export const COPENHAGEN = 'Copenhagen Exports ApS'
 export const MATCHES_NOTHING = 'nothing matches this'
 export const IMPORT_CO = 'Import Co UK'
 export const ALPINE = 'Alpine Supplies GmbH'
-export const STUB_BOOK_SIZE = 13
+export { STUB_BOOK_SIZE }
 export const SECOND_PAGE_LINK = 'Page 2'
 export const THIRD_PAGE_LINK = 'Page 3'
 
@@ -510,6 +511,24 @@ export const chooseCommodityType = async (page, commodityType) => {
     .check()
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+}
+
+/**
+ * Changes the commodity type of an existing notification and saves.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} reference - the notification's reference
+ * @param {string} commodityType - a commodity-type value, such as `potatoes`
+ */
+export const changeCommodityType = async (page, reference, commodityType) => {
+  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
+  await page
+    .getByRole('radio', {
+      name: commodityTypeCopy.typeLabels[commodityType],
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
 }
 
 /**

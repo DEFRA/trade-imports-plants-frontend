@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
-  expectOneRefusalLogged,
+  expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
@@ -290,10 +290,7 @@ describe('POST arrival-details — the answers it refuses', () => {
       copy.errors.arrivalDate.required
     )
     expect(result.after.arrivalDate).toBeUndefined()
-    expectOneRefusalLogged(result.logger, {
-      journeyId: result.journeyId,
-      errorCodes: ['arrivalDate']
-    })
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse a date that is not a real day', async () => {

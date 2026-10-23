@@ -4,6 +4,7 @@ import {
   addCommodityLine,
   addressRowRadio,
   backLink,
+  changeCommodityType,
   visitOverviewThenOpen,
   chooseCommodityType,
   describeAddressPicker,
@@ -21,7 +22,6 @@ import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
-import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
@@ -51,17 +51,6 @@ const startAtConsignor = async (page) => {
 
 const saveTheAddressBookParty = async (page) => {
   await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-  await saveAndContinue(page).click()
-}
-
-const switchCommodityType = async (page, reference, typeKey) => {
-  await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await page
-    .getByRole('radio', {
-      name: commodityTypeCopy.typeLabels[typeKey],
-      exact: true
-    })
-    .check()
   await saveAndContinue(page).click()
 }
 
@@ -212,7 +201,7 @@ test.describe('consignor scope and invalid selections', () => {
   }) => {
     const reference = await startAtConsignor(page)
     await saveTheAddressBookParty(page)
-    await switchCommodityType(page, reference, POTATOES)
+    await changeCommodityType(page, reference, POTATOES)
     await page.goto(`${BASE}/notifications/${reference}`)
     await expect(
       page.getByRole('link', { name: hubCopy.rows.consignor.title })
@@ -226,8 +215,8 @@ test.describe('consignor scope and invalid selections', () => {
   }) => {
     const reference = await startAtConsignor(page)
     await saveTheAddressBookParty(page)
-    await switchCommodityType(page, reference, POTATOES)
-    await switchCommodityType(page, reference, WOOD_AND_CUT_TREES)
+    await changeCommodityType(page, reference, POTATOES)
+    await changeCommodityType(page, reference, WOOD_AND_CUT_TREES)
     await page.goto(consignorPathOf(reference))
     await expect(page).toHaveURL(PAGE_URL)
     await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
