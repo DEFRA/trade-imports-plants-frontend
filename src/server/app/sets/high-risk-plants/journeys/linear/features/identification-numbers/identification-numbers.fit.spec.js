@@ -5,6 +5,7 @@ import {
   changeCommodityType,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
+  saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
@@ -155,11 +156,7 @@ for (const [commodityType, fields] of branches) {
       for (const name of fields) {
         await input(page, name).fill('REF')
       }
-      await page
-        .getByRole('button', {
-          name: sharedCopy.saveActions.saveAndReturnToHub
-        })
-        .click()
+      await saveAndReturnToHub(page).click()
       await expect(page).toHaveURL(HUB_URL)
       await page.goto(url)
       for (const name of fields) {

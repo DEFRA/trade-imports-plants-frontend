@@ -6,6 +6,7 @@ import {
 } from '../../../../../../../../../fit/set-base.js'
 import {
   CHECK_ANSWERS_URL,
+  changeCommodityType,
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue
@@ -135,19 +136,7 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   page
 }) => {
   const reference = journeyIdFromPage(page)
-  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
-  await page
-    .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
-      exact: true
-    })
-    .fill('')
-  await page
-    .getByRole('button', {
-      name: sharedCopy.saveActions.saveAndReturnToHub,
-      exact: true
-    })
-    .click()
-  await expect(page).toHaveURL(setUrl(`/notifications/${reference}$`))
+  await changeCommodityType(page, reference, 'wood-and-cut-trees')
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(page.getByRole('alert')).toHaveCount(0)
 
@@ -160,7 +149,7 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   ).toBeVisible()
   await expect(
     summary.getByRole('link', {
-      name: copy.errors.cards.identificationNumbers,
+      name: copy.errors.cards.commodities,
       exact: true
     })
   ).toBeVisible()

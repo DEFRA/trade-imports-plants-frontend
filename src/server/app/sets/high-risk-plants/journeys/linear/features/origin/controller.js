@@ -19,15 +19,7 @@ import { originPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 
-/**
- * Where the consignment comes from.
- *
- * The country list is the whole SPS origin block, but which of those countries
- * this consignment may name is decided by the categories of its commodity
- * lines. That narrowing cannot be an obligation gate — a gate reads its own
- * frame and `category` sits one frame down, on each line — so it is validated
- * here, against the constraints the set-owned commodities service holds.
- */
+/** Where the consignment comes from. */
 export const meta = { ...page, collects: ['countryOfOrigin'] }
 
 const view = `${TEMPLATES}/features/origin/template`
@@ -49,8 +41,6 @@ const categoriesOf = (current) =>
     .collectionView(current.answers, [LINES], current.evaluation)
     .map(({ entry }) => entry[CATEGORY])
 
-// Narrowest first, so a consignment that breaks more than one constraint is
-// told about the narrowest.
 const constraintsOn = (categories) =>
   commodities
     .originConstraints()
@@ -72,8 +62,6 @@ const membershipRule = async () =>
     )
   )
 
-// A territory is held to its country's constraints: the Canary Islands may
-// send what Spain may.
 const narrowingErrorFor = (constraints, country) => {
   const failing = constraints.find(
     (constraint) =>
@@ -82,31 +70,10 @@ const narrowingErrorFor = (constraints, country) => {
   return failing ? copy.errors.narrowing[failing.id] : undefined
 }
 
-/**
- * Both refusals this page can make, as one field error.
- *
- * @param {object} payload - the raw POST payload.
- * @param {readonly object[]} constraints - the origin constraints the
- * consignment's commodity lines put on it.
- * @param {object} [options]
- * @param {boolean} [options.allowMissing] - a blank country is not refused
- * (the 'Save and return to overview' reading).
- * @returns {Promise<object|null>} the field errors, or null when the answer
- * stands.
- */
-const errorsFor = async (
-  payload,
-  constraints,
-  { allowMissing = false } = {}
-) => {
-  const { errors, value } = validate(await membershipRule(), payload, {
-    allowMissing
-  })
+const errorsFor = async (payload, constraints) => {
+  const { errors, value } = validate(await membershipRule(), payload)
   if (errors) {
     return errors
-  }
-  if (!value[COUNTRY_FIELD]) {
-    return null
   }
   const narrowing = narrowingErrorFor(constraints, value[COUNTRY_FIELD])
   return narrowing ? { [COUNTRY_FIELD]: narrowing } : null
@@ -171,9 +138,7 @@ const post = async (request, h) => {
   const current = await state.get(request, h)
   const backLink = await backLinkFor(request, current)
   const constraints = constraintsOn(categoriesOf(current))
-  const errors = await errorsFor(payload, constraints, {
-    allowMissing: kit.isHubExit(request)
-  })
+  const errors = await errorsFor(payload, constraints)
   if (errors) {
     return (
       await render(h, current, values, { backLink, constraints, errors })

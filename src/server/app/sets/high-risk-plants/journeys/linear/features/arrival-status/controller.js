@@ -73,9 +73,7 @@ const get = async (request, h) => {
 const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { [ARRIVAL_STATUS]: payload[ARRIVAL_STATUS] ?? '' }
-  const { errors, value } = validate(fields(), payload, {
-    allowMissing: kit.isHubExit(request)
-  })
+  const { errors, value } = validate(fields(), payload)
   const current = await state.get(request, h)
   if (errors) {
     return (await render(request, h, current, values, { errors })).code(

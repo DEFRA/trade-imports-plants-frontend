@@ -144,8 +144,6 @@ export const logRefusal = (request, { fieldErrors = {}, ...details } = {}) =>
 export const hubExitTarget = (request) =>
   request.payload?.exit === 'hub' ? hubPath(request.params.journeyId) : null
 
-export const isHubExit = (request) => hubExitTarget(request) !== null
-
 export const changeContext = (request) => Boolean(request.query.change)
 
 export const withChangeContext = (request, href) =>

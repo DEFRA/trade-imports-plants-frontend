@@ -8,6 +8,7 @@ import {
   saveAndContinue,
   saveOrigin,
   startNotification,
+  saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
@@ -51,6 +52,21 @@ const startAtArrivalStatus = async (page) => {
   const reference = await startWoodNotificationWithOriginSaved(page)
   await expect(page).toHaveURL(PAGE_URL)
   return reference
+}
+
+const expectRequiredStatusErrorFocusingFirstRadio = async (page) => {
+  await expect(page).toHaveURL(PAGE_URL)
+  await expect(page.getByRole('group', { name: copy.legend })).toContainText(
+    copy.errors.arrivalStatus
+  )
+
+  const summaryLink = page
+    .getByRole('alert')
+    .getByRole('link', { name: copy.errors.arrivalStatus })
+  await expect(summaryLink).toBeVisible()
+
+  await summaryLink.click()
+  await expect(page.locator(STATUS_INPUT_SELECTOR).first()).toBeFocused()
 }
 
 test.describe('arrival-status feature', () => {
@@ -152,11 +168,7 @@ test.describe('arrival-status feature', () => {
     const reference = await startAtArrivalStatus(page)
 
     await radioFor(page, NOT_YET_ARRIVED).check()
-    await page
-      .getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-      .click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
 
@@ -191,18 +203,17 @@ test.describe('arrival-status feature', () => {
 
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
-    await expect(page.getByRole('group', { name: copy.legend })).toContainText(
-      copy.errors.arrivalStatus
-    )
+    await expectRequiredStatusErrorFocusingFirstRadio(page)
+  })
 
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.errors.arrivalStatus })
-    await expect(summaryLink).toBeVisible()
+  test('Save and return to overview with nothing chosen shows the error and focuses the first radio', async ({
+    page
+  }) => {
+    await startAtArrivalStatus(page)
 
-    await summaryLink.click()
-    await expect(page.locator(STATUS_INPUT_SELECTOR).first()).toBeFocused()
+    await saveAndReturnToHub(page).click()
+
+    await expectRequiredStatusErrorFocusingFirstRadio(page)
   })
 
   test('rejects a status the page does not offer and checks nothing', async ({

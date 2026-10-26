@@ -11,6 +11,7 @@ import {
   saveAndContinue,
   selectedAddressInset,
   startPotatoNotificationAtContact,
+  saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE } from '../../../../../../../../../fit/set-base.js'
@@ -26,11 +27,6 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
-
-const saveAndReturn = (page) =>
-  page.getByRole('button', {
-    name: sharedCopy.saveActions.saveAndReturnToHub
-  })
 
 const contactPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignment/contact/select`
@@ -175,7 +171,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndReturn(page).click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)

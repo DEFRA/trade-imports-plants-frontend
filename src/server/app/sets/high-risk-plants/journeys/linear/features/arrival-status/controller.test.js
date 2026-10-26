@@ -228,14 +228,17 @@ describe('POST arrival-status — an accepted answer', () => {
     expect(result.after.arrivalStatus).toBe(NOT_YET_ARRIVED)
   })
 
-  it('Should save no choice and go to the overview on Save and return to overview', async () => {
+  it('Should refuse no choice on Save and return to overview, showing the required message and saving nothing', async () => {
     const result = await driveHandler(post, {
       seed: plants(),
       payload: { exit: 'hub' }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    expect(result.after.arrivalStatus).toBeUndefined()
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.arrivalStatus).toBe(
+      copy.errors.arrivalStatus
+    )
+    expect(result.after).toEqual(result.before)
   })
 
   it('Should still refuse a status the page does not offer on Save and return to overview', async () => {

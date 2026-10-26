@@ -492,26 +492,29 @@ describe('POST arrival-details — Save and return to overview', () => {
   const exitWith = (seed, payload) =>
     driveHandler(post, { seed, payload: { ...payload, exit: 'hub' } })
 
-  it('Should save an empty potato page and go to the overview', async () => {
+  it('Should refuse an empty potato page, naming every missing answer, and save nothing', async () => {
     const result = await exitWith(potatoes(), {})
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    expect(result.after.arrivalDate).toEqual({ day: '', month: '', year: '' })
-    expect(result.after.arrivalTime).toBe('')
+    expect(result.response.statusCode).toBe(400)
+    expect(Object.keys(result.view.context.errors)).toEqual([
+      'arrivalDate',
+      'arrivalTime',
+      'proposedPlaceOfLanding'
+    ])
+    expect(result.after).toEqual(result.before)
   })
 
-  it('Should save a blank date for a consignment already here', async () => {
+  it('Should refuse a blank date for a consignment already here and save nothing', async () => {
     const result = await exitWith(plants({ arrivalStatus: ALREADY_ARRIVED }), {
       arrivalDate: ''
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    expect(result.after.arrivalDate).toEqual({ day: '', month: '', year: '' })
-    expect(result.after.commodityType).toBe(PLANTS_FOR_PLANTING)
-    expect(result.after.arrivalStatus).toBe(ALREADY_ARRIVED)
+    expect(result.response.statusCode).toBe(400)
+    expect(Object.keys(result.view.context.errors)).toContain('arrivalDate')
+    expect(result.after).toEqual(result.before)
   })
 
-  it('Should still refuse a time that is not on the 24-hour clock', async () => {
+  it('Should refuse a time that is not on the 24-hour clock on Save and return to overview', async () => {
     const result = await exitWith(
       potatoes(),
       potatoPayload({ arrivalTime: '25:00' })
@@ -522,7 +525,7 @@ describe('POST arrival-details — Save and return to overview', () => {
     expect(result.after).toEqual(result.before)
   })
 
-  it('Should still refuse a date that names no day', async () => {
+  it('Should refuse a date that names no day on Save and return to overview', async () => {
     const result = await exitWith(potatoes(), {
       arrivalDate: '31/2/2026'
     })
@@ -533,7 +536,7 @@ describe('POST arrival-details — Save and return to overview', () => {
     )
   })
 
-  it('Should still refuse a future date once the consignment has arrived', async () => {
+  it('Should refuse a future date once the consignment has arrived on Save and return to overview', async () => {
     const result = await exitWith(plants({ arrivalStatus: ALREADY_ARRIVED }), {
       arrivalDate: '1/1/2099'
     })
@@ -544,7 +547,7 @@ describe('POST arrival-details — Save and return to overview', () => {
     )
   })
 
-  it('Should still refuse a place of landing the ports service does not hold', async () => {
+  it('Should refuse a place of landing the ports service does not hold on Save and return to overview', async () => {
     const result = await exitWith(
       potatoes(),
       potatoPayload({ proposedPlaceOfLanding: 'XX XXX' })
@@ -556,7 +559,7 @@ describe('POST arrival-details — Save and return to overview', () => {
     )
   })
 
-  it('Should keep naming every missing answer on Save and continue', async () => {
+  it('Should name every missing answer on Save and continue', async () => {
     const result = await driveHandler(post, { seed: potatoes(), payload: {} })
 
     expect(result.response.statusCode).toBe(400)

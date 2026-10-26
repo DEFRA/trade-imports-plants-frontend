@@ -6,6 +6,7 @@ import {
 import { copy as typeCopy } from '../commodity-type/copy/copy.en.js'
 import {
   backLink,
+  saveAndReturnToHub,
   expectNoSeriousOrCriticalViolations
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -211,9 +212,7 @@ test('shows consignor only for plants and wood notifications', async ({
         exact: true
       })
       .check()
-    await page
-      .getByRole('button', { name: sharedCopy.saveActions.saveAndReturnToHub })
-      .click()
+    await saveAndReturnToHub(page).click()
     await expect(page).toHaveURL(HUB_URL)
     const row = taskRowByTitle(page, copy.rows.consignor.title)
     if (commodityType === 'potatoes') {

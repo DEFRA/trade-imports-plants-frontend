@@ -68,9 +68,6 @@ const linesKeptBy = (lines, commodityType) => {
 }
 
 const keepLinesAllowedBy = (lines, commodityType) => {
-  if (!commodityType) {
-    return { kept: [], removed: 0 }
-  }
   const kept = linesKeptBy(lines, commodityType)
   return { kept, removed: lines.length - kept.length }
 }
@@ -107,9 +104,7 @@ const get = async (request, h) => {
 const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { commodityType: payload.commodityType ?? '' }
-  const { errors, value } = validate(fields(), payload, {
-    allowMissing: kit.isHubExit(request)
-  })
+  const { errors, value } = validate(fields(), payload)
   const current = await state.get(request, h)
   if (errors) {
     return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)

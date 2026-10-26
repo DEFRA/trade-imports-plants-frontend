@@ -156,6 +156,33 @@ describe('POST commodity-type — a rejected answer', () => {
       COMPLETE_POTATO_CONSIGNMENT.commodityLines
     )
   })
+
+  it('Should refuse no choice on Save and return to overview, keep the lines and save nothing', async () => {
+    const { commodityLines } = COMPLETE_POTATO_CONSIGNMENT
+    const result = await driveHandler(post, {
+      seed: { commodityLines },
+      payload: { exit: 'hub' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.commodityType).toBe(
+      SELECT_WHAT_YOU_ARE_IMPORTING
+    )
+    expect(result.view.context.hasLines).toBe(true)
+    expect(result.after).toEqual(result.before)
+  })
+
+  it('Should refuse a value the service does not offer on Save and return to overview', async () => {
+    const result = await driveHandler(post, {
+      payload: { commodityType: 'bulbs', exit: 'hub' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.commodityType).toBe(
+      SELECT_WHAT_YOU_ARE_IMPORTING
+    )
+    expect(result.after).toEqual(result.before)
+  })
 })
 
 describe('POST commodity-type — an accepted answer', () => {
@@ -186,30 +213,6 @@ describe('POST commodity-type — an accepted answer', () => {
 
     expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
     expect(result.after).toEqual({ commodityType: POTATOES })
-  })
-
-  it('Should save no choice, remove no line and go to the overview on Save and return to overview', async () => {
-    const { commodityLines } = COMPLETE_POTATO_CONSIGNMENT
-    const result = await driveHandler(post, {
-      seed: { commodityLines },
-      payload: { exit: 'hub' }
-    })
-
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    expect(result.after.commodityType).toBeUndefined()
-    expect(result.after.commodityLines).toEqual(commodityLines)
-  })
-
-  it('Should still refuse a value the service does not offer on Save and return to overview', async () => {
-    const result = await driveHandler(post, {
-      payload: { commodityType: 'bulbs', exit: 'hub' }
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expect(result.view.context.errors.commodityType).toBe(
-      SELECT_WHAT_YOU_ARE_IMPORTING
-    )
-    expect(result.after).toEqual(result.before)
   })
 })
 

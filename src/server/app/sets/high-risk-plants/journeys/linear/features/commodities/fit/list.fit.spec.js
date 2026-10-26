@@ -6,6 +6,7 @@ import {
 import {
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
+  saveAndReturnToHub,
   startNotification
 } from '../../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -189,11 +190,7 @@ test.describe('commodities list', () => {
     await startWithOneLine(page)
 
     await expect(saveAndContinue(page)).toBeVisible()
-    await expect(
-      page.getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-    ).toBeHidden()
+    await expect(saveAndReturnToHub(page)).toBeHidden()
     await expect(
       page.getByRole('link', {
         name: sharedCopy.saveActions.cancelAndReturnToHub

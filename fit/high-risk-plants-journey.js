@@ -42,6 +42,12 @@ export const saveAndContinue = (page) =>
     exact: true
   })
 
+export const saveAndReturnToHub = (page) =>
+  page.getByRole('button', {
+    name: sharedCopy.saveActions.saveAndReturnToHub,
+    exact: true
+  })
+
 const documentTop = (locator) =>
   locator.evaluate((el) => el.getBoundingClientRect().top + window.scrollY)
 
@@ -1017,11 +1023,7 @@ export const describeAddressPicker = ({
       const reference = await openPicker(page)
 
       await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-      await page
-        .getByRole('button', {
-          name: sharedCopy.saveActions.saveAndReturnToHub
-        })
-        .click()
+      await saveAndReturnToHub(page).click()
 
       await expect(page).toHaveURL(hubUrl)
 
@@ -1034,11 +1036,7 @@ export const describeAddressPicker = ({
     }) => {
       const reference = await openPicker(page)
 
-      await page
-        .getByRole('button', {
-          name: sharedCopy.saveActions.saveAndReturnToHub
-        })
-        .click()
+      await saveAndReturnToHub(page).click()
 
       await expect(page).toHaveURL(hubUrl)
 

@@ -8,6 +8,7 @@ import {
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
   saveAndContinue,
+  saveAndReturnToHub,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -142,11 +143,7 @@ test.describe('commodity-type feature', () => {
     const pageUrl = page.url()
 
     await radioFor(page, 'wood-and-cut-trees').check()
-    await page
-      .getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-      .click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
 
