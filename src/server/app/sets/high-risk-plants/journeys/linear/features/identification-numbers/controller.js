@@ -65,9 +65,7 @@ const get = async (request, h) => {
 const post = async (request, h) => {
   const current = await state.get(request, h)
   const values = valuesFrom(request.payload ?? {}, current.scope)
-  const { errors, value } = validate(fields(current.scope), values, {
-    allowMissing: kit.isHubExit(request)
-  })
+  const { errors, value } = validate(fields(current.scope), values)
   if (errors) {
     return (await render(request, h, current, values, { errors })).code(
       HTTP_STATUS_BAD_REQUEST

@@ -8,6 +8,7 @@ import {
   expectThreeSaveControls,
   saveAndContinue,
   startNotification,
+  saveAndReturnToHub,
   startNotificationAtOrigin
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
@@ -154,11 +155,7 @@ test.describe('origin feature', () => {
     const reference = await startNotificationAtOrigin(page)
 
     await chooseCountryOfOrigin(page, FRANCE)
-    await page
-      .getByRole('button', {
-        name: sharedCopy.saveActions.saveAndReturnToHub
-      })
-      .click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
 

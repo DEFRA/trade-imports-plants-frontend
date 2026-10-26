@@ -146,7 +146,7 @@ way:
 - page chrome: `base()`, `serverWideBase()`, `chromeFor()`, `journeyStrip()`,
   `SURFACES` and `surfaceClass()`
 - errors: `errorSummary()`, `fieldError()` and `logRefusal()`
-- where a POST goes next: `hubExitTarget()`, `isHubExit()`, `exitTarget()`,
+- where a POST goes next: `hubExitTarget()`, `exitTarget()`,
   `runTarget()` and `nextTarget()`
 - where a page's Back link goes: `runBackLink()`
 - saving: `recoverableSave()` and `pageRoutes()`

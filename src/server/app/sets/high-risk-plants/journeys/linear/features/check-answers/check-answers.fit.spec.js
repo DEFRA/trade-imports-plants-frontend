@@ -4,6 +4,7 @@ import {
   POTATO_VARIETY,
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
+  saveAndReturnToHub,
   saveAndContinue
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -76,12 +77,7 @@ test('offers Back, Save and return, and Cancel to Overview', async ({
       exact: true
     })
   ).toHaveAttribute('href', hub)
-  await page
-    .getByRole('button', {
-      name: sharedCopy.saveActions.saveAndReturnToHub,
-      exact: true
-    })
-    .click()
+  await saveAndReturnToHub(page).click()
   await expect(page).toHaveURL(new RegExp(`${hub}$`))
 })
 

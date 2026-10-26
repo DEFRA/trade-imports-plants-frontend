@@ -132,17 +132,15 @@ own field errors shown back on the form are not logged. A refusal that is not th
 user's input error (a state refusal, a bare 400, another service refusing) logs
 once through `kit.logRefusal(request, { …details })` with the journey id.
 
-"Save and return to overview" posts `exit=hub`. When the page has a required
-rule, opt in to saving a blank answer on that exit by passing
-`{ allowMissing: kit.isHubExit(request) }` to `validate`, as
-[`journeys/linear/features/commodity-type/controller.js`](../journeys/linear/features/commodity-type/controller.js)
-does. Every other rule still refuses. An address-book picker does not call
+"Save and return to overview" posts `exit=hub`. It runs the same validation as
+"Save and continue", with no opt-in, and only changes where a valid save goes. An
+address-book picker does not call
 `validate`: it resolves the save through `resolveSelectionOnSave` in
 [`journeys/linear/features/address-book-picker/save-selection.js`](../journeys/linear/features/address-book-picker/save-selection.js),
 so a save with nothing ticked always leaves without a commit and an id the book
 does not hold is refused.
 
-These task-row pages offer no overview exit and stay strict on every submit:
+These task-row pages offer no overview exit:
 
 - the commodities list
   ([`journeys/linear/features/commodities/list/list.controller.js`](../journeys/linear/features/commodities/list/list.controller.js))

@@ -165,8 +165,7 @@ const post = async (request, h) => {
   const bounds = boundsFor(current.answers, current.scope)
   const { errors, value } = validate(
     await fields(current.scope, bounds),
-    payload,
-    { allowMissing: kit.isHubExit(request) }
+    payload
   )
   if (errors) {
     return (await render(request, h, current, values, { bounds, errors })).code(

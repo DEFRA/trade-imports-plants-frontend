@@ -234,6 +234,44 @@ describe('POST origin — a rejected answer', () => {
       { text: copy.errors.countryRequired, href: '#countryOfOrigin' }
     ])
   })
+
+  it('Should refuse no country on Save and return to overview, showing the required message and saving nothing', async () => {
+    const result = await driveHandler(post, {
+      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
+      payload: { countryOfOrigin: '', exit: 'hub' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      copy.errors.countryRequired
+    )
+    expect(result.after).toEqual(result.before)
+  })
+
+  it('Should refuse a country the consignment may not name on Save and return to overview', async () => {
+    const result = await driveHandler(post, {
+      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
+      payload: { countryOfOrigin: NORWAY, exit: 'hub' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      copy.errors.narrowing[EU_MEMBER_STATES]
+    )
+    expect(result.after).toEqual(result.before)
+  })
+
+  it('Should refuse no country on Save and continue', async () => {
+    const result = await driveHandler(post, {
+      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
+      payload: { countryOfOrigin: '' }
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.countryOfOrigin).toBe(
+      copy.errors.countryRequired
+    )
+  })
 })
 
 describe('POST origin — the per-category narrowing', () => {
@@ -287,8 +325,6 @@ describe('POST origin — the per-category narrowing', () => {
   })
 
   it('Should report the narrowest failing constraint when a consignment breaks two', async () => {
-    // Norway is outside both the four conifer-wood countries and the EU
-    // member-State list; the trader is told about the narrower of the two.
     const result = await driveHandler(post, {
       seed: consignmentOf(
         WOOD_AND_CUT_TREES,
@@ -379,41 +415,6 @@ describe('POST origin — an accepted answer', () => {
 
     expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
     expect(result.after).toEqual({ countryOfOrigin: FRANCE })
-  })
-
-  it('Should save no country and go to the overview on Save and return to overview', async () => {
-    const result = await driveHandler(post, {
-      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
-      payload: { countryOfOrigin: '', exit: 'hub' }
-    })
-
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    expect(result.after.countryOfOrigin).toBe('')
-  })
-
-  it('Should still refuse a country the consignment may not name on Save and return to overview', async () => {
-    const result = await driveHandler(post, {
-      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
-      payload: { countryOfOrigin: NORWAY, exit: 'hub' }
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expect(result.view.context.errors.countryOfOrigin).toBe(
-      copy.errors.narrowing[EU_MEMBER_STATES]
-    )
-    expect(result.after).toEqual(result.before)
-  })
-
-  it('Should keep refusing no country on Save and continue', async () => {
-    const result = await driveHandler(post, {
-      seed: consignmentOf(PLANTS_FOR_PLANTING, PLANTS_LINE),
-      payload: { countryOfOrigin: '' }
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expect(result.view.context.errors.countryOfOrigin).toBe(
-      copy.errors.countryRequired
-    )
   })
 })
 

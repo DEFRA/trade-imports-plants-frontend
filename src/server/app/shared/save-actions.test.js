@@ -15,7 +15,6 @@ const withReturnControls = '{ hubHref: hubHref, copy: copy }'
 const withoutReturnControls =
   '{ hubHref: hubHref, copy: copy, showReturnControls: false }'
 
-// The attribute the controllers read to tell a hub exit from a plain save.
 const EXIT_NAME_ATTRIBUTE = 'name="exit"'
 const SECONDARY_BUTTON = 'govuk-button--secondary'
 const BUTTON_GROUP = 'class="govuk-button-group"'
