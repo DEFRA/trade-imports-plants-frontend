@@ -91,21 +91,25 @@ book does not hold, appended as a hidden input under the first radio's name;
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count, the one radio group
 named "Select an address" and the link-free content under the page heading are
-as expected. The type-ahead style tests (typography, focus indicator, error border), which compare the
-enhanced input with a plain GOV.UK input read at run time, and the readers
-`govukInputStyleOf`, `measureJoinedSearchButton` and `boldLettersOf` live in
-`type-ahead.fit.spec.js`, so the coverage report never counts them as source.
+The type-ahead style tests (typography, focus indicator, error border, and the
+no-JavaScript label size) compare the enhanced input or the label with a GOV.UK
+reference element read at run time.
+They and the readers `govukReferenceStyleOf`, `measureJoinedSearchButton` and
+`boldLettersOf` live in `type-ahead.fit.spec.js`, so the coverage report never
+counts them as source.
 When a second spec needs a step, move it there in the same change and delete every local copy.
 
-The browser tests here prove appearance only by position, size relative to
-another element, or a colour read from a GOV.UK colour token at run time. Exact
+The browser tests here prove appearance by position, size relative to
+another element, a colour read from a GOV.UK colour token at run time, or a
+comparison with a style read from a GOV.UK reference element at run time, as the
+typography, focus, error-border and label-size tests do. Exact
 colours, font sizes and icons are proved by the screenshot tests in
 `trade-imports-ins-tests` under `tests/plants/e2e/visual/`: the origin country
 type-ahead at rest and with suggestions, the arrival calendar opened with the
 mouse, the place of destination search box, and the declaration with its date
-masked. Do not add `rgb()`,
-`box-shadow`, pixel font sizes or exact class lists to a fit spec; add a
-screenshot there instead.
+masked. A fit spec never writes a fixed colour, shadow, pixel size or class
+list; it compares with a GOV.UK value read at run time, or a screenshot is added
+there instead.
 
 Things that are easy to get wrong:
 
