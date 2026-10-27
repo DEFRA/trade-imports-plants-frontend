@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { JSDOM } from 'jsdom'
 
 import { nunjucksConfig } from '../../../../../../../../config/nunjucks/nunjucks.js'
+import { documentOf } from '../../../../../../../common/test-helpers/document-of.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 import { pickerTableRows } from './table-rows.js'
 
@@ -21,13 +21,13 @@ const row = {
 }
 
 const render = (picker) =>
-  new JSDOM(
+  documentOf(
     environment.renderString(
       `{% from "high-risk-plants/journeys/linear/features/address-book-picker/results.njk" import addressBookPickerResults %}
        {{ addressBookPickerResults(fieldName, picker, pickerCopy) }}`,
       { fieldName: FIELD_NAME, picker, pickerCopy }
     )
-  ).window.document
+  )
 
 const rowsWith = (rows, extra = {}) => ({
   rows,

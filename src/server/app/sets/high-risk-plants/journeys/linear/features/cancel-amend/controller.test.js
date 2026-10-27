@@ -1,45 +1,32 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { pagePath } from '../../../../../../shared/paths.js'
 import { assembleFulfilments } from '../../../../../../bridge/assemble-fulfilments.js'
 import { projectAnswers } from '../../../../../../bridge/fulfilments/index.js'
-import { installHighRiskPlantsJourney } from '../../test-support.js'
+import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import {
   AMEND,
   configureRecords,
   records,
   SUBMITTED
 } from '../../../../../../engine/persistence/records.js'
-import {
-  configureSession,
-  knownJourneysCookie
-} from '../../../../../../engine/persistence/session.js'
+import { knownJourneysCookie } from '../../../../../../engine/persistence/session.js'
 import { store } from '../../../../../../engine/store.js'
 import {
   expectOneSaveFallbackLogged,
   journeyRequest,
+  requestAsSessionHoldingNoJourney,
   stubH,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import * as cancelAmend from './controller.js'
 
 const NOTIFICATION_VIEW_SLUG = 'notification-view'
 
 const get = cancelAmend.routes.find((route) => route.method === 'GET').handler
 const post = cancelAmend.routes.find((route) => route.method === 'POST').handler
-
-// The real session writes known journeys through h.request.yar, so a read later
-// in the same request sees the id currentJourney adopted. stubH's no-op state()
-// hides that, so this toolkit writes the adoption back onto the request.
-const adoptingH = (request) => ({
-  ...stubH(),
-  state: (name, value) => {
-    request.state[name] = value
-  }
-})
 
 const startAmend = async () => {
   const journey = await store.create()
@@ -57,15 +44,7 @@ const startAmend = async () => {
 }
 
 describe('cancel amendment routes', () => {
-  beforeAll(() => {
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-
-  beforeEach(() => {
-    configureRecords(SET_ID, recordsStub)
-    store.clear()
-  })
+  useStubbedHighRiskPlantsJourney()
 
   afterEach(() => {
     configureRecords(SET_ID, recordsStub)
@@ -134,25 +113,13 @@ describe('cancel amendment routes', () => {
 
   it('Should refuse to disclose or cancel an amendment the session does not hold', async () => {
     const { journeyId } = await startAmend()
-    const foreign = () =>
-      journeyRequest(journeyId, {
-        state: { [knownJourneysCookie()]: [] }
-      })
-    const getRequest = foreign()
-    const postRequest = foreign()
+    const { getRequest, postRequest, getResponse, postResponse } =
+      await requestAsSessionHoldingNoJourney(journeyId, { get, post })
 
-    expect(await get(getRequest, adoptingH(getRequest))).toEqual({
-      redirect: SET_BASE
-    })
-    expect(await post(postRequest, adoptingH(postRequest))).toEqual({
-      redirect: SET_BASE
-    })
-
-    // no adoption into the caller's session
+    expect(getResponse).toEqual({ redirect: SET_BASE })
+    expect(postResponse).toEqual({ redirect: SET_BASE })
     expect(getRequest.state[knownJourneysCookie()]).toEqual([])
     expect(postRequest.state[knownJourneysCookie()]).toEqual([])
-
-    // the amendment is untouched
     const after = await records.load({ journeyId })
     expect(after.status).toBe(AMEND)
     expect(projectAnswers(after.fulfilment).producerIdentificationNumber).toBe(
@@ -164,7 +131,9 @@ describe('cancel amendment routes', () => {
     const request = journeyRequest('GBN-AG-26-UNKNOWN', {
       state: { [knownJourneysCookie()]: [] }
     })
-    expect(await post(request, adoptingH(request))).toEqual({
+    expect(
+      await post(request, stubH(request, { writesStateToRequest: true }))
+    ).toEqual({
       redirect: SET_BASE
     })
   })

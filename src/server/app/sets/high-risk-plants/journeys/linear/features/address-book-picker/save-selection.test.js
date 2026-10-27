@@ -1,15 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { config } from '../../../../../../../../config/config.js'
 import {
+  addressBookAnswering,
   expectOneLogged,
   expectOneRefusalLogged,
-  journeyRequest
+  journeyRequest,
+  resetMocksAndConfigAfterTests
 } from '../../../../../../engine/test-support.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 import {
-  bookHoldingADeletedRecord,
+  addressResponseForABookHoldingADeletedRecord,
   DELETED_ID,
   NOT_IN_THE_BOOK
 } from './test-support.js'
@@ -67,16 +68,10 @@ describe('#resolveSelectionOnSave', () => {
   })
 
   describe('against the real address book', () => {
-    const originalMode = config.get('stubMode')
+    resetMocksAndConfigAfterTests()
 
     beforeEach(() => {
-      config.set('stubMode', false)
-      vi.stubGlobal('fetch', bookHoldingADeletedRecord())
-    })
-
-    afterEach(() => {
-      config.set('stubMode', originalMode)
-      vi.unstubAllGlobals()
+      addressBookAnswering(addressResponseForABookHoldingADeletedRecord)
     })
 
     it('Should refuse an id the organisation has deleted', async () => {

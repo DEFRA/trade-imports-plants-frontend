@@ -1,4 +1,7 @@
-import { expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
+import createFetchMock from 'vitest-fetch-mock'
+import { config } from '../../../config/config.js'
+import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import {
   REFUSAL_LOG_MESSAGE,
@@ -7,9 +10,11 @@ import {
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
 import { configureRecords, records } from './persistence/records.js'
-import { openingRunCookie } from './persistence/session.js'
+import { configureSession, openingRunCookie } from './persistence/session.js'
 import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
+import { session as sessionStub } from '../services/persistence/session/stub.js'
 import { currentSetId } from '../shared/set-context.js'
 import { pagePath } from '../shared/paths.js'
 
@@ -75,11 +80,20 @@ const cookieRecorder = () => {
   }
 }
 
-/** A response toolkit that records what the handler rendered, with `request` as `h.request`. */
-export const stubH = (request) => {
+const stateWrittenToRequest = (request) => ({
+  state: (name, value) => {
+    request.state[name] = value
+  }
+})
+
+/** A response toolkit that records what the handler rendered, with `request` as `h.request`.
+ * With `writesStateToRequest`, `state()` writes the cookie onto `request.state`, so a
+ * read later in the same request sees it. */
+export const stubH = (request, { writesStateToRequest = false } = {}) => {
   const captured = {}
   return {
     ...cookieRecorder(),
+    ...(writesStateToRequest && stateWrittenToRequest(request)),
     request,
     view: stubView(captured),
     redirect: (to) => ({ redirect: to }),
@@ -160,6 +174,32 @@ export const journeyRequest = (
 })
 
 export const recordingH = () => cookieRecorder()
+
+/** Runs a GET and a POST handler as a session that holds no journey, each on
+ * its own request with `state()` writing onto `request.state`, and returns the
+ * requests and the responses. */
+export const requestAsSessionHoldingNoJourney = async (
+  journeyId,
+  { get, post }
+) => {
+  const requestHoldingNoJourney = () =>
+    journeyRequest(journeyId, { state: { [knownJourneysCookie()]: [] } })
+  const getRequest = requestHoldingNoJourney()
+  const postRequest = requestHoldingNoJourney()
+  const writesStateToRequest = true
+  return {
+    getRequest,
+    postRequest,
+    getResponse: await get(
+      getRequest,
+      stubH(getRequest, { writesStateToRequest })
+    ),
+    postResponse: await post(
+      postRequest,
+      stubH(postRequest, { writesStateToRequest })
+    )
+  }
+}
 
 export const backendJourneyId = 'REFERENCE-0001'
 
@@ -259,6 +299,84 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
   featureModule.routes.find(
     (route) => route.method === 'POST' && route.path.endsWith(pathSuffix)
   ).handler
+
+export const fetchMock = createFetchMock(vi)
+
+export const resetMocksAndConfigAfterTests = (...configKeys) => {
+  const originals = ['stubMode', ...configKeys].map((key) => [
+    key,
+    config.get(key)
+  ])
+  afterEach(() => {
+    fetchMock.resetMocks()
+    vi.unstubAllGlobals()
+    originals.forEach(([key, value]) => config.set(key, value))
+  })
+}
+
+export const referenceDataServing = () => (rows) => {
+  config.set('stubMode', false)
+  fetchMock.enableMocks()
+  fetchMock.mockResponse(async () => ({ body: JSON.stringify(rows) }))
+}
+
+/** Puts the address book on the network boundary: every request to its
+ * `/addresses` paths gets `addressResponse` (or, for a function, what it
+ * returns for the request) and the country list gets the United Kingdom,
+ * Switzerland and the United States. Call it inside a test; pair it with
+ * `resetMocksAndConfigAfterTests()` in the describe. */
+export const addressBookAnswering = (addressResponse) => {
+  const countryList = JSON.stringify([
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'CH', name: 'Switzerland' },
+    { code: 'US', name: 'United States' }
+  ])
+  const answerAddresses = (request) =>
+    typeof addressResponse === 'function'
+      ? addressResponse(request)
+      : addressResponse
+  fetchMock.enableMocks()
+  config.set('stubMode', false)
+  fetchMock.mockResponse(async (request) =>
+    request.url.includes('/addresses')
+      ? answerAddresses(request)
+      : { body: countryList }
+  )
+}
+
+export const addressBookRefusingAddresses = () =>
+  addressBookAnswering({ status: 500 })
+
+/** The urls of the address book requests made since `addressBookAnswering()`. */
+export const addressBookRequestUrls = () =>
+  fetchMock
+    .requests()
+    .map((request) => request.url)
+    .filter((url) => url.includes('/addresses'))
+
+export const useStubbedJourney = (setId, dispatchPages) => {
+  beforeAll(() => {
+    configureRecords(setId, recordsStub)
+    configureSession(setId, sessionStub)
+    buildDispatch(setId, dispatchPages)
+  })
+  beforeEach(() => {
+    configureRecords(setId, recordsStub)
+    store.clear()
+  })
+}
+
+export const useBackendRecords = (setId) => {
+  beforeAll(() => {
+    configureRecords(setId, recordsReal)
+    configureSession(setId, sessionStub)
+  })
+  beforeEach(() => {
+    fetchMock.enableMocks()
+    fetchMock.mockClear()
+  })
+  resetMocksAndConfigAfterTests()
+}
 
 export const expectBackLinkIsPath = (result, path) =>
   expect(result.view.context.backLink).toBe(path)

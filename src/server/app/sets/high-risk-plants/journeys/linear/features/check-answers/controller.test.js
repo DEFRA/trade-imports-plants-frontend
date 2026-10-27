@@ -1,22 +1,9 @@
-import { SET_BASE, SET_ID } from '../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { SET_BASE } from '../../../../set.js'
+import { describe, expect, it } from 'vitest'
 import { store } from '../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import {
-  configureSession,
-  openingRunCookie
-} from '../../../../../../engine/persistence/session.js'
+import { openingRunCookie } from '../../../../../../engine/persistence/session.js'
 import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
   expectBackLinkIsPath,
@@ -27,12 +14,11 @@ import {
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import * as cancelAmend from '../cancel-amend/controller.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import * as ports from '../../../../../../services/ports/index.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney,
+  useStubbedHighRiskPlantsJourney,
   TECH_IMPORTS_COPY
 } from '../../test-support.js'
 import {
@@ -77,13 +63,7 @@ const invalidOrigin = {
   ]
 }
 
-beforeAll(() => {
-  configureRecords(SET_ID, recordsStub)
-  configureSession(SET_ID, sessionStub)
-  installHighRiskPlantsJourney()
-})
-beforeEach(() => store.clear())
-afterEach(() => vi.restoreAllMocks())
+useStubbedHighRiskPlantsJourney()
 
 describe('Check your answers', () => {
   it('Should render three numbered sections, stored values and indexed Change links without writing', async () => {
@@ -604,8 +584,7 @@ describe('review navigation', () => {
 })
 
 describe('Check your answers — copied addresses', () => {
-  it('Should show the copy held on the notification without reading the address book', async () => {
-    const partySpy = vi.spyOn(addressBook, 'party')
+  it('Should show the name on the notification’s copy, not the name of the address book record it was picked from', async () => {
     const edited = {
       ...COMPLETE_NOTIFICATION,
       placeOfDestination: {
@@ -613,13 +592,16 @@ describe('Check your answers — copied addresses', () => {
         name: 'Tech Imports Warehouse'
       }
     }
+    const pickedFrom = STUB_BOOK.find(
+      ({ id }) => id === edited.placeOfDestination.pickedFromId
+    )
     const result = await driveHandler(get, { seed: edited })
     const destination = cardsOf(result).find(
       ({ title }) => title === destinationCopy.headings.potatoes
     )
+    expect(pickedFrom.name).toBe(TECH_IMPORTS_COPY.name)
     expect(destination.rows[0].value.text).toBe('Tech Imports Warehouse')
     expect(result.view.context.errorSummary).toBeNull()
-    expect(partySpy).not.toHaveBeenCalled()
   })
 
   it('Should offer Change and Edit details on an answered address, and only Change on an unanswered one', async () => {

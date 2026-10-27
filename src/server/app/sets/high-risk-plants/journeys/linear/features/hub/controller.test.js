@@ -1,13 +1,7 @@
-import { SET_BASE, SET_ID } from '../../../../set.js'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { SET_BASE } from '../../../../set.js'
+import { describe, expect, it } from 'vitest'
 
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import {
-  configureSession,
-  openingRunCookie
-} from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
+import { openingRunCookie } from '../../../../../../engine/persistence/session.js'
 import { store } from '../../../../../../engine/store.js'
 import { journeyRequest } from '../../../../../../engine/test-support.js'
 import { hubRoutePath } from '../../../../../../shared/paths.js'
@@ -16,7 +10,7 @@ import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
   TECH_IMPORTS_COPY,
-  installHighRiskPlantsJourney
+  useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 
 import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
@@ -79,12 +73,7 @@ const renderHub = async ({ openingRun, seed = {} } = {}) => {
 }
 
 describe('#hubGet', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should register one GET-only route at the hub path', () => {
     expect(routes).toEqual([
@@ -306,12 +295,7 @@ describe('#hubGet', () => {
 })
 
 describe('#hubGet — the arrival row', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   const arrivalRowIn = async (seed) => {
     const { journeyId, h } = await renderHub({ seed })
@@ -320,8 +304,6 @@ describe('#hubGet — the arrival row', () => {
   }
 
   it('Should open the row for a potato notification at the details page', async () => {
-    // The status question is out of scope for potatoes, so the row opens on
-    // the details page, which every commodity type answers.
     const { journeyId, arrivalRow } = await arrivalRowIn({
       commodityType: POTATOES,
       countryOfOrigin: FRANCE
@@ -379,12 +361,7 @@ describe('#hubGet — the arrival row', () => {
 })
 
 describe('#hubGet — the destination row', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   const destinationRowIn = async (seed) => {
     const { journeyId, h } = await renderHub({ seed })
@@ -402,8 +379,6 @@ describe('#hubGet — the destination row', () => {
   })
 
   it('Should open the row once the origin is named, for every commodity type', async () => {
-    // Every notification owes a place of destination, so the row is asked of
-    // potatoes and of plants alike.
     for (const commodityType of [POTATOES, PLANTS_FOR_PLANTING]) {
       const { journeyId, destinationRow } = await destinationRowIn({
         commodityType,
@@ -436,12 +411,7 @@ describe('#hubGet — the destination row', () => {
 })
 
 describe('#hubGet — consignor', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should show identification numbers and contact in the parties group for potatoes', async () => {
     const { h } = await renderHub({ seed: { commodityType: POTATOES } })

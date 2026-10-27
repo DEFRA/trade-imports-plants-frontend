@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
@@ -221,6 +222,7 @@ describe('POST commodities/details — choosing a category', () => {
     expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.category).toBe(SELECT_THE_CATEGORY)
     expect(result.after).toEqual(result.before)
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse a category that belongs to another commodity type', async () => {
@@ -233,6 +235,7 @@ describe('POST commodities/details — choosing a category', () => {
     expect(result.view.context.errorSummary.errorList).toEqual([
       { text: SELECT_THE_CATEGORY, href: '#category' }
     ])
+    expectNoRefusalLogged(result.logger)
     expect(result.after).toEqual(result.before)
   })
 
@@ -247,6 +250,7 @@ describe('POST commodities/details — choosing a category', () => {
 
     expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.category).toBe(SELECT_THE_CATEGORY)
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should send a commodity type that offers no category back to the question', async () => {
@@ -325,6 +329,7 @@ describe('POST commodities/details — saving a line', () => {
     )
     expect(result.view.context.values.potatoVariety).toBe(MARIS_PIPER)
     expect(result.after.commodityLines).toEqual([{ category: SEED_POTATOES }])
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse a quantity that is not a whole number above zero', async () => {
@@ -343,6 +348,7 @@ describe('POST commodities/details — saving a line', () => {
     expect(result.view.context.errors.quantity).toBe(
       'Enter a whole number greater than 0'
     )
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should refuse a genus the line’s category does not offer', async () => {
@@ -363,6 +369,7 @@ describe('POST commodities/details — saving a line', () => {
 
     expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errors.genus).toBe('Select the genus')
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should store only the fields the category asks for', async () => {
@@ -438,6 +445,7 @@ describe('POST commodities/details — saving a line', () => {
     expect(genus.items.find((item) => item.value === FRAXINUS).selected).toBe(
       true
     )
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should treat a stale index as a new line rather than write over one', async () => {
