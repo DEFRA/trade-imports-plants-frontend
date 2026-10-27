@@ -1,26 +1,14 @@
-import { SET_ID } from '../../../../set.js'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import {
-  configureRecords,
-  records
-} from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
+import { describe, expect, it } from 'vitest'
+import { records } from '../../../../../../engine/persistence/records.js'
 import { store } from '../../../../../../engine/store.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney
+  useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { toRow } from './view-model/row/index.js'
 
 describe('dashboard late tag', () => {
-  beforeAll(() => {
-    installHighRiskPlantsJourney()
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it.each([
     { indicator: 'late', late: true },

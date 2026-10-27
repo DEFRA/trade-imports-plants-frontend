@@ -441,37 +441,13 @@ declares. Add a case shaped like the matching layout:
 ## Test support
 
 Build test set-up from the shared helpers, and extend them rather than writing
-set-up in the test file:
+set-up in the test file.
 
-- controller tests:
-  [`engine/test-support.js`](../../../engine/test-support.js) — `driveHandler`
-  seeds a journey, runs one handler and returns the answers before and after
-  and the logger; `journeyRequest`, `stubH`, `recordingH`, `recordingLogger`,
-  `postHandlerOf` and `postHandlerEndingWith` build the request, toolkit,
-  logger and handler; `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for
-  a locale pair
-- address-book picker tests:
-  [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
-  — `describeAddressBookPickerController` registers the controller tests every
-  picker shares, and a picker's call also names the previous run step's slug and
-  the answers that make that step apply;
-  [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
-  — `pickerViewModelSuites` builds the view model and paging test cases, and
-  `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
-  with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
-- the set's journey and seed data:
-  [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
-  `installHighRiskPlantsJourney`, `COMPLETE_NOTIFICATION` and
-  `COMPLETE_POTATO_CONSIGNMENT`
-- browser tests:
-  [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
-  — see [Shared browser-test helpers](testing.md#shared-browser-test-helpers).
-  A step that adds one instance to the collection belongs here once two specs
-  need it
+The controller-test helpers are listed in [Test support](add-a-page.md#test-support), with `useStubbedJourney` as the set-up.
 
-When a second test needs the same set-up, move it into one of these helpers in
-the same change and delete every local copy. Importing a sibling feature's test
-helper is fine.
+A step that adds one instance to the collection belongs in
+[`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
+once two specs need it.
 
 ## Logging
 

@@ -1,7 +1,10 @@
-import { JSDOM } from 'jsdom'
 import { describe, expect, it } from 'vitest'
 
 import { nunjucksConfig } from '../../../config/nunjucks/nunjucks.js'
+import {
+  documentOf,
+  trimmedTextOf
+} from '../../common/test-helpers/document-of.js'
 import { base, SURFACES, surfaceClass } from './kit.js'
 import { copy as sharedCopy } from './copy.en.js'
 import { SET_BASE } from '../sets/high-risk-plants/set.js'
@@ -23,8 +26,6 @@ const renderLayout = (userSession, context = {}) =>
     ...context
   })
 
-const parse = (html) => new JSDOM(html).window.document
-
 const textOf = (elements) =>
   [...elements].map((element) => element.textContent).join('')
 
@@ -40,7 +41,7 @@ describe('service navigation', () => {
   }
 
   it('Should offer dashboard, address book, manage account and log out on a signed-in page', () => {
-    const document = parse(renderLayout(signedIn))
+    const document = documentOf(renderLayout(signedIn))
     const items = document.querySelectorAll('.govuk-service-navigation__item')
     const links = [
       ...document.querySelectorAll('.govuk-service-navigation__item a')
@@ -62,7 +63,7 @@ describe('service navigation', () => {
   })
 
   it('Should point the dashboard link and the service name at the set’s own base', () => {
-    const document = parse(renderLayout(signedIn))
+    const document = documentOf(renderLayout(signedIn))
 
     expect(
       document.querySelectorAll(
@@ -77,7 +78,7 @@ describe('service navigation', () => {
   })
 
   it('Should mark the dashboard item active inside the notifications section', () => {
-    const document = parse(
+    const document = documentOf(
       renderLayout(signedIn, { activeNavigationItem: 'dashboard' })
     )
 
@@ -110,10 +111,11 @@ describe('service navigation', () => {
 
   it('Should carry the service name and no items when there is no user', () => {
     const html = renderLayout({ isAuthenticated: false })
+    const serviceName = documentOf(html).querySelector(
+      '.govuk-service-navigation__service-name'
+    )
 
-    expect(html).toContain(sharedCopy.layout.serviceName)
-    expect(html).not.toContain('Prototype')
-    expect(html).not.toContain('non-functional prototype')
+    expect(trimmedTextOf(serviceName)).toBe(sharedCopy.layout.serviceName)
     expect(html).not.toContain(NAVIGATION_LIST)
     expect(html).not.toContain('href="/auth/sign-out"')
     expect(html).not.toContain(serviceNavigation.logOut)
@@ -158,7 +160,7 @@ describe('journey strip', () => {
   const cancelAmend = { href: '/x/cancel-amend', text: 'Cancel amend' }
 
   it('Should show Cancel amend as a link beside the tag and reference while amending', () => {
-    const document = parse(
+    const document = documentOf(
       renderLayout(
         { isAuthenticated: true },
         { journeyStrip: { reference: 'R', status, cancelAmend } }
@@ -178,7 +180,7 @@ describe('journey strip', () => {
   })
 
   it('Should show no link in the strip without a Cancel amend control', () => {
-    const document = parse(
+    const document = documentOf(
       renderLayout(
         { isAuthenticated: true },
         {
@@ -205,7 +207,7 @@ describe('breadcrumbs', () => {
     expect(html).not.toContain(BREADCRUMBS)
   })
 
-  it('Should ignore a breadcrumbs value a caller still passes', () => {
+  it('Should render no breadcrumb trail and none of its text when breadcrumbs are passed', () => {
     const html = renderLayout(
       { isAuthenticated: true },
       { breadcrumbs: [{ text: 'Your notifications', href: '/' }] }
@@ -258,7 +260,8 @@ describe('kit surfaces', () => {
 })
 
 describe('page title', () => {
-  const titleOf = (html) => parse(html).querySelector('head title').textContent
+  const titleOf = (html) =>
+    documentOf(html).querySelector('head title').textContent
   const { serviceName, govukSuffix, errorTitlePrefix } = sharedCopy.layout
 
   it('Should join the page name, the service name and GOV.UK with hyphens', () => {

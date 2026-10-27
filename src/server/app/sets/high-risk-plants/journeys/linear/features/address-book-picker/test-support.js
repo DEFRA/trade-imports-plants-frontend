@@ -1,4 +1,4 @@
-import { expect, vi } from 'vitest'
+import { expect } from 'vitest'
 
 import { SET_BASE } from '../../../../set.js'
 import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
@@ -32,40 +32,27 @@ const apiRecord = (id, overrides = {}) => ({
   addressLine1: '1 Test Street',
   townOrCity: 'Testville',
   postcode: 'TE5 7ER',
-  countryCode: 'BE',
+  countryCode: 'CH',
   deleted: false,
   ...overrides
 })
 
 const LIVE_RECORDS = [apiRecord('live-depot-one'), apiRecord('live-depot-two')]
 
-const COUNTRIES_IN_THE_REFERENCE_DATA = [
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'BE', name: 'Belgium' }
-]
-
-export const okJson = (body) => ({
-  ok: true,
-  status: 200,
-  json: async () => body
-})
-
-export const bookHoldingADeletedRecord = () =>
-  vi.fn(async (url) => {
-    if (url.endsWith(`/addresses/${DELETED_ID}`)) {
-      return okJson(apiRecord(DELETED_ID, { deleted: true }))
-    }
-    if (new URL(url).pathname.endsWith('/countries')) {
-      return okJson(COUNTRIES_IN_THE_REFERENCE_DATA)
-    }
-    return okJson({
-      items: LIVE_RECORDS,
-      page: 1,
-      pageSize: API_PAGE_SIZE,
-      totalItems: LIVE_RECORDS.length,
-      totalPages: 1
-    })
-  })
+/** The address book's answer to an address request for a book whose
+ * `DELETED_ID` record is deleted and whose list holds two live records. */
+export const addressResponseForABookHoldingADeletedRecord = (request) => {
+  const body = request.url.endsWith(`/addresses/${DELETED_ID}`)
+    ? apiRecord(DELETED_ID, { deleted: true })
+    : {
+        items: LIVE_RECORDS,
+        page: 1,
+        pageSize: API_PAGE_SIZE,
+        totalItems: LIVE_RECORDS.length,
+        totalPages: 1
+      }
+  return { body: JSON.stringify(body) }
+}
 
 export const addressRecord = (id, name, address = {}) => ({
   id,

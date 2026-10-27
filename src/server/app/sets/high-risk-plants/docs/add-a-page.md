@@ -359,10 +359,36 @@ set-up in the test file:
     makes every save the handler makes fail with the error it is given
   - `postHandlerOf` and `postHandlerEndingWith` return a feature module's POST
     handler
+  - `useStubbedJourney(setId, dispatchPages)` configures the stub records and
+    session and builds the dispatch before a describe, and restores the stub
+    records and clears the store before each test; a test that never installs
+    the real journey passes the fixture `dispatchPages` from `test/fixtures/`
+  - `useBackendRecords(setId)` configures the real records and the stub session
+    before a describe, enables the shared `fetchMock` and clears its calls
+    before each test, and resets the mocks and config after each test;
+    `useStubbedJourney` and `useBackendRecords` go on sibling describes, never
+    nested
   - `journeyRequest`, `stubH`, `recordingH` and `recordingLogger` build the
     request, toolkit and logger
+  - `stubH(request, { writesStateToRequest: true })` writes each cookie it is
+    given onto `request.state`
+  - `requestAsSessionHoldingNoJourney` runs a GET and a POST handler as a
+    session that holds no journey
+  - `resetMocksAndConfigAfterTests` registers the reset of fetch mocks and
+    config after each test
+  - `useReferenceDataServing` registers `resetMocksAndConfigAfterTests()` for the
+    describe that calls it, and returns the function that serves given rows as
+    the reference-data response
+  - `fetchMock` is the shared `vitest-fetch-mock` instance that
+    `useBackendRecords`, `addressBookAnswering` and `useReferenceDataServing`
+    drive; a test enables it and sets its response, with
+    `resetMocksAndConfigAfterTests()` registered
+  - `addressBookAnswering`, `addressBookRefusingAddresses` and
+    `addressBookRequestUrls` put the address book on the network boundary and
+    report the requests made to it
   - `expectBackLinkIsPage` and `expectBackLinkIsPath` assert the Back link
-  - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line
+  - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line,
+    and `expectNoRefusalLogged` asserts it holds none
   - `expectOneSaveFallbackLogged` asserts it holds exactly one save fallback line
   - `unavailableBackendError` builds the error a save failure is given
   - `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for a locale pair
@@ -373,14 +399,24 @@ set-up in the test file:
   the answers that make that step apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
-  `bookHoldingADeletedRecord` fakes an address book holding a deleted record,
-  with `DELETED_ID`, `NOT_IN_THE_BOOK` and `okJson`
+  `addressResponseForABookHoldingADeletedRecord` is the address response for a
+  book holding a deleted record, served through `addressBookAnswering`, with
+  `DELETED_ID` and `NOT_IN_THE_BOOK`
+- rendered-template tests:
+  [`common/test-helpers/document-of.js`](../../../../common/test-helpers/document-of.js)
+  — `documentOf` parses rendered HTML into a document and `trimmedTextOf` gives
+  an element's trimmed text
 - the set's journey and seed data:
   [`journeys/linear/test-support.js`](../journeys/linear/test-support.js) —
-  `installHighRiskPlantsJourney`, `useStubbedHighRiskPlantsJourney` (the stub
-  records, session and dispatch with a cleared store for a describe),
-  `COMPLETE_NOTIFICATION` and
-  `COMPLETE_POTATO_CONSIGNMENT`
+  the global test setup installs the journey-neutral fixture set from
+  `test/fixtures/`, so engine and model tests do not depend on the installed
+  set; a test that drives this journey's controllers installs the real journey
+  with `useStubbedHighRiskPlantsJourney`, which installs the journey and then
+  uses `useStubbedJourney`; `installHighRiskPlantsJourney` installs the journey
+  and builds its dispatch for a test that wires its own stores;
+  `COMPLETE_NOTIFICATION` answers every built section on a potato consignment,
+  and `COMPLETE_POTATO_CONSIGNMENT` is a potato consignment whose commodities
+  section is complete
 - browser tests:
   [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
   — see [Shared browser-test helpers](testing.md#shared-browser-test-helpers)

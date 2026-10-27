@@ -1,19 +1,19 @@
-import { JSDOM } from 'jsdom'
 import { describe, expect, it } from 'vitest'
 
 import { nunjucksConfig } from '../../../config/nunjucks/nunjucks.js'
+import { documentOf } from '../../common/test-helpers/document-of.js'
 import { copy as sharedCopy } from '../shared/copy.en.js'
 
 const environment = nunjucksConfig.options.compileOptions.environment
 
 const renderUnauthorised = () =>
-  new JSDOM(
+  documentOf(
     environment.render('auth/unauthorised.njk', {
       pageTitle: sharedCopy.unauthorised.title,
       sharedCopy,
       getAssetPath: (asset) => `/assets/${asset}`
     })
-  ).window.document
+  )
 
 const { unauthorised } = sharedCopy
 

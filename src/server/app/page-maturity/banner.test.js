@@ -1,28 +1,15 @@
-import { JSDOM } from 'jsdom'
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { config } from '../../../config/config.js'
 import { nunjucksConfig } from '../../../config/nunjucks/nunjucks.js'
 import { createServer } from '../../server.js'
 import { statusCodes } from '../../common/constants/status-codes.js'
-import { mockOidcConfig } from '../../common/test-helpers/mock-oidc-config.js'
+import { documentOf } from '../../common/test-helpers/document-of.js'
 import { authenticatedCredentials } from '../engine/test-support.js'
 import { copy as sharedCopy } from '../shared/copy.en.js'
 import { SET_BASE } from '../sets/high-risk-plants/set.js'
 import { copy } from './copy/copy.en.js'
 import { BANNER_CLASSES, LEVELS, TAG_CLASSES } from './levels.js'
-
-vi.mock('../../../auth/get-oidc-config.js', () => ({
-  getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
-}))
 
 const environment = nunjucksConfig.options.compileOptions.environment
 
@@ -52,15 +39,13 @@ const renderLayout = (context = {}) =>
 
 const normalised = (text) => text.replace(/\s+/g, ' ').trim()
 
-const parse = (html) => new JSDOM(html).window.document
-
 const textOf = (elements) =>
   [...elements].map((element) => element.textContent).join('')
 
 describe('page maturity banner in the layout', () => {
   describe('when the page has no level', () => {
-    it('Should show one Alpha phase banner exactly as before', () => {
-      const banners = parse(renderLayout()).querySelectorAll(PHASE_BANNER)
+    it('Should show one Alpha phase banner with the service sentence and no level banner', () => {
+      const banners = documentOf(renderLayout()).querySelectorAll(PHASE_BANNER)
 
       expect(banners).toHaveLength(1)
       expect(banners[0].querySelectorAll(TAG)).toHaveLength(1)
@@ -73,7 +58,7 @@ describe('page maturity banner in the layout', () => {
 
   describe('when the page has a level', () => {
     const levelBannersOf = () =>
-      parse(renderLayout({ pageMaturity: exploring })).querySelectorAll(
+      documentOf(renderLayout({ pageMaturity: exploring })).querySelectorAll(
         PHASE_BANNER
       )
 
@@ -97,7 +82,7 @@ describe('page maturity banner in the layout', () => {
     it.each(Object.values(LEVELS))(
       'Should give the %s row its own modifier class and tag colour',
       (levelId) => {
-        const [alpha, level] = parse(
+        const [alpha, level] = documentOf(
           renderLayout({ pageMaturity: pageMaturityFor(levelId) })
         ).querySelectorAll(PHASE_BANNER)
 
@@ -149,14 +134,17 @@ describe('page maturity banner in the layout', () => {
 })
 
 describe('page maturity banner on a served page', () => {
+  const originalStubMode = config.get('stubMode')
   let server
 
   beforeAll(async () => {
+    config.set('stubMode', true)
     server = await createServer()
     await server.initialize()
   })
 
   afterAll(async () => {
+    config.set('stubMode', originalStubMode)
     await server.stop({ timeout: 0 })
   })
 
@@ -170,7 +158,7 @@ describe('page maturity banner on a served page', () => {
       url: SET_BASE,
       auth: { strategy: 'session', credentials: authenticatedCredentials }
     })
-    return parse(response.result)
+    return documentOf(response.result)
   }
 
   it('Should show the level in the phase banner when the switch is on', async () => {
@@ -201,7 +189,7 @@ describe('page maturity banner on a served page', () => {
       url: `${SET_BASE}/notifications/no-such-notification/origin`,
       auth: { strategy: 'session', credentials: authenticatedCredentials }
     })
-    const document = parse(response.result)
+    const document = documentOf(response.result)
 
     expect(response.statusCode).toBe(statusCodes.notFound)
     expect(document.querySelectorAll(`${PHASE_BANNER} ${TAG}`)).toHaveLength(1)

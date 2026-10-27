@@ -1,21 +1,15 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
+import { describe, expect, it } from 'vitest'
 
 import {
   AMEND,
-  configureRecords,
   DELETED,
   records
 } from '../../../../../../engine/persistence/records.js'
 import {
-  configureSession,
   knownJourneysCookie,
   openingRunCookie
 } from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { records as recordsReal } from '../../../../../../services/persistence/records/real/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   createPath,
   createRoutePath,
@@ -24,14 +18,17 @@ import {
 } from '../../../../../../shared/paths.js'
 import { CYA_SLUG, SURFACES } from '../../../../../../shared/kit.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
-import { journeyRequest, stubH } from '../../../../../../engine/test-support.js'
+import {
+  journeyRequest,
+  stubH,
+  fetchMock,
+  useBackendRecords
+} from '../../../../../../engine/test-support.js'
 import { commodityTypePage } from '../commodity-type/page.js'
+import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 
 import { routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
-
-const fetchMocker = createFetchMock(vi)
-fetchMocker.enableMocks()
 
 const CREATED_AT_ASCENDING_SORT = 'createdAt,asc'
 const DELETE_ACTION = 'Delete'
@@ -88,11 +85,7 @@ const referencesOf = (context) =>
   context.notificationRows.map((row) => row.reference)
 
 describe('dashboard notifications list', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => records.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should render the display surface with the page copy and the caption key', async () => {
     const view = await renderListView()
@@ -283,11 +276,7 @@ describe('dashboard notifications list', () => {
 })
 
 describe('dashboard row actions', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => records.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should give a draft a Draft tag, its created date and Resume plus Delete', async () => {
     const draft = await startDraft()
@@ -392,16 +381,10 @@ describe('dashboard rows the backend supplies', () => {
       content
     })
 
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsReal)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => {
-    fetchMocker.mockClear()
-  })
+  useBackendRecords(SET_ID)
 
   it('Should drop a DELETED row the backend still returns', async () => {
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       backendListing([
         backendRow('26-ABC123', 'DELETED'),
         backendRow('26-DEF456', 'DRAFT')
@@ -414,7 +397,7 @@ describe('dashboard rows the backend supplies', () => {
   })
 
   it('Should carry the display cells through to the view', async () => {
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       backendListing([
         backendRow('26-DEF456', 'DRAFT', {
           commodity: { name: 'Potatoes' },
@@ -437,11 +420,7 @@ describe('dashboard rows the backend supplies', () => {
 })
 
 describe('dashboard banners', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => records.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should raise the deleted banner only after a delete redirect', async () => {
     const ordinary = await renderList()
@@ -461,11 +440,7 @@ describe('dashboard banners', () => {
 })
 
 describe('dashboard amend POST', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => records.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should unfreeze a known submitted notification and land on its hub', async () => {
     const submitted = await startSubmitted()
@@ -505,11 +480,7 @@ describe('dashboard amend POST', () => {
 })
 
 describe('dashboard create POST', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => records.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should start a notification, begin its opening run and land on its first question', async () => {
     const request = journeyRequest()

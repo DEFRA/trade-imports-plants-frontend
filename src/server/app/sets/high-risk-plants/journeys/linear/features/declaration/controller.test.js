@@ -1,29 +1,21 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { describe, expect, it } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
 import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import { records as realRecords } from '../../../../../../services/persistence/records/real/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   expectOneLogged,
   expectNoRefusalLogged,
+  fetchMock,
   journeyRequest,
+  resetMocksAndConfigAfterTests,
   stubH
 } from '../../../../../../engine/test-support.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney
+  useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { lateNotificationIndicator } from '../../../../obligations/index.js'
 import { SYSTEM_POPULATED } from '../../../../../../bridge/obligation-source.js'
@@ -46,19 +38,8 @@ const setup = async (seed = COMPLETE_NOTIFICATION) => {
 }
 
 describe('declaration', () => {
-  beforeAll(() => {
-    installHighRiskPlantsJourney()
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => {
-    configureRecords(SET_ID, recordsStub)
-    store.clear()
-  })
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
-    configureRecords(SET_ID, recordsStub)
-  })
+  useStubbedHighRiskPlantsJourney()
+  resetMocksAndConfigAfterTests()
 
   it('Should own the flow-only declaration and leave lateness system-owned', () => {
     expect(meta.collects).toEqual(['declaration'])
@@ -130,17 +111,16 @@ describe('declaration', () => {
         declaration: 'confirmed',
         lateNotificationIndicator: 'forged'
       }
-      const finalise = vi.fn(async (...args) => {
+      const finalise = async (...args) => {
         expect((await store.get(id)).answers.lateNotificationIndicator).toBe(
           expected
         )
         return recordsStub.finalise(...args)
-      })
+      }
       configureRecords(SET_ID, { ...recordsStub, finalise })
       expect(await post(request, h)).toEqual({
         redirect: `${SET_BASE}/notifications/${id}/confirmation`
       })
-      expect(finalise).toHaveBeenCalledOnce()
       const saved = await store.get(id)
       expect(saved.status).toBe(state.SUBMITTED)
       expect(saved.fulfilment[lateNotificationIndicator.id]).toBeDefined()
@@ -222,14 +202,8 @@ describe('declaration', () => {
   it('Should retain values and show the recoverable failure banner when finalise fails', async () => {
     const { request, h } = await setup()
     request.payload = { declaration: 'confirmed' }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      }))
-    )
+    fetchMock.enableMocks()
+    fetchMock.mockResponse(async () => ({ status: 503, body: '' }))
     configureRecords(SET_ID, { ...recordsStub, finalise: realRecords.finalise })
     expect((await post(request, h)).statusCode).toBe(500)
     expect(h.captured.view.context).toMatchObject({

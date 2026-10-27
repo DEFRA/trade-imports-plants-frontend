@@ -1,13 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { JSDOM } from 'jsdom'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { config } from '../../../../../../../../config/config.js'
 import { nunjucksConfig } from '../../../../../../../../config/nunjucks/nunjucks.js'
+import { documentOf } from '../../../../../../../common/test-helpers/document-of.js'
 import {
+  addressBookAnswering,
   driveHandler,
   expectBackLinkIsPage,
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
+  resetMocksAndConfigAfterTests,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
@@ -27,7 +28,7 @@ import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 import { pickerTableRows } from './table-rows.js'
 import {
-  bookHoldingADeletedRecord,
+  addressResponseForABookHoldingADeletedRecord,
   DELETED_ID,
   IMPORT_CO,
   NOT_IN_THE_BOOK,
@@ -288,8 +289,7 @@ const describeAddressNotInTheBook = (pickerConfig) => {
       expect(result.view.context.errorSummary.errorList).toEqual([
         { text: errorText, href: `#${fieldName}` }
       ])
-      const document = new JSDOM(renderPage(result.view.context)).window
-        .document
+      const document = documentOf(renderPage(result.view.context))
       expect(document.querySelectorAll(`#${fieldName}-error`)).toHaveLength(1)
       expect(
         document
@@ -381,18 +381,11 @@ const describeDeletedRecord = (picker) => {
   const savedWith = savedWithFor(picker)
 
   describe(`${pickerName} — a record the organisation has deleted`, () => {
-    const originalMode = config.get('stubMode')
-
     useStubbedHighRiskPlantsJourney()
+    resetMocksAndConfigAfterTests()
 
     beforeEach(() => {
-      config.set('stubMode', false)
-      vi.stubGlobal('fetch', bookHoldingADeletedRecord())
-    })
-
-    afterEach(() => {
-      config.set('stubMode', originalMode)
-      vi.unstubAllGlobals()
+      addressBookAnswering(addressResponseForABookHoldingADeletedRecord)
     })
 
     it('Should show no selection for a record deleted since it was chosen', async () => {

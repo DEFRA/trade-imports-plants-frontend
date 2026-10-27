@@ -1,39 +1,28 @@
-import { SET_ID } from '../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { store } from '../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
+  addressBookRefusingAddresses,
+  addressBookRequestUrls,
   driveHandler,
+  expectNoRefusalLogged,
   expectOneSaveFallbackLogged,
+  resetMocksAndConfigAfterTests,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
-import * as countries from '../../../../../../services/countries/index.js'
 import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
 import { pagePath } from '../../../../../../shared/paths.js'
-import { installHighRiskPlantsJourney } from '../../test-support.js'
+import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
 import * as partyEdit from './party-edit.controller.js'
 
 const REVIEW_SLUG = 'notification-view'
 
-// The consignor is asked of plants and wood alone; the other two of every type.
-const IN_SCOPE = { commodityType: 'plants-for-planting' }
+const PLANTS_NOTIFICATION_OWING_EVERY_PARTY = {
+  commodityType: 'plants-for-planting'
+}
 
 const STORED = {
   name: 'Northgate Trading AG',
@@ -61,31 +50,18 @@ const FORM = {
   email: 'office@northgate.example.com'
 }
 
-// US sits outside the SPS origin block but is in the address book's list.
-const ADDRESS_BOOK_COUNTRIES = [
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' }
-]
-
 const handlerFor = (method, party) =>
   partyEdit.routes.find(
     (route) => route.method === method && route.path.endsWith(party.editSlug)
   ).handler
 
-const configure = () => {
-  configureRecords(SET_ID, recordsStub)
-  configureSession(SET_ID, sessionStub)
-  installHighRiskPlantsJourney()
-}
-
 describe.each(PARTIES)('Edit $id address details', (party) => {
-  beforeAll(configure)
-  beforeEach(() => store.clear())
-  afterEach(() => vi.restoreAllMocks())
+  useStubbedHighRiskPlantsJourney()
+  resetMocksAndConfigAfterTests()
 
   const get = handlerFor('GET', party)
   const post = handlerFor('POST', party)
-  const seed = { ...IN_SCOPE, [party.id]: STORED }
+  const seed = { ...PLANTS_NOTIFICATION_OWING_EVERY_PARTY, [party.id]: STORED }
 
   it('Should pre-fill the form from the copy held on the notification', async () => {
     const result = await driveHandler(get, { seed })
@@ -106,7 +82,9 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
   })
 
   it('Should send the trader to pick an address when none has been copied yet', async () => {
-    const result = await driveHandler(get, { seed: IN_SCOPE })
+    const result = await driveHandler(get, {
+      seed: PLANTS_NOTIFICATION_OWING_EVERY_PARTY
+    })
 
     expect(result.response).toEqual({
       redirect: pagePath(result.journeyId, party.slug)
@@ -115,7 +93,7 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
 
   it('Should send the trader to pick an address, saving nothing, when a save arrives with no copy', async () => {
     const result = await driveHandler(post, {
-      seed: IN_SCOPE,
+      seed: PLANTS_NOTIFICATION_OWING_EVERY_PARTY,
       payload: FORM,
       query: { change: '1' }
     })
@@ -164,13 +142,12 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
   })
 
   it('Should change only this notification, never the address book', async () => {
-    const partySpy = vi.spyOn(addressBook, 'party')
-    const searchSpy = vi.spyOn(addressBook, 'search')
+    addressBookRefusingAddresses()
 
-    await driveHandler(post, { seed, payload: FORM })
+    const result = await driveHandler(post, { seed, payload: FORM })
 
-    expect(partySpy).not.toHaveBeenCalled()
-    expect(searchSpy).not.toHaveBeenCalled()
+    expect(result.after[party.id].name).toBe(FORM.name)
+    expect(addressBookRequestUrls()).toEqual([])
   })
 
   it('Should re-render with the address-book error messages and save nothing', async () => {
@@ -193,6 +170,7 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
     ])
     expect(result.view.context.values.postcode).toBe('')
     expect(result.after[party.id]).toEqual(STORED)
+    expectNoRefusalLogged(result.logger)
   })
 
   it('Should leave the copy unchanged on Cancel and return to the picker', async () => {
@@ -209,14 +187,13 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
 })
 
 describe('Edit address details — where the trader returns to', () => {
-  beforeAll(configure)
-  beforeEach(() => store.clear())
-  afterEach(() => vi.restoreAllMocks())
+  useStubbedHighRiskPlantsJourney()
+  resetMocksAndConfigAfterTests()
 
   const consignor = partyOf('consignor')
   const get = handlerFor('GET', consignor)
   const post = handlerFor('POST', consignor)
-  const seed = { ...IN_SCOPE, consignor: STORED }
+  const seed = { ...PLANTS_NOTIFICATION_OWING_EVERY_PARTY, consignor: STORED }
 
   it('Should point Back at the page named in the return parameter', async () => {
     const result = await driveHandler(get, {
@@ -264,9 +241,7 @@ describe('Edit address details — where the trader returns to', () => {
   })
 
   it('Should accept a country the address book allows outside the SPS origin block', async () => {
-    vi.spyOn(countries, 'addressBookCountries').mockResolvedValue(
-      ADDRESS_BOOK_COUNTRIES
-    )
+    addressBookRefusingAddresses()
 
     const result = await driveHandler(post, {
       seed,
@@ -280,9 +255,7 @@ describe('Edit address details — where the trader returns to', () => {
   })
 
   it('Should offer the address-book country list on the form', async () => {
-    vi.spyOn(countries, 'addressBookCountries').mockResolvedValue(
-      ADDRESS_BOOK_COUNTRIES
-    )
+    addressBookRefusingAddresses()
 
     const result = await driveHandler(get, { seed })
 
