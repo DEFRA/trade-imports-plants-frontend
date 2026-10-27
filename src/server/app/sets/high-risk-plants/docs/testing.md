@@ -64,7 +64,8 @@ holds the steps more than one spec takes: `startNotification`,
 `chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
 `startPotatoNotificationAtContact`, `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which also proves the primary and
-Save and return to overview sit in the button group and Cancel and return to overview follows it,
+Save and return to overview buttons and the Cancel and return to overview link appear in that order,
+found by role inside the journey form,
 `govukColourOf`, which reads one GOV.UK colour token at run time,
 `describeDatePickerLook`, which registers the button, position, mouse-focus
 and keyboard-focus tests for one date field, and
@@ -101,7 +102,8 @@ another element, or a colour read from a GOV.UK colour token at run time. Exact
 colours, font sizes and icons are proved by the screenshot tests in
 `trade-imports-ins-tests` under `tests/plants/e2e/visual/`: the origin country
 type-ahead at rest and with suggestions, the arrival calendar opened with the
-mouse, and the place of destination search box. Do not add `rgb()`,
+mouse, the place of destination search box, and the declaration with its date
+masked. Do not add `rgb()`,
 `box-shadow`, pixel font sizes or exact class lists to a fit spec; add a
 screenshot there instead.
 

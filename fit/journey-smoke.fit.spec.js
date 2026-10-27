@@ -11,8 +11,7 @@ import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/j
 import { copy as arrivalCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-details/copy/copy.en.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as idsCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/identification-numbers/copy/copy.en.js'
-import { copy as reviewCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/check-answers/copy/copy.en.js'
-import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
+import { copy as checkAnswersCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/check-answers/copy/copy.en.js'
 import { copy as confirmationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/confirmation/copy/copy.en.js'
 import {
   backLink,
@@ -21,7 +20,8 @@ import {
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
   startNotification,
-  startPotatoNotification
+  startPotatoNotification,
+  submitDeclarationFromCheckAnswers
 } from './high-risk-plants-journey.js'
 
 const pathOf = (reference, slug) => `${BASE}/notifications/${reference}/${slug}`
@@ -114,24 +114,9 @@ for (const [name, shape] of Object.entries(happyPaths)) {
 
     await expect(page).toHaveURL(/\/notification-view$/)
     await expect(
-      page.getByRole('heading', { name: reviewCopy.title, level: 1 })
+      page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
-    await page
-      .getByRole('button', { name: reviewCopy.continue, exact: true })
-      .click()
-    await expect(page).toHaveURL(/\/declaration$/)
-    await page
-      .getByRole('checkbox', { name: declarationCopy.declarationLabel })
-      .check()
-    await page
-      .getByRole('button', {
-        name: declarationCopy.continueButton,
-        exact: true
-      })
-      .click()
-    await expect(page).toHaveURL(
-      new RegExp(`${BASE}/notifications/${reference}/confirmation$`)
-    )
+    await submitDeclarationFromCheckAnswers(page, reference)
     await expect(
       page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
     ).toBeVisible()
