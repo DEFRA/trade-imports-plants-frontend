@@ -26,6 +26,7 @@ const DOVER_OPTION = 'Port of Dover - GB DVR'
 const countries = countryAndSubdivisionEntries()
 const france = countries.find(({ code }) => code === 'FR')
 const ireland = countries.find(({ code }) => code === 'IE')
+const reunion = countries.find(({ code }) => code === 'FR-LRE')
 
 const inputFor = (page, inputId) => page.locator(`input#${inputId}`)
 
@@ -44,6 +45,9 @@ const typeAheads = [
     typed: 'fra',
     suggestion: france.name,
     bold: 'Fra',
+    accentedTyped: 'Réunion',
+    accentedSuggestion: reunion.name,
+    accentedBold: reunion.name,
     selectText: originCopy.country.selectText,
     searchPlaceholder: originCopy.country.searchPlaceholder,
     open: startNotificationAtOrigin
@@ -57,6 +61,9 @@ const typeAheads = [
     typed: 'dov',
     suggestion: DOVER_OPTION,
     bold: 'Dov',
+    accentedTyped: 'Dóv',
+    accentedSuggestion: DOVER_OPTION,
+    accentedBold: 'Dov',
     selectText: arrivalCopy.placeOfLanding.selectText,
     searchPlaceholder: arrivalCopy.placeOfLanding.searchPlaceholder,
     open: startPotatoNotification
@@ -70,6 +77,9 @@ const typeAheads = [
     typed: 'cast',
     suggestion: commodityCopy.genusLabels.Castanea,
     bold: 'Cast',
+    accentedTyped: 'Cást',
+    accentedSuggestion: commodityCopy.genusLabels.Castanea,
+    accentedBold: 'Cast',
     selectText: commodityCopy.details.genusSelectText,
     searchPlaceholder: '',
     open: openGenusDetails
@@ -93,6 +103,9 @@ for (const typeAhead of typeAheads) {
     typed,
     suggestion,
     bold,
+    accentedTyped,
+    accentedSuggestion,
+    accentedBold,
     selectText,
     searchPlaceholder,
     open
@@ -161,6 +174,20 @@ for (const typeAhead of typeAheads) {
       await expect.poll(() => boldLettersOf(page, suggestion)).toEqual([bold])
     })
 
+    test(`shows ${accentedBold} in bold in the ${accentedSuggestion} suggestion after typing ${accentedTyped}`, async ({
+      page
+    }) => {
+      await showSuggestionFor(page, {
+        inputId,
+        typed: accentedTyped,
+        suggestion: accentedSuggestion
+      })
+
+      await expect
+        .poll(() => boldLettersOf(page, accentedSuggestion))
+        .toEqual([accentedBold])
+    })
+
     test('has no serious or critical axe violations with the button showing', async ({
       page
     }) => {
@@ -177,7 +204,7 @@ for (const typeAhead of typeAheads) {
   })
 
   test.describe(`${name} type-ahead without JavaScript`, () => {
-    test('is a native select found by its label, whose first option is the page select text, with no button', async ({
+    test('is a native select found by its label, sized as a GOV.UK label of its size, whose first option is the page select text, with no button', async ({
       page,
       browser
     }) => {
@@ -193,9 +220,12 @@ for (const typeAhead of typeAheads) {
         await expect(select).toBeVisible()
         await expect(select).toHaveAccessibleName(label)
         await expect(select).toHaveAccessibleDescription(hint ?? '')
-        await expect(formGroup.locator('label')).toHaveClass(
-          new RegExp(`govuk-label--${labelSize}`)
-        )
+        const govukLabel = await govukReferenceStyleOf(page, {
+          element: 'label',
+          classes: `govuk-label govuk-label--${labelSize}`,
+          properties: ['font-size', 'font-weight']
+        })
+        await expectStyle(formGroup.locator('label'), govukLabel)
         await expect(select.locator('option').first()).toHaveText(selectText)
         await expect(select.locator('option').first()).toHaveJSProperty(
           'value',
@@ -280,7 +310,7 @@ test.describe('country of origin type-ahead styles', () => {
     const option = page.getByRole('option', { name: france.name, exact: true })
     await expect(option).toBeVisible()
 
-    const govukInputFont = await govukInputStyleOf(page, {
+    const govukInputFont = await govukReferenceStyleOf(page, {
       properties: ['font-family', 'font-size']
     })
     await expect(input).toHaveCSS('font-family', /^"?GDS Transport/)
@@ -289,18 +319,31 @@ test.describe('country of origin type-ahead styles', () => {
     }
   })
 
-  test('keeps the upstream focus indicator on the enhanced input', async ({
+  test('gives the enhanced input the focus colour, outline width and inset shadow size of a focused GOV.UK input', async ({
     page
   }) => {
     await startNotificationAtOrigin(page)
     const input = inputFor(page, 'countryOfOrigin')
     const focusColour = await govukColourOf(page, 'focus')
+    const govukFocused = await govukReferenceStyleOf(page, {
+      focused: true,
+      properties: ['outline-width', 'box-shadow']
+    })
+    const withoutColour = (shadow) => shadow.replace(/rgba?\([^)]*\)\s*/, '')
 
     await input.focus()
 
+    const inputShadow = await input.evaluate(
+      (element) => window.getComputedStyle(element).boxShadow
+    )
     await expect(input).toHaveCSS('outline-color', focusColour)
-    await expect(input).toHaveCSS('outline-width', '3px')
-    await expect(input).toHaveCSS('box-shadow', /inset/)
+    await expect(input).toHaveCSS(
+      'outline-width',
+      govukFocused['outline-width']
+    )
+    expect(withoutColour(inputShadow)).toBe(
+      withoutColour(govukFocused['box-shadow'])
+    )
   })
 
   test('gives the enhanced input the standard GOV.UK error border', async ({
@@ -317,7 +360,7 @@ test.describe('country of origin type-ahead styles', () => {
     const input = inputFor(page, 'countryOfOrigin')
     await expectStyle(
       input,
-      await govukInputStyleOf(page, {
+      await govukReferenceStyleOf(page, {
         classes: 'govuk-input govuk-input--error',
         properties: ['border-top-color', 'border-top-width']
       })
@@ -329,12 +372,18 @@ test.describe('country of origin type-ahead styles', () => {
   })
 })
 
-const govukInputStyleOf = (page, { classes = 'govuk-input', properties }) =>
+const govukReferenceStyleOf = (
+  page,
+  { element = 'input', classes = 'govuk-input', focused = false, properties }
+) =>
   page.evaluate(
-    ({ className, names }) => {
-      const reference = document.createElement('input')
+    ({ tagName, className, isFocused, names }) => {
+      const reference = document.createElement(tagName)
       reference.className = className
       document.body.append(reference)
+      if (isFocused) {
+        reference.focus()
+      }
       const style = window.getComputedStyle(reference)
       const values = Object.fromEntries(
         names.map((name) => [name, style.getPropertyValue(name)])
@@ -342,7 +391,12 @@ const govukInputStyleOf = (page, { classes = 'govuk-input', properties }) =>
       reference.remove()
       return values
     },
-    { className: classes, names: properties }
+    {
+      tagName: element,
+      className: classes,
+      isFocused: focused,
+      names: properties
+    }
   )
 
 const expectStyle = async (locator, style) => {

@@ -12,54 +12,23 @@
  * This file has been modified from the original.
  */
 import accessibleAutocomplete from 'accessible-autocomplete'
+import { escapeAndBoldMatches } from '../../common/helpers/bold-matches.js'
+import { containsTerm } from '../../common/helpers/search-fold.js'
 
 const ARIA_DESCRIBEDBY = 'aria-describedby'
 const CONTAINER_CLASS = 'app-autocomplete'
-const MATCH_CLASS = 'govuk-!-font-weight-bold'
 const BUTTON_CLASS = 'app-autocomplete__button'
 const LIBRARY_WRAPPER_CLASS = 'autocomplete__wrapper'
-
-const HTML_ESCAPES = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;'
-}
-
-const escapeHtml = (text) =>
-  text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char])
-
-const escapeRegExp = (text) =>
-  text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
-
-const normaliseQuery = (query) => query.toLowerCase().trim()
-
-const boldMatchedPieces = (suggestion, normalisedQuery) => {
-  if (!normalisedQuery) {
-    return escapeHtml(suggestion)
-  }
-  const atEachMatch = new RegExp(`(${escapeRegExp(normalisedQuery)})`, 'i')
-  return suggestion
-    .split(atEachMatch)
-    .map((piece, index) =>
-      index % 2 === 1
-        ? `<strong class="${MATCH_CLASS}">${escapeHtml(piece)}</strong>`
-        : escapeHtml(piece)
-    )
-    .join('')
-}
 
 const createSuggestionSearch = (values) => {
   let lastQuery = ''
   return {
     source: (query, syncResults) => {
-      lastQuery = normaliseQuery(query)
-      syncResults(
-        values.filter((value) => value.toLowerCase().includes(lastQuery))
-      )
+      lastQuery = query
+      syncResults(values.filter((value) => containsTerm(value, query)))
     },
-    suggestionTemplate: (suggestion) => boldMatchedPieces(suggestion, lastQuery)
+    suggestionTemplate: (suggestion) =>
+      escapeAndBoldMatches(suggestion, lastQuery)
   }
 }
 

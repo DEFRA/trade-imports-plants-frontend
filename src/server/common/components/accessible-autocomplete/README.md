@@ -40,9 +40,12 @@ reads them from `dataset`.
 - The suggestions are the select's options that carry a value. The option with
   an empty value is the select text and is never suggested.
 - A query matches an option when the option contains the trimmed query,
-  ignoring case.
-- The suggestion template hook is `templates.suggestion`. It escapes the text
-  and wraps each match of the query in a bold `<strong>`.
+  ignoring case and accents. `src/client/common/helpers/search-fold.js` owns
+  that rule.
+- The suggestion template hook is `templates.suggestion`. It renders through
+  the escape-and-bold helper in `src/client/common/helpers/bold-matches.js`,
+  which escapes the text and wraps each match of the query in a bold
+  `<strong>`, accents included.
 - Choosing a suggestion, or leaving the box on an exact match, selects the
   matching option and fires one `change` event on the select when its value
   changed.
