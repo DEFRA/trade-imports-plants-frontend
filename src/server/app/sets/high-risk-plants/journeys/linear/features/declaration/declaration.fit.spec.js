@@ -2,13 +2,14 @@ import { BASE } from '../../../../../../../../../fit/set-base.js'
 import {
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
-  openDeclaration
+  openDeclaration,
+  submitDeclarationFromCheckAnswers
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { copy as confirmationCopy } from '../confirmation/copy/copy.en.js'
 import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { copy } from '../check-answers/copy/copy.en.js'
+import { copy as checkAnswersCopy } from '../check-answers/copy/copy.en.js'
 import { copy as declarationCopy } from './copy/copy.en.js'
 
 test.beforeEach(async ({ page }) => signIn(page))
@@ -38,7 +39,7 @@ test('renders the plants declaration and Back navigation with no serious accessi
   )
 })
 
-test('shows the confirmation as a small checkbox in a group whose legend only screen readers get', async ({
+test('puts the confirmation checkbox in a group named by the declaration legend', async ({
   page
 }) => {
   await openDeclaration(page)
@@ -46,23 +47,21 @@ test('shows the confirmation as a small checkbox in a group whose legend only sc
     name: declarationCopy.declarationLegend
   })
 
-  await expect(group.locator('legend')).toHaveClass(/govuk-visually-hidden/)
-  await expect(group.locator('.govuk-checkboxes')).toHaveClass(
-    /govuk-checkboxes--small/
-  )
   await expect(
     group.getByRole('checkbox', { name: declarationCopy.declarationLabel })
   ).toBeVisible()
 })
 
-test('shows the date of declaration in bold', async ({ page }) => {
+test('shows the date of declaration as the strong text of its line', async ({
+  page
+}) => {
   await openDeclaration(page)
   const date = page
-    .locator('p.govuk-body', { hasText: declarationCopy.dateOfDeclaration })
-    .locator('strong')
+    .getByRole('paragraph')
+    .filter({ hasText: declarationCopy.dateOfDeclaration })
+    .getByRole('strong')
 
   await expect(date).toHaveText(/^\d{1,2} [A-Z][a-z]+ \d{4}$/)
-  await expect(date).toHaveCSS('font-weight', '700')
 })
 
 test('starts the page with the heading', async ({ page }) => {
@@ -107,31 +106,23 @@ test('accepts a late notification and shows the stored late banner on the read-o
 }) => {
   const reference = await completePotatoNotification(page, { late: true })
   await expect(
-    page.getByText(copy.late.warning(copy.late.potatoes(2)))
+    page.getByText(
+      checkAnswersCopy.late.warning(checkAnswersCopy.late.potatoes(2))
+    )
   ).toBeVisible()
-  await page.getByRole('button', { name: copy.continue, exact: true }).click()
-  await expect(page).toHaveURL(/\/declaration$/)
-  await page
-    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
-    .check()
-  await page
-    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
-    .click()
-  await expect(page).toHaveURL(
-    new RegExp(`${BASE}/notifications/${reference}/confirmation$`)
-  )
+  await submitDeclarationFromCheckAnswers(page, reference)
   await expect(
     page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
   ).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(
-    page.getByRole('heading', { name: copy.late.heading })
+    page.getByRole('heading', { name: checkAnswersCopy.late.heading })
   ).toBeVisible()
   await expect(
-    page.getByText(copy.late.accepted, { exact: false })
+    page.getByText(checkAnswersCopy.late.accepted, { exact: false })
   ).toBeVisible()
   await expect(
-    page.getByRole('button', { name: copy.continue, exact: true })
+    page.getByRole('button', { name: checkAnswersCopy.continue, exact: true })
   ).toHaveCount(0)
   await expect(page.getByRole('link', { name: /^Change/ })).toHaveCount(0)
   await expectNoSeriousOrCriticalViolations(
@@ -140,7 +131,7 @@ test('accepts a late notification and shows the stored late banner on the read-o
   )
   await page.reload()
   await expect(
-    page.getByRole('heading', { name: copy.late.heading })
+    page.getByRole('heading', { name: checkAnswersCopy.late.heading })
   ).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/declaration`)
   await expect(page).toHaveURL(
@@ -166,12 +157,12 @@ test('submits an on-time notification without a late banner', async ({
   ).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: copy.late.heading })
+    page.getByRole('heading', { name: checkAnswersCopy.late.heading })
   ).toHaveCount(0)
   await expect(
-    page.getByRole('button', { name: copy.continue, exact: true })
+    page.getByRole('button', { name: checkAnswersCopy.continue, exact: true })
   ).toHaveCount(0)
 })

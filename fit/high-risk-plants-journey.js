@@ -15,6 +15,7 @@ import { copy as checkAnswersCopy } from '../src/server/app/sets/high-risk-plant
 import { copy as pickerCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/hub/copy/copy.en.js'
 import { copy as originCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/copy/copy.en.js'
+import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
 
 export const POTATO_VARIETY = 'Maris Piper'
 export const ADDRESS_BOOK_PARTY = 'Tech Imports Ltd'
@@ -46,6 +47,11 @@ export const saveAndReturnToHub = (page) =>
   page.getByRole('button', {
     name: sharedCopy.saveActions.saveAndReturnToHub,
     exact: true
+  })
+
+const cancelAndReturnToHub = (page) =>
+  page.getByRole('link', {
+    name: sharedCopy.saveActions.cancelAndReturnToHub
   })
 
 const documentTop = (locator) =>
@@ -392,26 +398,27 @@ export const describeDatePickerLook = ({
 }
 
 /**
- * Fails unless the page offers Save and continue and Save and return to
- * overview in its button group and Cancel and return to overview in the
- * paragraph after the group.
+ * Fails unless the journey form offers Save and continue, Save and return to
+ * overview and Cancel and return to overview in that order, with Save and
+ * return to overview as the form's last button.
  *
  * @param {import('@playwright/test').Page} page
  */
 export const expectThreeSaveControls = async (page) => {
-  const buttonGroup = page.locator('.govuk-button-group', {
-    has: saveAndContinue(page)
-  })
+  const form = journeyFormOf(page)
+  const saveControls = form
+    .locator(saveAndContinue(page))
+    .or(form.locator(saveAndReturnToHub(page)))
+    .or(form.locator(cancelAndReturnToHub(page)))
 
-  await expect(buttonGroup.getByRole('button')).toHaveText([
+  await expect(saveControls).toHaveText([
     sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub
+    sharedCopy.saveActions.saveAndReturnToHub,
+    sharedCopy.saveActions.cancelAndReturnToHub
   ])
-  await expect(
-    buttonGroup
-      .locator('xpath=following-sibling::p[1]')
-      .getByRole('link', { name: sharedCopy.saveActions.cancelAndReturnToHub })
-  ).toBeVisible()
+  await expect(form.getByRole('button').last()).toHaveText(
+    sharedCopy.saveActions.saveAndReturnToHub
+  )
 }
 
 /**
@@ -719,6 +726,30 @@ export const openDeclaration = async (page, options) => {
     new RegExp(`${BASE}/notifications/${reference}/declaration$`)
   )
   return reference
+}
+
+/**
+ * Continues from the check answers page, confirms the declaration and
+ * continues, and fails unless the confirmation page for the notification
+ * opens.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} reference - the notification's reference
+ */
+export const submitDeclarationFromCheckAnswers = async (page, reference) => {
+  await page
+    .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
+    .click()
+  await expect(page).toHaveURL(/\/declaration$/)
+  await page
+    .getByRole('checkbox', { name: declarationCopy.declarationLabel })
+    .check()
+  await page
+    .getByRole('button', { name: declarationCopy.continueButton, exact: true })
+    .click()
+  await expect(page).toHaveURL(
+    new RegExp(`${BASE}/notifications/${reference}/confirmation$`)
+  )
 }
 
 /**
@@ -1051,11 +1082,7 @@ export const describeAddressPicker = ({
       const reference = await openPicker(page)
 
       await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-      await page
-        .getByRole('link', {
-          name: sharedCopy.saveActions.cancelAndReturnToHub
-        })
-        .click()
+      await cancelAndReturnToHub(page).click()
 
       await expect(page).toHaveURL(hubUrl)
 
