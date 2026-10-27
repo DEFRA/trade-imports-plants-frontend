@@ -23,15 +23,14 @@ const view = `${TEMPLATES}/features/party-edit/party-edit`
 
 const copy = copyFor({ en, cy })
 
-const RETURN_SLUGS = [kit.CYA_SLUG, ...PARTIES.map((party) => party.slug)]
-
 const returnHref = (request, party) => {
-  const slug = RETURN_SLUGS.includes(request.query.return)
-    ? request.query.return
-    : party.slug
+  const { honouredSlug } = kit.readReturnMarker(request, [
+    kit.CYA_SLUG,
+    ...PARTIES.map((p) => p.slug)
+  ])
   return kit.withChangeContext(
     request,
-    pagePath(request.params.journeyId, slug)
+    pagePath(request.params.journeyId, honouredSlug ?? party.slug)
   )
 }
 
