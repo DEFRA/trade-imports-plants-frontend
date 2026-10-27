@@ -1,5 +1,5 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { pagePath } from '../../../../../../shared/paths.js'
 import {
@@ -9,8 +9,10 @@ import {
   records
 } from '../../../../../../engine/persistence/records.js'
 import {
+  fetchMock,
   journeyRequest,
   requestAsSessionHoldingNoJourney,
+  resetMocksAndConfigAfterTests,
   stubH
 } from '../../../../../../engine/test-support.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
@@ -27,10 +29,7 @@ const view =
 describe('delete notification routes', () => {
   useStubbedHighRiskPlantsJourney()
 
-  afterEach(() => {
-    configureRecords(SET_ID, recordsStub)
-    vi.unstubAllGlobals()
-  })
+  resetMocksAndConfigAfterTests()
 
   it('Should render a journey-scoped irreversible confirmation', async () => {
     const journey = await records.create()
@@ -89,14 +88,8 @@ describe('delete notification routes', () => {
       ...recordsStub,
       softDelete: realRecords.softDelete
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      }))
-    )
+    fetchMock.enableMocks()
+    fetchMock.mockResponse(async () => ({ status: 503, body: '' }))
     const journey = await records.create()
 
     const response = await post(journeyRequest(journey.journeyId), stubH())

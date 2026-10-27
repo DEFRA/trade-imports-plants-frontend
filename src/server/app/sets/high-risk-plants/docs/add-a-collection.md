@@ -440,12 +440,12 @@ declares. Add a case shaped like the matching layout:
 
 ## Test support
 
-Build test set-up from the shared helpers in
-[Test support](add-a-page.md#test-support). `useStubbedHighRiskPlantsJourney`
-is the controller-test set-up; `installHighRiskPlantsJourney` is only for tests
-that wire their own stores.
+Build test set-up from the shared helpers, and extend them rather than writing
+set-up in the test file.
 
-A browser-test step that adds one instance to the collection belongs in
+The controller-test helpers are listed in [Test support](add-a-page.md#test-support), with `useStubbedJourney` as the set-up.
+
+A step that adds one instance to the collection belongs in
 [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js)
 once two specs need it.
 

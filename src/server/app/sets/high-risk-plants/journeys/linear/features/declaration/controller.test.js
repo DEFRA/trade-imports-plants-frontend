@@ -1,5 +1,5 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
 import { configureRecords } from '../../../../../../engine/persistence/records.js'
@@ -8,6 +8,7 @@ import { records as realRecords } from '../../../../../../services/persistence/r
 import {
   expectOneLogged,
   expectNoRefusalLogged,
+  fetchMock,
   journeyRequest,
   resetMocksAndConfigAfterTests,
   stubH
@@ -201,14 +202,8 @@ describe('declaration', () => {
   it('Should retain values and show the recoverable failure banner when finalise fails', async () => {
     const { request, h } = await setup()
     request.payload = { declaration: 'confirmed' }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      }))
-    )
+    fetchMock.enableMocks()
+    fetchMock.mockResponse(async () => ({ status: 503, body: '' }))
     configureRecords(SET_ID, { ...recordsStub, finalise: realRecords.finalise })
     expect((await post(request, h)).statusCode).toBe(500)
     expect(h.captured.view.context).toMatchObject({

@@ -1,5 +1,5 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { pagePath } from '../../../../../../shared/paths.js'
 import { assembleFulfilments } from '../../../../../../bridge/assemble-fulfilments.js'
@@ -45,10 +45,6 @@ const startAmend = async () => {
 
 describe('cancel amendment routes', () => {
   useStubbedHighRiskPlantsJourney()
-
-  afterEach(() => {
-    configureRecords(SET_ID, recordsStub)
-  })
 
   it('Should show the Amend tag but offer no Cancel amend on the confirmation page itself', async () => {
     const { journeyId } = await startAmend()

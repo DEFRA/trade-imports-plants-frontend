@@ -365,7 +365,9 @@ set-up in the test file:
     the real journey passes the fixture `dispatchPages` from `test/fixtures/`
   - `useBackendRecords(setId)` configures the real records and the stub session
     before a describe, enables the shared `fetchMock` and clears its calls
-    before each test, and resets the mocks and config after each test
+    before each test, and resets the mocks and config after each test;
+    `useStubbedJourney` and `useBackendRecords` go on sibling describes, never
+    nested
   - `journeyRequest`, `stubH`, `recordingH` and `recordingLogger` build the
     request, toolkit and logger
   - `stubH(request, { writesStateToRequest: true })` writes each cookie it is
@@ -373,9 +375,14 @@ set-up in the test file:
   - `requestAsSessionHoldingNoJourney` runs a GET and a POST handler as a
     session that holds no journey
   - `resetMocksAndConfigAfterTests` registers the reset of fetch mocks and
-    config after each test; the describe that calls `referenceDataServing`
-    registers it, because `referenceDataServing` only returns the function that
-    serves given rows as the reference-data response
+    config after each test
+  - `useReferenceDataServing` registers `resetMocksAndConfigAfterTests()` for the
+    describe that calls it, and returns the function that serves given rows as
+    the reference-data response
+  - `fetchMock` is the shared `vitest-fetch-mock` instance that
+    `useBackendRecords`, `addressBookAnswering` and `useReferenceDataServing`
+    drive; a test enables it and sets its response, with
+    `resetMocksAndConfigAfterTests()` registered
   - `addressBookAnswering`, `addressBookRefusingAddresses` and
     `addressBookRequestUrls` put the address book on the network boundary and
     report the requests made to it

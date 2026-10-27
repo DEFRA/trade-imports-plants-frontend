@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  addressBookAnswering,
   addressBookRefusingAddresses,
   addressBookRequestUrls,
   driveHandler,
@@ -143,7 +142,7 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
   })
 
   it('Should change only this notification, never the address book', async () => {
-    addressBookAnswering({ status: 500 })
+    addressBookRefusingAddresses()
 
     const result = await driveHandler(post, { seed, payload: FORM })
 

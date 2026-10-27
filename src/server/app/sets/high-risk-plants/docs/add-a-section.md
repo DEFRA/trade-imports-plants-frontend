@@ -355,10 +355,10 @@ task-row status, hub rendering, check-answers rows and notification mapping.
 
 ## Test support
 
-Build test set-up from the shared helpers in
-[Test support](add-a-page.md#test-support). `useStubbedHighRiskPlantsJourney`
-is the controller-test set-up; `installHighRiskPlantsJourney` is only for tests
-that wire their own stores.
+Build test set-up from the shared helpers, and extend them rather than writing
+set-up in the test file.
+
+The controller-test helpers are listed in [Test support](add-a-page.md#test-support), with `useStubbedJourney` as the set-up.
 
 A new section's answers join `COMPLETE_NOTIFICATION`. A new section that the
 opening run reaches adds its step to `completePotatoNotification` in
