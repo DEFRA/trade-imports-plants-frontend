@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   assertTargetsAreCurrent,
-  auditableRoutePaths,
   auditPaths,
   auditUrls,
   FILLED_BY,
@@ -56,19 +55,12 @@ const journeyIds = Object.fromEntries(
 const DASHBOARD_ROUTE_PATH = '/'
 const DASHBOARD_URL_PATH = SET_BASE
 const HUB_PATH = '/notifications/{journeyId}'
-const DELETE_PATH = '/notifications/{journeyId}/delete'
 const CANCEL_AMEND_PATH = '/notifications/{journeyId}/cancel-amend'
 const CONFIRMATION_PATH = '/notifications/{journeyId}/confirmation'
-const COMMODITY_TYPE_PATH = '/notifications/{journeyId}/commodity-type'
-const COMMODITIES_PATH = '/notifications/{journeyId}/commodities'
-const COMMODITY_DETAILS_PATH = '/notifications/{journeyId}/commodities/details'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
 const CONSIGNOR_PATH = '/notifications/{journeyId}/consignors/select'
 const CONSIGNOR_EDIT_PATH = '/notifications/{journeyId}/consignors/edit'
-const ARRIVAL_DETAILS_PATH = '/notifications/{journeyId}/arrival-details'
-const PLACE_OF_DESTINATION_PATH =
-  '/notifications/{journeyId}/destinations/select'
 
 const ROUTES = [
   { method: 'GET', path: DASHBOARD_ROUTE_PATH },
@@ -226,49 +218,19 @@ describe('#auditPaths', () => {
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/consignment/contact/edit`
     ])
   })
-})
 
-describe('#auditableRoutePaths', () => {
   it('Should leave out cancel-amend because no seed shape is amending', () => {
     expect(SKIPPED.get(CANCEL_AMEND_PATH)).toMatch(/amending/)
-    expect(auditableRoutePaths()).not.toContain(CANCEL_AMEND_PATH)
+    expect(
+      auditPaths(journeyIds).some((path) => path.endsWith('/cancel-amend'))
+    ).toBe(false)
   })
 
   it('Should leave out the confirmation page, which only renders on a submitted notification', () => {
     expect(SKIPPED.get(CONFIRMATION_PATH)).toMatch(/submitted/)
-    expect(auditableRoutePaths()).not.toContain(CONFIRMATION_PATH)
-  })
-
-  it('Should name every GET route the skip list does not name, journey id unsubstituted', () => {
-    const paths = withSkipped(() => auditableRoutePaths(ROUTES))
-
-    expect(paths).toHaveLength(GET_PATHS.length - SKIPPED_PATH_COUNT)
-    expect(paths).toContain(TREATMENTS_PATH)
-    expect(paths).not.toContain(SKIPPED_PATH)
-    expect(paths).not.toContain(CONFIRMATION_PATH)
-  })
-
-  it('Should name every GET route the set registers today', () => {
-    expect(auditableRoutePaths()).toEqual([
-      '/notifications/{journeyId}/declaration',
-      '/notifications/{journeyId}/notification-view',
-      '/notifications/{journeyId}/consignment/contact/select',
-      '/notifications/{journeyId}/identification-numbers',
-      DASHBOARD_ROUTE_PATH,
-      HUB_PATH,
-      DELETE_PATH,
-      COMMODITY_TYPE_PATH,
-      COMMODITIES_PATH,
-      COMMODITY_DETAILS_PATH,
-      ORIGIN_PATH,
-      ARRIVAL_STATUS_PATH,
-      ARRIVAL_DETAILS_PATH,
-      CONSIGNOR_PATH,
-      PLACE_OF_DESTINATION_PATH,
-      CONSIGNOR_EDIT_PATH,
-      '/notifications/{journeyId}/destinations/edit',
-      '/notifications/{journeyId}/consignment/contact/edit'
-    ])
+    expect(
+      auditPaths(journeyIds).some((path) => path.endsWith('/confirmation'))
+    ).toBe(false)
   })
 })
 

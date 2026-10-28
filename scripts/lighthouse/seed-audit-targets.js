@@ -6,7 +6,6 @@ import puppeteer from 'puppeteer'
 
 import signIn from '../../tests/lighthouse/auth-setup.cjs'
 import {
-  auditableRoutePaths,
   auditUrls,
   reportNames,
   TARGETS_FILE,
@@ -84,36 +83,17 @@ const write = (payload) => {
   writeFileSync(TARGETS_FILE, `${JSON.stringify(payload, null, 2)}\n`)
 }
 
-/** Seeding exists only to give the audited URLs a notification to point at. The
- * app now registers the dashboard and the POST route that creates a
- * notification, so a shape can be seeded and walked as far as the journey pages
- * that exist. */
-const seedAndWriteTargets = async () => {
-  await ensureAddressBookHasAnAddress()
-  const journeyIds = await seedNotifications(await signedInCookies())
-  const allUrls = auditUrls(origin, journeyIds)
-  const urls = urlsInShard(allUrls, shard)
-  await assertUrlsRenderTheirOwnPage(urls, await signedInCookies())
-  write({ origin, journeyIds, urls, reports: reportNames(allUrls, journeyIds) })
+await ensureAddressBookHasAnAddress()
+const journeyIds = await seedNotifications(await signedInCookies())
+const allUrls = auditUrls(origin, journeyIds)
+const urls = urlsInShard(allUrls, shard)
+await assertUrlsRenderTheirOwnPage(urls, await signedInCookies())
+write({ origin, journeyIds, urls, reports: reportNames(allUrls, journeyIds) })
 
-  const seeded = Object.entries(journeyIds)
-    .map(([name, journeyId]) => `${name} ${journeyId}`)
-    .join(', ')
-  process.stdout.write(
-    `Lighthouse will audit ${urls.length} of ${allUrls.length} URLs on ${origin}, ` +
-      `shard ${shard.index} of ${shard.total} (${seeded})\n`
-  )
-}
-
-const writeNoTargets = () => {
-  write({ origin, journeyIds: {}, urls: [], reports: {} })
-  process.stdout.write(
-    `Lighthouse has no URLs to audit on ${origin} — the set registers no pages yet\n`
-  )
-}
-
-if (auditableRoutePaths().length === 0) {
-  writeNoTargets()
-} else {
-  await seedAndWriteTargets()
-}
+const seeded = Object.entries(journeyIds)
+  .map(([name, journeyId]) => `${name} ${journeyId}`)
+  .join(', ')
+process.stdout.write(
+  `Lighthouse will audit ${urls.length} of ${allUrls.length} URLs on ${origin}, ` +
+    `shard ${shard.index} of ${shard.total} (${seeded})\n`
+)

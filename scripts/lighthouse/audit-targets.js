@@ -100,32 +100,29 @@ const journeyIdFor = (journeyIds, path) => {
   return journeyId
 }
 
-/** The route paths this run will audit, still carrying `{journeyId}` because no
- * notification has been seeded yet. The dashboard at `/` is the first of them,
- * and each page increment adds its own. */
-export const auditableRoutePaths = (routes = allRoutes) => {
-  assertTargetsAreCurrent(routes)
-  return getPathsOf(routes).filter((path) => !SKIPPED.has(path))
-}
-
 /**
  * The route table holds prefix-free route SHAPES — Hapi supplies the set's
  * mount when it registers them. Lighthouse fetches real URLs, so every shape
  * becomes a link under the set's mount here. Without it every target 404s.
  */
-export const auditPaths = (journeyIds, routes = allRoutes) =>
-  auditableRoutePaths(routes).map((path) => {
-    const resolved = path.includes(JOURNEY_PARAM)
-      ? path.replace(JOURNEY_PARAM, journeyIdFor(journeyIds, path))
-      : path
-    // Hapi mounts the dashboard's `/` shape at the set base itself rather than
-    // at `<base>/`, so it is the one shape that is not a prefix plus a path.
-    const link =
-      resolved === dashboardRoutePath()
-        ? dashboardPath()
-        : `${setBase()}${resolved}`
-    return `${link}${QUERY.get(path) ?? ''}`
-  })
+export const auditPaths = (journeyIds, routes = allRoutes) => {
+  assertTargetsAreCurrent(routes)
+  return getPathsOf(routes)
+    .filter((path) => !SKIPPED.has(path))
+    .map((path) => {
+      const resolved = path.includes(JOURNEY_PARAM)
+        ? path.replace(JOURNEY_PARAM, journeyIdFor(journeyIds, path))
+        : path
+      // Hapi mounts the dashboard's `/` shape at the set base itself rather
+      // than at `<base>/`, so it is the one shape that is not a prefix plus a
+      // path.
+      const link =
+        resolved === dashboardRoutePath()
+          ? dashboardPath()
+          : `${setBase()}${resolved}`
+      return `${link}${QUERY.get(path) ?? ''}`
+    })
+}
 
 export const auditUrls = (origin, journeyIds, routes = allRoutes) =>
   auditPaths(journeyIds, routes).map((path) => new URL(path, origin).toString())
