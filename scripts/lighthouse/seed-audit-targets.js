@@ -9,7 +9,8 @@ import {
   auditableRoutePaths,
   auditUrls,
   reportNames,
-  TARGETS_FILE
+  TARGETS_FILE,
+  urlsInShard
 } from './audit-targets.js'
 import { createJourneyClient } from './journey-client.js'
 import { ensureAddressBookHasAnAddress } from './seed-address-book.js'
@@ -23,6 +24,10 @@ import {
 const HTTP_OK = 200
 
 const origin = process.env.LIGHTHOUSE_BASE_URL ?? 'http://localhost:3003'
+const shard = {
+  index: Number(process.env.LIGHTHOUSE_SHARD_INDEX ?? 1),
+  total: Number(process.env.LIGHTHOUSE_SHARD_TOTAL ?? 1)
+}
 
 const signedInCookies = async () => {
   const browser = await puppeteer.launch({
@@ -86,15 +91,17 @@ const write = (payload) => {
 const seedAndWriteTargets = async () => {
   await ensureAddressBookHasAnAddress()
   const journeyIds = await seedNotifications(await signedInCookies())
-  const urls = auditUrls(origin, journeyIds)
+  const allUrls = auditUrls(origin, journeyIds)
+  const urls = urlsInShard(allUrls, shard)
   await assertUrlsRenderTheirOwnPage(urls, await signedInCookies())
-  write({ origin, journeyIds, urls, reports: reportNames(urls, journeyIds) })
+  write({ origin, journeyIds, urls, reports: reportNames(allUrls, journeyIds) })
 
   const seeded = Object.entries(journeyIds)
     .map(([name, journeyId]) => `${name} ${journeyId}`)
     .join(', ')
   process.stdout.write(
-    `Lighthouse will audit ${urls.length} URLs on ${origin} (${seeded})\n`
+    `Lighthouse will audit ${urls.length} of ${allUrls.length} URLs on ${origin}, ` +
+      `shard ${shard.index} of ${shard.total} (${seeded})\n`
   )
 }
 
