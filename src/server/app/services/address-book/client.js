@@ -8,7 +8,7 @@ const addressBookUrl =
 
 const tracingHeader = process.env.TRACING_HEADER ?? 'x-cdp-request-id'
 
-/** The page size the address book serves. */
+/** The page size the address book serves when the request names none. */
 export const API_PAGE_SIZE = 25
 
 const addressesUrl = (orgId, addressId) => {
