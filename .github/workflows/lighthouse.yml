@@ -39,6 +39,10 @@ jobs:
        github.event.workflow_run.event == 'pull_request')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     outputs:
       tag: ${{ steps.branch-tag.outputs.sanitised }}
     steps:
@@ -81,12 +85,57 @@ jobs:
         working-directory: frontend
 
       - name: Run Lighthouse CI
-        id: lhci
         run: npm run lighthouse
+        working-directory: frontend
+        env:
+          LIGHTHOUSE_SHARD_INDEX: ${{ matrix.shard }}
+          LIGHTHOUSE_SHARD_TOTAL: ${{ strategy.job-total }}
+
+      - name: Upload Lighthouse shard report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-report-${{ matrix.shard }}
+          path: frontend/lighthouse-report/
+          retention-days: 1
+
+  lighthouse-report:
+    needs: lighthouse-test
+    if: >
+      always() &&
+      ((needs.lighthouse-test.result != 'skipped' &&
+        needs.lighthouse-test.result != 'cancelled') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.event == 'pull_request'))
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages-${{ github.repository }}
+      cancel-in-progress: false
+    env:
+      REPORTS_PRODUCED: ${{ needs.lighthouse-test.result == 'success' || needs.lighthouse-test.result == 'failure' }}
+    steps:
+      - name: Checkout frontend scripts
+        if: env.REPORTS_PRODUCED == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch || github.event.workflow_run.head_branch || github.ref_name }}
+          path: frontend
+          sparse-checkout: scripts/lighthouse
+
+      - name: Download Lighthouse shard reports
+        if: env.REPORTS_PRODUCED == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: lighthouse-report-*
+          path: frontend/lighthouse-shards/
+
+      - name: Merge shard reports
+        if: env.REPORTS_PRODUCED == 'true'
+        run: node scripts/lighthouse/merge-shard-reports.js lighthouse-shards lighthouse-report
         working-directory: frontend
 
       - name: Generate report index
-        if: always() && steps.lhci.outcome != 'skipped'
+        if: env.REPORTS_PRODUCED == 'true' && hashFiles('frontend/lighthouse-report/manifest.json') != ''
         run: |
           node -e "
             const fs = require('fs');
@@ -108,48 +157,24 @@ jobs:
           "
 
       - name: Flag simple findings
-        if: always() && steps.lhci.outcome != 'skipped'
+        if: env.REPORTS_PRODUCED == 'true'
         run: node scripts/lighthouse/flag-simple-findings.cjs
         working-directory: frontend
 
       - name: Upload Lighthouse report artifact
-        if: always()
+        if: env.REPORTS_PRODUCED == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-report
           path: frontend/lighthouse-report/
           retention-days: 14
 
-      - name: Tear down stack
-        if: always()
-        run: docker compose -p trade-imports down
-
-  lighthouse-publish:
-    needs: lighthouse-test
-    if: >
-      always() &&
-      needs.lighthouse-test.result != 'skipped' &&
-      needs.lighthouse-test.result != 'cancelled'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: pages-${{ github.repository }}
-      cancel-in-progress: false
-    outputs:
-      report-url: ${{ steps.report-url.outputs.url }}
-    steps:
-      - name: Download Lighthouse report artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: lighthouse-report
-          path: lighthouse-report/
-
       - name: Deploy Lighthouse report to GitHub Pages
+        if: env.REPORTS_PRODUCED == 'true'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./lighthouse-report
+          publish_dir: ./frontend/lighthouse-report
           destination_dir: lighthouse/${{ needs.lighthouse-test.outputs.tag }}
           # Each run emits a complete report set under stable, route-derived
           # names, so replacing the directory keeps it to the latest run and
@@ -159,6 +184,7 @@ jobs:
 
       - name: Output report URL
         id: report-url
+        if: env.REPORTS_PRODUCED == 'true'
         run: |
           repo="${{ github.repository }}"
           owner="${repo%%/*}"
@@ -166,25 +192,27 @@ jobs:
           owner_lc="$(echo "$owner" | tr '[:upper:]' '[:lower:]')"
           echo "url=https://${owner_lc}.github.io/${name}/lighthouse/${{ needs.lighthouse-test.outputs.tag }}/" >> "$GITHUB_OUTPUT"
 
-  report-status:
-    needs: [lighthouse-test, lighthouse-publish]
+      - name: Report Lighthouse check run on PR
+        if: >
+          always() &&
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.event == 'pull_request'
+        uses: DEFRA/trade-imports-workspace/.github/actions/report-lighthouse-status@main
+        with:
+          lighthouse-result: ${{ needs.lighthouse-test.result }}
+          report-url: ${{ steps.report-url.outputs.url }}
+          flagged-audits-path: frontend/lighthouse-report/flagged-audits.json
+
+  report-status-unpublished:
+    needs: [lighthouse-test, lighthouse-report]
     if: >
       always() &&
+      needs.lighthouse-report.result == 'cancelled' &&
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Download Lighthouse report artifact
-        if: needs.lighthouse-test.result == 'success' || needs.lighthouse-test.result == 'failure'
-        uses: actions/download-artifact@v8
-        with:
-          name: lighthouse-report
-          path: lighthouse-report/
-        continue-on-error: true
-
       - name: Report Lighthouse check run on PR
         uses: DEFRA/trade-imports-workspace/.github/actions/report-lighthouse-status@main
         with:
           lighthouse-result: ${{ needs.lighthouse-test.result }}
-          report-url: ${{ needs.lighthouse-publish.outputs.report-url }}
-          flagged-audits-path: lighthouse-report/flagged-audits.json

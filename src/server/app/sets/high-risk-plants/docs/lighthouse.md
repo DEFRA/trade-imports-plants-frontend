@@ -129,11 +129,21 @@ SEO findings are not included in that file.
 ## CI ownership
 
 This repository has its own `.github/workflows/lighthouse.yml`. It runs after a
-successful branch image publish, or by manual dispatch: it checks out the
-workspace, starts the stack for the chosen branch, installs the frontend, runs
-`npm run lighthouse`, always tears the stack down, uploads the report for 14
-days, publishes it to GitHub Pages and passes the result, report URL and
-flagged findings to the workspace status action.
+successful branch image publish, or by manual dispatch. Two runners each check
+out the workspace, start the stack for the chosen branch, install the frontend
+and run `npm run lighthouse` over their own shard of the URLs:
+`LIGHTHOUSE_SHARD_INDEX` and `LIGHTHOUSE_SHARD_TOTAL` make `lighthouse:targets`
+seed as usual but write only that shard's URLs, contiguous slices that together
+hold every URL once. Unset, they default to one shard of one, so a local run
+audits every URL. The runners are discarded afterwards, so the stack is not torn
+down.
+
+One report job then merges the shards with
+`scripts/lighthouse/merge-shard-reports.js` into one `lighthouse-report/` and
+one manifest, builds the index and flagged findings from it, uploads it for 14
+days, publishes it to GitHub Pages and passes the result, report URL and flagged
+findings to the workspace status action. If that job is cancelled while queued
+behind another GitHub Pages publish, a fallback job still reports the result.
 
 The set registers the dashboard, so `lighthouse:targets` now derives one URL and
 seeds the notifications behind it. The check is expected to pass, and a red

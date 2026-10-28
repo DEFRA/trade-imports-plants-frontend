@@ -115,10 +115,30 @@ jobs:
   # src/server/auth/stub-sign-in.js), so they need no workspace stack. Kept out
   # of pr-validator so a browser run does not sit in front of the rest of the
   # PR checks.
+  playwright-version:
+    name: Playwright version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.lock.outputs.version }}
+    steps:
+      - name: Checkout package lock
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: package-lock.json
+          sparse-checkout-cone-mode: false
+
+      - name: Read the locked Playwright version
+        id: lock
+        run: echo "version=$(jq -r '.packages["node_modules/playwright-core"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+
   playwright:
     name: FIT Tests
+    needs: playwright-version
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-noble
+      options: --user 1001
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -131,10 +151,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # Chromium only: both projects use devices['Desktop Chrome'].
-      - name: Install the Playwright browser
-        run: npm run playwright:install
 
       - name: Run the frontend-owned Playwright suites
         run: npm run test:fit:ci
