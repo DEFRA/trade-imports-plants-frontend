@@ -23,16 +23,14 @@ const view = `${TEMPLATES}/features/party-edit/party-edit`
 
 const copy = copyFor({ en, cy })
 
-/** A closed list, not a free path: `return` arrives in the query string. */
-const RETURN_SLUGS = [kit.CYA_SLUG, ...PARTIES.map((party) => party.slug)]
-
 const returnHref = (request, party) => {
-  const slug = RETURN_SLUGS.includes(request.query.return)
-    ? request.query.return
-    : party.slug
+  const { honouredSlug } = kit.readReturnMarker(request, [
+    kit.CYA_SLUG,
+    ...PARTIES.map((p) => p.slug)
+  ])
   return kit.withChangeContext(
     request,
-    pagePath(request.params.journeyId, slug)
+    pagePath(request.params.journeyId, honouredSlug ?? party.slug)
   )
 }
 
@@ -40,7 +38,7 @@ const pickerHref = (request, journeyId, party) =>
   kit.withChangeContext(request, pagePath(journeyId, party.slug))
 
 const countryItemsOf = (countries) => [
-  { value: '', text: copy.countryPlaceholder },
+  { value: '', text: copy.countrySelectText },
   ...countries.map(({ code, name }) => ({ value: code, text: name }))
 ]
 
@@ -68,7 +66,6 @@ const render = async (
 const valuesFrom = (payload = {}) =>
   Object.fromEntries(FIELDS.map((field) => [field, payload[field] ?? '']))
 
-/** A consignor dropped by a change of commodity type has nothing to edit. */
 const editable = ({ answers, scope }, party) =>
   scope.has(party.id) && Boolean(answers[party.id])
 
@@ -107,6 +104,7 @@ const post = (party) => async (request, h) => {
   }
 
   const { failure } = await kit.recoverableSave(
+    request,
     async () => {
       await state.commit(request, h, { [party.id]: partyFrom(value) })
     },

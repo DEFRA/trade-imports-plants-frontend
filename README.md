@@ -12,6 +12,7 @@ journey from commodity selection through declaration and confirmation.
 
 - [Platform documentation](src/server/app/docs/README.md)
 - [High-risk-plants set and journey documentation](src/server/app/sets/high-risk-plants/docs/README.md)
+- [Accessible autocomplete guide](src/server/common/components/accessible-autocomplete/README.md)
 
 Run the set's unit suite from the repo root: `npm run test:high-risk-plants`.
 
@@ -70,6 +71,9 @@ the same Redis key-value store, similar to how services might have a database.
 All frontend services are given a namespaced prefix that matches the service
 name, so `my-service` has access to everything in Redis prefixed with
 `my-service`.
+
+The client pins the RESP2 protocol. ioredis 6 defaults to RESP3, and RESP2
+keeps the session store's AUTH and SELECT handshake unchanged.
 
 ## Call counts
 
@@ -188,7 +192,7 @@ npm run test:high-risk-plants   # the set's own Vitest suite, no coverage
 npm test                        # the full Vitest suite with coverage
 PORT=3053 npm run test:fit:features
 npm run test:fit:journeys
-npm run lint                    # JS, stylesheet and dependency-cruiser
+npm run lint                    # JS, template comments, stylesheet and dependency-cruiser
 npm run format
 npm run fit:start:workspace     # the workspace-backed start, see below
 ```
@@ -203,6 +207,13 @@ stub-backed and needs no stack.
 `npm run lint:arch` runs Dependency Cruiser over `src/server/app` and enforces
 the L1–L4 layer rules in `.dependency-cruiser.cjs`. Production code cannot use
 test exemptions.
+
+`eslint.config.js` ignores everything `.gitignore` lists, because neostandard
+scopes its own `ignores` to its own layers. It gives Playwright specs the
+browser globals their `page.evaluate` callbacks use, runs the SonarCloud
+quality-gate rules that have ESLint equivalents on `src/server`, and runs the
+house rules in `eslint-rules/code-quality.js`. `npm run lint:templates` checks
+Nunjucks comments for the same tracking references.
 
 ## AUTHENTICATION (trade-imports-defra-id-stub)
 

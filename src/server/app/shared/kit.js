@@ -5,6 +5,7 @@ import { nextInTaskRow } from '../flow/navigation.js'
 import {
   journeyLayout,
   journeyNextRunTarget,
+  journeyPreviousRunTarget,
   journeySectionCaption
 } from '../flow/journey-flow.js'
 import { inOpeningRun } from '../flow/run-state.js'
@@ -16,12 +17,7 @@ import { amendFormActions } from './amend-form-actions.js'
 
 export const routeOptions = { auth: 'session' }
 
-/**
- * The one resolved instance of the shared chrome copy. `base` puts it in
- * every journey view model; a controller that builds its own view model —
- * `src/server/auth/controller.js` — imports it from here rather than
- * re-wiring `copyFor`.
- */
+/** The shared chrome copy in the request's language. */
 export const sharedCopy = copyFor({ en: sharedEn, cy: sharedCy })
 
 export const SURFACES = Object.freeze({
@@ -90,7 +86,7 @@ export const journeyStrip = (journey, { offerCancelAmend = true } = {}) =>
 const anchorHref = (field) => `#${field}`
 
 /**
- * The one error summary shape the service renders.
+ * The error summary view model for a set of field errors.
  *
  * @param {object} [fieldErrors] - map of key to message. Empty means no summary.
  * @param {object} [options]
@@ -121,15 +117,62 @@ export const errorSummary = (
 export const fieldError = (fieldErrors, field) =>
   fieldErrors?.[field] ? { text: fieldErrors[field] } : undefined
 
+export const REFUSAL_LOG_MESSAGE = 'Answer refused, page shown again'
+export const SAVE_FALLBACK_LOG_MESSAGE =
+  'Save failed on a recoverable backend error, fallback response sent'
+
+/**
+ * Logs a refusal once at info. The error codes are the field keys, never the
+ * messages.
+ *
+ * @param {object} request - the request being answered.
+ * @param {object} [options] - other keys (the named reason, ids) are logged as given.
+ * @param {object} [options.fieldErrors] - map of field key to the message the
+ * page shows (may be empty). Only for a refusal that is not the user's own
+ * input (a state refusal, a tampered post, another service refusing), never
+ * for errors the user can correct on the form.
+ */
+export const logRefusal = (request, { fieldErrors = {}, ...details } = {}) =>
+  request.logger.info(
+    {
+      ...details,
+      journeyId: request.params.journeyId,
+      route: request.route?.path,
+      errorCodes: Object.keys(fieldErrors)
+    },
+    REFUSAL_LOG_MESSAGE
+  )
+
 export const hubExitTarget = (request) =>
   request.payload?.exit === 'hub' ? hubPath(request.params.journeyId) : null
 
-export const isHubExit = (request) => hubExitTarget(request) !== null
-
 export const changeContext = (request) => Boolean(request.query.change)
 
+/** The href with `change=1` added to its query string. */
+export const appendChangeContext = (href) =>
+  `${href}${href.includes('?') ? '&' : '?'}change=1`
+
 export const withChangeContext = (request, href) =>
-  changeContext(request) ? `${href}?change=1` : href
+  changeContext(request) ? appendChangeContext(href) : href
+
+/**
+ * Reads the `return` marker a request carries.
+ *
+ * @param {object} request - the request being answered.
+ * @param {string[]} allowedSlugs - the page slugs the marker may name.
+ * @returns {{ honouredSlug?: string, refusedMarker?: string }} `{}` without a
+ * marker, `{ honouredSlug }` when the marker is one of `allowedSlugs`, else
+ * `{ refusedMarker }` holding the value received.
+ */
+export const readReturnMarker = (request, allowedSlugs) => {
+  const marker = request.query?.return
+  if (marker === undefined) {
+    return {}
+  }
+  return allowedSlugs.includes(marker)
+    ? { honouredSlug: marker }
+    : { refusedMarker: marker }
+}
 
 export const exitTarget = (request, fallback) =>
   hubExitTarget(request) ??
@@ -142,6 +185,21 @@ export const runTarget = async (request, stepId, scope) =>
     ? journeyNextRunTarget(stepId, scope, request.params.journeyId)
     : null
 
+export const runBackLink = async (
+  request,
+  stepId,
+  { journey, scope },
+  { fallback = hubPath(journey.journeyId) } = {}
+) => {
+  const previousRunTarget = (await inOpeningRun(
+    request,
+    request.params.journeyId
+  ))
+    ? journeyPreviousRunTarget(stepId, scope, request.params.journeyId)
+    : null
+  return previousRunTarget ?? fallback
+}
+
 export const nextTarget = async (request, page, scope) =>
   exitTarget(
     request,
@@ -149,21 +207,10 @@ export const nextTarget = async (request, page, scope) =>
       nextInTaskRow(page.id, scope, request.params.journeyId)
   )
 
-/**
- * The layout a page outside every set renders in. Each set names the same
- * template today, but a set may override it, and a server-wide page has no set
- * to ask.
- */
 export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 
 /**
- * The chrome a page outside every set shares — the sign-in error page, the
- * shared error page reached from a server-wide route.
- *
- * `base` below cannot serve them: it reads `journeyLayout()` and
- * `journeySectionCaption()`, which resolve through the active set, and a
- * server-wide route never enters one. With a single set mounted that resolves
- * by the sole-set fallback and the bug stays hidden; with two it throws.
+ * The chrome for a page outside every set, such as the sign-in error page.
  *
  * @param {string} title - the page title.
  * @returns {object} the common view model, without anything set-owned.
@@ -171,12 +218,7 @@ export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 export const serverWideBase = (title) => ({
   layout: SERVER_WIDE_LAYOUT,
   pageTitle: title,
-  // The chrome's home link. A server-wide page belongs to no set, so it points
-  // at the root, which redirects to the default set.
   homeUrl: '/',
-  // A server-wide page has no journey, so no strip and no token. `backLink`
-  // and `hubHref` are simply absent, which the layout treats the same as the
-  // undefined `base` leaves them at.
   journeyStrip: null,
   concurrencyToken: null,
   sharedCopy,
@@ -185,14 +227,8 @@ export const serverWideBase = (title) => ({
 })
 
 /**
- * The chrome for a page that may or may not be inside a set, resolved from the
- * request path rather than from whichever set happens to be ambient.
- *
- * The error page is the case: it is reached from a set's route and from a
- * server-wide one alike, and only at render time is it known which. The path
- * is what settles it — an unrouted 404 ran no set's extension, so there may be
- * no ambient context to read even under a set's own mount, and the sole-set
- * fallback would answer with the wrong set as soon as a second one mounted.
+ * The chrome for a page that may or may not be inside a set, chosen by the
+ * set whose mount the request path falls under.
  *
  * @param {string} title - the page title.
  * @param {string} [requestPath] - the path the request asked for.
@@ -217,7 +253,8 @@ export const chromeFor = (title, requestPath) => {
  * @param {object} [options.request] - the request being answered. Supply it
  * on a page that ends with `saveActions`, and the view gains `amend`: the two
  * form actions its save buttons carry while the journey is being amended, or
- * null otherwise. A template passes it on as `amend = amend`.
+ * null otherwise.
+ * @param {boolean} [options.showJourneyStrip] - false leaves the status strip off the page.
  * @returns {object} the common view model.
  */
 export const base = (
@@ -229,6 +266,7 @@ export const base = (
     page,
     recoverableError = false,
     offerCancelAmend = true,
+    showJourneyStrip = true,
     request
   } = {}
 ) => {
@@ -239,15 +277,12 @@ export const base = (
     pageTitle: title,
     caption: journeySectionCaption(page?.id),
     backLink,
-    // The chrome's home link, resolved in this request's set. Hardcoding `/`
-    // in the layout sent every set's service navigation to the default set's
-    // dashboard by way of the root redirect.
     homeUrl: dashboardPath(),
     hubHref: hasJourney ? hubPath(journeyId) : undefined,
-    journeyStrip: journeyStrip(journey, { offerCancelAmend }),
+    journeyStrip: showJourneyStrip
+      ? journeyStrip(journey, { offerCancelAmend })
+      : null,
     amending,
-    // Per request because an amend page's save buttons carry the page's own
-    // query, and the POST re-render needs the same URLs as the GET.
     amend:
       amending && request
         ? amendFormActions(request.path ?? '', request.url?.searchParams)
@@ -259,7 +294,24 @@ export const base = (
   }
 }
 
-export const recoverableSave = async (saveThunk, onRecoverableFailure) => {
+/**
+ * Runs a save and answers a recoverable backend failure with the page's
+ * fallback, logging the failure once at warn.
+ *
+ * @param {object} request - the request being answered.
+ * @param {() => Promise<*>} saveThunk - makes the save.
+ * @param {() => *} onRecoverableFailure - builds the response for a
+ * recoverable backend failure.
+ * @param {object} [ids] - ids to log beside the journey id.
+ * @returns {Promise<{value: *}|{failure: *}>} the save's value, or the
+ * fallback's response as `failure`.
+ */
+export const recoverableSave = async (
+  request,
+  saveThunk,
+  onRecoverableFailure,
+  ids = {}
+) => {
   try {
     return { value: await saveThunk() }
   } catch (error) {
@@ -267,6 +319,15 @@ export const recoverableSave = async (saveThunk, onRecoverableFailure) => {
       throw error
     }
     if (isRecoverableBackendError(error)) {
+      request.logger.warn(
+        {
+          ...ids,
+          journeyId: request.params.journeyId,
+          route: request.route?.path,
+          err: error
+        },
+        SAVE_FALLBACK_LOG_MESSAGE
+      )
       return { failure: await onRecoverableFailure() }
     }
     throw error
@@ -278,6 +339,13 @@ const redirectOnStaleAction = (post) => async (request, h) => {
     return await post(request, h)
   } catch (error) {
     if (error?.code === 'STALE_CONCURRENCY_TOKEN') {
+      request.logger.info(
+        {
+          journeyId: request.params?.journeyId,
+          postedConcurrencyToken: request.payload?.concurrencyToken
+        },
+        'Save refused: the notification changed since the page was shown'
+      )
       const query = request.url.searchParams
       query.set('staleAction', '1')
       return h.redirect(`${request.path}?${query.toString()}`)
@@ -323,18 +391,25 @@ const dateInputValue = (value) =>
         .join('/')
 
 /**
+ * The view model for a date-picker text field. The form group always carries
+ * the house date-picker class.
+ *
  * @param {string} name
  * @param {object} [options]
- * @param {string} [options.minDate] - `d/m/yyyy` TEXT, not a Date: it goes
- * verbatim into `data-min-date`, and the MoJ picker parses nothing else. Pass
- * `arrivalWindow().minText`, never its sibling `min`.
- * @param {string} [options.maxDate] - `d/m/yyyy` text, same contract.
- * @param {string} [options.formGroupClasses] - classes for the field's form
- * group. The picker's client-side script inserts the calendar dialog inside
- * the form group, so a class here is the simplest stylesheet hook onto one
- * picker rather than all of them.
- * @param {string} [options.labelClasses] - classes for the label; the GOV.UK
- * small size unless the page asks for another.
+ * @param {string} [options.label] - the label text.
+ * @param {string} [options.hint] - the hint text. No hint shows when absent.
+ * @param {string|{day?: string, month?: string, year?: string}} [options.value]
+ * the answer, shown as `d/m/yyyy` text.
+ * @param {string} [options.error] - the error message text. No error shows
+ * when absent.
+ * @param {string} [options.minDate] - the earliest date as `d/m/yyyy` text,
+ * never a Date.
+ * @param {string} [options.maxDate] - the latest date as `d/m/yyyy` text.
+ * @param {string} [options.formGroupClasses] - extra classes for the form
+ * group, added after the house date-picker class.
+ * @param {string} [options.labelClasses] - classes for the label. The GOV.UK
+ * small label unless the page asks for another.
+ * @returns {object} the view model for the MoJ date picker macro.
  */
 export const dateField = (
   name,
@@ -359,6 +434,8 @@ export const dateField = (
     value: dateInputValue(value),
     minDate,
     maxDate,
-    formGroup: formGroupClasses ? { classes: formGroupClasses } : undefined
+    formGroup: {
+      classes: ['app-date-picker', formGroupClasses].filter(Boolean).join(' ')
+    }
   }
 }

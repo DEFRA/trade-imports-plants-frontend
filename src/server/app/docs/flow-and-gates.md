@@ -12,6 +12,7 @@ seam. `configureJourneyFlow()` receives:
 - `taskRows`
 - `rowStatus`
 - `nextRunTarget`
+- `previousRunTarget`
 - `flowOnlyKeys`
 - `entryGuardTarget`
 - `layout`
@@ -65,7 +66,11 @@ ready.
 
 [`src/server/app/flow/run-state.js`](../flow/run-state.js) stores whether a journey is
 in its opening run through the injected session port. The journey supplies
-`nextRunTarget`; shared controller helpers call it through the journey-flow seam.
+`nextRunTarget` and `previousRunTarget`; shared controller helpers call them through
+the journey-flow seam. `kit.runBackLink()` answers a run step's Back link with
+`previousRunTarget` while the run is active, and with a fallback otherwise. The
+caller may pass `{ fallback }`; it defaults to the overview. `previousRunTarget`
+receives `(stepId, scope, journeyId)`.
 
 For the section order, task rows, authored gates and opening run this journey
 configures, see the

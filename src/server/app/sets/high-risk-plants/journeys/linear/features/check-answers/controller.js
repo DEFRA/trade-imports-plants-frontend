@@ -1,4 +1,8 @@
-import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import {
+  dashboardPath,
+  hubPath,
+  pagePath
+} from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
 import * as state from '../../../../../../engine/index.js'
 import * as kit from '../../../../../../shared/kit.js'
@@ -19,12 +23,8 @@ import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
 import { toDisplayParty } from '../../parties/picked-party.js'
 import { partyEditHref } from '../party-edit/edit-href.js'
-
 import { lateness, requestClock } from '../review/lateness.js'
-import {
-  POTATO_DAYS_BEFORE_ARRIVAL,
-  PLANTS_WOOD_DAYS_AFTER_ARRIVAL
-} from '../timing-windows.js'
+import { lateRuleText } from '../review/late-rule.js'
 
 export const meta = { ...page, collects: [] }
 const view = `${TEMPLATES}/features/check-answers/template`
@@ -43,13 +43,9 @@ const partyDisplayValuesFor = async ({ answers, scope }) => {
   return partyDisplayValuesById
 }
 
-/** Party errors are keyed `party:<id>` so their summary entries link to the
- * page that edits the copied address, returning here, rather than to the
- * picker a Change link opens. An unfinished card is somewhere on this page,
- * so its entry is an anchor to the card. */
 const PARTY_KEY_PREFIX = 'party:'
 
-const summaryHref = (current) => (key) => {
+const summaryHrefFor = (current) => (key) => {
   const { journeyId } = current.journey
   if (key.startsWith(PARTY_KEY_PREFIX)) {
     return partyEditHref(
@@ -67,9 +63,6 @@ const cardErrorsOf = (current, { answerErrors, partyErrors }) =>
     ...Object.keys(partyErrors)
   ])
 
-/** Every reason the notification cannot go on: answer and invalid-party errors
- * first, then one entry per card still to complete, in page order. A card
- * already named by an answer or party error is not named twice. */
 const summaryErrors = (current, reviewed) => ({
   ...reviewed.answerErrors,
   ...Object.fromEntries(
@@ -81,31 +74,34 @@ const summaryErrors = (current, reviewed) => ({
   ...cardErrorsOf(current, reviewed)
 })
 
-/** A submitted notification names nothing in error. c-201: an amendment opens
- * with no errors; once its Continue is refused, it names them like a draft. */
-const reviewedFor = (current, refused) => {
-  const { status } = current.journey
-  const named =
-    status !== state.SUBMITTED && (status !== state.AMEND || refused)
-  return named ? reviewErrors(current) : null
-}
+const hidesAnswerErrors = (status, continueRefused) =>
+  status === state.SUBMITTED || (status === state.AMEND && !continueRefused)
+
+const shownReviewErrors = (current, continueRefused) =>
+  hidesAnswerErrors(current.journey.status, continueRefused)
+    ? null
+    : reviewErrors(current)
+
+const backLinkFor = (journey) =>
+  journey.status === state.SUBMITTED
+    ? dashboardPath()
+    : hubPath(journey.journeyId)
 
 const render = async (
   request,
   h,
   current,
-  disableAutoFocus = true,
-  refused = false
+  { continueRefused = false } = {}
 ) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
-  const reviewed = await reviewedFor(current, refused)
+  const reviewed = await shownReviewErrors(current, continueRefused)
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
       page,
-      backLink: hubPath(current.journey.journeyId)
+      backLink: backLinkFor(current.journey)
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
@@ -119,10 +115,7 @@ const render = async (
       ) === 'late',
     lateNotification:
       readOnly && current.answers.lateNotificationIndicator === 'late',
-    lateRule:
-      current.answers.commodityType === 'potatoes'
-        ? copy.late.potatoes(POTATO_DAYS_BEFORE_ARRIVAL)
-        : copy.late.plantsAndWood(PLANTS_WOOD_DAYS_AFTER_ARRIVAL),
+    lateRule: lateRuleText(current.answers.commodityType, copy.late),
     sections: withCardErrors(
       await buildSections(current, partyDisplayValuesById, readOnly, {
         partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
@@ -130,12 +123,10 @@ const render = async (
       reviewed ? cardErrorsOf(current, reviewed) : {}
     ),
     errorSummary: kit.errorSummary(errors, {
-      href: summaryHref(current),
-      disableAutoFocus
+      href: summaryHrefFor(current),
+      disableAutoFocus: !continueRefused
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
-    // Ruled c-030: the success banner shows once, after cancel-amend's own
-    // redirect.
     amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }
@@ -155,7 +146,11 @@ const post = async (request, h) => {
     Object.keys(errors).length > 0 ||
     !current.scope.readyForCheckYourAnswers
   ) {
-    return (await render(request, h, current, false, true)).code(
+    kit.logRefusal(request, {
+      fieldErrors: errors,
+      ...(Object.keys(errors).length === 0 && { reason: 'journey-not-ready' })
+    })
+    return (await render(request, h, current, { continueRefused: true })).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }

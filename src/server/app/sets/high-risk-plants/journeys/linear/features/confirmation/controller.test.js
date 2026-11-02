@@ -1,19 +1,7 @@
-import { SET_BASE, SET_ID } from '../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { SET_BASE } from '../../../../set.js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
   journeyRequest,
@@ -21,7 +9,7 @@ import {
 } from '../../../../../../engine/test-support.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney
+  useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { sections } from '../../flow/flow.js'
 import {
@@ -34,12 +22,7 @@ import { routes, meta } from './controller.js'
 const get = routes[0].handler
 
 describe('confirmation', () => {
-  beforeAll(() => {
-    installHighRiskPlantsJourney()
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should be a GET-only receipt after declaration without collecting answers', () => {
     expect(meta.collects).toEqual([])

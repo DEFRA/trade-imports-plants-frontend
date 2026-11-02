@@ -109,13 +109,13 @@ const partyCard = (
         messagesFor(ADDRESS_FIELDS)
       ),
       errorRow(
-        copy.labels.telephoneNumber,
-        partyDisplayValues?.address?.telephoneNumber,
+        copy.labels.phone,
+        partyDisplayValues?.address?.phone,
         messagesFor(['phone'])
       ),
       errorRow(
-        copy.labels.emailAddress,
-        partyDisplayValues?.address?.emailAddress,
+        copy.labels.email,
+        partyDisplayValues?.address?.email,
         messagesFor(['email'])
       )
     ]

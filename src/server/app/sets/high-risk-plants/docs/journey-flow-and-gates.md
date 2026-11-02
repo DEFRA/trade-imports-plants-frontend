@@ -6,7 +6,7 @@ The platform consumes that policy through `configureJourneyFlow()`.
 
 Those exports hold the start, commodity, commodityDetails, origin, arrival and
 destination sections, the `commodities`, `origin`, `arrival` and `destination`
-task rows and the opening run's six steps — everything the journey has landed so
+task rows and the opening run's steps — everything the journey has landed so
 far.
 
 ## Flow sections
@@ -116,6 +116,24 @@ arrival-status step is skipped for potatoes, whose notification is never asked
 the question: its target is `null` while the answer is out of scope, and the run
 goes straight on to arrival-details, which every commodity type answers.
 
+During the run, every step from commodities to consignment-contact-select has
+its Back link open the previous step rather than the overview. Check your
+answers is the exception: it takes its Back link from the notification's status,
+below. Following a run Back link does not end the run: a
+later Save and continue goes on to the next step. Each `RUN_STEPS` entry names the
+earlier steps its Back link may open, nearest first, and `previousRunTarget`
+returns the first whose gate passes, so a skipped step is skipped going back too.
+Arrival-details goes back to arrival-status, or to origin for potatoes;
+identification-numbers goes back to the consignor, or to the place of destination
+for potatoes. `kit.runBackLink()` falls back to the page's own Back link once the
+run is over: the overview, or for origin the dashboard until the notification
+holds an answer.
+
+Check your answers takes its Back link from the notification's status instead. A
+submitted notification, including the one shown after an amendment is cancelled,
+goes back to the notification list; a draft's review and an amendment in
+progress go back to the overview.
+
 The opening run should begin when the notification is created, from the
 dashboard's create POST — the single caller of `beginOpeningRun`. The journey
 entry page is an ordinary page otherwise, with no opening-run special case.
@@ -155,8 +173,8 @@ session sequences through `RUN_STEPS`.
 This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), imports
-`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `FLOW_ONLY_KEYS`,
-`entryGuardTarget` and `sectionCaptionOf` (from
+`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `previousRunTarget`,
+`FLOW_ONLY_KEYS`, `entryGuardTarget` and `sectionCaptionOf` (from
 [`flow/section-captions/index.js`](../journeys/linear/flow/section-captions/index.js)),
 then passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js), along with the

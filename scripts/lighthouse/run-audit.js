@@ -17,17 +17,15 @@ import { TARGETS_FILE } from './audit-targets.js'
 
 const FAILED = 1
 const REPORT_FILE = /\.report\.(html|json)$/
-const REPORT_DIR = fileURLToPath(
-  new URL('../../lighthouse-report/', import.meta.url)
-)
 const MANIFEST_FILE = 'manifest.json'
-const MANIFEST = join(REPORT_DIR, MANIFEST_FILE)
 
-const lhci = createRequire(import.meta.url).resolve('@lhci/cli/src/cli.js')
-
-const runLighthouse = () =>
-  spawnSync(process.execPath, [lhci, 'autorun'], { stdio: 'inherit' }).status ??
-  FAILED
+const runLhciAutorun = () => {
+  const lhci = createRequire(import.meta.url).resolve('@lhci/cli/src/cli.js')
+  return (
+    spawnSync(process.execPath, [lhci, 'autorun'], { stdio: 'inherit' })
+      .status ?? FAILED
+  )
+}
 
 const stableNameOf = (reports, url) => {
   const name = reports[url]
@@ -40,73 +38,86 @@ const stableNameOf = (reports, url) => {
   return name
 }
 
-const renameTo = (from, filename) => {
-  const to = join(REPORT_DIR, filename)
+const renameTo = (reportDir, from, filename) => {
+  const to = join(reportDir, filename)
   if (from !== to) {
     renameSync(from, to)
   }
   return to
 }
 
-/** Drops the previous run's reports, so everything left afterwards is what this
- * run produced and a stale manifest cannot be mistaken for a fresh one. */
-const clearPreviousReports = () => {
-  if (!existsSync(REPORT_DIR)) {
-    return
-  }
-  for (const file of readdirSync(REPORT_DIR)) {
-    if (REPORT_FILE.test(file) || file === MANIFEST_FILE) {
-      rmSync(join(REPORT_DIR, file))
-    }
-  }
-}
-
-/** LHCI names each report after the URL's pathname, which carries the seeded
- * journey id and so changes every run. Renaming to the route's own name — and
- * rewriting the manifest the publish steps read — keeps one report per page
- * however many times the audit runs. */
-const targets = () => {
-  if (!existsSync(TARGETS_FILE)) {
+const readTargets = (targetsFile) => {
+  if (!existsSync(targetsFile)) {
     throw new Error(
       'No Lighthouse targets found — run `npm run lighthouse` so the setup ' +
         'step can derive the URL list'
     )
   }
-  return JSON.parse(readFileSync(TARGETS_FILE, 'utf8'))
+  return JSON.parse(readFileSync(targetsFile, 'utf8'))
 }
 
-/** LHCI refuses to run without a URL, and the setup step writes an empty list
- * whenever the route table yields none. An empty manifest says the same thing
- * LHCI would have said — this run produced no page reports — and gives the
- * report index and the flagged-audits step the file they read. */
-const writeEmptyManifest = () => {
-  mkdirSync(REPORT_DIR, { recursive: true })
-  writeFileSync(MANIFEST, `${JSON.stringify([], null, 2)}\n`)
+const clearPreviousReports = (reportDir) => {
+  if (!existsSync(reportDir)) {
+    return
+  }
+  for (const file of readdirSync(reportDir)) {
+    if (REPORT_FILE.test(file) || file === MANIFEST_FILE) {
+      rmSync(join(reportDir, file))
+    }
+  }
 }
 
-const useStableReportNames = () => {
-  const { reports = {} } = targets()
-  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'))
+const writeEmptyManifest = (reportDir) => {
+  mkdirSync(reportDir, { recursive: true })
+  writeFileSync(join(reportDir, MANIFEST_FILE), `${JSON.stringify([])}\n`)
+}
+
+const useStableReportNames = (reportDir, reports) => {
+  const manifestPath = join(reportDir, MANIFEST_FILE)
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   for (const entry of manifest) {
     const name = stableNameOf(reports, entry.url)
-    entry.htmlPath = renameTo(entry.htmlPath, `${name}.report.html`)
-    entry.jsonPath = renameTo(entry.jsonPath, `${name}.report.json`)
+    entry.htmlPath = renameTo(reportDir, entry.htmlPath, `${name}.report.html`)
+    entry.jsonPath = renameTo(reportDir, entry.jsonPath, `${name}.report.json`)
   }
-  writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2))
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
 }
 
-clearPreviousReports()
-
-const { urls = [] } = targets()
-
-if (urls.length === 0) {
-  writeEmptyManifest()
-  process.stdout.write('Lighthouse audited no pages — no URLs to audit\n')
-  process.exit(0)
+/**
+ * Audits the URLs in the targets file and leaves one report per page under
+ * route-derived names, with a manifest listing them. Clears the previous run's
+ * reports first. With no URLs to audit it runs nothing and writes an empty
+ * manifest.
+ *
+ * @param {object} options
+ * @param {string} options.reportDir - directory the reports and manifest are written to
+ * @param {string|URL} options.targetsFile - targets file listing the URLs and their report names
+ * @param {() => number} options.runLighthouse - runs the audit, returning its exit status
+ * @returns {number} the exit status
+ */
+export const runAudit = ({ reportDir, targetsFile, runLighthouse }) => {
+  clearPreviousReports(reportDir)
+  const { urls = [], reports = {} } = readTargets(targetsFile)
+  if (urls.length === 0) {
+    writeEmptyManifest(reportDir)
+    process.stdout.write('Lighthouse audited no pages — no URLs to audit\n')
+    return 0
+  }
+  const status = runLighthouse()
+  if (existsSync(join(reportDir, MANIFEST_FILE))) {
+    useStableReportNames(reportDir, reports)
+  }
+  return status
 }
 
-const status = runLighthouse()
-if (existsSync(MANIFEST)) {
-  useStableReportNames()
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  process.exit(
+    runAudit({
+      reportDir: fileURLToPath(
+        new URL('../../lighthouse-report/', import.meta.url)
+      ),
+      targetsFile: TARGETS_FILE,
+      runLighthouse: runLhciAutorun
+    })
+  )
 }
-process.exit(status)

@@ -8,9 +8,7 @@ export const sectionObligationIds = (section) =>
 export const sectionStatus = (section, answers, inScope, evaluation) =>
   statusOf(sectionObligationIds(section), answers, inScope, evaluation)
 
-/** The three statuses that leave nothing for the trader to do. The review
- * page's outstanding-row test applies this same predicate, so "no outstanding
- * row" and "ready for Check your answers" cannot drift apart. */
+/** True for a status that leaves the trader nothing to do. */
 export const rowReady = (status) =>
   status === FULFILLED || status === NA || status === OPTIONAL
 

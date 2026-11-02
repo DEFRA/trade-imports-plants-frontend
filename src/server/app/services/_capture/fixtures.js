@@ -29,8 +29,7 @@ const countryPageEntries = (subdivisionName) => {
   )
 }
 
-/** Flat { code, name } rows rendered on the origin page (countries + subdivisions, sorted by name). */
-export const originPageCountryEntries = () =>
+export const countryAndSubdivisionEntries = () =>
   countryPageEntries((subDivision) => subDivision.name)
 
 /** Flat { code, name } rows rendered on a destination country select (countries + subdivisions named with their country, sorted by name). */

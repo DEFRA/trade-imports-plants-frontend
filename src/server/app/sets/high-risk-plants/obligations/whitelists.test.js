@@ -1,28 +1,3 @@
-/**
- * Allow-list drift guard.
- *
- * `gatedOnCategory` keys its allow-list on the obligation's own `name` —
- * `allowListed(category, () => categoriesRequiring(name), …)` — and
- * `categoriesRequiring` answers the frozen empty list for a key it does not
- * hold. So renaming an obligation, or renaming its `CATEGORIES_BY_LINE_FIELD`
- * key, on one side alone puts the field in scope for no category at all, and
- * every other test in the set stays green. This file holds the two sides in
- * step: the manifest's per-line names against the service's field list, every
- * gate's allow-list against the service's categories, and every gate's
- * allow-list against the categories a commodity type actually offers.
- *
- * The origin constraints are held here for the same reason. They are not a
- * gate — a gate cannot read `category`, which lives one frame down on each
- * commodity line — so nothing in the model would notice a category or a
- * country code drifting out of the origin block the countries service primes.
- *
- * The three notification-level gates — arrival status, and the potato pair of
- * arrival time and proposed place of landing — name their commodity types as
- * literals (`POST_ARRIVAL_COMMODITY_TYPES` and `POTATOES` in
- * obligations/sections/arrival.js). A rename on either side would leave one
- * admitting nothing, so they are held here too.
- */
-
 import { describe, expect, it } from 'vitest'
 
 import { obligationMetadata } from '../../../model/obligations/helpers/index.js'
@@ -54,8 +29,6 @@ const QUANTITY = 'quantity'
 const SEED_POTATOES = 'seed-potatoes'
 const NON_MEMBER_STATES = ['IS', 'LI', 'NO', 'CH']
 
-// A territory on the origin page is held to its country's constraints, so the
-// constraints are compared with the countries the page's options belong to.
 const offeredCountries = async () => [
   ...new Set(
     (await originCountryOptions()).map(({ value }) => parentCountryCode(value))
@@ -158,8 +131,6 @@ describe('the origin constraints stay inside the service vocabulary', () => {
   })
 
   it('Should leave seed potatoes unconstrained', () => {
-    // reg 24A(1)(a) scopes them to the whole Common SPS Area, which is every
-    // country the origin block offers.
     expect(constrainedCategories).not.toContain(SEED_POTATOES)
     expect(originCountriesFor(SEED_POTATOES)).toEqual([])
     expect(
@@ -234,18 +205,12 @@ describe('the notification-level gates stay inside the service vocabulary', () =
   })
 
   it('Should admit only plants for planting and wood and cut trees', () => {
-    // Reg 26(2) gives only those two a post-arrival branch, and
-    // journey-spec.json rules this pair, so a commodity type the service
-    // starts offering must be ruled in rather than joining the gate silently.
     expect([...gateValues()]).toEqual([
       'plants-for-planting',
       'wood-and-cut-trees'
     ])
   })
 
-  // The time and the place of landing are gated the same way, on the same
-  // notification-level answer. `equalsGate` exposes a singular `value` where
-  // `includesGate` exposes `values`.
   for (const obligation of [arrivalTime, proposedPlaceOfLanding]) {
     describe(`the ${obligation.name} gate`, () => {
       it('Should gate on the commodity-type answer', () => {
@@ -262,9 +227,6 @@ describe('the notification-level gates stay inside the service vocabulary', () =
       })
 
       it('Should admit potatoes and nothing else', () => {
-        // Reg 24A gives only potatoes a time and a place of landing, so
-        // another commodity type must be ruled in rather than joining the
-        // gate silently.
         expect(obligationMetadata(obligation).value).toBe('potatoes')
       })
     })

@@ -25,17 +25,14 @@ const manifestPath = path.join(
 let webpackManifest
 
 /**
- * Which service-navigation item the current request sits under, so the layout
- * can mark it active. Section-wide, not page-wide: every notification page is
- * inside the dashboard's section of the service, which is why the answer for
- * `/notifications/123/origin` is still `dashboard`.
+ * The service-navigation item whose section the request path is in. Every
+ * notification page is in the dashboard's section.
  *
  * @param {string} [requestPath] - the request path.
- * @returns {string|null} the id of the active navigation item, or null when the
- * request is under none of them.
+ * @returns {string|null} the id of the active navigation item, or null outside
+ * every set and every section.
  */
 export function activeNavigationItem(requestPath = '') {
-  // Asking `inDashboardSection` there would throw for want of a set.
   if (!hasSetContext()) {
     return null
   }
@@ -54,19 +51,17 @@ async function context(request) {
   if (!webpackManifest) {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-    } catch (error) {
-      logger.error(`Webpack ${path.basename(manifestPath)} not found`)
+    } catch (err) {
+      logger.error(
+        { err, manifestPath },
+        `Webpack ${path.basename(manifestPath)} not found`
+      )
     }
   }
 
-  // If the user is authenticated, add the user's details to the view context
-  // This allows the view to display the user's session details and the ability to conditionally render content
   const sessionId = request.auth?.credentials?.sessionId
   const authData = sessionId ? await resolveSession(request, sessionId) : null
 
-  // Resolved from the path, not from an ambient context: the view is marshalled
-  // after the handler has returned, so a set's own `enterWith` may already have
-  // gone by the time this global context is built.
   const setId = setIdForPath(request.path)
 
   return {
@@ -75,9 +70,6 @@ async function context(request) {
     serviceUrl: '/',
     authEnabled: config.get('auth.enabled'),
     staleActionRejected: request.query?.staleAction === '1',
-    // The chrome's home link for every rendered page, so a view built without
-    // kit.base() still links back into its own set. kit.base() supplies the
-    // same key, and a view's own context wins.
     homeUrl: setId ? withSetContext(setId, dashboardPath) : '/',
     activeNavigationItem: setId
       ? withSetContext(setId, () => activeNavigationItem(request.path))

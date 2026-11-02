@@ -1,34 +1,25 @@
-import { SET_BASE, SET_ID } from '../../../../set.js'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { SET_BASE } from '../../../../set.js'
+import { describe, expect, it } from 'vitest'
 import { store } from '../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../engine/persistence/records.js'
-import {
-  configureSession,
-  openingRunCookie
-} from '../../../../../../engine/persistence/session.js'
+import { openingRunCookie } from '../../../../../../engine/persistence/session.js'
 import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../services/persistence/session/stub.js'
 import {
   driveHandler,
+  expectBackLinkIsPath,
+  expectOneRefusalLogged,
   journeyRequest,
   postHandlerOf,
   stubH
 } from '../../../../../../engine/test-support.js'
-import * as addressBook from '../../../../../../services/address-book/index.js'
+import { hubPath } from '../../../../../../shared/paths.js'
+import * as cancelAmend from '../cancel-amend/controller.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import * as ports from '../../../../../../services/ports/index.js'
 import {
   COMPLETE_NOTIFICATION,
-  installHighRiskPlantsJourney
+  useStubbedHighRiskPlantsJourney,
+  TECH_IMPORTS_COPY
 } from '../../test-support.js'
 import {
   sectionEntry,
@@ -72,13 +63,7 @@ const invalidOrigin = {
   ]
 }
 
-beforeAll(() => {
-  configureRecords(SET_ID, recordsStub)
-  configureSession(SET_ID, sessionStub)
-  installHighRiskPlantsJourney()
-})
-beforeEach(() => store.clear())
-afterEach(() => vi.restoreAllMocks())
+useStubbedHighRiskPlantsJourney()
 
 describe('Check your answers', () => {
   it('Should render three numbered sections, stored values and indexed Change links without writing', async () => {
@@ -152,6 +137,10 @@ describe('Check your answers', () => {
     expect(result.view.context.errorSummary.errorList).toEqual(
       invalidDestinationErrors(result)
     )
+    expectOneRefusalLogged(result.logger, {
+      journeyId: result.journeyId,
+      errorCodes: ['party:placeOfDestination']
+    })
   })
 
   it('Should name an unanswered destination as an outstanding task, not a party error', async () => {
@@ -364,6 +353,29 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
     ).toMatchObject({ anchor: 'contact', error: copy.errors.cards.contact })
   })
 
+  it('Should call the consignor Consignor on its unfinished card and in its summary error', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: PLANTS_FOR_PLANTING, countryOfOrigin: 'FR' }
+    })
+    expect(cardsOf(result).map(({ title }) => title)).toContain('Consignor')
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toContain('Complete consignor')
+  })
+
+  it('Should name the consignor in the error for an answered consignor that breaks the address rules', async () => {
+    const result = await driveHandler(get, {
+      seed: {
+        commodityType: PLANTS_FOR_PLANTING,
+        countryOfOrigin: 'FR',
+        consignor: { ...TECH_IMPORTS_COPY, email: INVALID_EMAIL }
+      }
+    })
+    expect(
+      result.view.context.errorSummary.errorList.map(({ text }) => text)
+    ).toContain('Correct the address details for the consignor')
+  })
+
   it('Should mark no card on a complete notification', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(result.view.context.errorSummary).toBeNull()
@@ -509,6 +521,48 @@ describe('Check your answers lateness', () => {
   })
 })
 
+describe('Check your answers — the Back link', () => {
+  const submittedViewWith = async (query = {}) => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    const h = stubH()
+    await get(journeyRequest(journeyId, { query }), h)
+    return h.captured.view
+  }
+
+  it('Should send Back from a submitted notification to the notification list', async () => {
+    const view = await submittedViewWith()
+    expect(view.context.backLink).toBe(SET_BASE)
+  })
+
+  it('Should send Back from the submitted view shown after an amendment is cancelled to the notification list', async () => {
+    const { journeyId } = await store.create()
+    await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+    await store.submit(journeyId)
+    await recordsStub.amend(journeyId)
+    await store.seedAnswers(journeyId, {
+      ...COMPLETE_NOTIFICATION,
+      producerIdentificationNumber: 'P999'
+    })
+    const cancelRequest = journeyRequest(journeyId)
+    await postHandlerOf(cancelAmend)(cancelRequest, stubH(cancelRequest))
+
+    const h = stubH()
+    await get(journeyRequest(journeyId, { query: { cancelled: '1' } }), h)
+
+    expect(h.captured.view.context.backLink).toBe(SET_BASE)
+  })
+
+  it('Should send Back from the review of an amendment to the overview', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_NOTIFICATION,
+      amend: true
+    })
+    expectBackLinkIsPath(result, hubPath(result.journeyId))
+  })
+})
+
 describe('review navigation', () => {
   it('Should gate the review hub entry on complete tasks without changing Contact Continue', () => {
     const section = sections.find(({ id }) => id === 'review')
@@ -530,8 +584,7 @@ describe('review navigation', () => {
 })
 
 describe('Check your answers — copied addresses', () => {
-  it('Should show the copy held on the notification without reading the address book', async () => {
-    const partySpy = vi.spyOn(addressBook, 'party')
+  it('Should show the name on the notification’s copy, not the name of the address book record it was picked from', async () => {
     const edited = {
       ...COMPLETE_NOTIFICATION,
       placeOfDestination: {
@@ -539,13 +592,16 @@ describe('Check your answers — copied addresses', () => {
         name: 'Tech Imports Warehouse'
       }
     }
+    const pickedFrom = STUB_BOOK.find(
+      ({ id }) => id === edited.placeOfDestination.pickedFromId
+    )
     const result = await driveHandler(get, { seed: edited })
     const destination = cardsOf(result).find(
       ({ title }) => title === destinationCopy.headings.potatoes
     )
+    expect(pickedFrom.name).toBe(TECH_IMPORTS_COPY.name)
     expect(destination.rows[0].value.text).toBe('Tech Imports Warehouse')
     expect(result.view.context.errorSummary).toBeNull()
-    expect(partySpy).not.toHaveBeenCalled()
   })
 
   it('Should offer Change and Edit details on an answered address, and only Change on an unanswered one', async () => {
@@ -640,13 +696,13 @@ describe('Check your answers — copied addresses', () => {
       '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
         '18 Dockside Road, London, E14 9GE, United Kingdom'
     )
-    expect(rowFor(copy.labels.emailAddress).value.html).toContain(
+    expect(rowFor(copy.labels.email).value.html).toContain(
       'Enter an email address in the correct format</p>not-an-email'
     )
     expect(rowFor(copy.labels.name).value).toEqual({
       text: 'Tech Imports Ltd'
     })
-    expect(rowFor(copy.labels.telephoneNumber).value).toEqual({
+    expect(rowFor(copy.labels.phone).value).toEqual({
       text: '01632 960000'
     })
   })
@@ -663,9 +719,7 @@ describe('Check your answers — copied addresses', () => {
     const contact = cardsOf(result).find(
       ({ title }) => title === copy.cards.contact
     )
-    const email = contact.rows.find(
-      ({ key }) => key.text === copy.labels.emailAddress
-    )
+    const email = contact.rows.find(({ key }) => key.text === copy.labels.email)
 
     expect(email.value.html).toContain('&lt;b&gt;x&lt;/b&gt;')
     expect(email.value.html).not.toContain('<b>')

@@ -1,7 +1,7 @@
 import { SET_BASE } from '../../src/server/app/sets/high-risk-plants/set.js'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
-import { load } from 'cheerio'
+import { JSDOM } from 'jsdom'
 import { seedFields } from '../../fit/seed-fields.js'
 const happyPaths = createRequire(import.meta.url)(
   '../../src/server/app/sets/high-risk-plants/journeys/linear/flow/fixtures/happy-path.json'
@@ -15,7 +15,9 @@ describe('shared journey seeds', () => {
       document: async () => ({
         status: 200,
         crumb: 'csrf-token',
-        $: load('<input type="radio" name="consignor" value="real-address-id">')
+        dom: new JSDOM(
+          '<input type="radio" name="consignor" value="real-address-id">'
+        ).window.document
       }),
       submit: async (...args) => {
         submissions.push(args)

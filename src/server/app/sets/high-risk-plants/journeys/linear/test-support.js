@@ -1,17 +1,11 @@
-/**
- * Install this journey in place of the synthetic fixture set.
- *
- * The Vitest global setup wires a journey-neutral fixture (`test/fixtures/`)
- * because the engine and the L2 model must not depend on whichever set is
- * installed. A test that drives one of THIS journey's controllers needs the
- * real thing instead: the evaluator has to recognise the answer keys the
- * controller commits, and the derived page gates read this journey's flow and
- * dispatch index.
- *
- * Vitest gives each file its own module registry, so nothing leaks to another
- * file and there is nothing to restore.
- */
+import { beforeAll, it } from 'vitest'
 import { registerSetMount } from '../../../../shared/set-context.js'
+import { dashboardPath, hubPath } from '../../../../shared/paths.js'
+import {
+  driveHandler,
+  expectBackLinkIsPath,
+  useStubbedJourney
+} from '../../../../engine/test-support.js'
 import { SET_BASE, SET_ID } from '../../set.js'
 import { configureReadyForCheckYourAnswers } from '../../../../bridge/readiness-config.js'
 import { readyForCheckYourAnswers } from '../../../../flow/section-status.js'
@@ -25,12 +19,12 @@ import { dispatchPages } from './features/index.js'
 import { featureEvaluationBindings } from './features/evaluation.js'
 import { FLOW_ONLY_KEYS, sections } from './flow/flow.js'
 import { rowStatus, taskRows } from './flow/task-rows.js'
-import { nextRunTarget } from './flow/run.js'
+import { nextRunTarget, previousRunTarget } from './flow/run.js'
 import { entryGuardTarget } from './flow/entry-guard.js'
 import { sectionCaptionOf } from './flow/section-captions/index.js'
 
-/** The copy a picker commits for the stub book's `tech-imports-ltd` record:
- * valid by the address-book rules. */
+/** The copy of the stub book's `tech-imports-ltd` record, valid by the
+ * address-book rules. */
 export const TECH_IMPORTS_COPY = Object.freeze({
   pickedFromId: 'tech-imports-ltd',
   name: 'Tech Imports Ltd',
@@ -44,12 +38,6 @@ export const TECH_IMPORTS_COPY = Object.freeze({
   })
 })
 
-/**
- * A notification whose commodity section is complete: a potato consignment
- * with one line carrying every field its category asks for. Several suites
- * need "the commodities task is done" and would otherwise each hand-build the
- * same line and drift from the manifest as fields land.
- */
 export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
   commodityType: 'potatoes',
   commodityLines: [
@@ -62,17 +50,6 @@ export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
   ]
 })
 
-/**
- * A notification with every section the journey has built answered — today the
- * commodities, the origin, the arrival and the destination. Whatever asks "is
- * this ready for Check your answers" needs this rather than the commodity
- * fixture above, and each new section's increment adds its own answers here.
- *
- * Seed potatoes narrow the origin to nothing, so any primed country stands.
- * They also carry no arrival status — reg 24A gives potatoes no post-arrival
- * branch — and do owe a time and a place of landing, so the arrival answers
- * here are the potato three, not the plants two.
- */
 export const COMPLETE_NOTIFICATION = Object.freeze({
   ...COMPLETE_POTATO_CONSIGNMENT,
   contactAddress: TECH_IMPORTS_COPY,
@@ -85,7 +62,23 @@ export const COMPLETE_NOTIFICATION = Object.freeze({
   placeOfDestination: TECH_IMPORTS_COPY
 })
 
-export const installHighRiskPlantsJourney = () => {
+/** A plants-for-planting notification with every question the opening run asks answered. */
+export const COMPLETE_PLANTS_NOTIFICATION = Object.freeze({
+  commodityType: 'plants-for-planting',
+  commodityLines: [
+    { category: 'plants-for-planting', genus: 'Picea', quantity: '30' }
+  ],
+  countryOfOrigin: 'FR',
+  arrivalStatus: 'already-arrived',
+  arrivalDate: Object.freeze({ day: '27', month: '3', year: '2026' }),
+  placeOfDestination: TECH_IMPORTS_COPY,
+  consignor: TECH_IMPORTS_COPY,
+  supplierIdentificationNumber: 'S123',
+  consignmentNumber: 'N123',
+  contactAddress: TECH_IMPORTS_COPY
+})
+
+const configureHighRiskPlantsJourneyPorts = () => {
   registerSetMount(SET_ID, SET_BASE)
   configureReadyForCheckYourAnswers(SET_ID, readyForCheckYourAnswers)
   configureObligationSet(SET_ID, highRiskPlantsObligationSet)
@@ -95,10 +88,34 @@ export const installHighRiskPlantsJourney = () => {
     taskRows,
     rowStatus,
     nextRunTarget,
+    previousRunTarget,
     flowOnlyKeys: FLOW_ONLY_KEYS,
     entryGuardTarget,
     sectionCaption: sectionCaptionOf,
     layout: LAYOUT
   })
+}
+
+export const installHighRiskPlantsJourney = () => {
+  configureHighRiskPlantsJourneyPorts()
   buildDispatch(SET_ID, dispatchPages)
+}
+
+export const useStubbedHighRiskPlantsJourney = () => {
+  beforeAll(configureHighRiskPlantsJourneyPorts)
+  useStubbedJourney(SET_ID, dispatchPages)
+}
+
+export const itSendsBackToTheDashboardUntilCommodityTypeAnswered = (get) => {
+  it('Should send Back to the dashboard while nothing is committed', async () => {
+    expectBackLinkIsPath(await driveHandler(get), dashboardPath())
+  })
+
+  it('Should send Back to the overview once the commodity type is answered', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: 'potatoes' }
+    })
+
+    expectBackLinkIsPath(result, hubPath(result.journeyId))
+  })
 }

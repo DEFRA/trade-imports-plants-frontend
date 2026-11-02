@@ -25,7 +25,7 @@ export const copy = {
   continue: 'Continue',
   errors: {
     parties: {
-      consignor: 'Correct the address details for the consignor or exporter',
+      consignor: 'Correct the address details for the consignor',
       placeOfDestination:
         'Correct the address details for the place of destination',
       contactAddress: 'Correct the contact address details for this consignment'
@@ -35,7 +35,7 @@ export const copy = {
       commodities: 'Complete commodity details',
       arrivalDetails: 'Complete arrival details',
       placeOfDestination: 'Complete place of destination',
-      consignor: 'Complete consignor or exporter',
+      consignor: 'Complete consignor',
       identificationNumbers: 'Complete identification numbers',
       contact: 'Complete contact'
     }
@@ -53,7 +53,7 @@ export const copy = {
     import: 'Import details',
     commodity: 'Commodity',
     arrival: 'Arrival details',
-    consignor: 'Consignor or exporter',
+    consignor: 'Consignor',
     identification: 'Identification numbers',
     contact: 'Contact'
   },
@@ -66,8 +66,8 @@ export const copy = {
     proposedPlaceOfLanding: 'Place of landing',
     name: 'Name',
     address: 'Address',
-    telephoneNumber: 'Telephone number',
-    emailAddress: 'Email address',
+    phone: 'Telephone number',
+    email: 'Email address',
     genus: 'Genus',
     species: 'Species',
     commodityCode: 'Commodity code',

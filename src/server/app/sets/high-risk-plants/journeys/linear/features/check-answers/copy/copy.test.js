@@ -1,12 +1,6 @@
-import { SET_ID } from '../../../../../set.js'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { installHighRiskPlantsJourney } from '../../../test-support.js'
-import { store } from '../../../../../../../engine/store.js'
-import { configureRecords } from '../../../../../../../engine/persistence/records.js'
-import { configureSession } from '../../../../../../../engine/persistence/session.js'
-import { records as recordsStub } from '../../../../../../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../../../../../../services/persistence/session/stub.js'
+import { useStubbedHighRiskPlantsJourney } from '../../../test-support.js'
 import { driveHandler } from '../../../../../../../engine/test-support.js'
 
 import * as checkAnswers from '../controller.js'
@@ -28,8 +22,6 @@ describe('checkAnswers copy module', () => {
     }
   })
 
-  // The review names every unfinished card with its errors.cards entry, so a
-  // new card cannot reach the review page without one.
   it('Should name an unfinished-card error for every review card, and no other', () => {
     const ids = REVIEW_CARDS.map((card) => card.id)
     expect(Object.keys(copy.errors.cards)).toEqual(ids)
@@ -38,12 +30,7 @@ describe('checkAnswers copy module', () => {
 })
 
 describe('GET checkAnswers — copy reaches the view', () => {
-  beforeAll(() => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
-    installHighRiskPlantsJourney()
-  })
-  beforeEach(() => store.clear())
+  useStubbedHighRiskPlantsJourney()
 
   it('Should supply the feature copy module and the shared chrome copy', async () => {
     const get = checkAnswers.routes.find(

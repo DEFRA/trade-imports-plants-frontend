@@ -24,10 +24,7 @@ vi.mock('../../../server/common/helpers/logging/logger.js', () => ({
   createLogger: () => ({ error: (...args) => mockLoggerError(...args) })
 }))
 
-// `vi.resetModules()` gives each test a fresh `shared/set-context.js` with an
-// empty mount registry, so the global setup's registration does not carry over.
-// Re-register it, or every path builder throws for want of a set.
-const remountSet = async () => {
+const registerSetMountAfterModuleReset = async () => {
   const { registerSetMount } =
     await import('../../../server/app/shared/set-context.js')
   registerSetMount(SET_ID, SET_BASE)
@@ -38,7 +35,7 @@ describe('context and cache', () => {
     mockReadFileSync.mockReset()
     mockLoggerError.mockReset()
     vi.resetModules()
-    await remountSet()
+    await registerSetMountAfterModuleReset()
   })
 
   describe('#context', () => {
@@ -53,7 +50,6 @@ describe('context and cache', () => {
       })
 
       beforeEach(async () => {
-        // Return JSON string
         mockReadFileSync.mockReturnValue(`{
         "application.js": "javascripts/application.js",
         "stylesheets/application.scss": "stylesheets/application.css"
@@ -203,6 +199,10 @@ describe('context and cache', () => {
 
       test('Should log that the Webpack Manifest file is not available', () => {
         expect(mockLoggerError).toHaveBeenCalledWith(
+          {
+            err: expect.any(SyntaxError),
+            manifestPath: expect.stringMatching(/assets-manifest\.json$/)
+          },
           'Webpack assets-manifest.json not found'
         )
       })
@@ -221,7 +221,6 @@ describe('context and cache', () => {
       })
 
       beforeEach(async () => {
-        // Return JSON string
         mockReadFileSync.mockReturnValue(`{
         "application.js": "javascripts/application.js",
         "stylesheets/application.scss": "stylesheets/application.css"
@@ -260,7 +259,7 @@ describe('#activeNavigationItem', () => {
   let activeNavigationItem
 
   beforeAll(async () => {
-    await remountSet()
+    await registerSetMountAfterModuleReset()
     ;({ activeNavigationItem } = await import('./context.js'))
   })
 
@@ -290,7 +289,7 @@ describe('#activeNavigationItem', () => {
 describe('When auth.enabled is set to false', () => {
   beforeEach(async () => {
     vi.resetModules()
-    await remountSet()
+    await registerSetMountAfterModuleReset()
     mockReadFileSync.mockReset()
     mockLoggerError.mockReset()
   })
