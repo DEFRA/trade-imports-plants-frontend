@@ -1,3 +1,8 @@
+/**
+ * The arrival-details page — when the consignment arrives, and for potatoes
+ * what time and where it lands. `dateLabels` and `dateHints` are keyed by the
+ * `DATE_STATES` values.
+ */
 export const copy = {
   title: 'Arrival details',
   dateLabels: {

@@ -65,12 +65,6 @@ describe('GET arrival-details — the question it asks', () => {
     expect(result.view.context.caption).toBe('Arrival')
   })
 
-  it('Should show no error summary on first render', async () => {
-    const result = await driveHandler(get, { seed: potatoes() })
-
-    expect(result.view.context.errorSummary).toBeNull()
-  })
-
   it('Should ask potatoes for the expected date of arrival', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
@@ -203,6 +197,7 @@ describe('GET arrival-details — the potato-only fields', () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
     expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+    expect(result.view.context.errorSummary).toBeNull()
   })
 
   it('Should send Back to arrival status for plants or wood while the opening run is on', async () => {
@@ -517,6 +512,62 @@ describe('POST arrival-details — Save and return to overview', () => {
     expect(result.response.statusCode).toBe(400)
     expect(Object.keys(result.view.context.errors)).toContain('arrivalDate')
     expect(result.after).toEqual(result.before)
+  })
+
+  it('Should refuse a time that is not on the 24-hour clock on Save and return to overview', async () => {
+    const result = await exitWith(
+      potatoes(),
+      potatoPayload({ arrivalTime: '25:00' })
+    )
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.arrivalTime).toBe(validatorDefaults.time)
+    expect(result.after).toEqual(result.before)
+  })
+
+  it('Should refuse a date that names no day on Save and return to overview', async () => {
+    const result = await exitWith(potatoes(), {
+      arrivalDate: '31/2/2026'
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.arrivalDate).toBe(
+      copy.errors.arrivalDate.invalid
+    )
+  })
+
+  it('Should refuse a future date once the consignment has arrived on Save and return to overview', async () => {
+    const result = await exitWith(plants({ arrivalStatus: ALREADY_ARRIVED }), {
+      arrivalDate: '1/1/2099'
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.arrivalDate).toBe(
+      copy.errors.arrivalDate.inFuture
+    )
+  })
+
+  it('Should refuse a place of landing the ports service does not hold on Save and return to overview', async () => {
+    const result = await exitWith(
+      potatoes(),
+      potatoPayload({ proposedPlaceOfLanding: 'XX XXX' })
+    )
+
+    expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.errors.proposedPlaceOfLanding).toBe(
+      copy.errors.proposedPlaceOfLanding
+    )
+  })
+
+  it('Should name every missing answer on Save and continue', async () => {
+    const result = await driveHandler(post, { seed: potatoes(), payload: {} })
+
+    expect(result.response.statusCode).toBe(400)
+    expect(Object.keys(result.view.context.errors)).toEqual([
+      'arrivalDate',
+      'arrivalTime',
+      'proposedPlaceOfLanding'
+    ])
   })
 })
 

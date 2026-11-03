@@ -39,6 +39,8 @@ const view = `${TEMPLATES}/features/arrival-details/template`
 
 const copy = copyFor({ en, cy })
 
+const QUESTION_LABEL_CLASSES = 'govuk-label--m'
+
 const asksForPotatoDetails = (scope) => scope.has(ARRIVAL_TIME)
 
 const dateStateOf = (answers, scope) => {
@@ -99,7 +101,6 @@ const render = async (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   const bounds = options.bounds ?? boundsFor(current.answers, current.scope)
   const dateState = dateStateOf(current.answers, current.scope)
-  const questionLabelClasses = 'govuk-label--m'
   return h.view(view, {
     ...kit.base(copy.title, {
       request,
@@ -109,7 +110,7 @@ const render = async (request, h, current, values, options = {}) => {
       recoverableError: options.recoverableError ?? false
     }),
     copy,
-    questionLabelClasses,
+    questionLabelClasses: QUESTION_LABEL_CLASSES,
     values,
     errors,
     errorSummary: kit.errorSummary(errors),
@@ -117,7 +118,7 @@ const render = async (request, h, current, values, options = {}) => {
     portItems: await portItems(),
     dateField: kit.dateField(ARRIVAL_DATE, {
       label: copy.dateLabels[dateState],
-      labelClasses: questionLabelClasses,
+      labelClasses: QUESTION_LABEL_CLASSES,
       hint: copy.dateHints[dateState],
       value: values[ARRIVAL_DATE],
       error: errors[ARRIVAL_DATE],
