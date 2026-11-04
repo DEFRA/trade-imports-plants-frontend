@@ -61,8 +61,15 @@ export const highRiskPlants = {
       await withSetContext(SET_ID, async () => {
         server.ext(
           'onPreAuth',
-          (request, h) => {
+          (_request, h) => {
             enterSetContext(SET_ID)
+            return h.continue
+          },
+          { sandbox: 'plugin' }
+        )
+        server.ext(
+          'onPostAuth',
+          (request, h) => {
             bindOrganisationId(organisationIdOf(request))
             return h.continue
           },
@@ -91,6 +98,7 @@ export const highRiskPlants = {
         server.ext(
           'onPreHandler',
           async (request, h) => {
+            bindOrganisationId(organisationIdOf(request))
             const target = await withSetContext(SET_ID, () =>
               journeyEntryGuardTarget(request, h)
             )
