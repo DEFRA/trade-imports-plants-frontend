@@ -31,6 +31,7 @@ import {
   journeyRequest,
   recordingH
 } from './test-support.js'
+import { bindOrganisationId } from '../../common/helpers/organisation-id.js'
 import { obligationSet } from '../model/obligations/manifest.js'
 import {
   FLOW_ONLY_KEY,
@@ -357,9 +358,10 @@ describe('#listKnownJourneys against the backend', () => {
   beforeEach(() => {
     configureRecords(SET_ID, recordsReal)
     fetchMocker.resetMocks()
+    bindOrganisationId('5900001')
   })
 
-  it('Should request the page asked for without the organisation', async () => {
+  it('Should request the page asked for with the organisation header', async () => {
     fetchMocker.mockResponse(
       JSON.stringify({
         page: 2,
@@ -377,7 +379,7 @@ describe('#listKnownJourneys against the backend', () => {
 
     const [request] = fetchMocker.requests()
     expect(request.url).toBe(`${notificationsUrl}?page=2&sort=arrivalDate,desc`)
-    expect(request.headers.get('Trade-Imports-Organisation-Id')).toBeNull()
+    expect(request.headers.get('Trade-Imports-Organisation-Id')).toBe('5900001')
   })
 })
 

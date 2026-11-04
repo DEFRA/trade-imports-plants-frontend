@@ -1,4 +1,4 @@
-import { notificationsUrl, HTTP_NOT_FOUND } from '../config.js'
+import { notificationsUrl, HTTP_FORBIDDEN, HTTP_NOT_FOUND } from '../config.js'
 import { failed } from './failed.js'
 import { headers } from './headers.js'
 import { backendFetch } from '../../../../../../common/helpers/call-counts/backend-fetch.js'
@@ -12,6 +12,9 @@ export const getFulfilment = async (journeyId) => {
     }
   )
   if (response.status === HTTP_NOT_FOUND) {
+    return undefined
+  }
+  if (response.status === HTTP_FORBIDDEN) {
     return undefined
   }
   if (!response.ok) {
