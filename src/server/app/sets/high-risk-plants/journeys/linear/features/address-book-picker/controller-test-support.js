@@ -39,6 +39,10 @@ import {
   TECH_IMPORTS_NAME
 } from './test-support.js'
 
+const SAVE_CONTROLS = [
+  ['Save and continue', { action: 'save' }],
+  ['Save and return to overview', { exit: 'hub' }]
+]
 const LAST_PAGE = 3
 const DENMARK = 'Denmark'
 const DENMARK_ROWS = ['copenhagen-exports-aps', 'aarhus-trading-aps']
@@ -247,20 +251,18 @@ const describeNothingChosen = (picker) => {
   describe(`POST ${pickerName} — a save with nothing chosen`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it('Should move on to the overview, committing nothing and raising no error', async () => {
-      const result = await savedWith({ action: 'save' })
+    it.each(SAVE_CONTROLS)(
+      'Should move on to the overview from %s, committing nothing and raising no error',
+      async (_label, savePayload) => {
+        const result = await savedWith(savePayload)
 
-      expect(result.view).toBeUndefined()
-      expect(result.after[fieldName]).toBeUndefined()
-      expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    })
-
-    it('Should move on from Save and return to overview, committing nothing', async () => {
-      const result = await savedWith({ exit: 'hub' })
-
-      expect(result.after[fieldName]).toBeUndefined()
-      expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-    })
+        expect(result.view).toBeUndefined()
+        expect(result.after[fieldName]).toBeUndefined()
+        expect(result.response).toEqual({
+          redirect: hubPath(result.journeyId)
+        })
+      }
+    )
 
     it('Should keep a copy already held, edited since it was picked', async () => {
       const edited = { ...copied(TECH_IMPORTS_ID), name: EDITED_NAME }
@@ -285,43 +287,36 @@ const describeAddressNotInTheBook = (pickerConfig) => {
   describe(`POST ${pickerName} — an address the book does not hold`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it('Should refuse the id, linking the error to the first row and describing the group by it', async () => {
-      const result = await savedWith({
-        action: 'save',
-        [fieldName]: NOT_IN_THE_BOOK
-      })
+    it.each(SAVE_CONTROLS)(
+      'Should refuse the id on %s, linking the error to the first row and describing the group by it',
+      async (_label, savePayload) => {
+        const result = await savedWith({
+          ...savePayload,
+          [fieldName]: NOT_IN_THE_BOOK
+        })
 
-      expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
-      expect(result.view.context.picker.error).toBe(errorText)
-      expect(result.view.context.errorSummary.errorList).toEqual([
-        { text: errorText, href: `#${fieldName}` }
-      ])
-      const document = documentOf(renderPage(result.view.context))
-      expect(document.querySelectorAll(`#${fieldName}-error`)).toHaveLength(1)
-      expect(
-        document
-          .querySelector(`#${fieldName}`)
-          .closest('fieldset')
-          .getAttribute('aria-describedby')
-      ).toBe(`${fieldName}-error`)
-      expect(result.after[fieldName]).toBeUndefined()
-      expectOneRefusalLogged(result.logger, {
-        journeyId: result.journeyId,
-        errorCodes: [fieldName],
-        reason: 'not-in-address-book',
-        addressId: NOT_IN_THE_BOOK
-      })
-    })
-
-    it('Should refuse the id on Save and return to overview too', async () => {
-      const result = await savedWith({
-        exit: 'hub',
-        [fieldName]: NOT_IN_THE_BOOK
-      })
-
-      expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
-      expect(result.after[fieldName]).toBeUndefined()
-    })
+        expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
+        expect(result.view.context.picker.error).toBe(errorText)
+        expect(result.view.context.errorSummary.errorList).toEqual([
+          { text: errorText, href: `#${fieldName}` }
+        ])
+        const document = documentOf(renderPage(result.view.context))
+        expect(document.querySelectorAll(`#${fieldName}-error`)).toHaveLength(1)
+        expect(
+          document
+            .querySelector(`#${fieldName}`)
+            .closest('fieldset')
+            .getAttribute('aria-describedby')
+        ).toBe(`${fieldName}-error`)
+        expect(result.after[fieldName]).toBeUndefined()
+        expectOneRefusalLogged(result.logger, {
+          journeyId: result.journeyId,
+          errorCodes: [fieldName],
+          reason: 'not-in-address-book',
+          addressId: NOT_IN_THE_BOOK
+        })
+      }
+    )
 
     it('Should refuse a source record id posted back once the book no longer holds it, committing nothing', async () => {
       const result = await savedWith(
@@ -343,16 +338,19 @@ const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
   describe(`POST ${pickerName} — a refused save keeps the search and page`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it('Should keep the refused search term so the results are still there', async () => {
-      const result = await savedWith({
-        action: 'save',
-        q: DENMARK,
-        [fieldName]: NOT_IN_THE_BOOK
-      })
+    it.each(SAVE_CONTROLS)(
+      'Should keep the search term and its results when %s is refused',
+      async (_label, savePayload) => {
+        const result = await savedWith({
+          ...savePayload,
+          q: DENMARK,
+          [fieldName]: NOT_IN_THE_BOOK
+        })
 
-      expect(result.view.context.picker.query).toBe(DENMARK)
-      expect(rowIds(result)).toEqual(DENMARK_ROWS)
-    })
+        expect(result.view.context.picker.query).toBe(DENMARK)
+        expect(rowIds(result)).toEqual(DENMARK_ROWS)
+      }
+    )
 
     it('Should point the refusal at the search box when the search found nothing', async () => {
       const result = await savedWith({

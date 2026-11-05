@@ -83,7 +83,8 @@ finds the selected-address inset by the address's name, and `searchBox`, which
 finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
 one single-address picker; `postAnIdNotInTheBook`, which posts a picker with an id the
-book does not hold, appended as a hidden input under the first radio's name;
+book does not hold, appended as a hidden input under the first radio's name,
+through the save control its `saveControlOf` option names (Save and continue by default);
 `postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;
 `expectSelectedAddressCarriedToSecondPage`, which follows the second page link and fails unless the ticked address is still the selected address;
 `withoutJavaScript`, which reopens the page in a context with JavaScript switched off;
