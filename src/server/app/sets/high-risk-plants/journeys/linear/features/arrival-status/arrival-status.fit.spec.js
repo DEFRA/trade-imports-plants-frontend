@@ -5,6 +5,7 @@ import {
   visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
   expectThreeSaveControls,
+  overwriteRadioInputs,
   saveAndContinue,
   saveOrigin,
   startNotification,
@@ -221,13 +222,10 @@ test.describe('arrival-status feature', () => {
   }) => {
     await startAtArrivalStatus(page)
 
-    await page
-      .locator(STATUS_INPUT_SELECTOR)
-      .first()
-      .evaluate((input) => {
-        input.value = 'maybe'
-        input.checked = true
-      })
+    await overwriteRadioInputs(page, {
+      inputSelector: STATUS_INPUT_SELECTOR,
+      postedValue: 'maybe'
+    })
     await saveAndContinue(page).click()
 
     await expect(

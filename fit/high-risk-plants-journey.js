@@ -472,6 +472,23 @@ export const expectNoSeriousOrCriticalViolations = async (page, subject) => {
   ).toEqual([])
 }
 
+export const overwriteRadioInputs = async (
+  page,
+  { inputSelector, postedValue }
+) => {
+  const inputs = page.locator(inputSelector)
+  await expect(inputs.first()).toBeAttached()
+  await inputs.evaluateAll((elements, value) => {
+    elements.forEach((element) => {
+      element.checked = false
+    })
+    if (value) {
+      elements[0].value = value
+      elements[0].checked = true
+    }
+  }, postedValue)
+}
+
 /**
  * Starts a notification from the dashboard.
  *
