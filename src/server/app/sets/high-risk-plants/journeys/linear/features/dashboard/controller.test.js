@@ -18,7 +18,11 @@ import {
   startRoutePath
 } from '../../../../../../shared/paths.js'
 import { CYA_SLUG, SURFACES } from '../../../../../../shared/kit.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import {
+  RUN_ACTIVE,
+  RUN_ENTRY_LIST_CREATE,
+  RUN_ENTRY_START
+} from '../../../../../../flow/run-state.js'
 import {
   authenticatedActor,
   expectOneLogged,
@@ -487,10 +491,28 @@ describe('dashboard amend POST', () => {
 })
 
 describe.each([
-  ['create POST', createPost],
-  ['start entry', startGet]
-])('dashboard %s', (_entry, openNotification) => {
+  ['create POST', createPost, RUN_ENTRY_LIST_CREATE],
+  ['start entry', startGet, RUN_ENTRY_START]
+])('dashboard %s', (_name, openNotification, entry) => {
   useStubbedHighRiskPlantsJourney()
+
+  it('Should log the new notification, its organisation and the entry once', async () => {
+    const request = journeyRequest()
+    const h = stubH(request)
+
+    await openNotification(request, h)
+
+    const newJourneyId = h.cookies[knownJourneysCookie()].at(-1)
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: {
+        journeyId: newJourneyId,
+        entry,
+        organisationId: authenticatedActor.organisationId
+      },
+      message: 'New notification opened'
+    })
+  })
 
   it('Should start a notification, begin its opening run and land on its first question', async () => {
     const request = journeyRequest()
@@ -549,31 +571,4 @@ describe('dashboard start entry', () => {
       `/auth/sign-in?redirect=${encodeURIComponent(startUrl)}`
     )
   })
-})
-
-describe('opening a new notification logs it once', () => {
-  useStubbedHighRiskPlantsJourney()
-
-  it.each([
-    ['the create POST', createPost],
-    ['the start entry', startGet]
-  ])(
-    'Should log the new notification and its organisation once for %s',
-    async (_entry, handler) => {
-      const request = journeyRequest()
-      const h = stubH(request)
-
-      await handler(request, h)
-
-      const newJourneyId = h.cookies[knownJourneysCookie()].at(-1)
-      expectOneLogged(request.logger, {
-        level: 'info',
-        fields: {
-          journeyId: newJourneyId,
-          organisationId: authenticatedActor.organisationId
-        },
-        message: 'New notification opened'
-      })
-    }
-  )
 })

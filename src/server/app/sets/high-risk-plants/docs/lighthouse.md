@@ -16,9 +16,11 @@ at import:
   creates a draft and redirects rather than rendering a page, and the pages
   that render only on a submitted or amending notification, which no seed shape
   reaches. `FILLED_BY` names the routes audited on another shape than the
-  default. Arrival-status is read on a plants-for-planting notification,
-  because that question is asked of plants and wood alone and is out of scope
-  on the ware-potato default.
+  default. Arrival-status, consignors/select and consignors/edit are read on a
+  plants-for-planting notification. Arrival-status is asked of plants and wood
+  alone, so it is out of scope on the ware-potato default; the consignor pages
+  are reached only on a plants-for-planting notification, because the
+  ware-potato default reaches no consignor question.
 - `scripts/lighthouse/seed-notification.js` holds one `SEED_SHAPES` entry per
   blueprint use case — ware potatoes, ware potatoes notified late, seed
   potatoes, plants for planting, and wood — and fills a notification by walking

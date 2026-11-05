@@ -316,21 +316,24 @@ describe('When auth.enabled is set to false', () => {
 })
 
 describe('When the configured INS base URL has a trailing slash', () => {
-  beforeEach(() => {
-    vi.resetModules()
+  const INS_BASE_URL_KEY = 'tradeImportsInsFrontend.baseUrl'
+  let freshlyImportedConfig
+  let originalBaseUrl
+
+  beforeEach(async () => {
     mockReadFileSync.mockReset()
     mockLoggerError.mockReset()
+    vi.resetModules()
+    ;({ config: freshlyImportedConfig } = await import('../../config.js'))
+    originalBaseUrl = freshlyImportedConfig.get(INS_BASE_URL_KEY)
   })
+
+  afterEach(() => {
+    freshlyImportedConfig.set(INS_BASE_URL_KEY, originalBaseUrl)
+  })
+
   test('Should strip a trailing slash from the configured INS base URL', async () => {
-    vi.doMock('../../config.js', async (importOriginal) => {
-      const mod = await importOriginal()
-      const originalGet = mod.config.get.bind(mod.config)
-      vi.spyOn(mod.config, 'get').mockImplementation((key) => {
-        if (key === 'tradeImportsInsFrontend.baseUrl') return 'http://ins.test/'
-        return originalGet(key)
-      })
-      return mod
-    })
+    freshlyImportedConfig.set(INS_BASE_URL_KEY, 'http://ins.test/')
     const contextImport = await import('./context.js')
     mockReadFileSync.mockReturnValue(`{
       "application.js": "javascripts/application.js",

@@ -17,7 +17,11 @@ import {
   startJourney
 } from '../../../../../../engine/journey.js'
 import * as kit from '../../../../../../shared/kit.js'
-import { beginOpeningRun } from '../../../../../../flow/run-state.js'
+import {
+  beginOpeningRun,
+  RUN_ENTRY_LIST_CREATE,
+  RUN_ENTRY_START
+} from '../../../../../../flow/run-state.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { commodityTypePage } from '../commodity-type/page.js'
 import { dashboardPage } from './page.js'
@@ -110,12 +114,13 @@ const amendPost = async (request, h) => {
   )
 }
 
-const openNewNotification = async (request, h) => {
+const openNewNotification = async (request, h, { entry }) => {
   const journey = await startJourney(request, h)
   await beginOpeningRun(request, h, journey.journeyId)
   request.logger.info(
     {
       journeyId: journey.journeyId,
+      entry,
       organisationId: buildActor(request.auth?.credentials)?.organisationId
     },
     'New notification opened'
@@ -123,8 +128,14 @@ const openNewNotification = async (request, h) => {
   return h.redirect(pagePath(journey.journeyId, commodityTypePage.slug))
 }
 
+const createPost = async (request, h) =>
+  openNewNotification(request, h, { entry: RUN_ENTRY_LIST_CREATE })
+
 const startGet = async (request, h) =>
-  (await openNewNotification(request, h)).header('Cache-Control', 'no-store')
+  (await openNewNotification(request, h, { entry: RUN_ENTRY_START })).header(
+    'Cache-Control',
+    'no-store'
+  )
 
 export const routes = [
   {
@@ -143,7 +154,7 @@ export const routes = [
     method: 'POST',
     path: createRoutePath(),
     options: kit.routeOptions,
-    handler: openNewNotification
+    handler: createPost
   },
   {
     method: 'GET',
