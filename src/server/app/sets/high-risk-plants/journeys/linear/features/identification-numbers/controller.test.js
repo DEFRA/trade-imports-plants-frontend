@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   driveHandler,
   expectBackLinkIsPage,
+  expectBackLinkIsPath,
   expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
@@ -12,6 +13,7 @@ import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_PLANTS_NOTIFICATION,
+  itSendsBackCarryingChangeTo,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -20,6 +22,8 @@ import * as identificationNumbers from './controller.js'
 import * as state from '../../../../../../engine/index.js'
 import { IDENTIFICATION_FIELDS } from './fields.js'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
+const CONSIGNOR_SLUG = 'consignors/select'
+const DESTINATION_SLUG = 'destinations/select'
 
 const get = identificationNumbers.routes.find(
   (route) => route.method === 'GET'
@@ -62,14 +66,34 @@ describe('identification numbers', () => {
       seed: COMPLETE_PLANTS_NOTIFICATION,
       openingRun: RUN_ACTIVE
     })
-    expectBackLinkIsPage(result, 'consignors/select')
+    expectBackLinkIsPage(result, CONSIGNOR_SLUG)
   })
   it('Should send Back to the place of destination for potatoes while the opening run is on', async () => {
     const result = await driveHandler(get, {
       seed: COMPLETE_NOTIFICATION,
       openingRun: RUN_ACTIVE
     })
-    expectBackLinkIsPage(result, 'destinations/select')
+    expectBackLinkIsPage(result, DESTINATION_SLUG)
+  })
+  itSendsBackCarryingChangeTo(get, [
+    [
+      'the consignor for plants or wood',
+      COMPLETE_PLANTS_NOTIFICATION,
+      CONSIGNOR_SLUG
+    ],
+    [
+      'the place of destination for potatoes',
+      COMPLETE_NOTIFICATION,
+      DESTINATION_SLUG
+    ]
+  ])
+  it('Should send Back to the overview when the page is opened from a Change link while amending', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_PLANTS_NOTIFICATION,
+      query: { change: '1' },
+      amend: true
+    })
+    expectBackLinkIsPath(result, hubPath(result.journeyId))
   })
   it('Should keep Back on the consignor when the page is shown again after a refusal in the run', async () => {
     const result = await driveHandler(post, {
@@ -78,7 +102,7 @@ describe('identification numbers', () => {
       openingRun: RUN_ACTIVE
     })
     expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, 'consignors/select')
+    expectBackLinkIsPage(result, CONSIGNOR_SLUG)
   })
   it.each(branches)(
     'Should trim, persist and ignore hidden payload fields for %s',

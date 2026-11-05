@@ -24,7 +24,10 @@ import {
   STUB_BOOK_SIZE
 } from '../../../../../../services/address-book/stub/index.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
-import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
+import {
+  itSendsBackCarryingChangeTo,
+  useStubbedHighRiskPlantsJourney
+} from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
 import { pickerTableRows } from './table-rows.js'
 import {
@@ -92,6 +95,10 @@ const describePageServed = ({ pickerName, get, seed, previousStep }) => {
 
       expectBackLinkIsPage(result, previousStep.slug)
     })
+
+    itSendsBackCarryingChangeTo(get, [
+      [pickerName, previousStep.seed, previousStep.slug]
+    ])
 
     it('Should show the first page of the organisation book, counted against the whole', async () => {
       const result = await driveHandler(get, { seed: seed() })
@@ -514,7 +521,7 @@ const describeSaveFailures = (picker) => {
  * @param {(answers?: object) => object} picker.seed - the answers a notification opens the picker with
  * @param {string} picker.fieldName - the answer name the page collects
  * @param {string} picker.errorText - the error shown for an address not in the book
- * @param {object} picker.previousStep - the page the opening run's Back link opens
+ * @param {object} picker.previousStep - the page Back opens
  * @param {string} picker.previousStep.slug - that page's slug
  * @param {object} picker.previousStep.seed - answers that make that page apply
  */

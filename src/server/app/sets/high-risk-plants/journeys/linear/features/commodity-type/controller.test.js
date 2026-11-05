@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
+  expectBackLinkIsPath,
   expectNoRefusalLogged,
   expectOneSaveFallbackLogged,
   postHandlerOf,
@@ -106,6 +107,15 @@ describe('GET commodity-type', () => {
   })
 
   itSendsBackToTheDashboardUntilCommodityTypeAnswered(get)
+
+  it('Should send Back to the overview once answered on a draft opened from a Change link', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: PLANTS_FOR_PLANTING },
+      query: { change: '1' }
+    })
+
+    expectBackLinkIsPath(result, hubPath(result.journeyId))
+  })
 })
 
 describe('POST commodity-type — a rejected answer', () => {

@@ -1,6 +1,7 @@
 import { beforeAll, it } from 'vitest'
 import { registerSetMount } from '../../../../shared/set-context.js'
-import { dashboardPath, hubPath } from '../../../../shared/paths.js'
+import { dashboardPath, hubPath, pagePath } from '../../../../shared/paths.js'
+import { appendChangeContext } from '../../../../shared/kit.js'
 import {
   driveHandler,
   expectBackLinkIsPath,
@@ -105,6 +106,19 @@ export const useStubbedHighRiskPlantsJourney = () => {
   beforeAll(configureHighRiskPlantsJourneyPorts)
   useStubbedJourney(SET_ID, dispatchPages)
 }
+
+export const itSendsBackCarryingChangeTo = (get, cases) =>
+  it.each(cases)(
+    'Should send Back to %s carrying the change on a draft opened from a Change link',
+    async (_description, seed, slug) => {
+      const result = await driveHandler(get, { seed, query: { change: '1' } })
+
+      expectBackLinkIsPath(
+        result,
+        appendChangeContext(pagePath(result.journeyId, slug))
+      )
+    }
+  )
 
 export const itSendsBackToTheDashboardUntilCommodityTypeAnswered = (get) => {
   it('Should send Back to the dashboard while nothing is committed', async () => {

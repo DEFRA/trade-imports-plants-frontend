@@ -113,8 +113,9 @@ Use one `render()` helper for GET and POST errors. Build the common view with
 shows no status strip still passes `journey`, with `showJourneyStrip: false`.
 Pass `page` so the section caption renders. The normal back link is `hubPath(journey.journeyId)`.
 A page that is a step of the opening run takes its back link from
-`kit.runBackLink()`, which opens the previous run step while the run is active
-and falls back to the overview.
+`kit.runBackLink()`, which opens the previous run step while the run is active,
+and on a draft opened from a review Change link, where it carries change
+context. It falls back to the overview otherwise.
 
 GET calls `state.get()` once and prefills from `answers`. POST:
 
@@ -282,10 +283,12 @@ Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
 only when it belongs in the opening run — that is, add it to `RUN_STEPS` in
 journey order. A step whose derived gate fails is skipped, as arrival-status is
 for potatoes. A run step names its `backCandidates`, the earlier steps its Back
-link may open, nearest first. Inserting a step mid-run updates the following
-step's `backCandidates`. The controller's `render` takes its Back link from
+link may open, nearest first. The same `backCandidates` give the page's Back
+link on a draft opened from a review Change link. Inserting a step mid-run
+updates the following step's `backCandidates`. Update its run tests if you do.
+The controller's `render` takes its Back link from
 `kit.runBackLink(request, page.id, current, { fallback })`, where `fallback` is
-a named option that defaults to the overview. Update its run tests if you do.
+a named option that defaults to the overview.
 
 ## 7. Add check-answers and backend mapping when needed
 
