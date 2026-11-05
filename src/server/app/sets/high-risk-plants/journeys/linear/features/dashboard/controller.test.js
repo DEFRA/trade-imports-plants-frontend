@@ -14,16 +14,20 @@ import {
   createPath,
   createRoutePath,
   hubPath,
-  pagePath
+  pagePath,
+  startRoutePath
 } from '../../../../../../shared/paths.js'
 import { CYA_SLUG, SURFACES } from '../../../../../../shared/kit.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import {
+  authenticatedActor,
+  expectOneLogged,
   journeyRequest,
   stubH,
   fetchMock,
   useBackendRecords
 } from '../../../../../../engine/test-support.js'
+import { startStubModeServer } from '../../../../../../../common/test-helpers/stub-mode-server.js'
 import { commodityTypePage } from '../commodity-type/page.js'
 import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 
@@ -43,8 +47,11 @@ const handlerOf = (method, pathSuffix) =>
 
 const listGet = handlerOf('GET', '/')
 const amendPost = handlerOf('POST', '/amend')
-const startPost = routes.find(
+const createPost = routes.find(
   (route) => route.method === 'POST' && route.path === createRoutePath()
+).handler
+const startGet = routes.find(
+  (route) => route.method === 'GET' && route.path === startRoutePath()
 ).handler
 
 const startDraft = async () => records.create()
@@ -479,14 +486,17 @@ describe('dashboard amend POST', () => {
   })
 })
 
-describe('dashboard create POST', () => {
+describe.each([
+  ['create POST', createPost],
+  ['start entry', startGet]
+])('dashboard %s', (_entry, openNotification) => {
   useStubbedHighRiskPlantsJourney()
 
   it('Should start a notification, begin its opening run and land on its first question', async () => {
     const request = journeyRequest()
     const h = stubH(request)
 
-    const response = await startPost(request, h)
+    const response = await openNotification(request, h)
 
     const newJourneyId = h.cookies[knownJourneysCookie()].at(-1)
     expect(response.redirect).toBe(
@@ -504,10 +514,66 @@ describe('dashboard create POST', () => {
     })
     const h = stubH(request)
 
-    await startPost(request, h)
+    await openNotification(request, h)
 
     const knownJourneyIds = h.cookies[knownJourneysCookie()]
     expect(knownJourneyIds).toHaveLength(2)
     expect(knownJourneyIds[0]).toBe(oldDraft.journeyId)
   })
+})
+
+describe('dashboard start entry', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it('Should forbid caching the start response', async () => {
+    const request = journeyRequest()
+    const h = stubH(request)
+
+    const response = await startGet(request, h)
+
+    expect(response.headers).toEqual({ 'cache-control': 'no-store' })
+  })
+
+  it('Should send a request with no session at the start entry to sign in', async () => {
+    const startUrl = `${SET_BASE}/start`
+    const { server, stop } = await startStubModeServer()
+
+    const response = await server.inject({
+      method: 'GET',
+      url: startUrl
+    })
+    await stop()
+
+    expect(response.statusCode).toBe(302)
+    expect(response.headers.location).toBe(
+      `/auth/sign-in?redirect=${encodeURIComponent(startUrl)}`
+    )
+  })
+})
+
+describe('opening a new notification logs it once', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it.each([
+    ['the create POST', createPost],
+    ['the start entry', startGet]
+  ])(
+    'Should log the new notification and its organisation once for %s',
+    async (_entry, handler) => {
+      const request = journeyRequest()
+      const h = stubH(request)
+
+      await handler(request, h)
+
+      const newJourneyId = h.cookies[knownJourneysCookie()].at(-1)
+      expectOneLogged(request.logger, {
+        level: 'info',
+        fields: {
+          journeyId: newJourneyId,
+          organisationId: authenticatedActor.organisationId
+        },
+        message: 'New notification opened'
+      })
+    }
+  )
 })

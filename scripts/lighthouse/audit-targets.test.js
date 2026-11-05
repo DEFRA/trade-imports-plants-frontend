@@ -41,20 +41,14 @@ const USE_CASES = [
   'woodWithoutBark'
 ]
 
-// Confirmation and cancel-amend require lifecycle states the seeds do not
-// create, so the synthetic route table carries both skipped paths. No page
-// needs a query string yet. Keying the seeded ids off SEED_SHAPES also proves
-// the interface between the two modules: FILLED_BY names a shape, and the
-// shape has to be one the setup step seeds.
 const journeyIds = Object.fromEntries(
   Object.keys(SEED_SHAPES).map((shape, index) => [shape, `PHN-26-000${index}`])
 )
 
-// The dashboard's route SHAPE is '/'; Hapi mounts it at the set base, which is
-// the URL Lighthouse actually fetches. The two are not interchangeable here.
-const DASHBOARD_ROUTE_PATH = '/'
-const DASHBOARD_URL_PATH = SET_BASE
+const DASHBOARD_ROUTE_SHAPE = '/'
+const DASHBOARD_MOUNTED_PATH = SET_BASE
 const HUB_PATH = '/notifications/{journeyId}'
+const START_PATH = '/start'
 const CANCEL_AMEND_PATH = '/notifications/{journeyId}/cancel-amend'
 const CONFIRMATION_PATH = '/notifications/{journeyId}/confirmation'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
@@ -63,7 +57,7 @@ const CONSIGNOR_PATH = '/notifications/{journeyId}/consignors/select'
 const CONSIGNOR_EDIT_PATH = '/notifications/{journeyId}/consignors/edit'
 
 const ROUTES = [
-  { method: 'GET', path: DASHBOARD_ROUTE_PATH },
+  { method: 'GET', path: DASHBOARD_ROUTE_SHAPE },
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: CONFIRMATION_PATH },
   { method: 'GET', path: CANCEL_AMEND_PATH },
@@ -74,6 +68,7 @@ const ROUTES = [
   { method: 'GET', path: '/notifications/{journeyId}/treatments' },
   { method: 'GET', path: '/notifications/{journeyId}/late-reason' },
   { method: 'GET', path: '/notifications/{journeyId}/uploads/status' },
+  { method: 'GET', path: START_PATH },
   { method: 'POST', path: '/notifications' }
 ]
 
@@ -84,11 +79,13 @@ const GET_PATHS = ROUTES.filter(({ method }) => method === 'GET').map(
 const SKIPPED_PATH = '/notifications/{journeyId}/uploads/status'
 const TREATMENTS_PATH = '/notifications/{journeyId}/treatments'
 const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
-// The temporary uploads/status entry and both lifecycle-only pages.
-const SKIPPED_PATH_COUNT = 3
+const SKIPPED_PATHS = [
+  SKIPPED_PATH,
+  CANCEL_AMEND_PATH,
+  CONFIRMATION_PATH,
+  START_PATH
+]
 
-/** The three maps are empty until pages land, so a test registers the entries
- * it needs for its own length and takes them back out again. */
 const withEntries = (map, entries, run) => {
   for (const [key, value] of entries) {
     map.set(key, value)
@@ -123,7 +120,7 @@ describe('#auditPaths', () => {
   it('Should build a URL for every GET route the skip list does not name', () => {
     const paths = withSkipped(() => auditPaths(journeyIds, ROUTES))
 
-    expect(paths).toHaveLength(GET_PATHS.length - SKIPPED_PATH_COUNT)
+    expect(paths).toHaveLength(GET_PATHS.length - SKIPPED_PATHS.length)
     expect(paths).not.toContain(
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/uploads/status`
     )
@@ -196,7 +193,7 @@ describe('#auditPaths', () => {
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/notification-view`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/consignment/contact/select`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/identification-numbers`,
-      DASHBOARD_URL_PATH,
+      DASHBOARD_MOUNTED_PATH,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/delete`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/commodity-type`,
@@ -204,13 +201,7 @@ describe('#auditPaths', () => {
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/commodities/details`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/origin`,
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/arrival-status`,
-      // Audited on the ware-potato default: the date is asked of every
-      // commodity type, and potatoes are the shape that also carries the time
-      // and the place of landing, so the audit reads the fullest page.
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/arrival-details`,
-      // Audited on the ware-potato default too: the picker is the same page
-      // whichever state it asks its question in, and the ware-potato shape is
-      // the one that reaches it without an arrival status.
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/select`,
       `${SET_BASE}/notifications/${journeyIds.warePotatoes}/destinations/select`,
       `${SET_BASE}/notifications/${journeyIds.plantsForPlanting}/consignors/edit`,
@@ -288,8 +279,6 @@ describe('#reportName', () => {
   })
 
   it('Should name the report for the service start page', () => {
-    // The set's dashboard IS the start page, so its mount prefix must come
-    // back off: leaked, this would be named after the set instead.
     expect(reportName(`${ORIGIN}${SET_BASE}`, journeyIds)).toBe('home')
   })
 
@@ -403,9 +392,6 @@ describe('#SEED_SHAPES', () => {
   })
 
   it('Should seed only origin countries the shape’s own lines allow', async () => {
-    // countryOfOrigin is enforced at Continue, so a shape whose use case
-    // reaches a page after origin has to answer it — and the answer has to
-    // survive the narrowing its own categories impose.
     const offered = (await originCountries()).map(({ value }) => value)
     for (const [shape, { steps }] of Object.entries(SEED_SHAPES)) {
       for (const step of steps.filter(({ slug }) => slug === ORIGIN_SLUG)) {

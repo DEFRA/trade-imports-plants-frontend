@@ -134,9 +134,12 @@ submitted notification, including the one shown after an amendment is cancelled,
 goes back to the notification list; a draft's review and an amendment in
 progress go back to the overview.
 
-The opening run should begin when the notification is created, from the
-dashboard's create POST — the single caller of `beginOpeningRun`. The journey
-entry page is an ordinary page otherwise, with no opening-run special case.
+The opening run begins when the notification is created. The dashboard's create
+POST and the start entry (`<set>/start`, which the Import Notification
+Service's type question opens) both create it, through one helper in the
+dashboard controller that calls `beginOpeningRun`. The start entry sits outside
+`/notifications/`, so the entry guard never sees it. The journey entry page is
+an ordinary page otherwise, with no opening-run special case.
 
 [`entry-guard.js`](../journeys/linear/flow/entry-guard.js) is **live**, keyed to
 the entry page `commodity-type`, whose identity it imports from

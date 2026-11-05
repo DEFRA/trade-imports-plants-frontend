@@ -50,6 +50,20 @@ const stubResponse = (payload) => ({
   code: (statusCode) => ({ payload, statusCode })
 })
 
+const stubRedirect = (to) => {
+  const headers = {}
+  const response = { redirect: to }
+  return Object.defineProperties(response, {
+    headers: { value: headers },
+    header: {
+      value: (name, value) => {
+        headers[name.toLowerCase()] = value
+        return response
+      }
+    }
+  })
+}
+
 const stubView = (captured) => (view, context) => {
   const rendered = {
     view,
@@ -96,7 +110,7 @@ export const stubH = (request, { writesStateToRequest = false } = {}) => {
     ...(writesStateToRequest && stateWrittenToRequest(request)),
     request,
     view: stubView(captured),
-    redirect: (to) => ({ redirect: to }),
+    redirect: stubRedirect,
     response: stubResponse,
     captured
   }

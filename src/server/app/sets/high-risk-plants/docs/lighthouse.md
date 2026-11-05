@@ -11,12 +11,14 @@ at import:
 
 - `scripts/lighthouse/audit-targets.js` (with `audit-targets.test.js`) derives
   the URL list from the app's own registered routes and holds the `SKIPPED`,
-  `FILLED_BY` and `QUERY` reasons. `QUERY` is empty. `SKIPPED` holds one entry:
-  confirmation, because the page renders only on a submitted notification and
-  no seed shape completes the journey far enough to submit one. `FILLED_BY`
-  holds two entries: arrival-status and consignors/select, both on the
-  `plantsForPlanting` shape, because those questions are out of scope on the
-  ware-potato default.
+  `FILLED_BY` and `QUERY` reasons; the file is the list. `SKIPPED` names the
+  routes that are not audited, with a reason each: the start entry, because it
+  creates a draft and redirects rather than rendering a page, and the pages
+  that render only on a submitted or amending notification, which no seed shape
+  reaches. `FILLED_BY` names the routes audited on another shape than the
+  default. Arrival-status is read on a plants-for-planting notification,
+  because that question is asked of plants and wood alone and is out of scope
+  on the ware-potato default.
 - `scripts/lighthouse/seed-notification.js` holds one `SEED_SHAPES` entry per
   blueprint use case — ware potatoes, ware potatoes notified late, seed
   potatoes, plants for planting, and wood — and fills a notification by walking
@@ -155,3 +157,18 @@ dispatch.
 Once pages are registered, when a Lighthouse change fails in CI, use the
 uploaded report for that branch. Reproduce it against the same route and
 stack before changing code or limits.
+
+## The derived targets
+
+`scripts/lighthouse/audit-targets.js` derives the audited URLs from the set's
+GET routes.
+
+- Lighthouse builds its URLs outside the server, so it never enters a request's
+  set context. The script registers the set's mount, which makes the set the
+  sole mounted set and lets the link builders resolve the prefix the server
+  serves on.
+- The route table holds prefix-free route shapes. Every shape becomes a link
+  under the set's mount. The dashboard's `/` shape maps to the set base itself
+  rather than to `<base>/`.
+- A report is named after the page's route, with the set's mount prefix and the
+  seeded journey id dropped, so a run overwrites its predecessor's reports.
