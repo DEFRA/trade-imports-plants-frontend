@@ -1,7 +1,17 @@
 import { getDefaultAutoSelectFamilyAttemptTimeout } from 'node:net'
 import Wreck from '@hapi/wreck'
 
-import { beforeAll, afterAll, describe, expect, test, vi } from 'vitest'
+import {
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi
+} from 'vitest'
+import { config } from '../../../config/config.js'
 import { statusCodes } from '../constants/status-codes.js'
 import { mockOidcConfig } from '../test-helpers/mock-oidc-config.js'
 
@@ -51,8 +61,34 @@ describe('#startServer', () => {
       expect(getDefaultAutoSelectFamilyAttemptTimeout()).toBe(1000)
     })
 
-    test('keeps the connections of Wreck calls made without an agent open for the next call', () => {
+    test('installs a keep-alive agent for Wreck calls made without an agent', () => {
       expect(Wreck.agents.http.keepAlive).toBe(true)
+    })
+  })
+
+  describe('When an HTTP proxy is configured', () => {
+    let originalHttpProxy
+    let originalAgent
+    let server
+
+    beforeEach(() => {
+      originalHttpProxy = config.get('httpProxy')
+      originalAgent = Wreck.agents.http
+      config.set('httpProxy', 'http://proxy.test:3128')
+    })
+
+    afterEach(async () => {
+      await server?.stop({ timeout: 0 })
+      config.set('httpProxy', originalHttpProxy)
+      Wreck.agents.http = originalAgent
+    })
+
+    test('leaves Wreck on its own agent', async () => {
+      const wrecksOwnAgent = Wreck.agents.http
+
+      server = await startServer()
+
+      expect(Wreck.agents.http).toBe(wrecksOwnAgent)
     })
   })
 

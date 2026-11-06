@@ -6,8 +6,7 @@ plus the scripts under `scripts/lighthouse/`.
 
 ## What the run audits today
 
-Both modules the run imports now exist, so `npm run lighthouse` no longer fails
-at import:
+The run imports these modules:
 
 - `scripts/lighthouse/audit-targets.js` (with `audit-targets.test.js`) derives
   the URL list from the app's own registered routes and holds the `SKIPPED`,
@@ -27,10 +26,10 @@ at import:
   the journey's own pages. Every shape answers `commodity-type` with the type
   its use case is for.
 
-The dashboard at `/` is the first audited route, so the derived URL list is no
-longer empty. Each further page increment adds its own URL, its own step to the
-seed shapes whose use case reaches that page, and its own entry in `SKIPPED`,
-`FILLED_BY` or `QUERY` where the page needs one.
+The dashboard at `/` is the first audited route. Each further page increment
+adds its own URL, its own step to the seed shapes whose use case reaches that
+page, and its own entry in `SKIPPED`, `FILLED_BY` or `QUERY` where the page
+needs one.
 
 A seed step is not only there to reach the pages below it. The re-fetch below
 runs in a session that never created the notification, so the entry guard
@@ -43,7 +42,7 @@ The five shapes are held in `seed-notification.js` for now. They move to
 Lighthouse seed, the flow fixture and the tests-repo journey specs share one set
 of use cases.
 
-## What the run does, once it works
+## What the run does
 
 `npm run lighthouse` is `run-s lighthouse:targets lighthouse:run`.
 
@@ -150,7 +149,7 @@ one manifest, and builds the index and flagged findings from it. The workflow
 uploads that report for 14 days, publishes it to GitHub Pages and passes the
 result, report URL and flagged findings to the workspace status action.
 
-The set registers the dashboard, so `lighthouse:targets` now derives one URL and
+The set registers the dashboard, so `lighthouse:targets` derives one URL and
 seeds the notifications behind it. The check is expected to pass, and a red
 result is a real failure to investigate from the uploaded report. It is not a
 reason to lower a floor, stub a URL list or gate the workflow behind manual

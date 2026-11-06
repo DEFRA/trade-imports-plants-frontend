@@ -76,11 +76,11 @@ const GET_PATHS = ROUTES.filter(({ method }) => method === 'GET').map(
   ({ path }) => path
 )
 
-const SKIPPED_PATH = '/notifications/{journeyId}/uploads/status'
+const UPLOADS_STATUS_PATH = '/notifications/{journeyId}/uploads/status'
 const TREATMENTS_PATH = '/notifications/{journeyId}/treatments'
 const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
 const SKIPPED_PATHS = [
-  SKIPPED_PATH,
+  UPLOADS_STATUS_PATH,
   CANCEL_AMEND_PATH,
   CONFIRMATION_PATH,
   START_PATH
@@ -102,7 +102,7 @@ const withEntries = (map, entries, run) => {
 const withSkipped = (run) =>
   withEntries(
     SKIPPED,
-    [[SKIPPED_PATH, 'upload-scan polling — JSON, not a page']],
+    [[UPLOADS_STATUS_PATH, 'upload-scan polling — JSON, not a page']],
     run
   )
 
@@ -231,7 +231,7 @@ describe('#assertTargetsAreCurrent', () => {
   })
 
   it('Should reject a skip list naming a route the app no longer serves', () => {
-    const routes = ROUTES.filter(({ path }) => path !== SKIPPED_PATH)
+    const routes = ROUTES.filter(({ path }) => path !== UPLOADS_STATUS_PATH)
 
     expect(() => withSkipped(() => assertTargetsAreCurrent(routes))).toThrow(
       /skip list names .*, which the app no longer serves/

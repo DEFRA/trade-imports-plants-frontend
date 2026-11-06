@@ -8,6 +8,7 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy } from './copy/copy.en.js'
+import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 
 const CREATED_AT_ASCENDING_SORT = 'createdAt,asc'
 const DEFAULT_SORT = 'arrivalDate,desc'
@@ -48,7 +49,7 @@ test.describe('dashboard feature — initial render', () => {
 
     await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
     await expect(
-      page.getByRole('heading', { name: 'What are you importing?' })
+      page.getByRole('heading', { name: commodityTypeCopy.legend })
     ).toBeVisible()
   })
 

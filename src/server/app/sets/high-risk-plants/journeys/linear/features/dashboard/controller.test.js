@@ -544,7 +544,7 @@ describe.each([
   })
 })
 
-describe('dashboard start entry', () => {
+describe('dashboard start entry response and sign-in', () => {
   useStubbedHighRiskPlantsJourney()
 
   it('Should forbid caching the start response', async () => {
