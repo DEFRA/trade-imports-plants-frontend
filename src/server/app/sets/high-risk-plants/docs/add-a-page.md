@@ -379,6 +379,10 @@ set-up in the test file:
     session that holds no journey
   - `resetMocksAndConfigAfterTests` registers the reset of fetch mocks and
     config after each test
+  - `restoreConfigAfterEach(keys)`, from
+    [`common/test-helpers/restore-config-after-each.js`](../../../../common/test-helpers/restore-config-after-each.js),
+    restores those config keys after each test; every other helper that
+    restores config uses it
   - `useReferenceDataServing` registers `resetMocksAndConfigAfterTests()` for the
     describe that calls it, and returns the function that serves given rows as
     the reference-data response

@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import createFetchMock from 'vitest-fetch-mock'
 import { config } from '../../../config/config.js'
+import { restoreConfigAfterEach } from '../../common/test-helpers/restore-config-after-each.js'
 import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import {
@@ -317,14 +318,10 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
 export const fetchMock = createFetchMock(vi)
 
 export const resetMocksAndConfigAfterTests = (...configKeys) => {
-  const originals = ['stubMode', ...configKeys].map((key) => [
-    key,
-    config.get(key)
-  ])
+  restoreConfigAfterEach(['stubMode', ...configKeys])
   afterEach(() => {
     fetchMock.resetMocks()
     vi.unstubAllGlobals()
-    originals.forEach(([key, value]) => config.set(key, value))
   })
 }
 

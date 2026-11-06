@@ -18,11 +18,7 @@ import {
   startRoutePath
 } from '../../../../../../shared/paths.js'
 import { CYA_SLUG, SURFACES } from '../../../../../../shared/kit.js'
-import {
-  RUN_ACTIVE,
-  RUN_ENTRY_LIST_CREATE,
-  RUN_ENTRY_START
-} from '../../../../../../flow/run-state.js'
+import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import {
   authenticatedActor,
   expectOneLogged,
@@ -491,8 +487,8 @@ describe('dashboard amend POST', () => {
 })
 
 describe.each([
-  ['create POST', createPost, RUN_ENTRY_LIST_CREATE],
-  ['start entry', startGet, RUN_ENTRY_START]
+  ['create POST', createPost, 'list-create'],
+  ['start entry', startGet, 'start']
 ])('dashboard %s', (_name, openNotification, entry) => {
   useStubbedHighRiskPlantsJourney()
 

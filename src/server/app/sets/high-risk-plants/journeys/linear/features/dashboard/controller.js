@@ -17,11 +17,7 @@ import {
   startJourney
 } from '../../../../../../engine/journey.js'
 import * as kit from '../../../../../../shared/kit.js'
-import {
-  beginOpeningRun,
-  RUN_ENTRY_LIST_CREATE,
-  RUN_ENTRY_START
-} from '../../../../../../flow/run-state.js'
+import { beginOpeningRun } from '../../../../../../flow/run-state.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { commodityTypePage } from '../commodity-type/page.js'
 import { dashboardPage } from './page.js'
@@ -129,10 +125,10 @@ const openNewNotification = async (request, h, { entry }) => {
 }
 
 const createPost = async (request, h) =>
-  openNewNotification(request, h, { entry: RUN_ENTRY_LIST_CREATE })
+  openNewNotification(request, h, { entry: 'list-create' })
 
 const startGet = async (request, h) =>
-  (await openNewNotification(request, h, { entry: RUN_ENTRY_START })).header(
+  (await openNewNotification(request, h, { entry: 'start' })).header(
     'Cache-Control',
     'no-store'
   )

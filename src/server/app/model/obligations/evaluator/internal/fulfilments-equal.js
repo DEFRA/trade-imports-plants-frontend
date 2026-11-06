@@ -26,8 +26,6 @@ const fulfilmentEqual = (fulfilmentA, fulfilmentB) =>
     isNonArrayObject(fulfilmentB) &&
     indexedFulfilmentsEqual(fulfilmentA, fulfilmentB))
 
-// Structural equality between two fulfilments snapshots (obligation-id →
-// value).
 export function fulfilmentsEqual(fulfilmentsA, fulfilmentsB) {
   if (fulfilmentsA === fulfilmentsB) {
     return true
