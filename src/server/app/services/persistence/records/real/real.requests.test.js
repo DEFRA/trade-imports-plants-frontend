@@ -165,6 +165,17 @@ describe('real records adapter — canonical fulfilment boundary', () => {
     expect(request.method).toBe('GET')
     expect(loaded).toBeUndefined()
   })
+
+  it('Should return undefined when the fulfilment GET returns 403 for another organisation', async () => {
+    fetchMocker.mockResponse('Forbidden', { status: 403 })
+
+    const loaded = await records.load({ journeyId })
+
+    const [request] = fetchMocker.requests()
+    expect(request.url).toBe(`${notificationsUrl}/${journeyId}/fulfilments`)
+    expect(request.method).toBe('GET')
+    expect(loaded).toBeUndefined()
+  })
 })
 
 describe('real records adapter — fulfilment writes', () => {
