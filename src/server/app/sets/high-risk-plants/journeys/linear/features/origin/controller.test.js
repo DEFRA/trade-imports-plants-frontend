@@ -13,6 +13,7 @@ import * as countries from '../../../../../../services/countries/index.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_POTATO_CONSIGNMENT,
+  itSendsBackCarryingChangeTo,
   itSendsBackToTheDashboardUntilCommodityTypeAnswered,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
@@ -114,6 +115,10 @@ describe('GET origin', () => {
 
     expectBackLinkIsPage(result, 'commodities')
   })
+
+  itSendsBackCarryingChangeTo(get, [
+    ['the commodities list', COMPLETE_NOTIFICATION, 'commodities']
+  ])
 
   it('Should keep Back on the commodities list when the page is shown again after a refusal in the run', async () => {
     const result = await driveHandler(post, {

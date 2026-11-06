@@ -8,6 +8,7 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy } from './copy/copy.en.js'
+import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 
 const CREATED_AT_ASCENDING_SORT = 'createdAt,asc'
 const DEFAULT_SORT = 'arrivalDate,desc'
@@ -39,6 +40,17 @@ const cardRowValue = (page, key) =>
 test.describe('dashboard feature — initial render', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
+  })
+
+  test('the start entry opens a new notification at its first question', async ({
+    page
+  }) => {
+    await page.goto(`${BASE}/start`)
+
+    await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+    await expect(
+      page.getByRole('heading', { name: commodityTypeCopy.legend })
+    ).toBeVisible()
   })
 
   test('renders the service heading, the intro body and the start button', async ({

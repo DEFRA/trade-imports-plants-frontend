@@ -185,20 +185,41 @@ export const runTarget = async (request, stepId, scope) =>
     ? journeyNextRunTarget(stepId, scope, request.params.journeyId)
     : null
 
+const previousStepBackLink = async (request, stepId, { journey, scope }) => {
+  const { journeyId } = request.params
+  const opensInRun = await inOpeningRun(request, journeyId)
+  const draftOpenedFromChangeLink =
+    !opensInRun && journey.status === DRAFT && changeContext(request)
+  if (!opensInRun && !draftOpenedFromChangeLink) {
+    return null
+  }
+  const previousStep = journeyPreviousRunTarget(stepId, scope, journeyId)
+  return draftOpenedFromChangeLink && previousStep
+    ? appendChangeContext(previousStep)
+    : previousStep
+}
+
+/**
+ * Where a run step's Back link goes.
+ *
+ * @param {object} request - the request being answered.
+ * @param {string} stepId - the run step's id.
+ * @param {{ journey: object, scope: object }} state - the journey and its
+ * scope.
+ * @param {object} [options]
+ * @param {string} [options.fallback] - the path answered when no earlier step
+ * applies. Defaults to the overview's path.
+ * @returns {Promise<string>} the previous run step's path while the opening
+ * run is active, and on a draft request carrying change context, where it
+ * carries change context too. Otherwise, the fallback.
+ */
 export const runBackLink = async (
   request,
   stepId,
   { journey, scope },
   { fallback = hubPath(journey.journeyId) } = {}
-) => {
-  const previousRunTarget = (await inOpeningRun(
-    request,
-    request.params.journeyId
-  ))
-    ? journeyPreviousRunTarget(stepId, scope, request.params.journeyId)
-    : null
-  return previousRunTarget ?? fallback
-}
+) =>
+  (await previousStepBackLink(request, stepId, { journey, scope })) ?? fallback
 
 export const nextTarget = async (request, page, scope) =>
   exitTarget(

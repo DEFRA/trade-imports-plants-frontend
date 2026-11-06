@@ -13,6 +13,7 @@ import { hubPath, pagePath } from '../../../../../../../shared/paths.js'
 import { RUN_ACTIVE } from '../../../../../../../flow/run-state.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
+  itSendsBackCarryingChangeTo,
   useStubbedHighRiskPlantsJourney
 } from '../../../test-support.js'
 import * as list from './list.controller.js'
@@ -139,6 +140,10 @@ describe('GET commodities', () => {
 
     expectBackLinkIsPage(result, 'commodity-type')
   })
+
+  itSendsBackCarryingChangeTo(get, [
+    ['the commodity type', TWO_LINES, 'commodity-type']
+  ])
 })
 
 describe('POST commodities — removing a line', () => {

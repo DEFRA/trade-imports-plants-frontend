@@ -239,6 +239,15 @@ only the external round-trip is bypassed — and the switch is refused in
 production. The Playwright suite sets it for its own web server, so
 `npm run test:fit` needs no other service running.
 
+### Cookie SameSite settings
+
+| Cookie                       | SameSite         | Set by                                                            |
+| ---------------------------- | ---------------- | ----------------------------------------------------------------- |
+| Session cookie               | `Strict`         | fixed in the auth plugin                                          |
+| Defra ID (Bell) state cookie | `Lax` by default | `DEFRA_ID_STATE_COOKIE_SAME_SITE` (`defraId.stateCookieSameSite`) |
+
+The Defra ID callback is a cross-site, top-level navigation. A `Strict` state cookie is not sent on it, so sign-in fails.
+
 ## Docker
 
 ### Development image

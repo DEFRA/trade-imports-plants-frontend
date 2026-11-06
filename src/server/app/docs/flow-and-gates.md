@@ -65,12 +65,16 @@ ready.
 ## Opening-run state
 
 [`src/server/app/flow/run-state.js`](../flow/run-state.js) stores whether a journey is
-in its opening run through the injected session port. The journey supplies
+in its opening run through the injected session port. Run state is
+session-side presentation state keyed by journey id, never canonical fulfilment
+data. The journey supplies
 `nextRunTarget` and `previousRunTarget`; shared controller helpers call them through
 the journey-flow seam. `kit.runBackLink()` answers a run step's Back link with
-`previousRunTarget` while the run is active, and with a fallback otherwise. The
-caller may pass `{ fallback }`; it defaults to the overview. `previousRunTarget`
-receives `(stepId, scope, journeyId)`.
+`previousRunTarget` while the run is active. On a draft notification whose
+request carries change context, it answers with `previousRunTarget` with change
+context appended. Otherwise it answers with the fallback. The caller may pass
+`{ fallback }`; it defaults to the overview. `previousRunTarget` receives
+`(stepId, scope, journeyId)`.
 
 For the section order, task rows, authored gates and opening run this journey
 configures, see the

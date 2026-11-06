@@ -5,8 +5,10 @@ import {
   dashboardRoutePath,
   hubPath,
   pagePath,
-  pageRoutePath
+  pageRoutePath,
+  startRoutePath
 } from '../../../../../../shared/paths.js'
+import { buildActor } from '../../../../../../../common/helpers/actor-helpers.js'
 import { TEMPLATES } from '../../config.js'
 import { DELETED } from '../../../../../../engine/index.js'
 import {
@@ -108,11 +110,28 @@ const amendPost = async (request, h) => {
   )
 }
 
-const createPost = async (request, h) => {
+const openNewNotification = async (request, h, { entry }) => {
   const journey = await startJourney(request, h)
   await beginOpeningRun(request, h, journey.journeyId)
+  request.logger.info(
+    {
+      journeyId: journey.journeyId,
+      entry,
+      organisationId: buildActor(request.auth?.credentials)?.organisationId
+    },
+    'New notification opened'
+  )
   return h.redirect(pagePath(journey.journeyId, commodityTypePage.slug))
 }
+
+const createPost = async (request, h) =>
+  openNewNotification(request, h, { entry: 'list-create' })
+
+const startGet = async (request, h) =>
+  (await openNewNotification(request, h, { entry: 'start' })).header(
+    'Cache-Control',
+    'no-store'
+  )
 
 export const routes = [
   {
@@ -132,5 +151,11 @@ export const routes = [
     path: createRoutePath(),
     options: kit.routeOptions,
     handler: createPost
+  },
+  {
+    method: 'GET',
+    path: startRoutePath(),
+    options: kit.routeOptions,
+    handler: startGet
   }
 ]

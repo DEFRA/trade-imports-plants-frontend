@@ -13,6 +13,7 @@ import { validatorDefaults } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_PLANTS_NOTIFICATION,
+  itSendsBackCarryingChangeTo,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
@@ -217,6 +218,15 @@ describe('GET arrival-details — the potato-only fields', () => {
 
     expectBackLinkIsPage(result, 'origin')
   })
+
+  itSendsBackCarryingChangeTo(get, [
+    [
+      'arrival status for plants or wood',
+      COMPLETE_PLANTS_NOTIFICATION,
+      'arrival-status'
+    ],
+    ['origin for potatoes', COMPLETE_NOTIFICATION, 'origin']
+  ])
 
   it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
     const result = await driveHandler(post, {

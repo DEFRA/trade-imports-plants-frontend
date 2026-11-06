@@ -125,18 +125,25 @@ earlier steps its Back link may open, nearest first, and `previousRunTarget`
 returns the first whose gate passes, so a skipped step is skipped going back too.
 Arrival-details goes back to arrival-status, or to origin for potatoes;
 identification-numbers goes back to the consignor, or to the place of destination
-for potatoes. `kit.runBackLink()` falls back to the page's own Back link once the
-run is over: the overview, or for origin the dashboard until the notification
-holds an answer.
+for potatoes. On a draft notification, a page opened from a Change link on the
+review has the same Back link, carrying change context so that its save still
+returns to the review. The commodity type page, the first page, keeps the Back
+link it has without the Change link. While the notification is being amended,
+every page keeps its usual Back link. `kit.runBackLink()` otherwise falls back to
+the page's own Back link: the overview, or for origin the dashboard until the
+notification holds an answer.
 
 Check your answers takes its Back link from the notification's status instead. A
 submitted notification, including the one shown after an amendment is cancelled,
 goes back to the notification list; a draft's review and an amendment in
 progress go back to the overview.
 
-The opening run should begin when the notification is created, from the
-dashboard's create POST — the single caller of `beginOpeningRun`. The journey
-entry page is an ordinary page otherwise, with no opening-run special case.
+The opening run begins when the notification is created. The dashboard's create
+POST and the start entry (`<set>/start`, which the Import Notification
+Service's type question opens) both create it, through one helper in the
+dashboard controller that calls `beginOpeningRun`. The start entry sits outside
+`/notifications/`, so the entry guard never sees it. The journey entry page is
+an ordinary page otherwise, with no opening-run special case.
 
 [`entry-guard.js`](../journeys/linear/flow/entry-guard.js) is **live**, keyed to
 the entry page `commodity-type`, whose identity it imports from

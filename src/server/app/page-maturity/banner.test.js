@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { config } from '../../../config/config.js'
 import { nunjucksConfig } from '../../../config/nunjucks/nunjucks.js'
-import { createServer } from '../../server.js'
+import { startStubModeServer } from '../../common/test-helpers/stub-mode-server.js'
 import { statusCodes } from '../../common/constants/status-codes.js'
 import { documentOf } from '../../common/test-helpers/document-of.js'
 import { authenticatedCredentials } from '../engine/test-support.js'
@@ -134,18 +134,15 @@ describe('page maturity banner in the layout', () => {
 })
 
 describe('page maturity banner on a served page', () => {
-  const originalStubMode = config.get('stubMode')
   let server
+  let stopServer
 
   beforeAll(async () => {
-    config.set('stubMode', true)
-    server = await createServer()
-    await server.initialize()
+    ;({ server, stop: stopServer } = await startStubModeServer())
   })
 
   afterAll(async () => {
-    config.set('stubMode', originalStubMode)
-    await server.stop({ timeout: 0 })
+    await stopServer()
   })
 
   afterEach(() => {

@@ -12,6 +12,7 @@ import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { PLANTS_WOOD_DAYS_AFTER_ARRIVAL } from '../timing-windows.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
+  itSendsBackCarryingChangeTo,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -126,6 +127,10 @@ describe('GET arrival-status', () => {
 
     expectBackLinkIsPage(result, 'origin')
   })
+
+  itSendsBackCarryingChangeTo(get, [
+    ['origin', COMPLETE_PLANTS_NOTIFICATION, 'origin']
+  ])
 
   it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
     const result = await driveHandler(post, {

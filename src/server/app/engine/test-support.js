@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import createFetchMock from 'vitest-fetch-mock'
 import { config } from '../../../config/config.js'
+import { restoreConfigAfterEach } from '../../common/test-helpers/restore-config-after-each.js'
 import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import {
@@ -50,6 +51,20 @@ const stubResponse = (payload) => ({
   code: (statusCode) => ({ payload, statusCode })
 })
 
+const stubRedirect = (to) => {
+  const headers = {}
+  const response = { redirect: to }
+  return Object.defineProperties(response, {
+    headers: { value: headers },
+    header: {
+      value: (name, value) => {
+        headers[name.toLowerCase()] = value
+        return response
+      }
+    }
+  })
+}
+
 const stubView = (captured) => (view, context) => {
   const rendered = {
     view,
@@ -96,7 +111,7 @@ export const stubH = (request, { writesStateToRequest = false } = {}) => {
     ...(writesStateToRequest && stateWrittenToRequest(request)),
     request,
     view: stubView(captured),
-    redirect: (to) => ({ redirect: to }),
+    redirect: stubRedirect,
     response: stubResponse,
     captured
   }
@@ -303,14 +318,10 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
 export const fetchMock = createFetchMock(vi)
 
 export const resetMocksAndConfigAfterTests = (...configKeys) => {
-  const originals = ['stubMode', ...configKeys].map((key) => [
-    key,
-    config.get(key)
-  ])
+  restoreConfigAfterEach(['stubMode', ...configKeys])
   afterEach(() => {
     fetchMock.resetMocks()
     vi.unstubAllGlobals()
-    originals.forEach(([key, value]) => config.set(key, value))
   })
 }
 

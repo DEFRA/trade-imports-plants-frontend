@@ -472,6 +472,23 @@ export const expectNoSeriousOrCriticalViolations = async (page, subject) => {
   ).toEqual([])
 }
 
+export const overwriteRadioInputs = async (
+  page,
+  { inputSelector, postedValue }
+) => {
+  const inputs = page.locator(inputSelector)
+  await expect(inputs.first()).toBeAttached()
+  await inputs.evaluateAll((elements, value) => {
+    elements.forEach((element) => {
+      element.checked = false
+    })
+    if (value) {
+      elements[0].value = value
+      elements[0].checked = true
+    }
+  }, postedValue)
+}
+
 /**
  * Starts a notification from the dashboard.
  *
@@ -821,7 +838,11 @@ export const expectPickerResultsLayout = async (page, count) => {
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
 
-const postUnknownAddressId = async (page, fieldName) => {
+const postUnknownAddressId = async (
+  page,
+  fieldName,
+  { saveControlOf = saveAndContinue } = {}
+) => {
   await journeyFormOf(page).evaluate(
     (form, { name, id }) => {
       const input = document.createElement('input')
@@ -832,7 +853,7 @@ const postUnknownAddressId = async (page, fieldName) => {
     },
     { name: fieldName, id: NOT_IN_THE_BOOK }
   )
-  await saveAndContinue(page).click()
+  await saveControlOf(page).click()
 }
 
 /**
@@ -840,10 +861,12 @@ const postUnknownAddressId = async (page, fieldName) => {
  * of the first listed address's radio.
  *
  * @param {import('@playwright/test').Page} page
+ * @param {object} [options]
+ * @param {(page: import('@playwright/test').Page) => import('@playwright/test').Locator} [options.saveControlOf] - the save control the post goes through; Save and continue by default
  */
-export const postAnIdNotInTheBook = async (page) => {
+export const postAnIdNotInTheBook = async (page, options) => {
   const fieldName = await page.getByRole('radio').first().getAttribute('name')
-  await postUnknownAddressId(page, fieldName)
+  await postUnknownAddressId(page, fieldName, options)
 }
 
 /**
@@ -1136,6 +1159,19 @@ export const describeAddressPicker = ({
       await expect(searchBox(page)).toHaveValue(DENMARK)
       await notInBookLink(page).click()
       await expect(page.locator(firstRowRadio)).toBeFocused()
+    })
+
+    test('an address not in the book is refused on Save and return to overview, staying on the page and keeping the search', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await searchBox(page).fill(DENMARK)
+
+      await postAnIdNotInTheBook(page, { saveControlOf: saveAndReturnToHub })
+
+      await expect(page).toHaveURL(pageUrl)
+      await expect(notInBookLink(page)).toBeVisible()
+      await expect(searchBox(page)).toHaveValue(DENMARK)
     })
 
     test('an address not in the book after a search that found nothing is refused, focusing the search box, which keeps the term', async ({
