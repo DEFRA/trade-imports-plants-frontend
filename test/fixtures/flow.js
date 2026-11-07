@@ -1,6 +1,5 @@
 import { statusOf } from '../../src/server/app/bridge/status/index.js'
 import { collectsOf } from '../../src/server/app/flow/dispatch.js'
-import { hubPath } from '../../src/server/app/shared/paths.js'
 import {
   aggregatePage,
   blocksPage,
@@ -103,22 +102,6 @@ export const rowParts = (row) =>
 
 export const rowStatus = (row, answers, inScope, evaluation) =>
   statusOf(rowParts(row), answers, inScope, evaluation)
-
-export const RUN_STEPS = []
-
-export const nextRunTarget = (stepId, scope, journeyId) => {
-  const index = RUN_STEPS.findIndex((step) => step.id === stepId)
-  if (index === -1) {
-    return null
-  }
-  for (const step of RUN_STEPS.slice(index + 1)) {
-    const target = step.target(scope, journeyId)
-    if (target) {
-      return target
-    }
-  }
-  return hubPath(journeyId)
-}
 
 export const previousRunTarget = () => null
 

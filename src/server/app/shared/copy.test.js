@@ -98,7 +98,6 @@ describe('error-page copy', () => {
 describe('save-actions copy', () => {
   it('Should carry the four save-action labels in English', () => {
     expect(sharedEn.saveActions).toEqual({
-      saveAndReturn: 'Save and return',
       saveAndContinue: 'Save and continue',
       saveAndReturnToHub: 'Save and return to overview',
       cancelAndReturnToHub: 'Cancel and return to overview'

@@ -100,6 +100,9 @@ test.describe('commodity-type feature', () => {
   test('is also reachable from the overview commodities task row', async ({
     page
   }) => {
+    await radioFor(page, 'potatoes').check()
+    await saveAndContinue(page).click()
+    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
     await page.goto(hubPathOf(page))
     await page
       .getByRole('link', { name: hubCopy.rows.commodities.title })
@@ -178,7 +181,7 @@ test.describe('commodity-type feature', () => {
     await expect(radioFor(page, WOOD_AND_CUT_TREES)).toBeChecked()
   })
 
-  test('Cancel and return to overview reaches the overview without saving', async ({
+  test('Cancel and return to overview opens the dashboard when nothing is saved, without saving', async ({
     page
   }) => {
     const pageUrl = page.url()
@@ -189,8 +192,7 @@ test.describe('commodity-type feature', () => {
         name: sharedCopy.saveActions.cancelAndReturnToHub
       })
       .click()
-
-    await expect(page).toHaveURL(HUB_URL)
+    await expect(page).toHaveURL(`${BASE}`)
 
     await page.goto(pageUrl)
     await expect(page.locator(`${TYPE_INPUT_SELECTOR}:checked`)).toHaveCount(0)

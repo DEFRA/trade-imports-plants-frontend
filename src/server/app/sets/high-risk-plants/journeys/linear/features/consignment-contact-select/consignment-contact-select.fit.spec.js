@@ -27,6 +27,7 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
+const REVIEW_URL = /\/notification-view$/
 
 const contactPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignment/contact/select`
@@ -68,7 +69,7 @@ describeAddressPicker({
   hubRowTitle: hubCopy.rows.contact.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
-  afterSaveUrl: HUB_URL,
+  afterSaveUrl: REVIEW_URL,
   firstRowRadio: '#contactAddress'
 })
 
@@ -139,7 +140,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
@@ -155,7 +156,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
 
     await addressRowRadio(page, COPENHAGEN).check()
-    await saveAndContinue(page).click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
@@ -163,18 +164,6 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await page.goto(contactPathOf(reference))
     await expect(selectedAddressInset(page, COPENHAGEN)).toBeVisible()
     await expect(addressRowRadio(page, COPENHAGEN)).toHaveCount(0)
-  })
-
-  test('Save and return to overview marks the contact row complete', async ({
-    page
-  }) => {
-    await startAtContact(page)
-
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndReturnToHub(page).click()
-
-    await expect(page).toHaveURL(HUB_URL)
-    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
   })
 
   test('Cancel and return to overview leaves the contact row not yet started', async ({
@@ -224,29 +213,38 @@ test.describe('consignment-contact-select — a blank save', () => {
     await signIn(page)
   })
 
-  for (const action of [
-    sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub
-  ]) {
-    test(`blank contact permits ${action} and leaves the task not yet started`, async ({
-      page
-    }) => {
-      const reference = await startAtContact(page)
+  const expectTaskNotYetStarted = async (page, reference) => {
+    await page.goto(`${BASE}/notifications/${reference}`)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
 
-      await page.getByRole('button', { name: action, exact: true }).click()
-
-      await expect(page).toHaveURL(HUB_URL)
-      await expect(contactRow(page)).toContainText(
-        hubCopy.statuses.notYetStarted
-      )
-
-      await page.goto(contactPathOf(reference))
-      await expect(
-        page.getByText(new RegExp(`^${pickerCopy.selectedAddressPrefix}`))
-      ).toHaveCount(0)
-      await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
-    })
+    await page.goto(contactPathOf(reference))
+    await expect(
+      page.getByText(new RegExp(`^${pickerCopy.selectedAddressPrefix}`))
+    ).toHaveCount(0)
+    await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
   }
+
+  test('blank contact Save and continue opens the review page and leaves the task not yet started', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await saveAndContinue(page).click()
+
+    await expect(page).toHaveURL(REVIEW_URL)
+    await expectTaskNotYetStarted(page, reference)
+  })
+
+  test('blank contact Save and return to overview opens Overview and leaves the task not yet started', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await saveAndReturnToHub(page).click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expectTaskNotYetStarted(page, reference)
+  })
 })
 
 test('a potatoes notification is asked for the consignment contact in the opening run, and cannot go on from the review while its Overview task is not started', async ({

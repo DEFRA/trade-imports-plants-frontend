@@ -49,7 +49,6 @@ const buildView = (request, h, model) => {
   const errors = model.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      request,
       backLink: model.backLink,
       journey: model.journey,
       page,

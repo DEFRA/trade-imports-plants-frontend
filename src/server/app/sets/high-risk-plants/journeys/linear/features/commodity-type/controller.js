@@ -12,7 +12,7 @@ import {
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { entryBackLink } from '../../flow/entry-guard.js'
+import { leaveJourneyLink } from '../../flow/entry-guard.js'
 import {
   CATEGORY,
   GENUS,
@@ -77,14 +77,15 @@ const keyOf = (entry) =>
 
 const render = (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
+  const leaveLink = leaveJourneyLink(current.journey, current.answers)
   return h.view(view, {
     ...kit.base(copy.title, {
-      request: h.request,
-      backLink: entryBackLink(current.journey, current.answers),
+      backLink: leaveLink,
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
     }),
+    hubHref: leaveLink,
     copy,
     values,
     errors,

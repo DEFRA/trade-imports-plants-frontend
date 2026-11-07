@@ -1,35 +1,21 @@
+import { BASE } from '../../../../../../../../../fit/set-base.js'
 import {
-  BASE,
-  journeyIdFromPage,
-  setUrl
-} from '../../../../../../../../../fit/set-base.js'
-import { expectNoSeriousOrCriticalViolations } from '../../../../../../../../../fit/high-risk-plants-journey.js'
+  expectNoSeriousOrCriticalViolations,
+  startNotificationAtOverview
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
-
-const HUB_URL = setUrl('/notifications/[^/]+$')
 
 // The dashboard renders its notification actions inside a GOV.UK summary card,
 // which appends the card title — the reference — to each action's accessible name.
 const cardLink = (page, action, reference) =>
   page.getByRole('link', { name: `${action} (${reference})` })
 
-const startNotification = async (page) => {
-  await page.goto(BASE)
-  await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-  await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
-  const reference = journeyIdFromPage(page)
-  await page.goto(`${BASE}/notifications/${reference}`)
-  await expect(page).toHaveURL(HUB_URL)
-  return reference
-}
-
 const openDeleteConfirmation = async (page) => {
-  const reference = await startNotification(page)
+  const reference = await startNotificationAtOverview(page)
   await page.goto(BASE)
   await cardLink(
     page,

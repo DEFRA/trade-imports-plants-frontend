@@ -7,7 +7,9 @@ import {
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { arrivalStatusPage } from '../arrival-status/page.js'
+import { arrivalDetailsPage } from '../arrival-details/page.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import {
@@ -405,12 +407,26 @@ describe('POST origin — an accepted answer', () => {
     expect(result.after).toEqual({ countryOfOrigin: FRANCE })
   })
 
-  it('Should redirect to the overview, the page after the run’s last step', async () => {
+  it('Should redirect to the arrival status, the next page that applies', async () => {
     const result = await driveHandler(post, {
+      seed: { commodityType: PLANTS_FOR_PLANTING },
       payload: { countryOfOrigin: FRANCE }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: pagePath(result.journeyId, arrivalStatusPage.slug)
+    })
+  })
+
+  it('Should redirect a potato notification past the arrival status to the arrival details', async () => {
+    const result = await driveHandler(post, {
+      seed: { commodityType: POTATOES },
+      payload: { countryOfOrigin: FRANCE }
+    })
+
+    expect(result.response).toEqual({
+      redirect: pagePath(result.journeyId, arrivalDetailsPage.slug)
+    })
   })
 
   it('Should honour Save and return to overview', async () => {

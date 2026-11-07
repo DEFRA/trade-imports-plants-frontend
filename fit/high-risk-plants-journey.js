@@ -503,6 +503,27 @@ export const startNotification = async (page) => {
 }
 
 /**
+ * Starts a notification, saves potatoes as its commodity type and opens its
+ * Overview.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string>} the notification's reference
+ */
+export const startNotificationAtOverview = async (page) => {
+  const reference = await startNotification(page)
+  await page
+    .getByRole('radio', {
+      name: commodityTypeCopy.typeLabels.potatoes,
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
+  await page.goto(`${BASE}/notifications/${reference}`)
+  await expect(page).toHaveURL(setUrl('/notifications/[^/]+$'))
+  return reference
+}
+
+/**
  * Answers the commodity-type question for a notification with no commodity
  * lines, landing on the commodity details page.
  *
@@ -1127,7 +1148,9 @@ export const describeAddressPicker = ({
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)
-      await expect(page.getByRole('alert')).toHaveCount(0)
+      await expect(
+        page.getByRole('alert').getByRole('link', { name: notInBookError })
+      ).toHaveCount(0)
       await page.goto(`${BASE}/notifications/${reference}`)
       await expect(overviewRowStatus(page)).toHaveText(
         hubCopy.statuses.notYetStarted

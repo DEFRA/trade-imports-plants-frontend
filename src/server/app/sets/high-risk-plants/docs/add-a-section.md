@@ -59,10 +59,10 @@ Trace registration through these:
 - [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js) —
   this set's gateway; [`routes.js`](../../../routes.js) only re-exports it
 
-The hub feature and `flow/task-rows.test.js` already exist. The hub lands with
-`GROUPS` carrying its four numbered groups, each with an empty `rows` array, and
-`taskRows` empty, so the first task row adds only its `taskRows` entry, its
-`GROUPS` placement and its rows copy.
+The hub feature and `flow/task-rows.test.js` already exist. The hub derives its
+groups from the flow sections, and
+`taskRows` is empty, so the first task row adds only its `taskRows` entry and its
+rows copy; the hub lists a row under the flow section that holds its first page.
 
 ## 1. Define the user task and its data
 
@@ -209,10 +209,10 @@ to `sections`:
 }
 ```
 
-The array order is journey order. Outside the opening run, Save and continue
-moves to the first gate-passing later page of the section only when it belongs
-to the same task row, and otherwise returns to the hub. The section's place among
-other sections also controls strictly-earlier continue prerequisites.
+The array order is journey order and Overview's group order. Save and continue
+goes to the next page that applies, from every start; nothing returns to the hub.
+The section's place among other sections also controls strictly-earlier continue
+prerequisites.
 
 Normal page and section gates are derived from `meta.collects`, in-scope
 obligations and earlier continue prerequisites. Add an authored `gate` only for
@@ -238,7 +238,7 @@ The row status defaults to the union of those pages' `collects` — that is what
 `rowParts()` computes. Use `parts` only when the row needs a collection facet.
 Use `conditional: true` only when the hub must hide a Not applicable row.
 
-Add the task-row id to the right object in the hub controller's `GROUPS` list.
+Add the task-row id to the right object in the flow section that holds its first page.
 Add the row title and hint to both hub copy bundles. Add a new numbered hub
 group only when the design requires a new heading; if so, add its caption to
 both locale bundles too.
@@ -266,7 +266,7 @@ This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), already
 imports the journey's
-`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `previousRunTarget`,
+`sections`, `taskRows`, `rowStatus`, `previousRunTarget`,
 `FLOW_ONLY_KEYS`, `entryGuardTarget`, `sectionCaptionOf` and `LAYOUT`. It passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js). Because it injects the
 whole exported arrays, adding a section or task row to the existing modules needs

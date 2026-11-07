@@ -5,7 +5,6 @@ import { flowOnlyKeys } from '../bridge/flow-only-keys.js'
 import { withSetContext } from '../shared/set-context.js'
 import {
   configureJourneyFlow,
-  journeyNextRunTarget,
   journeyPreviousRunTarget,
   journeySectionCaption
 } from './journey-flow.js'
@@ -29,18 +28,6 @@ describe('#journeyPreviousRunTarget', () => {
   it('Should report an unconfigured set as not configured', () => {
     expect(() => previousRunTargetInSet('unconfigured-set')).toThrow(
       'journey flow not configured'
-    )
-  })
-})
-
-describe('#journeyNextRunTarget', () => {
-  it('Should ask the configured journey where the run goes next', () => {
-    const nextRunTarget = (stepId, scope, journeyId) =>
-      `${stepId}|${scope}|${journeyId}`
-    configureJourneyFlow(SET_ID, { sections: [], taskRows: [], nextRunTarget })
-
-    expect(journeyNextRunTarget('origin', 'consignment', 'PHN-26-0001')).toBe(
-      'origin|consignment|PHN-26-0001'
     )
   })
 })

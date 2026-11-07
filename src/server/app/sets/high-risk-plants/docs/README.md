@@ -68,7 +68,7 @@ collide; `npm run test:fit:ci` does this for you.
 | `journeys/linear/flow/flow.js`                   | `FLOW_ONLY_KEYS`, `sections`                  | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/task-rows.js`              | `taskRows`, `rowStatus`                       | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/section-captions/index.js` | `captionSections`, `sectionCaptionOf`         | `configureJourneyFlow`                                      |
-| `journeys/linear/flow/run.js`                    | `nextRunTarget`, `previousRunTarget`          | `configureJourneyFlow`                                      |
+| `journeys/linear/flow/run.js`                    | `previousRunTarget`                           | `configureJourneyFlow`                                      |
 | `journeys/linear/flow/entry-guard.js`            | `entryGuardTarget`                            | `server.ext('onPreHandler')`                                |
 
 This set's gateway,
@@ -108,7 +108,7 @@ pre-arrival one.
 The review section contains check answers, declaration and confirmation;
 readiness gates entry to it. Registered actions also support amending,
 cancelling an amendment, copying and deleting notifications. The entry guard
-redirects a notification with neither a started opening run nor committed user
+redirects a notification with no committed user
 answers to `commodity-type`, including when its hub is requested directly.
 
 [`features/index.js`](../journeys/linear/features/index.js) registers the
@@ -144,11 +144,11 @@ Build bindings with `feature`, `scalar` and `grouped` from
 `/notifications/<id>/`, the create path, the
 `amend`/`cancel-amend`/`copy`/`delete` action slugs, and the entry page
 and its sub-paths. Every other journey path — the hub included — is
-admitted only by one of two let-throughs: `openingRunStarted` for that
-journey in this session, or `hasCommittedNotificationAnswers`. Anything
-else is redirected to `commodity-type`, so a journey URL alone no longer
-reaches a mid-journey page or bypasses the opening run. See
-[Journey flow and gates](journey-flow-and-gates.md).
+admitted only when `hasCommittedNotificationAnswers` finds an answer the user
+entered. Anything else is redirected to `commodity-type`, so a journey URL
+alone does not reach a mid-journey page, and a draft with nothing saved
+opens at its first page.
+See [Journey flow and gates](journey-flow-and-gates.md).
 
 **`sectionCaption` is wired — gate closed.**
 `flow/section-captions/index.js` holds the caption map with its

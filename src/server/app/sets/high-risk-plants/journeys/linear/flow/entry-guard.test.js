@@ -21,13 +21,14 @@ import { installHighRiskPlantsJourney } from '../test-support.js'
 import { SESSION_COOKIE_NAMES } from '../config.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import {
-  entryBackLink,
+  leaveJourneyLink,
   entryGuardTarget,
   guardedJourneyPath,
   hasCommittedNotificationAnswers
 } from './entry-guard.js'
 
 const ENTRY_SLUG = commodityTypePage.slug
+const NOTIFICATION_VIEW_SLUG = 'notification-view'
 const OTHER_JOURNEY_ID = 'HRP-9999'
 
 const openingRunState = (record) => ({
@@ -75,7 +76,9 @@ describe('#guardedJourneyPath', () => {
 
   it('Should guard the overview and every journey page beyond the entry page', () => {
     expect(guardedJourneyPath(hubPath('j-1'))).toBe(true)
-    expect(guardedJourneyPath(pagePath('j-1', 'notification-view'))).toBe(true)
+    expect(guardedJourneyPath(pagePath('j-1', NOTIFICATION_VIEW_SLUG))).toBe(
+      true
+    )
   })
 })
 
@@ -132,19 +135,68 @@ describe('#entryGuardTarget', () => {
 
     expect(
       await guardOn(journeyId, {
-        path: pagePath(journeyId, 'notification-view')
+        path: pagePath(journeyId, NOTIFICATION_VIEW_SLUG)
       })
     ).toBe(pagePath(journeyId, ENTRY_SLUG))
   })
 
-  it('Should admit a journey whose opening run has begun — active or complete', async () => {
-    const journeyId = await freshJourney()
+  it.each([RUN_ACTIVE, RUN_COMPLETE])(
+    'Should send a journey with no entered answer to the entry page while its opening run is %s',
+    async (phase) => {
+      const journeyId = await freshJourney()
 
-    for (const phase of [RUN_ACTIVE, RUN_COMPLETE]) {
+      expect(await guardOn(journeyId, { record: { [journeyId]: phase } })).toBe(
+        pagePath(journeyId, ENTRY_SLUG)
+      )
+    }
+  )
+
+  it.each([
+    ['Overview', (journeyId) => hubPath(journeyId)],
+    [
+      'the review page',
+      (journeyId) => pagePath(journeyId, NOTIFICATION_VIEW_SLUG)
+    ],
+    ['the declaration', (journeyId) => pagePath(journeyId, 'declaration')],
+    [
+      'the confirmation page',
+      (journeyId) => pagePath(journeyId, 'confirmation')
+    ]
+  ])(
+    'Should send %s of a notification with no entered answer to the entry page',
+    async (_name, pathFor) => {
+      const journeyId = await freshJourney()
+
+      expect(await guardOn(journeyId, { path: pathFor(journeyId) })).toBe(
+        pagePath(journeyId, ENTRY_SLUG)
+      )
+    }
+  )
+
+  it.each(['amend', 'cancel-amend', 'copy', 'delete'])(
+    'Should let the %s action of a notification with no entered answer through',
+    async (action) => {
+      const journeyId = await freshJourney()
+
       expect(
-        await guardOn(journeyId, { record: { [journeyId]: phase } })
+        await guardOn(journeyId, { path: pagePath(journeyId, action) })
       ).toBeNull()
     }
+  )
+
+  it('Should log the redirect once with the journey and the requested path', async () => {
+    const journeyId = await freshJourney()
+    const request = journeyRequest(journeyId, { path: hubPath(journeyId) })
+
+    await entryGuardTarget(request, stubH(request))
+
+    expect(request.logger.entries).toEqual([
+      {
+        level: 'info',
+        fields: { journeyId, path: hubPath(journeyId) },
+        message: 'No answer entered, sent to the first page'
+      }
+    ])
   })
 
   it('Should admit a journey holding a committed user answer', async () => {
@@ -170,16 +222,16 @@ describe('#entryGuardTarget', () => {
   })
 })
 
-describe('#entryBackLink', () => {
+describe('#leaveJourneyLink', () => {
   beforeAll(() => installHighRiskPlantsJourney())
 
   it('Should send Back to the overview once a notification answer is committed', () => {
     expect(
-      entryBackLink({ journeyId: 'j-1' }, { commodityType: 'potatoes' })
+      leaveJourneyLink({ journeyId: 'j-1' }, { commodityType: 'potatoes' })
     ).toBe(hubPath('j-1'))
   })
 
   it('Should send Back to the dashboard while nothing is committed', () => {
-    expect(entryBackLink({ journeyId: 'j-1' }, {})).toBe(dashboardPath())
+    expect(leaveJourneyLink({ journeyId: 'j-1' }, {})).toBe(dashboardPath())
   })
 })

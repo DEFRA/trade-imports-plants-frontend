@@ -24,7 +24,7 @@ tests, and a `fit/` folder holding both browser specs.
 
 ## Page identity
 
-A `page.js` exports `{ id, slug }` and imports nothing. The controller spreads
+A `page.js` exports `{ id, slug }` (plus an authored `gate` where needed and `subPage: true` on a page reached only from the page that opens it) and imports nothing. The controller spreads
 the same object into `meta`, while
 [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js) uses it in
 section order. Keeping the identity leaf import-free avoids a controller–flow
@@ -83,13 +83,9 @@ the enforceable detail. Read them when a copy test fails.
   "Overview". "Hub" is the internal name for it and never appears on screen.
 - A page reached from another page ends with the primary alone
   (`showReturnControls: false`), and the trader leaves the way they came in.
-- While a notification is being amended, a page passes `amend` and ends with
-  "Save and return" (back to the review, posting with `?change=1`) and "Save
-  and continue" (on, never back to the review) side by side, then a secondary
-  "Save and return to overview" button on its own line below them, with no
-  cancel link. Each save button carries its own `formaction`, so no new field
-  is posted. A page reached from another page or a picker
-  (`hubExitWhileAmending: false`) ends with the first two only.
+- While a notification is being amended, a page ends exactly as it does on a
+  draft: the same buttons, in the same layout, going to the same places. The
+  status strip shows the Amend status and its Cancel amend link.
 
 ## Party edit
 
@@ -129,7 +125,7 @@ A feature folder is not automatically a flow section or a hub row.
 
 - `journeys/linear/flow/flow.js` defines navigation order.
 - `journeys/linear/flow/task-rows.js` groups pages into hub work items.
-- the hub feature's controller groups task-row ids for presentation.
+- the hub feature's controller derives its groups from the flow sections, one per section that holds a task row's first page.
 - `journeys/linear/flow/run.js` defines the opening-run sequence.
 
 See [Journey flow and gates](journey-flow-and-gates.md).

@@ -13,7 +13,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { entryBackLink } from '../../flow/entry-guard.js'
+import { leaveJourneyLink } from '../../flow/entry-guard.js'
 import { CATEGORY, LINES } from '../commodities/fields.js'
 import { originPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -84,14 +84,13 @@ export const originErrors = async (current) =>
 
 const backLinkFor = (request, current) =>
   kit.runBackLink(request, page.id, current, {
-    fallback: entryBackLink(current.journey, current.answers)
+    fallback: leaveJourneyLink(current.journey, current.answers)
   })
 
 const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      request: h.request,
       backLink: options.backLink,
       journey: current.journey,
       page,

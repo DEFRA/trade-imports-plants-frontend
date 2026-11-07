@@ -49,7 +49,6 @@ const render = async (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      request,
       backLink: await kit.runBackLink(request, page.id, current),
       journey: current.journey,
       page,

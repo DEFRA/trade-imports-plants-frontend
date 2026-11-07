@@ -7,7 +7,8 @@ import {
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { arrivalDetailsPage } from '../arrival-details/page.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { PLANTS_WOOD_DAYS_AFTER_ARRIVAL } from '../timing-windows.js'
 import {
@@ -214,13 +215,15 @@ describe('POST arrival-status — an accepted answer', () => {
     expect(result.after.arrivalStatus).toBe(NOT_YET_ARRIVED)
   })
 
-  it('Should redirect to the overview, the page after the arrival section', async () => {
+  it('Should redirect to the arrival details, the next page that applies', async () => {
     const result = await driveHandler(post, {
       seed: plants(),
       payload: { arrivalStatus: NOT_YET_ARRIVED }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: pagePath(result.journeyId, arrivalDetailsPage.slug)
+    })
   })
 
   it('Should honour Save and return to overview', async () => {
