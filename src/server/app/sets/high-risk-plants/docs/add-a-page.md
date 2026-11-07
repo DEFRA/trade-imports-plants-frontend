@@ -123,7 +123,7 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 2. validates with [`src/server/app/lib/validate/index.js`](../../../lib/validate/index.js)
 3. re-renders raw values with status 400 on error
 4. commits cleaned values with `state.commit()`
-5. redirects through `await kit.nextTarget(request, page, committed.scope)`
+5. redirects through `kit.nextTarget(request, page, committed.scope)`
 
 Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
 failure is logged once by `recoverableSave`; render the same values with

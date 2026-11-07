@@ -88,6 +88,6 @@ const post = async (request, h) => {
   if (failure) {
     return failure
   }
-  return h.redirect(await kit.nextTarget(request, page, committed.scope))
+  return h.redirect(kit.nextTarget(request, page, committed.scope))
 }
 export const routes = kit.pageRoutes(page, { get, post })

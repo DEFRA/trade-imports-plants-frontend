@@ -139,7 +139,7 @@ const post = async (request, h) => {
   if (removed > 0) {
     return h.redirect(listHref(request, { removed }))
   }
-  return h.redirect(await kit.nextTarget(request, page, committed.scope))
+  return h.redirect(kit.nextTarget(request, page, committed.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

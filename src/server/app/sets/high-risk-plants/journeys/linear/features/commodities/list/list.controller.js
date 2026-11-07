@@ -129,7 +129,7 @@ const post = async (request, h) => {
       HTTP_STATUS_BAD_REQUEST
     )
   }
-  return h.redirect(await kit.nextTarget(request, page, current.scope))
+  return h.redirect(kit.nextTarget(request, page, current.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })
