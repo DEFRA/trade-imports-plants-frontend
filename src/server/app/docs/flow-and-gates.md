@@ -11,7 +11,7 @@ seam. `configureJourneyFlow()` receives:
 - `sections`
 - `taskRows`
 - `rowStatus`
-- `previousRunTarget`
+- `insTypeQuestionUrl`
 - `flowOnlyKeys`
 - `entryGuardTarget`
 - `layout`
@@ -74,17 +74,41 @@ ready.
 [`src/server/app/flow/run-state.js`](../flow/run-state.js) stores whether a journey is
 in its opening run through the injected session port. Run state is
 session-side presentation state keyed by journey id, never canonical fulfilment
-data. The journey supplies
-`previousRunTarget`; shared controller helpers call it through
-the journey-flow seam. `kit.runBackLink()` answers a run step's Back link with
-`previousRunTarget` while the run is active. On a draft notification whose
-request carries change context, it answers with `previousRunTarget` with change
-context appended. Otherwise it answers with the fallback. The caller may pass
-`{ fallback }`; it defaults to the overview. `previousRunTarget` receives
-`(stepId, scope, journeyId)`.
+data.
 
-For the section order, task rows, authored gates and opening run this journey
+## Where Back goes: the trail
+
+Back on a journey page goes to the place the trader came from. Where they came from
+travels on the page's links and on its form posts, never in the session, so it
+survives a refresh, a refused save, a round trip through a sub-page and a new browser
+session.
+
+The place is one query parameter, the trail: an ordered list of places, newest last. A
+place is a start place (Overview, the dashboard, the Import Notification Service's
+type question) or the slug of a page in the journey's `sections`. Every journey form
+posts to its own address, so a POST sees the same trail as the GET that showed it.
+
+[`kit.js`](../shared/kit.js) owns three operations on the trail:
+
+- `carryTrail(request, href)` puts the request's trail on a link that brings the trader
+  back to the same place, such as a sub-page round trip or a page's own redirect.
+- `pushTrail(request, href, entry)` puts the request's trail and one more place on a
+  link that moves the trader on. `nextTarget()` pushes the page it is given, so Save
+  and continue lands on the next page with the page saved on top of the trail. A
+  trail past 40 places loses its oldest.
+- `trailBackLink(request, { fallback })` answers the newest place on the trail,
+  carrying the places beneath it. With no trail, or a trail that names a place the
+  journey does not have, it answers the fallback, the overview by default, and for a
+  trail that is not recognised it logs once at info.
+
+The Import Notification Service's type question is set knowledge, so the journey
+supplies it through the `insTypeQuestionUrl` seam. The Back href is always built
+from a recognised slug or start place, never echoed from the request.
+
+A sub-page that returns to the page that opened it keeps that page as its Back and
+its save target, carrying the trail. A page that redirects onward without showing
+itself carries the trail, so Back on the page it lands on skips it.
+
+For the section order, task rows, authored gates and entry guard this journey
 configures, see the
 [high-risk-plants journey flow guide](../sets/high-risk-plants/docs/journey-flow-and-gates.md).
-The high-risk-plants journey configures all of those as empty today, so every
-algorithm above runs over nothing until the first page lands.

@@ -5,6 +5,7 @@ import {
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
   saveAndReturnToHub,
+  continueFromChangedCommodityLine,
   saveAndContinue
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
@@ -40,7 +41,7 @@ test('renders saved answers, scoped cards and accessible Change links that retur
       exact: true
     })
     .click()
-  await expect(page).toHaveURL(/\/origin\?change=1$/)
+  await expect(page).toHaveURL(/\/origin\?from=(?:[^#]*%2C)?notification-view$/)
   await saveAndContinue(page).click()
   await expect(page).not.toHaveURL(CHECK_ANSWERS_URL)
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
@@ -51,12 +52,11 @@ test('renders saved answers, scoped cards and accessible Change links that retur
       exact: true
     })
     .click()
-  await expect(page).toHaveURL(/\/commodities\/details\?index=0&change=1$/)
+  await expect(page).toHaveURL(
+    /\/commodities\/details\?index=0&from=(?:[^#]*%2C)?notification-view$/
+  )
   await page.getByLabel(copy.labels.quantity, { exact: true }).fill('300')
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/commodities\?change=1$/)
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/origin(\?change=1)?$/)
+  await continueFromChangedCommodityLine(page)
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
   await page.reload()
@@ -67,14 +67,14 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   )
 })
 
-test('offers Back, Save and return, and Cancel to Overview', async ({
+test('offers Back to the contact page, Save and return, and Cancel to Overview', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
   const hub = `${BASE}/notifications/${reference}`
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-  ).toHaveAttribute('href', hub)
+  ).toHaveAttribute('href', new RegExp(`^${hub}/consignment/contact/select`))
   await expect(
     page.getByRole('link', {
       name: sharedCopy.saveActions.cancelAndReturnToHub,
@@ -102,7 +102,9 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
     })
     .check()
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/commodities\/details\?index=0&change=1$/)
+  await expect(page).toHaveURL(
+    /\/commodities\/details\?index=0&from=(?:[^#]*%2C)?notification-view$/
+  )
   await page
     .getByLabel(copy.labels.potatoVariety, { exact: true })
     .fill(POTATO_VARIETY)
@@ -110,10 +112,7 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   await page
     .getByLabel(copy.labels.potatoIntendedUse, { exact: true })
     .fill('Planting')
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/commodities\?change=1$/)
-  await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/origin(\?change=1)?$/)
+  await continueFromChangedCommodityLine(page)
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
@@ -121,12 +120,12 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   const error = page.getByRole('link', { name: /Poland/ })
   await expect(error).toHaveAttribute(
     'href',
-    `${BASE}/notifications/${reference}/origin?change=1`
+    `${BASE}/notifications/${reference}/origin?from=notification-view`
   )
   await expectNoSeriousOrCriticalViolations(
     page,
     'Check answers with an origin error'
   )
   await error.click()
-  await expect(page).toHaveURL(/\/origin\?change=1$/)
+  await expect(page).toHaveURL(/\/origin\?from=(?:[^#]*%2C)?notification-view$/)
 })

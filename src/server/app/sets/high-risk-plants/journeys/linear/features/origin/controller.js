@@ -13,7 +13,6 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { leaveJourneyLink } from '../../flow/entry-guard.js'
 import { CATEGORY, LINES } from '../commodities/fields.js'
 import { originPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -82,11 +81,6 @@ const errorsFor = async (payload, constraints) => {
 export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
-const backLinkFor = (request, current) =>
-  kit.runBackLink(request, page.id, current, {
-    fallback: leaveJourneyLink(current.journey, current.answers)
-  })
-
 const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
@@ -122,7 +116,7 @@ const get = async (request, h) => {
     current,
     { [COUNTRY_FIELD]: staleCountry ? '' : stored },
     {
-      backLink: await backLinkFor(request, current),
+      backLink: kit.trailBackLink(request),
       constraints: constraintsOn(categoriesOf(current)),
       errors: staleCountry
         ? { [COUNTRY_FIELD]: copy.errors.countryNoLongerAvailable }
@@ -135,7 +129,7 @@ const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { [COUNTRY_FIELD]: payload[COUNTRY_FIELD] ?? '' }
   const current = await state.get(request, h)
-  const backLink = await backLinkFor(request, current)
+  const backLink = kit.trailBackLink(request)
   const constraints = constraintsOn(categoriesOf(current))
   const errors = await errorsFor(payload, constraints)
   if (errors) {

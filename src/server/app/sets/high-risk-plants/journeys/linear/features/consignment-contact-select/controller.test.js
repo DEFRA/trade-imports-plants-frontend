@@ -58,11 +58,12 @@ describeAddressBookPickerController({
   get,
   post,
   seed: plants,
-  previousStep: {
+  previousPage: {
     slug: 'identification-numbers',
     seed: COMPLETE_PLANTS_NOTIFICATION
   },
   fieldName: 'contactAddress',
+  slug: 'consignment/contact/select',
   nextSlug: 'notification-view',
   errorText: copy.errors.contactAddress
 })

@@ -103,7 +103,7 @@ const render = async (request, h, current, values, options = {}) => {
   const dateState = dateStateOf(current.answers, current.scope)
   return h.view(view, {
     ...kit.base(copy.title, {
-      backLink: await kit.runBackLink(request, page.id, current),
+      backLink: kit.trailBackLink(request),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false

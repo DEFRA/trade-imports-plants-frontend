@@ -6,7 +6,7 @@ The platform consumes that policy through `configureJourneyFlow()`.
 
 Those exports hold the start, commodity, commodityDetails, origin, arrival and
 destination sections, the `commodities`, `origin`, `arrival` and `destination`
-task rows and the opening run's steps — everything the journey has landed so
+task rows and the entry guard — everything the journey has landed so
 far.
 
 ## Flow sections
@@ -92,56 +92,54 @@ blocked and the complete state.
 The hub feature's controller derives its groups from the flow sections, in
 order, then appends the check-and-submit group.
 
-## Opening run and entry guard
+## Entry guard and the Back link
 
-[`run.js`](../journeys/linear/flow/run.js) owns the opening-run sequence. Its
-`RUN_STEPS` holds nine answer steps, commodity-type, commodities, origin,
-arrival-status, arrival-details, place-of-destination, consignor-select,
-identification-numbers then consignment-contact-select, and then check your
-answers. The run opens on the entry question, goes on to the consignment's
-commodities, asks where they come from, asks whether they have arrived, then
-when, asks where the consignment is going, who sends it, its identification
-numbers and the contact address, and closes on check your answers. Check your
-answers carries its derived gate, so the run ends there, complete or not, once
-the commodity type and origin are answered; its GET marks the run complete (the
-hub's GET still does too), shows the unfinished notification and names every
-unfinished card. Continue there re-shows the page with those cards named while
-anything is outstanding, and only the declaration and confirmation wait for a
-complete notification.
-The entry sub-page is not a
-step — the list page sends a trader with no lines there and takes them back. The
-arrival-status step is skipped for potatoes, whose notification is never asked
-the question: its target is `null` while the answer is out of scope, and the run
-goes straight on to arrival-details, which every commodity type answers.
+[`entry-guard.js`](../journeys/linear/flow/entry-guard.js) owns the journey's redirect
+policy before handlers run and the Import Notification Service's type question
+(`insTypeQuestionUrl`), which the gateway passes to `configureJourneyFlow()`. Its
+question is the plain What are you importing? question, because the Import Notification
+Service takes no high-risk plants notification back to it.
 
-During the run, every step from commodities to consignment-contact-select has
-its Back link open the previous step rather than the overview. Check your
-answers is the exception: it takes its Back link from the notification's status,
-below. Following a run Back link does not end the run: a
-later Save and continue goes on to the next step. Each `RUN_STEPS` entry names the
-earlier steps its Back link may open, nearest first, and `previousRunTarget`
-returns the first whose gate passes, so a skipped step is skipped going back too.
-Arrival-details goes back to arrival-status, or to origin for potatoes;
-identification-numbers goes back to the consignor, or to the place of destination
-for potatoes. On a draft notification, a page opened from a Change link on the
-review has the same Back link, carrying change context, which carries Back; its save
-goes on to the next page that applies. The commodity type page, the first page, keeps the Back
-link it has without the Change link. While the notification is being amended,
-every page keeps its usual Back link. `kit.runBackLink()` otherwise falls back to
-the page's own Back link: the overview, or for origin the dashboard until the
-notification holds an answer.
+Back on every journey page goes to the place the trader came from. The place travels
+on the page's links and form posts as the trail (see
+[Where Back goes](../../../docs/flow-and-gates.md#where-back-goes-the-trail)):
 
-Check your answers takes its Back link from the notification's status instead. A
-submitted notification, including the one shown after an amendment is cancelled,
-goes back to the notification list; a draft's review and an amendment in
-progress go back to the overview.
+| The trader came from                  | Back opens                                           |
+| ------------------------------------- | ---------------------------------------------------- |
+| Save and continue on another page     | That page, carrying the places beneath it            |
+| An Overview task row or review button | Overview                                             |
+| A review Change link or error link    | The review                                           |
+| A dashboard card (View or Amend)      | The dashboard                                        |
+| Start a new notification              | The dashboard, from the first page                   |
+| The Import Notification Service       | Its plain type question, from the first page         |
+| Nothing the journey knows             | Overview (the first page: see the entry guard below) |
 
-The opening run begins when the notification is created. The dashboard's create
-POST and the start entry (`<set>/start`, which the Import Notification
-Service's type question opens) both create it, through one helper in the
-dashboard controller that calls `beginOpeningRun`. The start entry sits outside
-`/notifications/`, so the entry guard never sees it. The journey entry page is
-an ordinary page otherwise, with no opening-run special case.
+Following a Back link does not end anything: a later Save and continue goes on to the
+next page that applies, adding the page saved to the trail, so Back steps through the
+visited pages in reverse. Save and return to overview still goes to the overview. The
+commodity details page opened with no line on the consignment goes Back where the
+commodities list would go. Changing the commodity type so that lines are removed
+removes them whichever button was pressed: Save and return to overview opens Overview,
+and Save and continue opens the commodities list with the commodity type page on the
+trail.
+
+A trail that names a place the journey does not have is ignored and logged once, and
+the page goes Back to its fallback. The fallback is the overview, except on the first
+page (the dashboard until an answer is entered, then the overview: `leaveJourneyLink` in
+`entry-guard.js`) and on the review (the overview on a draft or an amendment, the
+dashboard on a submitted notification, including the one shown after an amendment is
+cancelled). A refused Continue on the review shows the same Back link.
+
+## The opening-run state
+
+The session records whether a notification is in its opening run. The dashboard's
+create POST and the start entry (`<set>/start`, which the Import Notification
+Service's type question opens) both begin it, through one helper in the dashboard
+controller that calls `beginOpeningRun`. Rendering the hub, or the review page,
+completes it. The start entry sits outside `/notifications/`, so the entry guard
+never sees it.
+
+## The entry guard
 
 [`entry-guard.js`](../journeys/linear/flow/entry-guard.js) is **live**, keyed to
 the entry page `commodity-type`, whose identity it imports from
@@ -161,7 +159,6 @@ the call — and redirects on any target it returns. The guard:
   draft with nothing saved, whether the request is for Overview, the review,
   the declaration or the confirmation page — to the entry page, logging the
   journey id and the requested path once
-  holds no answers — to the entry page
 
 `hasCommittedNotificationAnswers` counts only answers that resolve to a manifest
 obligation and are not `SYSTEM_POPULATED`, so a journey holding nothing but a
@@ -180,7 +177,7 @@ set context.
 This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), imports
-`sections`, `taskRows`, `rowStatus`, `previousRunTarget`,
+`sections`, `taskRows`, `rowStatus`, `insTypeQuestionUrl`,
 `FLOW_ONLY_KEYS`, `entryGuardTarget` and `sectionCaptionOf` (from
 [`flow/section-captions/index.js`](../journeys/linear/flow/section-captions/index.js)),
 then passes them to

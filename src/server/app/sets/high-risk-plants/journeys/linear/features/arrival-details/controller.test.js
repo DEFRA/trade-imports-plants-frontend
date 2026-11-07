@@ -2,19 +2,20 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
   expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { withTrail } from '../../../../../../shared/kit.js'
 import { placeOfDestinationPage } from '../place-of-destination/page.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import { arrivalDetailsPage } from './page.js'
 import { validatorDefaults } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_PLANTS_NOTIFICATION,
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFromOnRefusal,
+  itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
@@ -196,49 +197,26 @@ describe('GET arrival-details — the potato-only fields', () => {
     expect(result.view.context.dateField.value).toBe(A_DATE)
   })
 
-  it('Should send Back to the overview when the page is opened from the overview', async () => {
+  it('Should show no error summary when the page is opened from the overview', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     expect(result.view.context.errorSummary).toBeNull()
   })
 
-  it('Should send Back to arrival status for plants or wood while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'arrival-status')
+  itSendsBackToWhereTheTraderCameFromOnRefusal(post, {
+    seed: COMPLETE_NOTIFICATION,
+    payload: potatoPayload({ arrivalDate: '' }),
+    savedPage: 'origin'
   })
 
-  it('Should send Back to origin for potatoes while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'origin')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    previousPage: 'arrival-status'
   })
 
-  itSendsBackCarryingChangeTo(get, [
-    [
-      'arrival status for plants or wood',
-      COMPLETE_PLANTS_NOTIFICATION,
-      'arrival-status'
-    ],
-    ['origin for potatoes', COMPLETE_NOTIFICATION, 'origin']
-  ])
-
-  it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
-    const result = await driveHandler(post, {
-      seed: COMPLETE_NOTIFICATION,
-      payload: potatoPayload({ arrivalDate: '' }),
-      openingRun: RUN_ACTIVE
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, 'origin')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_NOTIFICATION,
+    previousPage: 'origin'
   })
 })
 
@@ -438,7 +416,10 @@ describe('POST arrival-details — the answers it refuses', () => {
     })
 
     expect(result.response).toEqual({
-      redirect: pagePath(result.journeyId, placeOfDestinationPage.slug)
+      redirect: withTrail(
+        pagePath(result.journeyId, placeOfDestinationPage.slug),
+        [arrivalDetailsPage.slug]
+      )
     })
     expect(result.after.arrivalTime).toBeUndefined()
   })
@@ -487,7 +468,10 @@ describe('POST arrival-details — accepted answers', () => {
     })
 
     expect(result.response).toEqual({
-      redirect: pagePath(result.journeyId, placeOfDestinationPage.slug)
+      redirect: withTrail(
+        pagePath(result.journeyId, placeOfDestinationPage.slug),
+        [arrivalDetailsPage.slug]
+      )
     })
   })
 

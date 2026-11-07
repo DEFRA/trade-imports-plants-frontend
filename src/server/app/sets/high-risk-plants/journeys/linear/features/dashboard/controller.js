@@ -118,10 +118,14 @@ const amendPost = async (request, h) => {
     },
     'Amendment started, sent to the review page'
   )
-  return h.redirect(pagePath(journey.journeyId, notificationViewPage.slug))
+  return h.redirect(
+    kit.withTrail(pagePath(journey.journeyId, notificationViewPage.slug), [
+      kit.TRAIL_START.dashboard
+    ])
+  )
 }
 
-const openNewNotification = async (request, h, { entry }) => {
+const openNewNotification = async (request, h, { entry, startPlace }) => {
   const journey = await startJourney(request, h)
   await beginOpeningRun(request, h, journey.journeyId)
   request.logger.info(
@@ -132,17 +136,26 @@ const openNewNotification = async (request, h, { entry }) => {
     },
     'New notification opened'
   )
-  return h.redirect(pagePath(journey.journeyId, commodityTypePage.slug))
+  return h.redirect(
+    kit.withTrail(pagePath(journey.journeyId, commodityTypePage.slug), [
+      startPlace
+    ])
+  )
 }
 
 const createPost = async (request, h) =>
-  openNewNotification(request, h, { entry: 'list-create' })
+  openNewNotification(request, h, {
+    entry: 'list-create',
+    startPlace: kit.TRAIL_START.dashboard
+  })
 
 const startGet = async (request, h) =>
-  (await openNewNotification(request, h, { entry: 'start' })).header(
-    'Cache-Control',
-    'no-store'
-  )
+  (
+    await openNewNotification(request, h, {
+      entry: 'start',
+      startPlace: kit.TRAIL_START.ins
+    })
+  ).header('Cache-Control', 'no-store')
 
 export const routes = [
   {

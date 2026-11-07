@@ -46,17 +46,22 @@ const partyDisplayValuesFor = async ({ answers, scope }) => {
 
 const PARTY_KEY_PREFIX = 'party:'
 
-const summaryHrefFor = (current) => (key) => {
-  const { journeyId } = current.journey
-  if (key.startsWith(PARTY_KEY_PREFIX)) {
-    return partyEditHref(
-      journeyId,
-      partyOf(key.slice(PARTY_KEY_PREFIX.length)),
-      kit.CYA_SLUG
+const summaryHrefFor =
+  (current, { changeLinkTrail, reviewPageTrail }) =>
+  (key) => {
+    const { journeyId } = current.journey
+    if (key.startsWith(PARTY_KEY_PREFIX)) {
+      return partyEditHref(
+        journeyId,
+        partyOf(key.slice(PARTY_KEY_PREFIX.length)),
+        kit.CYA_SLUG,
+        reviewPageTrail
+      )
+    }
+    return (
+      cardAnchorHref(key) ?? changeHref({ journeyId, changeLinkTrail }, key)
     )
   }
-  return cardAnchorHref(key) ?? changeHref(journeyId, key)
-}
 
 const cardErrorsOf = (current, { answerErrors, partyErrors }) =>
   incompleteCardErrors(current, [
@@ -83,10 +88,13 @@ const shownReviewErrors = (current, continueRefused) =>
     ? null
     : reviewErrors(current)
 
-const backLinkFor = (journey) =>
-  journey.status === state.SUBMITTED
-    ? dashboardPath()
-    : hubPath(journey.journeyId)
+const backLinkFor = (request, journey) =>
+  kit.trailBackLink(request, {
+    fallback:
+      journey.status === state.SUBMITTED
+        ? dashboardPath()
+        : hubPath(journey.journeyId)
+  })
 
 const render = async (
   request,
@@ -95,6 +103,8 @@ const render = async (
   { continueRefused = false } = {}
 ) => {
   const readOnly = current.journey.status === state.SUBMITTED
+  const changeLinkTrail = kit.trailPlus(request, kit.CYA_SLUG)
+  const reviewPageTrail = kit.requestTrail(request)
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
   const reviewed = await shownReviewErrors(current, continueRefused)
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
@@ -102,7 +112,7 @@ const render = async (
     ...kit.base(copy.title, {
       journey: current.journey,
       page,
-      backLink: backLinkFor(current.journey)
+      backLink: backLinkFor(request, current.journey)
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
@@ -119,12 +129,14 @@ const render = async (
     lateRule: lateRuleText(current.answers.commodityType, copy.late),
     sections: withCardErrors(
       await buildSections(current, partyDisplayValuesById, readOnly, {
-        partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
+        partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {},
+        changeLinkTrail,
+        reviewPageTrail
       }),
       reviewed ? cardErrorsOf(current, reviewed) : {}
     ),
     errorSummary: kit.errorSummary(errors, {
-      href: summaryHrefFor(current),
+      href: summaryHrefFor(current, { changeLinkTrail, reviewPageTrail }),
       disableAutoFocus: !continueRefused
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,

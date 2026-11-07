@@ -1,4 +1,8 @@
-import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  pageUrlWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
 import { copy as typeCopy } from '../commodity-type/copy/copy.en.js'
 import {
   backLink,
@@ -24,16 +28,12 @@ const RENDERED_GROUP_IDS = [
 ]
 const RENDERED_GROUP_COUNT = RENDERED_GROUP_IDS.length
 
-// Exact, because the phase banner's "give your feedback by email" link also
-// contains the word.
 const taskRow = (page, title) =>
   page
     .getByRole('listitem')
     .filter({ has: page.getByRole('link', { name: title }) })
 
-// A row the hub has blocked carries no link, so it is found by its title text
-// rather than by the link `taskRow` filters on.
-const taskRowByTitle = (page, title) =>
+const blockedRowByTitle = (page, title) =>
   page
     .getByRole('listitem')
     .filter({ has: page.getByText(title, { exact: true }) })
@@ -48,12 +48,19 @@ test.describe('overview hub feature', () => {
   }) => {
     await page.goto(BASE)
     await page.getByRole('button', { name: dashboardCopy.startButton }).click()
-    await expect(page).toHaveURL(/commodity-type$/)
+    await expect(page).toHaveURL(
+      pageUrlWithTrail('/notifications/[^/]+/commodity-type', ['dashboard'])
+    )
     const commodityTypeUrl = page.url()
+    const overviewUrl = commodityTypeUrl.replace(
+      /\/commodity-type(?:\?.*)?$/,
+      ''
+    )
 
-    await page.goto(commodityTypeUrl.replace(/\/commodity-type$/, ''))
+    expect(overviewUrl).toMatch(HUB_URL)
+    await page.goto(overviewUrl)
 
-    await expect(page).toHaveURL(commodityTypeUrl)
+    await expect(page).toHaveURL(`${overviewUrl}/commodity-type`)
     await expect(
       page.getByRole('heading', { name: typeCopy.title })
     ).toBeVisible()
@@ -116,7 +123,7 @@ test.describe('overview hub feature', () => {
       page.getByRole('link', { name: copy.rows.commodities.title })
     ).toHaveAttribute(
       'href',
-      `${BASE}/notifications/${reference}/commodity-type`
+      `${BASE}/notifications/${reference}/commodity-type?from=overview`
     )
     await expect(taskRow(page, copy.rows.commodities.title)).toContainText(
       copy.statuses.inProgress
@@ -175,7 +182,7 @@ test('shows consignor only for plants and wood notifications', async ({
       .check()
     await saveAndReturnToHub(page).click()
     await expect(page).toHaveURL(HUB_URL)
-    const row = taskRowByTitle(page, copy.rows.consignor.title)
+    const row = blockedRowByTitle(page, copy.rows.consignor.title)
     if (commodityType === 'potatoes') {
       await expect(row).toHaveCount(0)
     } else {
@@ -189,7 +196,7 @@ test('shows the identification numbers row blocked before prerequisites are answ
 }) => {
   await signIn(page)
   await startNotificationAtOverview(page)
-  const row = taskRowByTitle(page, copy.rows.identificationNumbers.title)
+  const row = blockedRowByTitle(page, copy.rows.identificationNumbers.title)
   await expect(row).toBeVisible()
   await expect(row).toContainText(copy.statuses.cannotStartYet)
   await expect(row.getByRole('link')).toHaveCount(0)
@@ -200,7 +207,7 @@ test('contact task is visible and gated before the origin is answered', async ({
 }) => {
   await signIn(page)
   await startNotificationAtOverview(page)
-  const row = taskRowByTitle(page, copy.rows.contact.title)
+  const row = blockedRowByTitle(page, copy.rows.contact.title)
   await expect(row).toContainText(copy.statuses.cannotStartYet)
   await expect(row.getByRole('link')).toHaveCount(0)
 })

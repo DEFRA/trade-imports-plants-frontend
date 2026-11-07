@@ -77,7 +77,7 @@ const pageState = async (request, h) => {
   const { journey, answers, scope, evaluation } = current
   return {
     journey,
-    backLink: await kit.runBackLink(request, page.id, current),
+    backLink: kit.trailBackLink(request),
     scope,
     commodityType: answers.commodityType,
     lines: state.collectionView(answers, [LINES], evaluation),

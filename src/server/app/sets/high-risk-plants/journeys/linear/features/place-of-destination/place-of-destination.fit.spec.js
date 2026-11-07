@@ -87,7 +87,7 @@ describeAddressPicker({
   hubRowTitle: hubCopy.rows.destination.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
-  afterSaveUrl: /\/identification-numbers$/,
+  afterSaveUrl: /\/identification-numbers(?:\?from=[^#]*)?$/,
   firstRowRadio: FIRST_ROW_RADIO
 })
 
@@ -133,17 +133,6 @@ test.describe('place-of-destination feature', () => {
     await startAtDestination(page)
 
     await expectThreeSaveControls(page)
-  })
-
-  test('sends Back to the arrival details in the opening run', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-
-    await expect(backLink(page)).toHaveAttribute(
-      'href',
-      `${BASE}/notifications/${reference}/arrival-details`
-    )
   })
 
   test('sends Back to the overview when opened from the overview', async ({

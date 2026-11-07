@@ -1,12 +1,15 @@
-import { beforeAll, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { registerSetMount } from '../../../../shared/set-context.js'
 import { dashboardPath, hubPath, pagePath } from '../../../../shared/paths.js'
-import { appendChangeContext } from '../../../../shared/kit.js'
+import { CYA_SLUG, TRAIL_START, withTrail } from '../../../../shared/kit.js'
 import {
   driveHandler,
   expectBackLinkIsPath,
+  reviewChangeLinkQuery,
+  trailQuery,
   useStubbedJourney
 } from '../../../../engine/test-support.js'
+import { HTTP_STATUS_BAD_REQUEST } from '../../../../lib/http-status.js'
 import { SET_BASE, SET_ID } from '../../set.js'
 import { configureReadyForCheckYourAnswers } from '../../../../bridge/readiness-config.js'
 import { readyForCheckYourAnswers } from '../../../../flow/section-status.js'
@@ -20,8 +23,7 @@ import { dispatchPages } from './features/index.js'
 import { featureEvaluationBindings } from './features/evaluation.js'
 import { FLOW_ONLY_KEYS, sections } from './flow/flow.js'
 import { rowStatus, taskRows } from './flow/task-rows.js'
-import { previousRunTarget } from './flow/run.js'
-import { entryGuardTarget } from './flow/entry-guard.js'
+import { entryGuardTarget, insTypeQuestionUrl } from './flow/entry-guard.js'
 import { sectionCaptionOf } from './flow/section-captions/index.js'
 
 /** The copy of the stub book's `tech-imports-ltd` record, valid by the
@@ -88,7 +90,7 @@ const configureHighRiskPlantsJourneyPorts = () => {
     sections,
     taskRows,
     rowStatus,
-    previousRunTarget,
+    insTypeQuestionUrl,
     flowOnlyKeys: FLOW_ONLY_KEYS,
     entryGuardTarget,
     sectionCaption: sectionCaptionOf,
@@ -106,18 +108,84 @@ export const useStubbedHighRiskPlantsJourney = () => {
   useStubbedJourney(SET_ID, dispatchPages)
 }
 
-export const itSendsBackCarryingChangeTo = (get, cases) =>
-  it.each(cases)(
-    'Should send Back to %s carrying the change on a draft opened from a Change link',
-    async (_description, seed, slug) => {
-      const result = await driveHandler(get, { seed, query: { change: '1' } })
+const backCases = ({ previousPage }) => [
+  ...(previousPage
+    ? [
+        [
+          'the page Save and continue was pressed on',
+          { query: trailQuery(TRAIL_START.overview, previousPage) },
+          (journeyId) =>
+            withTrail(pagePath(journeyId, previousPage), [TRAIL_START.overview])
+        ]
+      ]
+    : []),
+  [
+    'Overview when opened from Overview',
+    { query: trailQuery(TRAIL_START.overview) },
+    (journeyId) => hubPath(journeyId)
+  ],
+  [
+    'the review when opened from a Change link',
+    { query: reviewChangeLinkQuery() },
+    (journeyId) => pagePath(journeyId, CYA_SLUG)
+  ],
+  [
+    'the review when opened from a Change link while amending',
+    { query: reviewChangeLinkQuery(), amend: true },
+    (journeyId) => pagePath(journeyId, CYA_SLUG)
+  ],
+  [
+    'Overview when the trail names a place the journey does not have',
+    { query: trailQuery('not-a-place') },
+    (journeyId) => hubPath(journeyId)
+  ],
+  [
+    'Overview when nothing says where the trader came from',
+    {},
+    (journeyId) => hubPath(journeyId)
+  ]
+]
 
-      expectBackLinkIsPath(
-        result,
-        appendChangeContext(pagePath(result.journeyId, slug))
-      )
-    }
-  )
+/**
+ * Registers the Back cases of a page rendered by `get`: one test for each
+ * place the trader can have come from.
+ */
+export const itSendsBackToWhereTheTraderCameFrom = (
+  get,
+  { seed = {}, previousPage } = {}
+) =>
+  describe('Back', () => {
+    it.each(backCases({ previousPage }))(
+      'Should go to %s',
+      async (_entryPoint, requestOptions, backLinkFor) => {
+        const result = await driveHandler(get, { seed, ...requestOptions })
+
+        expectBackLinkIsPath(result, backLinkFor(result.journeyId))
+      }
+    )
+  })
+
+/**
+ * Registers the Back case of a refused save: the page shown again goes Back
+ * to the page Save and continue was pressed on.
+ */
+export const itSendsBackToWhereTheTraderCameFromOnRefusal = (
+  post,
+  { seed, payload, savedPage }
+) =>
+  it(`Should go back to ${savedPage}, the page Save and continue was pressed on, from the page shown again after a refused save`, async () => {
+    const result = await driveHandler(post, {
+      seed,
+      payload,
+      query: trailQuery(TRAIL_START.overview, savedPage)
+    })
+
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
+    expectBackLinkIsPath(
+      result,
+      withTrail(pagePath(result.journeyId, savedPage), [TRAIL_START.overview])
+    )
+  })
 
 const itLinksToTheDashboardUntilCommodityTypeAnswered = (
   get,
@@ -176,3 +244,6 @@ export const scopeOf = (...names) => ({
   inScope: new Set(names),
   answered: () => true
 })
+
+export const pagePathFrom = (startPlace, journeyId, slug) =>
+  withTrail(pagePath(journeyId, slug), [TRAIL_START[startPlace]])

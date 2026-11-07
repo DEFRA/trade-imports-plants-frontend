@@ -111,17 +111,6 @@ test.describe('origin feature', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to the commodities list in the opening run', async ({
-    page
-  }) => {
-    const reference = await startNotificationAtOrigin(page)
-
-    await expect(backLink(page)).toHaveAttribute(
-      'href',
-      `${BASE}/notifications/${reference}/commodities`
-    )
-  })
-
   test('sends Back to the overview once the notification has an answer and the page is opened from the overview', async ({
     page
   }) => {

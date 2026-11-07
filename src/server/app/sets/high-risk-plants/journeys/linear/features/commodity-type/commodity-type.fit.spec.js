@@ -152,10 +152,10 @@ test.describe('commodity-type feature', () => {
     await expect(radioFor(page, 'plants-for-planting')).toBeChecked()
   })
 
-  test('sends Back to the overview once an answer is saved', async ({
+  test('sends Back to the overview when opened by its address once an answer is saved', async ({
     page
   }) => {
-    const pageUrl = page.url()
+    const pageUrl = page.url().split('?')[0]
     const hubPath = hubPathOf(page)
 
     await radioFor(page, 'potatoes').check()

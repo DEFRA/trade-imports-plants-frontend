@@ -123,7 +123,9 @@ test.describe('arrival-details — a potato notification', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to origin in the opening run', async ({ page }) => {
+  test('sends Back to origin after Save and continue on origin', async ({
+    page
+  }) => {
     const reference = await startAtPotatoDetails(page)
 
     await expect(backLink(page)).toHaveAttribute(

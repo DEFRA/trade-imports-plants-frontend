@@ -28,14 +28,14 @@ const returnHref = (request, party) => {
     kit.CYA_SLUG,
     ...PARTIES.map((p) => p.slug)
   ])
-  return kit.withChangeContext(
+  return kit.carryTrail(
     request,
     pagePath(request.params.journeyId, honouredSlug ?? party.slug)
   )
 }
 
 const pickerHref = (request, journeyId, party) =>
-  kit.withChangeContext(request, pagePath(journeyId, party.slug))
+  kit.carryTrail(request, pagePath(journeyId, party.slug))
 
 const countryItemsOf = (countries) => [
   { value: '', text: copy.countrySelectText },

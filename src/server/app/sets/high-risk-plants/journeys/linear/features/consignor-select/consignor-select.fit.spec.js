@@ -68,7 +68,7 @@ describeAddressPicker({
   hubRowTitle: hubCopy.rows.consignor.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
-  afterSaveUrl: /\/identification-numbers$/,
+  afterSaveUrl: /\/identification-numbers(?:\?from=[^#]*)?$/,
   firstRowRadio: FIRST_ROW_RADIO
 })
 
@@ -134,17 +134,6 @@ test.describe('consignor-select feature', () => {
     await startAtConsignor(page)
 
     await expectThreeSaveControls(page)
-  })
-
-  test('sends Back to the place of destination in the opening run', async ({
-    page
-  }) => {
-    const reference = await startAtConsignor(page)
-
-    await expect(backLink(page)).toHaveAttribute(
-      'href',
-      `${BASE}/notifications/${reference}/destinations/select`
-    )
   })
 
   test('sends Back to the overview when opened from the overview', async ({

@@ -2,18 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
   expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { withTrail } from '../../../../../../shared/kit.js'
 import { arrivalDetailsPage } from '../arrival-details/page.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import { arrivalStatusPage } from './page.js'
 import { PLANTS_WOOD_DAYS_AFTER_ARRIVAL } from '../timing-windows.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFromOnRefusal,
+  itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -114,34 +115,15 @@ describe('GET arrival-status', () => {
     ).toBe(ALREADY_ARRIVED)
   })
 
-  it('Should send Back to the overview when the page is opened from the overview', async () => {
-    const result = await driveHandler(get, { seed: plants() })
-
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+  itSendsBackToWhereTheTraderCameFromOnRefusal(post, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    payload: {},
+    savedPage: 'origin'
   })
 
-  it('Should send Back to origin while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'origin')
-  })
-
-  itSendsBackCarryingChangeTo(get, [
-    ['origin', COMPLETE_PLANTS_NOTIFICATION, 'origin']
-  ])
-
-  it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
-    const result = await driveHandler(post, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      payload: {},
-      openingRun: RUN_ACTIVE
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, 'origin')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    previousPage: 'origin'
   })
 })
 
@@ -222,7 +204,9 @@ describe('POST arrival-status — an accepted answer', () => {
     })
 
     expect(result.response).toEqual({
-      redirect: pagePath(result.journeyId, arrivalDetailsPage.slug)
+      redirect: withTrail(pagePath(result.journeyId, arrivalDetailsPage.slug), [
+        arrivalStatusPage.slug
+      ])
     })
   })
 

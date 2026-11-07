@@ -35,7 +35,7 @@ const heldCopyOf = async (request, current, fieldName) => {
       current.journey.journeyId,
       partyRegistryEntry,
       partyRegistryEntry.slug,
-      { change: kit.changeContext(request) }
+      kit.requestTrail(request)
     )
   }
 }
@@ -75,7 +75,7 @@ export const renderPicker = async (
 
   return h.view(view, {
     ...kit.base(copy.title, {
-      backLink: await kit.runBackLink(request, page.id, current),
+      backLink: kit.trailBackLink(request),
       journey: current.journey,
       page,
       recoverableError

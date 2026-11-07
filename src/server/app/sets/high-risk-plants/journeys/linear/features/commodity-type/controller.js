@@ -19,7 +19,7 @@ import {
   LINES,
   POTATO_VARIETY
 } from '../commodities/fields.js'
-import { listHref } from '../commodities/links.js'
+import { listHrefAfterTypeChange } from '../commodities/links.js'
 import {
   PLANTS_WOOD_DAYS_AFTER_ARRIVAL,
   POTATO_DAYS_BEFORE_ARRIVAL
@@ -75,12 +75,12 @@ const keepLinesAllowedBy = (lines, commodityType) => {
 const keyOf = (entry) =>
   [entry[CATEGORY], entry[GENUS], entry[POTATO_VARIETY]].join('|')
 
-const render = (h, current, values, options = {}) => {
+const render = (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   const leaveLink = leaveJourneyLink(current.journey, current.answers)
   return h.view(view, {
     ...kit.base(copy.title, {
-      backLink: leaveLink,
+      backLink: kit.trailBackLink(request, { fallback: leaveLink }),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -97,7 +97,7 @@ const render = (h, current, values, options = {}) => {
 
 const get = async (request, h) => {
   const current = await state.get(request, h)
-  return render(h, current, {
+  return render(request, h, current, {
     commodityType: current.answers.commodityType ?? ''
   })
 }
@@ -108,7 +108,9 @@ const post = async (request, h) => {
   const { errors, value } = validate(fields(), payload)
   const current = await state.get(request, h)
   if (errors) {
-    return render(h, current, values, { errors }).code(HTTP_STATUS_BAD_REQUEST)
+    return render(request, h, current, values, { errors }).code(
+      HTTP_STATUS_BAD_REQUEST
+    )
   }
 
   const { kept, removed } = keepLinesAllowedBy(
@@ -128,7 +130,7 @@ const post = async (request, h) => {
       }
     },
     async () =>
-      render(h, current, values, { recoverableError: true }).code(
+      render(request, h, current, values, { recoverableError: true }).code(
         HTTP_STATUS_INTERNAL_SERVER_ERROR
       )
   )
@@ -137,7 +139,16 @@ const post = async (request, h) => {
   }
 
   if (removed > 0) {
-    return h.redirect(listHref(request, { removed }))
+    const overview = kit.hubExitTarget(request)
+    request.logger.info(
+      {
+        journeyId: request.params.journeyId,
+        removed,
+        destination: overview ? 'overview' : 'commodities-list'
+      },
+      'Commodity lines removed by a commodity type change'
+    )
+    return h.redirect(overview ?? listHrefAfterTypeChange(request, removed))
   }
   return h.redirect(kit.nextTarget(request, page, committed.scope))
 }

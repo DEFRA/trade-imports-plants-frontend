@@ -2,16 +2,22 @@ import { dashboardPath, hubPath, pagePath, pageRoutePath } from './paths.js'
 import { setIdForPath, withSetContext } from './set-context.js'
 import { AMEND, DELETED, DRAFT, SUBMITTED } from '../engine/index.js'
 import { nextStepPath } from '../flow/navigation.js'
-import {
-  journeyLayout,
-  journeyPreviousRunTarget,
-  journeySectionCaption
-} from '../flow/journey-flow.js'
-import { inOpeningRun } from '../flow/run-state.js'
+import { journeyLayout, journeySectionCaption } from '../flow/journey-flow.js'
 import { copyFor } from './copy.js'
 import { copy as sharedEn } from './copy.en.js'
 import { copy as sharedCy } from './copy.cy.js'
 import { isRecoverableBackendError } from '../services/persistence/records/errors.js'
+import { pushTrail } from './trail.js'
+
+export {
+  carryTrail,
+  pushTrail,
+  requestTrail,
+  TRAIL_START,
+  trailBackLink,
+  trailPlus,
+  withTrail
+} from './trail.js'
 
 export const routeOptions = { auth: 'session' }
 
@@ -144,15 +150,6 @@ export const logRefusal = (request, { fieldErrors = {}, ...details } = {}) =>
 export const hubExitTarget = (request) =>
   request.payload?.exit === 'hub' ? hubPath(request.params.journeyId) : null
 
-export const changeContext = (request) => Boolean(request.query.change)
-
-/** The href with `change=1` added to its query string. */
-export const appendChangeContext = (href) =>
-  `${href}${href.includes('?') ? '&' : '?'}change=1`
-
-export const withChangeContext = (request, href) =>
-  changeContext(request) ? appendChangeContext(href) : href
-
 /**
  * Reads the `return` marker a request carries.
  *
@@ -172,41 +169,16 @@ export const readReturnMarker = (request, allowedSlugs) => {
     : { refusedMarker: marker }
 }
 
-const previousStepBackLink = async (request, stepId, { journey, scope }) => {
-  const { journeyId } = request.params
-  const opensInRun = await inOpeningRun(request, journeyId)
-  const draftOpenedFromChangeLink =
-    !opensInRun && journey.status === DRAFT && changeContext(request)
-  if (!opensInRun && !draftOpenedFromChangeLink) {
-    return null
-  }
-  const previousStep = journeyPreviousRunTarget(stepId, scope, journeyId)
-  return draftOpenedFromChangeLink && previousStep
-    ? appendChangeContext(previousStep)
-    : previousStep
-}
-
 /**
- * Where a run step's Back link goes.
+ * The next page after a page that applies to the journey.
  *
- * @param {object} request - the request being answered.
- * @param {string} stepId - the run step's id.
- * @param {{ journey: object, scope: object }} state - the journey and its
- * scope.
- * @param {object} [options]
- * @param {string} [options.fallback] - the path answered when no earlier step
- * applies. Defaults to the overview's path.
- * @returns {Promise<string>} the previous run step's path while the opening
- * run is active, and on a draft request carrying change context, where it
- * carries change context too. Otherwise, the fallback.
+ * @param {object} page - the page the trader is on.
+ * @param {object} scope - the journey's scope.
+ * @param {string} journeyId - the journey being worked on.
+ * @returns {string} the next page that applies, else the review's path.
  */
-export const runBackLink = async (
-  request,
-  stepId,
-  { journey, scope },
-  { fallback = hubPath(journey.journeyId) } = {}
-) =>
-  (await previousStepBackLink(request, stepId, { journey, scope })) ?? fallback
+export const nextPagePath = (page, scope, journeyId) =>
+  nextStepPath(page.id, scope, journeyId) ?? pagePath(journeyId, CYA_SLUG)
 
 /**
  * Where a valid save on a page goes next.
@@ -215,12 +187,16 @@ export const runBackLink = async (
  * @param {object} page - the page being saved.
  * @param {object} scope - the journey's scope.
  * @returns {string} the overview's path when Save and return to overview was
- * pressed, else the next page that applies, else the review's path.
+ * pressed, else the next page that applies, else the review's path, carrying
+ * the request's trail plus the page saved.
  */
 export const nextTarget = (request, page, scope) =>
   hubExitTarget(request) ??
-  nextStepPath(page.id, scope, request.params.journeyId) ??
-  pagePath(request.params.journeyId, CYA_SLUG)
+  pushTrail(
+    request,
+    nextPagePath(page, scope, request.params.journeyId),
+    page.slug
+  )
 
 export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 

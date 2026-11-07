@@ -94,8 +94,9 @@ describeAddressBookPickerController({
   get,
   post,
   seed: potatoes,
-  previousStep: { slug: 'arrival-details', seed: COMPLETE_NOTIFICATION },
+  previousPage: { slug: 'arrival-details', seed: COMPLETE_NOTIFICATION },
   fieldName: 'placeOfDestination',
+  slug: 'destinations/select',
   nextSlug: 'identification-numbers',
   errorText: copy.errors.placeOfDestination
 })

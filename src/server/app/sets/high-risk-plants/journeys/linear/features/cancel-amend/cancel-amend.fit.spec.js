@@ -27,6 +27,7 @@ const cancelAmendLink = (page) =>
     name: sharedCopy.journeyStrip.cancelAmend,
     exact: true
   })
+const CANCEL_AMEND_URL = /\/cancel-amend$/
 const cyaHref = setPath('/notifications/[^/]+/notification-view$')
 
 test.beforeEach(async ({ page }) => {
@@ -61,7 +62,7 @@ test.beforeEach(async ({ page }) => {
       exact: true
     })
     .click()
-  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
 })
 
 test('renders accessible confirmation copy, actions and a bare heading', async ({
@@ -108,7 +109,7 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
 
   await cancelAmendLink(page).click()
 
-  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
   await expect(
     page.getByRole('heading', { name: cancelCopy.title, level: 1 })
   ).toBeVisible()
@@ -208,7 +209,7 @@ test('Cancel amend on the Overview opens the confirmation page', async ({
   const reference = journeyIdFromPage(page)
   await page.goto(`${BASE}/notifications/${reference}`)
   await cancelAmendLink(page).click()
-  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
   await expect(
     page.getByRole('heading', { name: cancelCopy.title, level: 1 })
   ).toBeVisible()
@@ -231,7 +232,7 @@ test.describe('without JavaScript', () => {
         `${BASE}/notifications/${reference}/identification-numbers`
       )
       await cancelAmendLink(noJs).click()
-      await expect(noJs).toHaveURL(/\/cancel-amend$/)
+      await expect(noJs).toHaveURL(CANCEL_AMEND_URL)
       await noJs.getByRole('button', { name: cancelCopy.confirmButton }).click()
 
       await expect(noJs).toHaveURL(/\/notification-view\?cancelled=1$/)

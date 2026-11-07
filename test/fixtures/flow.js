@@ -103,6 +103,6 @@ export const rowParts = (row) =>
 export const rowStatus = (row, answers, inScope, evaluation) =>
   statusOf(rowParts(row), answers, inScope, evaluation)
 
-export const previousRunTarget = () => null
+export const insTypeQuestionUrl = (journeyId) => `/ins-question/${journeyId}`
 
 export const entryGuardTarget = async () => null

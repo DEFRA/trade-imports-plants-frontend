@@ -2,8 +2,7 @@ import { changeAction, editableActions } from './change-link.js'
 import { valueText } from './value-text.js'
 
 export const row = (
-  journeyId,
-  readOnly,
+  { journeyId, changeLinkTrail, readOnly },
   key,
   value,
   obligationId,
@@ -14,7 +13,7 @@ export const row = (
   ...editableActions(
     readOnly,
     changeAction(
-      journeyId,
+      { journeyId, changeLinkTrail },
       obligationId,
       visuallyHiddenText ?? key.toLowerCase()
     )

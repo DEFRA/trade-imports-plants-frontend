@@ -5,15 +5,13 @@ import { documentOf } from '../../../../../../../common/test-helpers/document-of
 import {
   addressBookAnswering,
   driveHandler,
-  expectBackLinkIsPage,
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   resetMocksAndConfigAfterTests,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
-import { SURFACES } from '../../../../../../shared/kit.js'
+import { SURFACES, withTrail } from '../../../../../../shared/kit.js'
 import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
@@ -25,7 +23,7 @@ import {
 } from '../../../../../../services/address-book/stub/index.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import {
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
@@ -39,10 +37,10 @@ import {
   TECH_IMPORTS_NAME
 } from './test-support.js'
 
-const redirectAfterSave = ({ nextSlug }, savePayload, journeyId) =>
+const redirectAfterSave = ({ nextSlug, slug }, savePayload, journeyId) =>
   savePayload.exit === 'hub'
     ? hubPath(journeyId)
-    : pagePath(journeyId, nextSlug)
+    : withTrail(pagePath(journeyId, nextSlug), [slug])
 
 const SAVE_CONTROLS = [
   ['Save and continue', { action: 'save' }],
@@ -79,7 +77,7 @@ const renderPageFor = (template) => (context) =>
     ...context
   })
 
-const describePageServed = ({ pickerName, get, seed, previousStep }) => {
+const describePageServed = ({ pickerName, get, seed, previousPage }) => {
   describe(`GET ${pickerName} — the page it serves`, () => {
     useStubbedHighRiskPlantsJourney()
 
@@ -89,25 +87,16 @@ const describePageServed = ({ pickerName, get, seed, previousStep }) => {
       expect(result.view.context.contentColumnClass).toBe(SURFACES.display)
     })
 
-    it('Should send Back to the overview and raise no error summary when the page is opened from the overview', async () => {
-      const result = await driveHandler(get, { seed: previousStep.seed })
+    it('Should raise no error summary when the page is opened from the overview', async () => {
+      const result = await driveHandler(get, { seed: previousPage.seed })
 
-      expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
       expect(result.view.context.errorSummary).toBeNull()
     })
 
-    it('Should send Back to the previous step while the opening run is on', async () => {
-      const result = await driveHandler(get, {
-        seed: previousStep.seed,
-        openingRun: RUN_ACTIVE
-      })
-
-      expectBackLinkIsPage(result, previousStep.slug)
+    itSendsBackToWhereTheTraderCameFrom(get, {
+      seed: previousPage.seed,
+      previousPage: previousPage.slug
     })
-
-    itSendsBackCarryingChangeTo(get, [
-      [pickerName, previousStep.seed, previousStep.slug]
-    ])
 
     it('Should show the first page of the organisation book, counted against the whole', async () => {
       const result = await driveHandler(get, { seed: seed() })
@@ -537,9 +526,9 @@ const describeSaveFailures = (picker) => {
  * @param {string} picker.fieldName - the answer name the page collects
  * @param {string} picker.nextSlug - the slug of the page Save and continue opens
  * @param {string} picker.errorText - the error shown for an address not in the book
- * @param {object} picker.previousStep - the page Back opens
- * @param {string} picker.previousStep.slug - that page's slug
- * @param {object} picker.previousStep.seed - answers that make that page apply
+ * @param {object} picker.previousPage - the page Back opens
+ * @param {string} picker.previousPage.slug - that page's slug
+ * @param {object} picker.previousPage.seed - answers that make that page apply
  */
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)

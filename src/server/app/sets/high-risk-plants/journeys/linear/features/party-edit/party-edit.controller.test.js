@@ -7,6 +7,7 @@ import {
   expectNoRefusalLogged,
   expectOneSaveFallbackLogged,
   resetMocksAndConfigAfterTests,
+  reviewChangeLinkQuery,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import {
@@ -14,6 +15,7 @@ import {
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
 import { pagePath } from '../../../../../../shared/paths.js'
+import { CYA_SLUG } from '../../../../../../shared/kit.js'
 import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
 import * as partyEdit from './party-edit.controller.js'
@@ -95,11 +97,11 @@ describe.each(PARTIES)('Edit $id address details', (party) => {
     const result = await driveHandler(post, {
       seed: PLANTS_NOTIFICATION_OWING_EVERY_PARTY,
       payload: FORM,
-      query: { change: '1' }
+      query: reviewChangeLinkQuery()
     })
 
     expect(result.response).toEqual({
-      redirect: `${pagePath(result.journeyId, party.slug)}?change=1`
+      redirect: `${pagePath(result.journeyId, party.slug)}?from=${CYA_SLUG}`
     })
     expect(result.after[party.id]).toBeUndefined()
   })
@@ -206,15 +208,15 @@ describe('Edit address details — where the trader returns to', () => {
     )
   })
 
-  it('Should keep the change context on the way back to the picker', async () => {
+  it('Should carry the trail on the way back to the picker', async () => {
     const result = await driveHandler(post, {
       seed,
       payload: FORM,
-      query: { return: consignor.slug, change: '1' }
+      query: { return: consignor.slug, ...reviewChangeLinkQuery() }
     })
 
     expect(result.response).toEqual({
-      redirect: `${pagePath(result.journeyId, consignor.slug)}?change=1`
+      redirect: `${pagePath(result.journeyId, consignor.slug)}?from=${CYA_SLUG}`
     })
   })
 

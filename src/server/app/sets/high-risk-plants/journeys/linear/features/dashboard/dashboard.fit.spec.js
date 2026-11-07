@@ -17,7 +17,9 @@ const UNMATCHED_REFERENCE = '26-ZZZZZZ'
 const startNotification = async (page) => {
   await page.goto(BASE)
   await page.getByRole('button', { name: copy.startButton }).click()
-  await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+  await expect(page).toHaveURL(
+    /\/notifications\/[^/]+\/commodity-type(?:\?from=[^#]*)?$/
+  )
   const reference = journeyIdFromPage(page)
   await page.goto(BASE)
   return reference
@@ -47,7 +49,9 @@ test.describe('dashboard feature — initial render', () => {
   }) => {
     await page.goto(`${BASE}/start`)
 
-    await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+    await expect(page).toHaveURL(
+      /\/notifications\/[^/]+\/commodity-type(?:\?from=[^#]*)?$/
+    )
     await expect(
       page.getByRole('heading', { name: commodityTypeCopy.legend })
     ).toBeVisible()
@@ -99,7 +103,9 @@ test.describe('dashboard feature — initial render', () => {
 
     await page.getByRole('button', { name: copy.startButton }).click()
 
-    await expect(page).toHaveURL(/\/notifications\/[^/]+\/commodity-type$/)
+    await expect(page).toHaveURL(
+      /\/notifications\/[^/]+\/commodity-type(?:\?from=[^#]*)?$/
+    )
   })
 })
 

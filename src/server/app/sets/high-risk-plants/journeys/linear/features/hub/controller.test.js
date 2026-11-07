@@ -132,7 +132,7 @@ describe('#hubGet', () => {
         items: [
           expect.objectContaining({
             title: { text: copy.rows.commodities.title },
-            href: `${SET_BASE}/notifications/${journeyId}/commodity-type`,
+            href: `${SET_BASE}/notifications/${journeyId}/commodity-type?from=overview`,
             status: {
               tag: {
                 text: copy.statuses.notYetStarted,
@@ -200,7 +200,9 @@ describe('#hubGet', () => {
     })
 
     const [, originRow] = h.captured.view.context.groups[0].items
-    expect(originRow.href).toBe(`${SET_BASE}/notifications/${journeyId}/origin`)
+    expect(originRow.href).toBe(
+      `${SET_BASE}/notifications/${journeyId}/origin?from=overview`
+    )
     expect(originRow.status).toEqual({
       tag: {
         text: copy.statuses.notYetStarted,
@@ -258,7 +260,7 @@ describe('#hubGet', () => {
       tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
     expect(row.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/commodity-type`
+      `${SET_BASE}/notifications/${journeyId}/commodity-type?from=overview`
     )
   })
 
@@ -307,7 +309,7 @@ describe('#hubGet — the arrival row', () => {
     })
 
     expect(arrivalRow.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/arrival-details`
+      `${SET_BASE}/notifications/${journeyId}/arrival-details?from=overview`
     )
     expect(arrivalRow.status).toEqual({
       tag: {
@@ -333,7 +335,7 @@ describe('#hubGet — the arrival row', () => {
     })
 
     expect(arrivalRow.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/arrival-status`
+      `${SET_BASE}/notifications/${journeyId}/arrival-status?from=overview`
     )
     expect(arrivalRow.status).toEqual({
       tag: {
@@ -383,7 +385,7 @@ describe('#hubGet — the destination row', () => {
       })
 
       expect(destinationRow.href).toBe(
-        `${SET_BASE}/notifications/${journeyId}/destinations/select`
+        `${SET_BASE}/notifications/${journeyId}/destinations/select?from=overview`
       )
       expect(destinationRow.status).toEqual({
         tag: {
@@ -434,14 +436,14 @@ describe('#hubGet — consignor', () => {
       expect(group.items).toEqual([
         {
           title: { text: copy.rows.consignor.title },
-          href: `${SET_BASE}/notifications/${journeyId}/consignors/select`,
+          href: `${SET_BASE}/notifications/${journeyId}/consignors/select?from=overview`,
           status: {
             tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
           }
         },
         {
           title: { text: copy.rows.identificationNumbers.title },
-          href: `${SET_BASE}/notifications/${journeyId}/identification-numbers`,
+          href: `${SET_BASE}/notifications/${journeyId}/identification-numbers?from=overview`,
           status:
             commodityType === 'wood-and-cut-trees'
               ? { text: copy.statuses.optional }
@@ -454,7 +456,7 @@ describe('#hubGet — consignor', () => {
         },
         {
           title: { text: copy.rows.contact.title },
-          href: `${SET_BASE}/notifications/${journeyId}/consignment/contact/select`,
+          href: `${SET_BASE}/notifications/${journeyId}/consignment/contact/select?from=overview`,
           status: {
             tag: {
               text: copy.statuses.notYetStarted,

@@ -26,6 +26,8 @@ import { copy as cy } from './copy/copy.cy.js'
 
 const view = `${TEMPLATES}/features/hub/template`
 
+const fromOverview = (href) => kit.withTrail(href, [kit.TRAIL_START.overview])
+
 const copy = copyFor({ en, cy })
 
 const REVIEW_ROW_ID = 'review'
@@ -70,7 +72,7 @@ const buildReviewItem = (
   }
   return {
     ...base,
-    href: sectionEntry(REVIEW_ROW_ID, scope, journeyId),
+    href: fromOverview(sectionEntry(REVIEW_ROW_ID, scope, journeyId)),
     status: statusTag(
       sectionStatus(section, answers, scope.inScope, evaluation)
     )
@@ -83,7 +85,7 @@ const blockedRowItem = (base) => ({ ...base, status: CANNOT_START_STATUS })
 
 const openRowItem = (base, row, scope, status, journeyId) => ({
   ...base,
-  href: rowEntry(row, scope, journeyId),
+  href: fromOverview(rowEntry(row, scope, journeyId)),
   status: statusTag(status)
 })
 

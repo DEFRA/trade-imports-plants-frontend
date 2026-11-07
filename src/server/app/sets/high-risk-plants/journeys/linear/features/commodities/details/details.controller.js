@@ -79,7 +79,7 @@ const buildView = (request, h, model) => {
   const errors = model.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      backLink: model.hasLines ? listHref(request) : commodityTypeHref(request),
+      backLink: model.hasLines ? listHref(request) : kit.trailBackLink(request),
       journey: model.journey,
       page,
       recoverableError: model.recoverableError ?? false

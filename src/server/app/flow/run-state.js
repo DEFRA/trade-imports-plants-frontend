@@ -12,6 +12,3 @@ export const completeOpeningRun = async (request, h, journeyId) => {
   }
   await session.setOpeningRun(h, journeyId, RUN_COMPLETE, request)
 }
-
-export const inOpeningRun = async (request, journeyId) =>
-  (await session.openingRun(request, journeyId)) === RUN_ACTIVE

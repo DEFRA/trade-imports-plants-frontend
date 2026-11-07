@@ -111,11 +111,12 @@ whose root another page already owns.
 Use one `render()` helper for GET and POST errors. Build the common view with
 `kit.base()`. Pass `journey` so the shared reference strip renders. A page that
 shows no status strip still passes `journey`, with `showJourneyStrip: false`.
-Pass `page` so the section caption renders. The normal back link is `hubPath(journey.journeyId)`.
-A page that is a step of the opening run takes its back link from
-`kit.runBackLink()`, which opens the previous run step while the run is active,
-and on a draft opened from a review Change link, where it carries change
-context. It falls back to the overview otherwise.
+Pass `page` so the section caption renders. A journey page takes its back link from
+`kit.trailBackLink(request)`, which opens the place the trader came from and falls
+back to the overview when the request names none. A page with a different fallback
+passes it: `kit.trailBackLink(request, { fallback })`. A link that moves the trader on
+pushes the page onto the trail with `kit.pushTrail()`, and a link that brings the
+trader back to the same page carries it with `kit.carryTrail()`.
 
 GET calls `state.get()` once and prefills from `answers`. POST:
 
@@ -279,16 +280,11 @@ The hub feature is the worked example for those bullets.
 continue-enforced fields. Add an authored `gate` to the page identity only when
 that rule cannot express the page.
 
-Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
-only when it belongs in the opening run — that is, add it to `RUN_STEPS` in
-journey order. A step whose derived gate fails is skipped, as arrival-status is
-for potatoes. A run step names its `backCandidates`, the earlier steps its Back
-link may open, nearest first. The same `backCandidates` give the page's Back
-link on a draft opened from a review Change link. Inserting a step mid-run
-updates the following step's `backCandidates`. Update its run tests if you do.
-The controller's `render` takes its Back link from
-`kit.runBackLink(request, page.id, current, { fallback })`, where `fallback` is
-a named option that defaults to the overview.
+A page's place in Save and continue's order is its place in `journeySections()`; a
+page whose derived gate fails is skipped, as arrival-status is for potatoes. Its Back
+comes from `kit.trailBackLink()`: no other file lists it. See
+[`journey-flow-and-gates.md`](journey-flow-and-gates.md), "Entry guard and the Back
+link".
 
 ## 7. Add check-answers and backend mapping when needed
 
@@ -347,7 +343,7 @@ In `controller.test.js`, cover:
 - unexpected errors throwing
 
 Add or update flow tests for section order, skip behaviour, task-row entry,
-status and opening-run behaviour.
+status and Back from each entry point, through itSendsBackToWhereTheTraderCameFrom.
 
 ## Test support
 
@@ -394,6 +390,16 @@ set-up in the test file:
     `addressBookRequestUrls` put the address book on the network boundary and
     report the requests made to it
   - `expectBackLinkIsPage` and `expectBackLinkIsPath` assert the Back link
+  - `trailQuery(...places)` and `reviewChangeLinkQuery()` build the query of a
+    request that carries a trail, newest place last
+  - `itSendsBackToWhereTheTraderCameFrom`, from
+    [`journeys/linear/test-support.js`](../journeys/linear/test-support.js),
+    registers the Back cases of a page; it takes the GET handler and an options
+    object with an optional `seed` and the `previousPage` slug
+  - `itSendsBackToWhereTheTraderCameFromOnRefusal`, from the same file, registers
+    the test that the page shown again after a refused save keeps its Back; it takes
+    the POST handler and an options object with the refused `payload`, the
+    `savedPage` slug Save and continue was pressed on and an optional `seed`
   - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line,
     and `expectNoRefusalLogged` asserts it holds none
   - `expectOneSaveFallbackLogged` asserts it holds exactly one save fallback line
@@ -402,8 +408,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares, and a picker's call also names the previous run step's slug and
-  the answers that make that step apply;
+  picker shares, and a picker's call names the page Save and continue was
+  pressed on before it and the answers that make that page apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `addressResponseForABookHoldingADeletedRecord` is the address response for a

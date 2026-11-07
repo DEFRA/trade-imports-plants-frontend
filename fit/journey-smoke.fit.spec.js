@@ -24,7 +24,8 @@ import {
   submitDeclarationFromCheckAnswers
 } from './high-risk-plants-journey.js'
 
-const pathOf = (reference, slug) => `${BASE}/notifications/${reference}/${slug}`
+const onPage = (reference, slug) => (url) =>
+  url.pathname === `${BASE}/notifications/${reference}/${slug}`
 
 const chooseRadio = (page, name) =>
   page.getByRole('radio', { name, exact: true }).check()
@@ -112,7 +113,7 @@ for (const [name, shape] of Object.entries(happyPaths)) {
       })
     }
 
-    await expect(page).toHaveURL(/\/notification-view$/)
+    await expect(page).toHaveURL(/\/notification-view(?:\?from=[^#]*)?$/)
     await expect(
       page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
@@ -146,7 +147,7 @@ const OPENING_RUN_BACK_TARGETS = {
 }
 
 for (const [name, backTargets] of Object.entries(OPENING_RUN_BACK_TARGETS)) {
-  test(`${name}: Back on the commodities list, arrival details, identification numbers and contact opens the step the opening run came from`, async ({
+  test(`${name}: Back on the commodities list, arrival details, identification numbers and contact opens the step Save and continue came from`, async ({
     page
   }) => {
     const shape = happyPaths[name]
@@ -158,29 +159,29 @@ for (const [name, backTargets] of Object.entries(OPENING_RUN_BACK_TARGETS)) {
       if (backTarget) {
         await test.step(`Back from ${step.slug}`, async () => {
           await backLink(page).click()
-          await expect(page).toHaveURL(pathOf(reference, backTarget))
+          await expect(page).toHaveURL(onPage(reference, backTarget))
           await page.goBack()
-          await expect(page).toHaveURL(pathOf(reference, step.slug))
+          await expect(page).toHaveURL(onPage(reference, step.slug))
         })
       }
       await answerStepAndContinue(page, step, shape)
     }
 
-    await expect(page).toHaveURL(pathOf(reference, 'notification-view'))
+    await expect(page).toHaveURL(onPage(reference, 'notification-view'))
   })
 }
 
-test('following Back through the opening run and choosing Save and continue carries on to the next step, not the overview', async ({
+test('following Back and choosing Save and continue carries on to the next step, not the overview', async ({
   page
 }) => {
   await signIn(page)
   const reference = await startPotatoNotification(page)
 
   await backLink(page).click()
-  await expect(page).toHaveURL(pathOf(reference, 'origin'))
+  await expect(page).toHaveURL(onPage(reference, 'origin'))
 
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(pathOf(reference, 'arrival-details'))
+  await expect(page).toHaveURL(onPage(reference, 'arrival-details'))
 })
 
 test('following Back from the arrival details reaches origin and then the commodities list', async ({
@@ -191,6 +192,6 @@ test('following Back from the arrival details reaches origin and then the commod
 
   for (const slug of ['origin', 'commodities']) {
     await backLink(page).click()
-    await expect(page).toHaveURL(pathOf(reference, slug))
+    await expect(page).toHaveURL(onPage(reference, slug))
   }
 })

@@ -5,10 +5,41 @@
  * and the server cannot disagree about where the journey is served.
  */
 import { SET_BASE } from '../src/server/app/sets/high-risk-plants/set.js'
+import { withTrail } from '../src/server/app/shared/trail.js'
 
 export { SET_BASE as BASE } from '../src/server/app/sets/high-risk-plants/set.js'
 
 const JOURNEY_ID_IN_URL = new RegExp(`^${SET_BASE}/notifications/([^/]+)`)
+
+const OPTIONAL_TRAIL_MATCHER_SUFFIX = '(?:[?&]from=[^#]*)?'
+const ORIGIN_AND_SET_BASE = `^[a-z]+://[^/]+${SET_BASE}`
+
+/**
+ * A `toHaveURL` matcher for a path under this set's mount, accepting any trail
+ * after it.
+ *
+ * @param {string} pathSource - the path below the mount, as regex source,
+ * without a trailing `$`.
+ * @returns {RegExp} the anchored matcher.
+ */
+export const pageUrlAllowingTrail = (pathSource) =>
+  new RegExp(
+    `${ORIGIN_AND_SET_BASE}${pathSource}${OPTIONAL_TRAIL_MATCHER_SUFFIX}$`
+  )
+
+/**
+ * A `toHaveURL` matcher for a path under this set's mount carrying exactly the
+ * trail `entries`, encoded as the application encodes it.
+ *
+ * @param {string} pathSource - the path below the mount, as regex source,
+ * without a trailing `$`.
+ * @param {string[]} entries - the places of the trail, newest last.
+ * @returns {RegExp} the anchored matcher.
+ */
+export const pageUrlWithTrail = (pathSource, entries) =>
+  new RegExp(
+    `${ORIGIN_AND_SET_BASE}${pathSource}${RegExp.escape(withTrail('', entries))}$`
+  )
 
 /**
  * A `toHaveURL` matcher for a path under this set's mount.
@@ -19,11 +50,16 @@ const JOURNEY_ID_IN_URL = new RegExp(`^${SET_BASE}/notifications/([^/]+)`)
  * would pass either way.
  *
  * @param {string} pattern - the path below the mount, as regex source. Carry
- * the trailing `$` yourself when the match must be exact.
+ * the trailing `$` yourself when the match must be exact; an exact match still
+ * accepts a trail after the path.
  * @returns {RegExp} the anchored matcher.
  */
-export const setUrl = (pattern) =>
-  new RegExp(`^[a-z]+://[^/]+${SET_BASE}${pattern}`)
+export const setUrl = (pattern) => {
+  const withTrailMatcher = pattern.endsWith('$')
+    ? `${pattern.slice(0, -1)}${OPTIONAL_TRAIL_MATCHER_SUFFIX}$`
+    : pattern
+  return new RegExp(`${ORIGIN_AND_SET_BASE}${withTrailMatcher}`)
+}
 
 /**
  * The same matcher for a rendered `href`, which is a path rather than a whole

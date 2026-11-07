@@ -29,7 +29,7 @@ const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 
 const openOverviewFromReview = async (page) => {
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
-  await page.goto(page.url().replace(/\/notification-view$/, ''))
+  await page.goto(page.url().replace(/\/notification-view(?:\?.*)?$/, ''))
   await expect(page).toHaveURL(HUB_URL)
 }
 
@@ -97,7 +97,9 @@ for (const [commodityType, fields] of branches) {
         }
       }
       await saveAndContinue(page).click()
-      await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+      await expect(page).toHaveURL(
+        /\/consignment\/contact\/select(?:\?from=[^#]*)?$/
+      )
       await saveAndContinue(page).click()
       await openOverviewFromReview(page)
       await expect(
@@ -110,7 +112,7 @@ for (const [commodityType, fields] of branches) {
       await page
         .getByRole('link', { name: hubCopy.rows.identificationNumbers.title })
         .click()
-      await expect(page).toHaveURL(url)
+      await expect(page).toHaveURL(`${url}?from=overview`)
       await page.reload()
       for (const name of fields) {
         await expect(input(page, name)).toHaveValue('ID_123')
@@ -199,7 +201,9 @@ test('wood can leave the optional reference blank and the overview labels it Opt
   await signIn(page)
   await startAtIdentification(page)
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await expect(page).toHaveURL(
+    /\/consignment\/contact\/select(?:\?from=[^#]*)?$/
+  )
   await saveAndContinue(page).click()
   await openOverviewFromReview(page)
   const row = page.getByRole('listitem').filter({
@@ -218,7 +222,9 @@ test('changing commodity type purges the supplier number and preserves the commo
   await input(page, 'supplierIdentificationNumber').fill('GB-12345')
   await input(page, 'consignmentNumber').fill('REF')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await expect(page).toHaveURL(
+    /\/consignment\/contact\/select(?:\?from=[^#]*)?$/
+  )
   await saveAndContinue(page).click()
   await openOverviewFromReview(page)
   await page.goto(`${BASE}/notifications/${reference}/commodity-type`)

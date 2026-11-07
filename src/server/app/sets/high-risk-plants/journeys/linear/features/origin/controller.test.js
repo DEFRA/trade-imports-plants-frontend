@@ -2,21 +2,21 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
   expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { withTrail } from '../../../../../../shared/kit.js'
 import { arrivalStatusPage } from '../arrival-status/page.js'
+import { originPage } from './page.js'
 import { arrivalDetailsPage } from '../arrival-details/page.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_POTATO_CONSIGNMENT,
-  itSendsBackCarryingChangeTo,
-  itSendsBackToTheDashboardUntilCommodityTypeAnswered,
+  itSendsBackToWhereTheTraderCameFromOnRefusal,
+  itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -107,30 +107,15 @@ describe('GET origin', () => {
     expect(result.view.context.values).toEqual({ countryOfOrigin: FRANCE })
   })
 
-  itSendsBackToTheDashboardUntilCommodityTypeAnswered(get)
-
-  it('Should send Back to the commodities list while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'commodities')
+  itSendsBackToWhereTheTraderCameFromOnRefusal(post, {
+    seed: COMPLETE_NOTIFICATION,
+    payload: { countryOfOrigin: UNOFFERED_COUNTRY },
+    savedPage: 'commodities'
   })
 
-  itSendsBackCarryingChangeTo(get, [
-    ['the commodities list', COMPLETE_NOTIFICATION, 'commodities']
-  ])
-
-  it('Should keep Back on the commodities list when the page is shown again after a refusal in the run', async () => {
-    const result = await driveHandler(post, {
-      seed: COMPLETE_NOTIFICATION,
-      payload: { countryOfOrigin: UNOFFERED_COUNTRY },
-      openingRun: RUN_ACTIVE
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, 'commodities')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_NOTIFICATION,
+    previousPage: 'commodities'
   })
 })
 
@@ -414,7 +399,9 @@ describe('POST origin — an accepted answer', () => {
     })
 
     expect(result.response).toEqual({
-      redirect: pagePath(result.journeyId, arrivalStatusPage.slug)
+      redirect: withTrail(pagePath(result.journeyId, arrivalStatusPage.slug), [
+        originPage.slug
+      ])
     })
   })
 
@@ -425,7 +412,9 @@ describe('POST origin — an accepted answer', () => {
     })
 
     expect(result.response).toEqual({
-      redirect: pagePath(result.journeyId, arrivalDetailsPage.slug)
+      redirect: withTrail(pagePath(result.journeyId, arrivalDetailsPage.slug), [
+        originPage.slug
+      ])
     })
   })
 

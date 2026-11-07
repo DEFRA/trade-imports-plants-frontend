@@ -10,9 +10,15 @@ import {
   expectOneRefusalLogged,
   journeyRequest,
   postHandlerOf,
+  trailQuery,
   stubH
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import {
+  CYA_SLUG,
+  TRAIL_START,
+  withTrail
+} from '../../../../../../shared/kit.js'
 import * as cancelAmend from '../cancel-amend/controller.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import * as ports from '../../../../../../services/ports/index.js'
@@ -83,13 +89,13 @@ describe('Check your answers', () => {
       actions: {
         items: [
           {
-            href: `${SET_BASE}/notifications/${result.journeyId}/origin?change=1`
+            href: `${SET_BASE}/notifications/${result.journeyId}/origin?from=notification-view`
           }
         ]
       }
     })
     expect(cards[1].actions.items[0].href).toBe(
-      `${SET_BASE}/notifications/${result.journeyId}/commodities/details?index=0&change=1`
+      `${SET_BASE}/notifications/${result.journeyId}/commodities/details?index=0&from=notification-view`
     )
     expect(cards[1].rows.map(({ value }) => value.text)).toEqual([
       'Seed potatoes',
@@ -196,7 +202,7 @@ describe('Check your answers', () => {
     for (const handler of [get, post]) {
       const result = await driveHandler(handler, { seed: invalidOrigin })
       expect(result.view.context.errorSummary.errorList[0].href).toBe(
-        `${SET_BASE}/notifications/${result.journeyId}/origin?change=1`
+        `${SET_BASE}/notifications/${result.journeyId}/origin?from=notification-view`
       )
       expect(result.view.context.errorSummary.errorList[0].text).toContain(
         'Poland'
@@ -560,6 +566,106 @@ describe('Check your answers — the Back link', () => {
   })
 })
 
+const cardActionsText = (view, text) =>
+  view.context.sections
+    .flatMap((section) => section.cards)
+    .flatMap((card) => [
+      ...(card.actions?.items ?? []),
+      ...card.rows.flatMap((row) => row.actions?.items ?? [])
+    ])
+    .filter((action) => action.text === text)
+    .map(({ href }) => href)
+
+const fromParam = (href) =>
+  new URL(href, 'http://review.test').searchParams.get('from')
+
+describe.each([
+  ['a draft', {}],
+  ['an amendment', { amend: true }]
+])(
+  'Check your answers — the Back link of %s by where the trader came from',
+  (_journeyKind, requestOptions) => {
+    const backFor = async (query) => {
+      const result = await driveHandler(get, {
+        seed: COMPLETE_NOTIFICATION,
+        ...requestOptions,
+        query
+      })
+      return { journeyId: result.journeyId, view: result.view }
+    }
+
+    it('Should go Back to the last journey page when the trader pressed Save and continue on it', async () => {
+      const { journeyId, view } = await backFor(
+        trailQuery(TRAIL_START.overview, 'consignment/contact/select')
+      )
+
+      expect(view.context.backLink).toBe(
+        withTrail(pagePath(journeyId, 'consignment/contact/select'), [
+          TRAIL_START.overview
+        ])
+      )
+    })
+
+    it('Should go Back to Overview when the review was opened from Overview', async () => {
+      const { journeyId, view } = await backFor(
+        trailQuery(TRAIL_START.overview)
+      )
+
+      expect(view.context.backLink).toBe(hubPath(journeyId))
+    })
+
+    it('Should go Back to the dashboard when the review was opened from a dashboard card', async () => {
+      const { view } = await backFor(trailQuery(TRAIL_START.dashboard))
+
+      expect(view.context.backLink).toBe(SET_BASE)
+    })
+
+    it('Should go Back to Overview when nothing says where the trader came from', async () => {
+      const { journeyId, view } = await backFor({})
+
+      expect(view.context.backLink).toBe(hubPath(journeyId))
+    })
+
+    it('Should go Back to Overview for a trail naming a place the journey does not have', async () => {
+      const { journeyId, view } = await backFor(trailQuery('not-a-place'))
+
+      expect(view.context.backLink).toBe(hubPath(journeyId))
+    })
+
+    it('Should push the review onto its own trail on every Change link', async () => {
+      const { view } = await backFor(trailQuery(TRAIL_START.dashboard))
+      const hrefs = cardActionsText(view, copy.change)
+
+      expect(hrefs).not.toHaveLength(0)
+      for (const href of hrefs) {
+        expect(fromParam(href)).toBe(`${TRAIL_START.dashboard},${CYA_SLUG}`)
+      }
+    })
+
+    it('Should keep the review Back unchanged on an Edit details link, which returns to the review', async () => {
+      const { view } = await backFor(trailQuery(TRAIL_START.dashboard))
+      const editHrefs = cardActionsText(view, copy.editDetails)
+
+      expect(editHrefs).not.toHaveLength(0)
+      for (const href of editHrefs) {
+        expect(fromParam(href)).toBe(TRAIL_START.dashboard)
+      }
+    })
+  }
+)
+
+describe('Check your answers — a refused Continue', () => {
+  it('Should keep the Back link the review had', async () => {
+    const result = await driveHandler(post, {
+      seed: invalidOrigin,
+      query: trailQuery(TRAIL_START.dashboard)
+    })
+
+    expect(result.response.statusCode).toBe(400)
+    expectBackLinkIsPath(result, SET_BASE)
+  })
+})
+
 describe('review navigation', () => {
   it('Should gate the review hub entry on complete tasks', () => {
     const section = sections.find(({ id }) => id === 'review')
@@ -610,7 +716,10 @@ describe('Check your answers — copied addresses', () => {
 
     expect(contact.actions.items).toEqual([
       {
-        href: changeHref(result.journeyId, 'contactAddress'),
+        href: changeHref(
+          { journeyId: result.journeyId, changeLinkTrail: [CYA_SLUG] },
+          'contactAddress'
+        ),
         text: copy.change,
         visuallyHiddenText: copy.cards.contact
       },

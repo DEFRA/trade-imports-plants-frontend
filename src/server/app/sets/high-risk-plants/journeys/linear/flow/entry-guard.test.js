@@ -19,8 +19,10 @@ import { journeyRequest, stubH } from '../../../../../engine/test-support.js'
 import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../flow/run-state.js'
 import { installHighRiskPlantsJourney } from '../test-support.js'
 import { SESSION_COOKIE_NAMES } from '../config.js'
+import { useInsFrontendBaseUrl } from '../../../../../../common/test-helpers/use-ins-frontend-base-url.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import {
+  insTypeQuestionUrl,
   leaveJourneyLink,
   entryGuardTarget,
   guardedJourneyPath,
@@ -233,5 +235,15 @@ describe('#leaveJourneyLink', () => {
 
   it('Should send Back to the dashboard while nothing is committed', () => {
     expect(leaveJourneyLink({ journeyId: 'j-1' }, {})).toBe(dashboardPath())
+  })
+})
+
+describe('#insTypeQuestionUrl', () => {
+  const setInsFrontendBaseUrl = useInsFrontendBaseUrl()
+
+  it('Should be the same Import Notification Service What are you importing? question URL for every journey', () => {
+    setInsFrontendBaseUrl('http://ins.example/')
+
+    expect(insTypeQuestionUrl()).toBe('http://ins.example/notification-type')
   })
 })

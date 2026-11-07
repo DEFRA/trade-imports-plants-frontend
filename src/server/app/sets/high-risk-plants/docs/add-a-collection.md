@@ -366,15 +366,14 @@ state.collectionView(
 )
 ```
 
-### Thread the change context through the loop
+### Thread the trail through the loop
 
-A collection reached from a Change link on check-your-answers carries a change
-context. Wrap every internal link and redirect — row actions, back links,
-add/remove/save round-trips — in `kit.withChangeContext(request, href)` so the
-context survives the loop. Resolve the loop's exiting Continue with
-`kit.nextTarget(request, page, scope)`, and let a hub exit win first via
-`kit.hubExitTarget(request)`. The exit goes on to the next page that applies;
-mid-loop actions stay on the page.
+A collection reached from a Change link on check-your-answers carries a trail. Wrap
+every internal link and redirect — row actions, back links, add/remove/save
+round-trips — in `kit.carryTrail(request, href)` so the trail survives the loop.
+Resolve the loop's exiting Continue with `kit.nextTarget(request, page, scope)`, and let
+a hub exit win first via `kit.hubExitTarget(request)`. The exit goes on to the next page
+that applies, adding the collection page to the trail; mid-loop actions stay on the page.
 
 ## 5. Cap the count where the model demands it
 

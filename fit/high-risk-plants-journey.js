@@ -675,7 +675,7 @@ export const startPotatoNotification = async (page) => {
   await expect(page).toHaveURL(ORIGIN_URL)
   await chooseCountryOfOrigin(page, 'France')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/arrival-details$/)
+  await expect(page).toHaveURL(/\/arrival-details(?:\?from=[^#]*)?$/)
   return reference
 }
 
@@ -706,9 +706,9 @@ export const startPotatoNotificationAtContact = async (
     optionName: 'Port of Dover - GB DVR'
   })
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/destinations\/select$/)
+  await expect(page).toHaveURL(/\/destinations\/select(?:\?from=[^#]*)?$/)
   await pickAddressBookParty(page)
-  await expect(page).toHaveURL(/\/identification-numbers$/)
+  await expect(page).toHaveURL(/\/identification-numbers(?:\?from=[^#]*)?$/)
   await page
     .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
       exact: true
@@ -718,7 +718,9 @@ export const startPotatoNotificationAtContact = async (
     .getByLabel(idsCopy.fields.cropIdentificationNumber.label, { exact: true })
     .fill('C123')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await expect(page).toHaveURL(
+    /\/consignment\/contact\/select(?:\?from=[^#]*)?$/
+  )
   return reference
 }
 
@@ -778,7 +780,7 @@ export const submitDeclarationFromCheckAnswers = async (page, reference) => {
   await page
     .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
     .click()
-  await expect(page).toHaveURL(/\/declaration$/)
+  await expect(page).toHaveURL(/\/declaration(?:\?from=[^#]*)?$/)
   await page
     .getByRole('checkbox', { name: declarationCopy.declarationLabel })
     .check()
@@ -1224,4 +1226,22 @@ export const describeAddressPicker = ({
       await expect(page).toHaveURL(afterSaveUrl)
     })
   })
+}
+
+/**
+ * Saves a commodity line opened from a review Change link, continues from the
+ * list and checks the origin page is reached with the review and the list on
+ * the trail.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export const continueFromChangedCommodityLine = async (page) => {
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(
+    /\/commodities\?from=(?:[^#]*%2C)?notification-view$/
+  )
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(
+    /\/origin\?from=(?:[^#]*%2C)?notification-view%2Ccommodities$/
+  )
 }

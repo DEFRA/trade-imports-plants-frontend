@@ -27,7 +27,7 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = /\/notifications\/[^/]+$/
 const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
-const REVIEW_URL = /\/notification-view$/
+const REVIEW_URL = /\/notification-view(?:\?from=[^#]*)?$/
 
 const contactPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignment/contact/select`
@@ -183,12 +183,12 @@ test.describe('consignment-contact-select — the overview task row', () => {
   })
 })
 
-test.describe('consignment-contact-select — the end of the opening run', () => {
+test.describe('consignment-contact-select — the end of Save and continue', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
   })
 
-  test('in the opening run, Continue goes to check your answers even though the notification is incomplete', async ({
+  test('at the last question, Save and continue goes to check your answers even though the notification is incomplete', async ({
     page
   }) => {
     await startInTheRunAtContact(page)
@@ -247,7 +247,7 @@ test.describe('consignment-contact-select — a blank save', () => {
   })
 })
 
-test('a potatoes notification is asked for the consignment contact in the opening run, and cannot go on from the review while its Overview task is not started', async ({
+test('a potatoes notification is asked for the consignment contact after Save and continue, and cannot go on from the review while its Overview task is not started', async ({
   page
 }) => {
   await signIn(page)

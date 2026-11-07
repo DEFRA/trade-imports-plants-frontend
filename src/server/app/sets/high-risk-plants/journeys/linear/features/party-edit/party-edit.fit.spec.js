@@ -19,7 +19,8 @@ import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const CONTACT_URL = /\/notifications\/[^/]+\/consignment\/contact\/select$/
+const CONTACT_URL =
+  /\/notifications\/[^/]+\/consignment\/contact\/select(?:\?from=[^#]*)?$/
 const EDIT_URL = /\/notifications\/[^/]+\/consignment\/contact\/edit\?/
 
 const FRANCE = 'France'

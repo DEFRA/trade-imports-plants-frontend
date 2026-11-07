@@ -3,6 +3,7 @@ import {
   SET_ID
 } from '../../../server/app/sets/high-risk-plants/set.js'
 import { vi } from 'vitest'
+import { useInsFrontendBaseUrl } from '../../../server/common/test-helpers/use-ins-frontend-base-url.js'
 
 import {
   callCountsOf,
@@ -316,24 +317,18 @@ describe('When auth.enabled is set to false', () => {
 })
 
 describe('When the configured INS base URL has a trailing slash', () => {
-  const INS_BASE_URL_KEY = 'tradeImportsInsFrontend.baseUrl'
+  const setInsFrontendBaseUrl = useInsFrontendBaseUrl()
   let freshlyImportedConfig
-  let originalBaseUrl
 
   beforeEach(async () => {
     mockReadFileSync.mockReset()
     mockLoggerError.mockReset()
     vi.resetModules()
     ;({ config: freshlyImportedConfig } = await import('../../config.js'))
-    originalBaseUrl = freshlyImportedConfig.get(INS_BASE_URL_KEY)
-  })
-
-  afterEach(() => {
-    freshlyImportedConfig.set(INS_BASE_URL_KEY, originalBaseUrl)
   })
 
   test('Should strip a trailing slash from the configured INS base URL', async () => {
-    freshlyImportedConfig.set(INS_BASE_URL_KEY, 'http://ins.test/')
+    setInsFrontendBaseUrl('http://ins.test/', freshlyImportedConfig)
     const contextImport = await import('./context.js')
     mockReadFileSync.mockReturnValue(`{
       "application.js": "javascripts/application.js",

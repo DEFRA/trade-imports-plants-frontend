@@ -115,7 +115,7 @@ test.describe('arrival-status feature', () => {
     await expect(group).toContainText(copy.statusHints[NOT_YET_ARRIVED])
   })
 
-  test('offers the three save controls and sends Back to origin in the opening run', async ({
+  test('offers the three save controls and sends Back to origin after Save and continue on origin', async ({
     page
   }) => {
     const reference = await startAtArrivalStatus(page)
@@ -316,7 +316,7 @@ test.describe('arrival-status — the question potatoes are never asked', () => 
         .getByRole('link', { name: hubCopy.rows.arrival.title })
     ).toHaveAttribute(
       'href',
-      `${BASE}/notifications/${reference}/arrival-details`
+      `${BASE}/notifications/${reference}/arrival-details?from=overview`
     )
   })
 
@@ -330,6 +330,6 @@ test.describe('arrival-status — the question potatoes are never asked', () => 
       page
         .locator('.govuk-task-list')
         .getByRole('link', { name: hubCopy.rows.arrival.title })
-    ).toHaveAttribute('href', arrivalStatusPathOf(reference))
+    ).toHaveAttribute('href', `${arrivalStatusPathOf(reference)}?from=overview`)
   })
 })

@@ -12,6 +12,7 @@ import {
   SYSTEM_POPULATED
 } from '../../../../../bridge/obligation-source.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
+import { buildInsFrontendUrl } from '../../../../../../common/helpers/ins-frontend-url.js'
 
 const journeyPrefix = () => `${setBase()}/notifications/`
 const ACTION_SLUGS = new Set(['amend', 'cancel-amend', 'copy', 'delete'])
@@ -46,6 +47,9 @@ export const leaveJourneyLink = (journey, answers) =>
   hasCommittedNotificationAnswers(answers)
     ? hubPath(journey.journeyId)
     : dashboardPath()
+
+export const insTypeQuestionUrl = () =>
+  buildInsFrontendUrl('/notification-type')
 
 export const entryGuardTarget = async (request, h) => {
   if (!guardedJourneyPath(request.path)) {

@@ -5,6 +5,7 @@ import { restoreConfigAfterEach } from '../../common/test-helpers/restore-config
 import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import {
+  CYA_SLUG,
   REFUSAL_LOG_MESSAGE,
   SAVE_FALLBACK_LOG_MESSAGE
 } from '../shared/kit.js'
@@ -306,6 +307,13 @@ export const driveHandler = async (
     logger: request.logger
   }
 }
+
+export const trailQuery = (...entries) => ({ from: entries.join(',') })
+
+export const reviewChangeLinkQuery = () => trailQuery(CYA_SLUG)
+
+export const trailRequestOf = (entries) =>
+  journeyRequest('j-1', { query: trailQuery(...entries) })
 
 export const postHandlerOf = (featureModule) =>
   featureModule.routes.find((route) => route.method === 'POST').handler

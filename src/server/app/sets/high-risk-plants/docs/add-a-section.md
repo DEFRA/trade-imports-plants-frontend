@@ -219,10 +219,8 @@ obligations and earlier continue prerequisites. Add an authored `gate` only for
 a flow fact that those rules cannot express. Add focused navigation and gate
 tests for every conditional page or branch.
 
-Add these pages to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
-only if product behaviour puts them in the opening run. A page joining the run
-takes a `RUN_STEPS` entry with its `backCandidates`. Update opening-run tests
-when you do.
+These pages' place in Save and continue's order is their place in the section's `pages`
+array, and their Back link comes from `kit.trailBackLink()`.
 
 ## 6. Add one task row and wire it to the hub
 
@@ -266,7 +264,7 @@ This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), already
 imports the journey's
-`sections`, `taskRows`, `rowStatus`, `previousRunTarget`,
+`sections`, `taskRows`, `rowStatus`, `insTypeQuestionUrl`,
 `FLOW_ONLY_KEYS`, `entryGuardTarget`, `sectionCaptionOf` and `LAYOUT`. It passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js). Because it injects the
 whole exported arrays, adding a section or task row to the existing modules needs
@@ -278,8 +276,7 @@ Registration work for the feature group is therefore limited to:
 2. add its binding bundle to `featureEvaluationBindings`
 3. add page identities to `sections` and `taskRows`
 4. add task-row ids and copy to the hub
-5. add pages to `run.js` only when they belong in the opening run
-6. place the task-row id on its check-answers card in `REVIEW_CARDS`
+5. place the task-row id on its check-answers card in `REVIEW_CARDS`
 
 Change `journeys/linear/config.js` or the `configureJourneyFlow()` call only when
 the journey's template identity, cookie identity or injected policy surface
