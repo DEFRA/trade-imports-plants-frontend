@@ -20,7 +20,7 @@ import { dispatchPages } from './features/index.js'
 import { featureEvaluationBindings } from './features/evaluation.js'
 import { FLOW_ONLY_KEYS, sections } from './flow/flow.js'
 import { rowStatus, taskRows } from './flow/task-rows.js'
-import { nextRunTarget, previousRunTarget } from './flow/run.js'
+import { previousRunTarget } from './flow/run.js'
 import { entryGuardTarget } from './flow/entry-guard.js'
 import { sectionCaptionOf } from './flow/section-captions/index.js'
 
@@ -88,7 +88,6 @@ const configureHighRiskPlantsJourneyPorts = () => {
     sections,
     taskRows,
     rowStatus,
-    nextRunTarget,
     previousRunTarget,
     flowOnlyKeys: FLOW_ONLY_KEYS,
     entryGuardTarget,
@@ -120,16 +119,60 @@ export const itSendsBackCarryingChangeTo = (get, cases) =>
     }
   )
 
-export const itSendsBackToTheDashboardUntilCommodityTypeAnswered = (get) => {
-  it('Should send Back to the dashboard while nothing is committed', async () => {
-    expectBackLinkIsPath(await driveHandler(get), dashboardPath())
+const itLinksToTheDashboardUntilCommodityTypeAnswered = (
+  get,
+  { linkName, linkOf }
+) => {
+  it(`Should send ${linkName} to the dashboard while nothing is committed`, async () => {
+    expect(linkOf(await driveHandler(get))).toBe(dashboardPath())
   })
 
-  it('Should send Back to the overview once the commodity type is answered', async () => {
+  it(`Should send ${linkName} to the overview once the commodity type is answered`, async () => {
     const result = await driveHandler(get, {
       seed: { commodityType: 'potatoes' }
     })
 
-    expectBackLinkIsPath(result, hubPath(result.journeyId))
+    expect(linkOf(result)).toBe(hubPath(result.journeyId))
   })
 }
+
+export const itSendsBackToTheDashboardUntilCommodityTypeAnswered = (get) =>
+  itLinksToTheDashboardUntilCommodityTypeAnswered(get, {
+    linkName: 'Back',
+    linkOf: (result) => result.view.context.backLink
+  })
+
+export const itSendsCancelToTheDashboardUntilCommodityTypeAnswered = (get) =>
+  itLinksToTheDashboardUntilCommodityTypeAnswered(get, {
+    linkName: 'Cancel and return to overview',
+    linkOf: (result) => result.view.context.hubHref
+  })
+
+export const PLANTS_RUN = [
+  'commodityType',
+  'commodityLines',
+  'countryOfOrigin',
+  'arrivalStatus',
+  'arrivalDate',
+  'placeOfDestination',
+  'consignor',
+  'consignmentNumber',
+  'contactAddress'
+]
+
+export const POTATO_RUN = [
+  'commodityType',
+  'commodityLines',
+  'countryOfOrigin',
+  'arrivalDate',
+  'arrivalTime',
+  'proposedPlaceOfLanding',
+  'placeOfDestination',
+  'consignmentNumber',
+  'contactAddress'
+]
+
+export const scopeOf = (...names) => ({
+  inScope: new Set(names),
+  answered: () => true
+})

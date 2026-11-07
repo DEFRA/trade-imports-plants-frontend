@@ -7,7 +7,8 @@ import {
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { placeOfDestinationPage } from '../place-of-destination/page.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { validatorDefaults } from '../../../../../../shared/copy.en.js'
 import {
@@ -28,6 +29,7 @@ const post = postHandlerOf(arrivalDetails)
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const POTATOES = 'potatoes'
 const DOVER = 'GB DVR'
+const ARRIVAL_DATE_HREF = '#arrivalDate'
 const A_DATE = '27/3/2026'
 const A_DATE_PARTS = { day: '27', month: '3', year: '2026' }
 const A_TIME = '14:30'
@@ -326,7 +328,7 @@ describe('POST arrival-details — the answers it refuses', () => {
       copy.errors.arrivalDate.invalid
     )
     expect(result.view.context.errorSummary.errorList).toEqual([
-      { text: copy.errors.arrivalDate.invalid, href: '#arrivalDate' }
+      { text: copy.errors.arrivalDate.invalid, href: ARRIVAL_DATE_HREF }
     ])
     expect(result.after.arrivalDate).toBeUndefined()
   })
@@ -424,7 +426,7 @@ describe('POST arrival-details — the answers it refuses', () => {
       proposedPlaceOfLanding: DOVER
     })
     expect(result.view.context.errorSummary.errorList).toEqual([
-      { text: copy.errors.arrivalDate.invalid, href: '#arrivalDate' },
+      { text: copy.errors.arrivalDate.invalid, href: ARRIVAL_DATE_HREF },
       { text: validatorDefaults.time, href: '#arrivalTime' }
     ])
   })
@@ -435,7 +437,9 @@ describe('POST arrival-details — the answers it refuses', () => {
       payload: { arrivalDate: A_DATE }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: pagePath(result.journeyId, placeOfDestinationPage.slug)
+    })
     expect(result.after.arrivalTime).toBeUndefined()
   })
 })
@@ -476,13 +480,15 @@ describe('POST arrival-details — accepted answers', () => {
     expect(result.after.proposedPlaceOfLanding).toBeUndefined()
   })
 
-  it('Should redirect to the overview, the page after the arrival section', async () => {
+  it('Should redirect to the place of destination, the next page that applies', async () => {
     const result = await driveHandler(post, {
       seed: potatoes(),
       payload: potatoPayload()
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: pagePath(result.journeyId, placeOfDestinationPage.slug)
+    })
   })
 
   it('Should honour Save and return to overview', async () => {
@@ -581,6 +587,30 @@ describe('POST arrival-details — Save and return to overview', () => {
   })
 })
 
+describe('POST arrival-details — while amending', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it.each([
+    ['Save and continue', {}],
+    ['Save and return to overview', { exit: 'hub' }]
+  ])(
+    'Should refuse a missing date on %s, naming it and keeping the other entries',
+    async (_button, buttonPayload) => {
+      const result = await driveHandler(post, {
+        amend: true,
+        seed: plants({ arrivalStatus: ALREADY_ARRIVED }),
+        payload: { arrivalDate: '', ...buttonPayload }
+      })
+
+      expect(result.response.statusCode).toBe(400)
+      expect(result.view.context.errorSummary.errorList[0].href).toBe(
+        ARRIVAL_DATE_HREF
+      )
+      expect(result.view.context.errors.arrivalDate).toBeDefined()
+      expect(result.after).toEqual(result.before)
+    }
+  )
+})
 describe('POST arrival-details — save failures', () => {
   useStubbedHighRiskPlantsJourney()
 

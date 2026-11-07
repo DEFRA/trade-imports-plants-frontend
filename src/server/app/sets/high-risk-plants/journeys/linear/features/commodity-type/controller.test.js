@@ -13,6 +13,7 @@ import { hubPath } from '../../../../../../shared/paths.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
   itSendsBackToTheDashboardUntilCommodityTypeAnswered,
+  itSendsCancelToTheDashboardUntilCommodityTypeAnswered,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { commodityTypes } from '../../../../services/commodities/index.js'
@@ -107,6 +108,7 @@ describe('GET commodity-type', () => {
   })
 
   itSendsBackToTheDashboardUntilCommodityTypeAnswered(get)
+  itSendsCancelToTheDashboardUntilCommodityTypeAnswered(get)
 
   it('Should send Back to the overview once answered on a draft opened from a Change link', async () => {
     const result = await driveHandler(get, {

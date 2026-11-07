@@ -63,6 +63,7 @@ describeAddressBookPickerController({
     seed: COMPLETE_PLANTS_NOTIFICATION
   },
   fieldName: 'contactAddress',
+  nextSlug: 'notification-view',
   errorText: copy.errors.contactAddress
 })
 

@@ -42,6 +42,8 @@ test('renders saved answers, scoped cards and accessible Change links that retur
     .click()
   await expect(page).toHaveURL(/\/origin\?change=1$/)
   await saveAndContinue(page).click()
+  await expect(page).not.toHaveURL(CHECK_ANSWERS_URL)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
   await page
     .getByRole('link', {
@@ -54,6 +56,8 @@ test('renders saved answers, scoped cards and accessible Change links that retur
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(/\/commodities\?change=1$/)
   await saveAndContinue(page).click()
+  await expect(page).toHaveURL(/\/origin(\?change=1)?$/)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
   await page.reload()
   await expect(page.getByText('300', { exact: true })).toBeVisible()
@@ -109,6 +113,8 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(/\/commodities\?change=1$/)
   await saveAndContinue(page).click()
+  await expect(page).toHaveURL(/\/origin(\?change=1)?$/)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
   await expect(page).toHaveURL(CHECK_ANSWERS_URL)

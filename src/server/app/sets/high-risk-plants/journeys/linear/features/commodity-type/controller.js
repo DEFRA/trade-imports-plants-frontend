@@ -12,7 +12,7 @@ import {
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { entryBackLink } from '../../flow/entry-guard.js'
+import { leaveJourneyLink } from '../../flow/entry-guard.js'
 import {
   CATEGORY,
   GENUS,
@@ -77,14 +77,15 @@ const keyOf = (entry) =>
 
 const render = (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
+  const leaveLink = leaveJourneyLink(current.journey, current.answers)
   return h.view(view, {
     ...kit.base(copy.title, {
-      request: h.request,
-      backLink: entryBackLink(current.journey, current.answers),
+      backLink: leaveLink,
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
     }),
+    hubHref: leaveLink,
     copy,
     values,
     errors,
@@ -138,7 +139,7 @@ const post = async (request, h) => {
   if (removed > 0) {
     return h.redirect(listHref(request, { removed }))
   }
-  return h.redirect(await kit.nextTarget(request, page, committed.scope))
+  return h.redirect(kit.nextTarget(request, page, committed.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

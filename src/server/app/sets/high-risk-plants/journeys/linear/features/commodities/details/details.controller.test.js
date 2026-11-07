@@ -49,6 +49,7 @@ describe('#meta', () => {
     expect(details.meta).toEqual({
       id: 'commodity-details',
       slug: 'commodities/details',
+      subPage: true,
       collects: []
     })
   })
@@ -500,4 +501,35 @@ describe('POST commodities/details — save failures', () => {
       })
     ).rejects.toThrow(new TypeError('programming failure'))
   })
+})
+
+describe('POST commodities/details — saving a line from a Change link or an amendment', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it.each([
+    ['a Change link', { query: { change: '1' } }, '?change=1'],
+    ['an amendment', { amend: true }, '']
+  ])(
+    'Should return to the list when saved from %s',
+    async (_start, start, listQuery) => {
+      const result = await driveHandler(post, {
+        ...start,
+        seed: {
+          commodityType: POTATOES,
+          commodityLines: [{ category: SEED_POTATOES }]
+        },
+        payload: {
+          index: '0',
+          category: SEED_POTATOES,
+          potatoVariety: MARIS_PIPER,
+          quantity: POTATO_QUANTITY,
+          potatoIntendedUse: PLANTING
+        }
+      })
+
+      expect(result.response.redirect).toBe(
+        `${pagePath(result.journeyId, LIST_SLUG)}${listQuery}`
+      )
+    }
+  )
 })

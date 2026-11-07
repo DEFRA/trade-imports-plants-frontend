@@ -16,7 +16,6 @@ const withoutReturnControls =
   '{ hubHref: hubHref, copy: copy, showReturnControls: false }'
 
 const EXIT_NAME_ATTRIBUTE = 'name="exit"'
-const SECONDARY_BUTTON = 'govuk-button--secondary'
 const BUTTON_GROUP = 'class="govuk-button-group"'
 
 describe('#saveActions', () => {
@@ -86,91 +85,5 @@ describe('#saveActions', () => {
     expect(html).toContain(sharedEn.saveActions.saveAndReturnToHub)
     expect(html).toContain(sharedEn.saveActions.cancelAndReturnToHub)
     expect(html).toContain(EXIT_NAME_ATTRIBUTE)
-  })
-})
-
-describe('#saveActions while amending', () => {
-  const RETURN_ACTION = '/n/j-1/origin?change=1'
-  const CONTINUE_ACTION = '/n/j-1/origin'
-  const amend = `{ returnAction: "${RETURN_ACTION}", continueAction: "${CONTINUE_ACTION}" }`
-  const amending = `{ hubHref: hubHref, copy: copy, amend: ${amend} }`
-  const namedPrimary =
-    '{ text: "Save and finish", name: "action", value: "save" }'
-
-  const buttons = (html) => html.split('<button').slice(1)
-
-  it('Should end an overview-linked page with Save and return, Save and continue and a secondary Save and return to overview button, in that order', () => {
-    const [first, second, third] = buttons(renderActions(amending))
-
-    expect(first).toMatch(/>\s*Save and return\s*</)
-    expect(second).toMatch(/>\s*Save and continue\s*</)
-    expect(third).toMatch(/>\s*Save and return to overview\s*</)
-    expect(third).toContain(SECONDARY_BUTTON)
-    expect(third).toContain('data-module="govuk-button"')
-    expect(third).toContain(EXIT_NAME_ATTRIBUTE)
-    expect(third).toContain('value="hub"')
-    expect(third).not.toContain('formaction')
-  })
-
-  it('Should put Save and return to overview on its own line below the two save buttons', () => {
-    const html = renderActions(amending)
-    const [group, afterGroup] = html.split('</div>')
-
-    expect(group).toContain(BUTTON_GROUP)
-    expect(group).toMatch(/>\s*Save and return\s*</)
-    expect(group).toMatch(/>\s*Save and continue\s*</)
-    expect(group).not.toContain(sharedEn.saveActions.saveAndReturnToHub)
-    expect(afterGroup).toMatch(/>\s*Save and return to overview\s*</)
-  })
-
-  it("Should send Save and return back to the review and Save and continue onwards through the button's own form action", () => {
-    const [first, second] = buttons(renderActions(amending))
-
-    expect(first).toContain(`formaction="${RETURN_ACTION}"`)
-    expect(first).not.toContain(SECONDARY_BUTTON)
-    expect(second).toContain(`formaction="${CONTINUE_ACTION}"`)
-    expect(second).toContain(SECONDARY_BUTTON)
-  })
-
-  it('Should offer no cancel link while amending', () => {
-    const html = renderActions(amending)
-
-    expect(html).not.toContain(sharedEn.saveActions.cancelAndReturnToHub)
-    expect(html).not.toContain('href=')
-  })
-
-  it("Should carry the page's own primary name and value on both save buttons", () => {
-    const html = renderActions(
-      `{ hubHref: hubHref, primary: ${namedPrimary}, copy: copy, amend: ${amend} }`
-    )
-    const [first, second] = buttons(html)
-
-    for (const button of [first, second]) {
-      expect(button).toContain('name="action"')
-      expect(button).toContain('value="save"')
-    }
-    expect(html.match(/name="action"/g)).toHaveLength(2)
-  })
-
-  it("Should send no action field when the page's primary names none", () => {
-    expect(renderActions(amending)).not.toContain('name="action"')
-  })
-
-  it('Should end a page reached from another page with Save and return and Save and continue only', () => {
-    const html = renderActions(
-      `{ hubHref: hubHref, copy: copy, amend: ${amend}, showReturnControls: false }`
-    )
-
-    expect(buttons(html)).toHaveLength(2)
-    expect(html).not.toContain(EXIT_NAME_ATTRIBUTE)
-  })
-
-  it('Should drop the overview exit on a picker while amending', () => {
-    const html = renderActions(
-      `{ hubHref: hubHref, copy: copy, amend: ${amend}, hubExitWhileAmending: false }`
-    )
-
-    expect(buttons(html)).toHaveLength(2)
-    expect(html).not.toContain(sharedEn.saveActions.saveAndReturnToHub)
   })
 })

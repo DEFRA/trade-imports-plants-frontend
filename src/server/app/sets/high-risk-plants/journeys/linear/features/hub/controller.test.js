@@ -14,7 +14,7 @@ import {
 } from '../../test-support.js'
 
 import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
-import { GROUPS, routes } from './controller.js'
+import { routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 
 const REVIEW_GROUP_ID = 'check-and-submit'
@@ -265,9 +265,6 @@ describe('#hubGet', () => {
   it('Should render the review group after the answer groups', async () => {
     const { h } = await renderHub()
 
-    expect(GROUPS.find((group) => group.id === REVIEW_GROUP_ID).rows).toEqual([
-      'review'
-    ])
     expect(h.captured.view.context.groups.map((group) => group.id)).toEqual(
       RENDERED_GROUP_IDS
     )
@@ -467,5 +464,30 @@ describe('#hubGet — consignor', () => {
         }
       ])
     }
+  })
+})
+
+describe('#hubGet — the order of the task rows', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it('Should list the task rows under each caption in the order Save and continue visits them', async () => {
+    const { h } = await renderHub({
+      seed: { commodityType: PLANTS_FOR_PLANTING }
+    })
+
+    expect(
+      h.captured.view.context.groups.map((group) =>
+        group.items.map((item) => item.title.text)
+      )
+    ).toEqual([
+      [copy.rows.commodities.title, copy.rows.origin.title],
+      [copy.rows.arrival.title, copy.rows.destination.title],
+      [
+        copy.rows.consignor.title,
+        copy.rows.identificationNumbers.title,
+        copy.rows.contact.title
+      ],
+      [copy.rows.review.title]
+    ])
   })
 })

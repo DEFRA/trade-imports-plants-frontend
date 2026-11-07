@@ -11,7 +11,6 @@ seam. `configureJourneyFlow()` receives:
 - `sections`
 - `taskRows`
 - `rowStatus`
-- `nextRunTarget`
 - `previousRunTarget`
 - `flowOnlyKeys`
 - `entryGuardTarget`
@@ -48,14 +47,22 @@ configured section list through the journey-flow seam.
 
 ## Navigation and status
 
-[`src/server/app/flow/navigation.js`](../flow/navigation.js) finds the first
-gate-passing page in a section or task row. `rowGatePasses()`
-opens a task row when ANY of its pages passes, so a row whose opening question
-is out of scope for this notification still opens on the page that follows it.
-`nextInTaskRow()` is where a save outside the opening run goes: the next
-gate-passing page of the section when it belongs to the same task row, otherwise
-the hub; a page in no task row keeps the section order. `kit.nextTarget` uses it
-after the opening run and the explicit exits.
+[`src/server/app/flow/navigation.js`](../flow/navigation.js) owns the journey's
+page order and the next page after one. The order is the set's flow sections
+read in order. A step is a page that belongs to a task row and is not marked as
+a sub-page; a sub-page keeps its section's status and prerequisites but is
+reached only from the page that opens it. `nextStepPath()` answers the next
+step after a page whose scope rule passes (`pageAppliesTo()` in
+[`gates.js`](../flow/gates.js): the page's own gate, else some obligation it
+collects in scope), or nothing past the last step, and throws for a page in no
+section. `kit.nextTarget` uses it after the explicit exits and falls back to
+the review page when it answers nothing. `taskRowsOfSection()` lists a
+section's task rows in the order of their first page, which is how the hub
+derives its groups. `rowGatePasses()` opens a task row when any of its pages'
+gates passes, not only its first, so a row whose opening question is out of
+scope for this notification still opens on the page that follows it.
+`sectionEntry()` and `rowEntry()` find the first gate-passing page in a section
+or task row.
 
 [`src/server/app/flow/section-status.js`](../flow/section-status.js) calculates
 section status from dispatch ownership. Submit readiness is the conjunction of the
@@ -68,7 +75,7 @@ ready.
 in its opening run through the injected session port. Run state is
 session-side presentation state keyed by journey id, never canonical fulfilment
 data. The journey supplies
-`nextRunTarget` and `previousRunTarget`; shared controller helpers call them through
+`previousRunTarget`; shared controller helpers call it through
 the journey-flow seam. `kit.runBackLink()` answers a run step's Back link with
 `previousRunTarget` while the run is active. On a draft notification whose
 request carries change context, it answers with `previousRunTarget` with change

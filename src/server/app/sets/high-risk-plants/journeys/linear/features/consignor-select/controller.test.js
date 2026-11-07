@@ -65,6 +65,7 @@ describeAddressBookPickerController({
     seed: COMPLETE_PLANTS_NOTIFICATION
   },
   fieldName: 'consignor',
+  nextSlug: 'identification-numbers',
   errorText: copy.errors.consignor
 })
 

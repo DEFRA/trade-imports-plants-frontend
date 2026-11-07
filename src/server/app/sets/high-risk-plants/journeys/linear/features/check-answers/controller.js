@@ -9,6 +9,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
+import { declarationPage } from '../declaration/page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
@@ -154,7 +155,10 @@ const post = async (request, h) => {
       HTTP_STATUS_BAD_REQUEST
     )
   }
-  return h.redirect(await kit.nextTarget(request, page, current.scope))
+  return h.redirect(
+    kit.hubExitTarget(request) ??
+      pagePath(current.journey.journeyId, declarationPage.slug)
+  )
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

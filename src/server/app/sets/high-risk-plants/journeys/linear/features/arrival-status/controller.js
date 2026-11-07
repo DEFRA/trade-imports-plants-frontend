@@ -49,7 +49,6 @@ const render = async (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      request,
       backLink: await kit.runBackLink(request, page.id, current),
       journey: current.journey,
       page,
@@ -98,7 +97,7 @@ const post = async (request, h) => {
     return failure
   }
 
-  return h.redirect(await kit.nextTarget(request, page, committed.scope))
+  return h.redirect(kit.nextTarget(request, page, committed.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

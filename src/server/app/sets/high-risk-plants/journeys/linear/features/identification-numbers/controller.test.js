@@ -8,7 +8,8 @@ import {
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { consignmentContactSelectPage } from '../consignment-contact-select/page.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import {
   COMPLETE_NOTIFICATION,
@@ -118,7 +119,9 @@ describe('identification numbers', () => {
           fields.includes(name) ? 'ID_123' : undefined
         )
       }
-      expect(result.response.redirect).toBe(hubPath(result.journeyId))
+      expect(result.response.redirect).toBe(
+        pagePath(result.journeyId, consignmentContactSelectPage.slug)
+      )
     }
   )
   const required = branches
@@ -168,7 +171,9 @@ describe('identification numbers', () => {
       seed: { commodityType: WOOD_AND_CUT_TREES },
       payload: {}
     })
-    expect(result.response.redirect).toBe(hubPath(result.journeyId))
+    expect(result.response.redirect).toBe(
+      pagePath(result.journeyId, consignmentContactSelectPage.slug)
+    )
   })
   it('Should refuse a blank mandatory number on Save and return to overview, naming it, and save nothing', async () => {
     const result = await driveHandler(post, {

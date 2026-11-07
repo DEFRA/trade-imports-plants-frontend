@@ -158,35 +158,48 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   )
 })
 
-test('The commodities list ends with Save and return and Save and continue while amending', async ({
+test('The commodities list ends as it does on a draft while amending, and Save and continue opens origin', async ({
   page
 }) => {
   const reference = journeyIdFromPage(page)
   const listUrl = `${BASE}/notifications/${reference}/commodities`
-  const saveAndReturn = page.getByRole('button', {
-    name: sharedCopy.saveActions.saveAndReturn,
-    exact: true
-  })
   await page.goto(listUrl)
-  await expect(saveAndReturn).toBeVisible()
   await expect(saveAndContinue(page)).toBeVisible()
   await expect(
     page.getByRole('button', {
       name: sharedCopy.saveActions.saveAndReturnToHub
     })
   ).toHaveCount(0)
-  await expect(
-    page.getByRole('link', {
-      name: sharedCopy.saveActions.cancelAndReturnToHub
-    })
-  ).toHaveCount(0)
 
-  await saveAndReturn.click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
-
-  await page.goto(listUrl)
   await saveAndContinue(page).click()
+  await expect(page).toHaveURL(setUrl(`/notifications/${reference}/origin$`))
+})
+
+test('Cancel and return to overview while amending opens Overview without saving, and the strip keeps Amend and Cancel amend', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
+  await page
+    .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
+      exact: true
+    })
+    .fill('NotSaved1')
+  await page
+    .getByRole('link', { name: sharedCopy.saveActions.cancelAndReturnToHub })
+    .click()
+
   await expect(page).toHaveURL(setUrl(`/notifications/${reference}$`))
+  await expect(strip(page).locator(TAG)).toHaveText(
+    sharedCopy.journeyStrip.amend
+  )
+  await expect(cancelAmendLink(page)).toBeVisible()
+  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
+  await expect(
+    page.getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
+      exact: true
+    })
+  ).not.toHaveValue('NotSaved1')
 })
 
 test('Cancel amend on the Overview opens the confirmation page', async ({

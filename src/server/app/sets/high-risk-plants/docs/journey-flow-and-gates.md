@@ -25,17 +25,17 @@ flow section is a navigation sequence:
 }
 ```
 
-Array order is journey order. It controls, within one task row, where Save and
-continue goes outside the opening run (`nextInTaskRow()`), and, through the
-section's place among the other sections, the strictly-earlier continue
+Array order is journey order, and the sections are Overview's groups: Save and
+continue follows the order from every start, and the section's place among the
+others gives the strictly-earlier continue prerequisites.
 prerequisites.
 
-A page reached from another page rather than by continuing past one needs a
-section of its own, which is why `commodityDetails` is separate. The
-commodities list page's Continue leaves the commodity section; the entry
-sub-page is opened from the list and sends the trader back to it. Had the two
-shared a section, the save fallback would send that Continue into the entry page
-instead. Its own section still gives it the commodity-type prerequisite every
+A page reached only from the page that opens it is a sub-page: commodity details
+carries `subPage: true` on its page identity, so it keeps its section's status and
+prerequisites but is no step of the journey's order. It is opened from the
+commodities list and sends the trader back to it, and the list goes on to origin.
+Origin follows commodity details so a line can be added before a country is named.
+Arrival status and the consignor are out of scope for potatoes and so passed over.
 page after the entry question carries.
 
 Normal page gates are derived from `meta.collects`, in-scope obligations and
@@ -75,11 +75,10 @@ is reachable and links it to the first of them whose gate passes
 to lead the row; the commodity entry sub-page is in its row because its data
 belongs to that task, not because the hub ever links there.
 
-Outside the opening run Save and continue moves on only to a later page of the
-same section that is also in the same task row — commodity type to the
-commodities list, arrival status to the arrival details — and otherwise returns
-to the hub, so consignor returns to the hub rather than going on to
-identification numbers, which has a row of its own.
+Save and continue goes to the next page that applies in the journey's order,
+from every start: commodity type to the commodities list, the list to origin,
+arrival details to the place of destination, the consignor to identification
+numbers, and the contact address to check your answers.
 
 Row status defaults to the union of each page's `collects` — that is what
 `rowParts()` computes, and `rowStatus()` feeds to `statusOf()`. `parts` narrows
@@ -90,9 +89,8 @@ Every row contributes to `readyForCheckYourAnswers`. A mandatory new row
 therefore blocks Check and submit until it is complete, so prove both the
 blocked and the complete state.
 
-The hub feature's controller places task-row ids under visible headings and
-supplies their presentation order. The hub feature and its `GROUPS` array both
-landed with the hub increment.
+The hub feature's controller derives its groups from the flow sections, in
+order, then appends the check-and-submit group.
 
 ## Opening run and entry guard
 
@@ -109,8 +107,8 @@ the commodity type and origin are answered; its GET marks the run complete (the
 hub's GET still does too), shows the unfinished notification and names every
 unfinished card. Continue there re-shows the page with those cards named while
 anything is outstanding, and only the declaration and confirmation wait for a
-complete notification. With no later step `nextRunTarget` falls through to the
-hub. An unknown step id still returns `null`. The entry sub-page is not a
+complete notification.
+The entry sub-page is not a
 step — the list page sends a trader with no lines there and takes them back. The
 arrival-status step is skipped for potatoes, whose notification is never asked
 the question: its target is `null` while the answer is out of scope, and the run
@@ -126,8 +124,8 @@ returns the first whose gate passes, so a skipped step is skipped going back too
 Arrival-details goes back to arrival-status, or to origin for potatoes;
 identification-numbers goes back to the consignor, or to the place of destination
 for potatoes. On a draft notification, a page opened from a Change link on the
-review has the same Back link, carrying change context so that its save still
-returns to the review. The commodity type page, the first page, keeps the Back
+review has the same Back link, carrying change context, which carries Back; its save
+goes on to the next page that applies. The commodity type page, the first page, keeps the Back
 link it has without the Change link. While the notification is being amended,
 every page keeps its usual Back link. `kit.runBackLink()` otherwise falls back to
 the page's own Back link: the overview, or for origin the dashboard until the
@@ -157,11 +155,12 @@ the call — and redirects on any target it returns. The guard:
 - ignores the `amend`, `cancel-amend`, `copy` and `delete` action slugs — `copy`
   has no route yet, and the exemption is deliberately ahead of it
 - ignores the entry page and its sub-paths, so there is no redirect loop
-- admits a request when the opening run has begun for that journey in this
-  session (`openingRunStarted`, true for both `RUN_ACTIVE` and `RUN_COMPLETE`),
-  or when the journey carries committed user answers
-  (`hasCommittedNotificationAnswers`)
-- sends anything else — a deep link to an id this session never created and that
+- admits a request when the journey carries committed user answers
+  (`hasCommittedNotificationAnswers`); the run record does not admit one
+- sends anything else — a deep link to an id this session never created, or a
+  draft with nothing saved, whether the request is for Overview, the review,
+  the declaration or the confirmation page — to the entry page, logging the
+  journey id and the requested path once
   holds no answers — to the entry page
 
 `hasCommittedNotificationAnswers` counts only answers that resolve to a manifest
@@ -169,18 +168,19 @@ obligation and are not `SYSTEM_POPULATED`, so a journey holding nothing but a
 flow-only key reads as fresh. The commodity-type controller imports the same
 predicate to choose its Back link.
 
-A journey the guard bounces to the entry page does not resume the opening run
-when it saves that page: `kit.nextTarget` finds `inOpeningRun` false, so
-`runTarget` is null and the user continues to the hub. That is the accepted rule
-for a returning user without run state. Only a notification created in this
-session sequences through `RUN_STEPS`.
+A journey the guard bounces to the entry page goes on from there to the
+commodities list like any other start. `leaveJourneyLink` in `entry-guard.js` is
+Overview's link as the trader may follow it: the dashboard until an answer is
+entered, once for Back and for the first page's Cancel link. The guarded prefix is
+read per request, because the set's mount prefix is only known inside a request's
+set context.
 
 ## Registration wiring
 
 This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), imports
-`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `previousRunTarget`,
+`sections`, `taskRows`, `rowStatus`, `previousRunTarget`,
 `FLOW_ONLY_KEYS`, `entryGuardTarget` and `sectionCaptionOf` (from
 [`flow/section-captions/index.js`](../journeys/linear/flow/section-captions/index.js)),
 then passes them to

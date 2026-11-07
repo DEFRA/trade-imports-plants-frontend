@@ -1,10 +1,9 @@
 import { dashboardPath, hubPath, pagePath, pageRoutePath } from './paths.js'
 import { setIdForPath, withSetContext } from './set-context.js'
 import { AMEND, DELETED, DRAFT, SUBMITTED } from '../engine/index.js'
-import { nextInTaskRow } from '../flow/navigation.js'
+import { nextStepPath } from '../flow/navigation.js'
 import {
   journeyLayout,
-  journeyNextRunTarget,
   journeyPreviousRunTarget,
   journeySectionCaption
 } from '../flow/journey-flow.js'
@@ -13,7 +12,6 @@ import { copyFor } from './copy.js'
 import { copy as sharedEn } from './copy.en.js'
 import { copy as sharedCy } from './copy.cy.js'
 import { isRecoverableBackendError } from '../services/persistence/records/errors.js'
-import { amendFormActions } from './amend-form-actions.js'
 
 export const routeOptions = { auth: 'session' }
 
@@ -174,17 +172,6 @@ export const readReturnMarker = (request, allowedSlugs) => {
     : { refusedMarker: marker }
 }
 
-export const exitTarget = (request, fallback) =>
-  hubExitTarget(request) ??
-  (changeContext(request)
-    ? pagePath(request.params.journeyId, CYA_SLUG)
-    : fallback)
-
-export const runTarget = async (request, stepId, scope) =>
-  (await inOpeningRun(request, request.params.journeyId))
-    ? journeyNextRunTarget(stepId, scope, request.params.journeyId)
-    : null
-
 const previousStepBackLink = async (request, stepId, { journey, scope }) => {
   const { journeyId } = request.params
   const opensInRun = await inOpeningRun(request, journeyId)
@@ -221,12 +208,19 @@ export const runBackLink = async (
 ) =>
   (await previousStepBackLink(request, stepId, { journey, scope })) ?? fallback
 
-export const nextTarget = async (request, page, scope) =>
-  exitTarget(
-    request,
-    (await runTarget(request, page.id, scope)) ??
-      nextInTaskRow(page.id, scope, request.params.journeyId)
-  )
+/**
+ * Where a valid save on a page goes next.
+ *
+ * @param {object} request - the request being answered.
+ * @param {object} page - the page being saved.
+ * @param {object} scope - the journey's scope.
+ * @returns {string} the overview's path when Save and return to overview was
+ * pressed, else the next page that applies, else the review's path.
+ */
+export const nextTarget = (request, page, scope) =>
+  hubExitTarget(request) ??
+  nextStepPath(page.id, scope, request.params.journeyId) ??
+  pagePath(request.params.journeyId, CYA_SLUG)
 
 export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 
@@ -271,10 +265,6 @@ export const chromeFor = (title, requestPath) => {
  * @param {object} [options.page] - the page identity. Supply it and the view
  * gains the `caption` naming the section of the journey the page belongs to;
  * omit it on a page the journey deliberately leaves uncaptioned.
- * @param {object} [options.request] - the request being answered. Supply it
- * on a page that ends with `saveActions`, and the view gains `amend`: the two
- * form actions its save buttons carry while the journey is being amended, or
- * null otherwise.
  * @param {boolean} [options.showJourneyStrip] - false leaves the status strip off the page.
  * @returns {object} the common view model.
  */
@@ -287,12 +277,10 @@ export const base = (
     page,
     recoverableError = false,
     offerCancelAmend = true,
-    showJourneyStrip = true,
-    request
+    showJourneyStrip = true
   } = {}
 ) => {
   const hasJourney = journeyId != null
-  const amending = journey?.status === AMEND
   return {
     layout: journeyLayout(),
     pageTitle: title,
@@ -303,11 +291,6 @@ export const base = (
     journeyStrip: showJourneyStrip
       ? journeyStrip(journey, { offerCancelAmend })
       : null,
-    amending,
-    amend:
-      amending && request
-        ? amendFormActions(request.path ?? '', request.url?.searchParams)
-        : null,
     concurrencyToken: journey?.concurrencyToken ?? null,
     sharedCopy,
     recoverableError,

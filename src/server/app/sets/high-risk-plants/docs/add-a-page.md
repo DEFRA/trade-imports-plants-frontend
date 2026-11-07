@@ -64,7 +64,7 @@ journeys/linear/features/<name>/
 If the page joins an existing multi-page feature, add its controller and
 template inside that group. Keep the browser spec in that group's `fit/` folder.
 
-`page.js` exports only `{ id, slug }` and imports nothing. The controller and
+`page.js` exports `{ id, slug }`, an authored `gate` where the derived gate cannot express the page, and `subPage: true` on a page reached only from the page that opens it, and imports nothing. The controller and
 flow import the same object. This prevents a module cycle through flow, status
 and the controller.
 
@@ -123,7 +123,7 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 2. validates with [`src/server/app/lib/validate/index.js`](../../../lib/validate/index.js)
 3. re-renders raw values with status 400 on error
 4. commits cleaned values with `state.commit()`
-5. redirects through `await kit.nextTarget(request, page, committed.scope)`
+5. redirects through `kit.nextTarget(request, page, committed.scope)`
 
 Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
 failure is logged once by `recoverableSave`; render the same values with
@@ -212,9 +212,9 @@ owner to silence coverage.
 Import the page identity into
 [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js). Put it in the
 right `sections` entry, or add the first section. Its position controls
-strictly-earlier prerequisites and where Save and continue goes outside the
-opening run (`nextInTaskRow()`: the next page of the section only when it is in
-the same task row).
+strictly-earlier prerequisites and the journey's page order, which Save and
+continue follows from every start: the next page that applies, skipping a
+sub-page, which is a page reached only from the page that opens it.
 
 Import it into
 [`journeys/linear/flow/task-rows.js`](../journeys/linear/flow/task-rows.js). Put
@@ -229,7 +229,7 @@ test. The coverage test fails until you do one or the other.
 
 If you add a task row, also:
 
-- add the row id to one `GROUPS` entry in the hub feature's controller
+- the hub lists the row under the section that holds its first page; a new section needs a caption under `groups` in the hub copy
 - add matching English and Welsh `rows` copy in the hub feature
 - update the hub's `copy/copy.test.js`, the hub feature spec and
   `journeys/linear/flow/task-rows.test.js`
@@ -237,8 +237,8 @@ If you add a task row, also:
 The hub feature is the worked example for those bullets.
 
 - [`journeys/linear/features/hub/controller.js`](../journeys/linear/features/hub/controller.js)
-  holds `GROUPS` — the numbered groups in the order the hub renders them, each
-  naming its row ids. It turns a row id into a task-list item: a row
+  derives the numbered groups from the flow sections, in the order the hub
+  renders them, then appends the check-and-submit group. It turns a row into a task-list item: a row
   whose gate passes gets its `rowEntry()` link and a status tag, a row whose
   gate fails gets the "Cannot start yet" status and no link, and a conditional
   row that is not applicable is dropped. A group with no items is not rendered.
@@ -269,8 +269,8 @@ The hub feature is the worked example for those bullets.
   your row.
 - [`journeys/linear/flow/task-rows.test.js`](../journeys/linear/flow/task-rows.test.js)
   proves that state from the flow side — `taskRows` holds the rows landed so far
-  and `taskRowById()` resolves each of them — and that every id a `GROUPS` entry names
-  resolves to a task row or the review row. It covers `rowParts()` and
+  and `taskRowById()` resolves each of them — and that every row has hub copy
+  title. It covers `rowParts()` and
   `rowStatus()` over fixture rows: an explicit `parts` list wins over the
   obligations the row's pages collect, an out-of-scope row is not applicable,
   and an in-scope row nobody has answered is optional.
@@ -456,7 +456,7 @@ Cover:
 - preservation of entered values on error
 - every error-summary link moving focus to its control
 - back, Save and return to overview, Cancel and Change navigation as applicable
-- on every page in a task row's `pages` (`journeys/linear/flow/task-rows.js`) and on every party picker, `amend: amend` in the object `saveActions` takes, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. `kit.base()` supplies `amend` when the controller passes it the request (`request`, or `h.request` where the render has only the toolkit). The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending: false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment. A page reached from another page (`showReturnControls: false`, such as the commodities list) also passes `amend`, and shows only Save and return and Save and continue while amending. A collection-entry sub-page (commodities details) keeps its own write actions and passes no `amend`: it saves back to its list, which carries the row's amend ending. `features/amend-endings.test.js` renders every task-row page while amending and fails if one loses the ending.
+- a page ends while the notification is being amended exactly as it does on a draft: every page passes `saveActions` the same arguments on a draft and while amending. `features/amend-endings.test.js` renders every task-row page on a draft and while amending and fails if their endings differ.
 - conditional scope, skip and purge behaviour
 - the check-answers rows and Change links
 

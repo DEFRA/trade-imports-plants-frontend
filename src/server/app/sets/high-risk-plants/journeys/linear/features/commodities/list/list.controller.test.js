@@ -10,6 +10,7 @@ import {
   unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../../shared/paths.js'
+import { originPage } from '../../origin/page.js'
 import { RUN_ACTIVE } from '../../../../../../../flow/run-state.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
@@ -189,13 +190,15 @@ describe('POST commodities — removing a line', () => {
 describe('POST commodities — continuing', () => {
   useStubbedHighRiskPlantsJourney()
 
-  it('Should leave the section for the overview once a line exists', async () => {
+  it('Should go on to origin once a line exists', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: {}
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: pagePath(result.journeyId, originPage.slug)
+    })
   })
 
   it('Should hold an empty consignment at the collection floor', async () => {
@@ -251,5 +254,37 @@ describe('POST commodities — save failures', () => {
         saveFailure: new TypeError('programming failure')
       })
     ).rejects.toThrow(new TypeError('programming failure'))
+  })
+})
+
+describe.each([
+  ['opened from Overview', {}],
+  ['opened from a Change link', { query: { change: '1' } }],
+  ['while amending', { amend: true }]
+])('POST commodities — %s', (_start, start) => {
+  useStubbedHighRiskPlantsJourney()
+
+  it('Should keep the trader on the list after removing a line', async () => {
+    const result = await driveHandler(post, {
+      ...start,
+      seed: TWO_LINES,
+      payload: { action: 'remove:0' }
+    })
+
+    expect(result.response.redirect).toBe(
+      `${pagePath(result.journeyId, LIST_SLUG)}${start.query ? '?change=1' : ''}`
+    )
+  })
+
+  it('Should go on to origin when the list is continued', async () => {
+    const result = await driveHandler(post, {
+      ...start,
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: {}
+    })
+
+    expect(result.response.redirect).toBe(
+      pagePath(result.journeyId, originPage.slug)
+    )
   })
 })

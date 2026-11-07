@@ -4,7 +4,12 @@ import { identificationNumbersPage } from '../features/identification-numbers/pa
 import { consignorPage } from '../features/consignor-select/page.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { installHighRiskPlantsJourney } from '../test-support.js'
+import {
+  installHighRiskPlantsJourney,
+  PLANTS_RUN,
+  POTATO_RUN,
+  scopeOf
+} from '../test-support.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import { commoditiesPage } from '../features/commodities/page.js'
 import { originPage } from '../features/origin/page.js'
@@ -12,40 +17,9 @@ import { arrivalStatusPage } from '../features/arrival-status/page.js'
 import { arrivalDetailsPage } from '../features/arrival-details/page.js'
 import { placeOfDestinationPage } from '../features/place-of-destination/page.js'
 import { notificationViewPage } from '../features/check-answers/page.js'
-import { RUN_STEPS, nextRunTarget, previousRunTarget } from './run.js'
+import { RUN_STEPS, previousRunTarget } from './run.js'
 
 const JOURNEY_ID = 'HRP-0001'
-
-// The whole opening run for a plants or wood notification: no time and no
-// place of landing, which are potato matters, and no status for potatoes,
-// whose commodity type puts it out of scope. The arrival date is in both.
-const PLANTS_RUN = [
-  'commodityType',
-  'commodityLines',
-  'countryOfOrigin',
-  'arrivalStatus',
-  'arrivalDate',
-  'placeOfDestination',
-  'consignor',
-  'consignmentNumber',
-  'contactAddress'
-]
-const POTATO_RUN = [
-  'commodityType',
-  'commodityLines',
-  'countryOfOrigin',
-  'arrivalDate',
-  'arrivalTime',
-  'proposedPlaceOfLanding',
-  'placeOfDestination',
-  'consignmentNumber',
-  'contactAddress'
-]
-
-const scopeOf = (...names) => ({
-  inScope: new Set(names),
-  answered: () => true
-})
 
 const answering = (...names) => ({
   inScope: new Set(names),
@@ -177,123 +151,6 @@ describe('#RUN_STEPS — the opening run', () => {
       )
     ).toBeNull()
   })
-})
-
-describe('#nextRunTarget', () => {
-  beforeAll(() => installHighRiskPlantsJourney())
-
-  it('Should send the entry question on to the commodities list', () => {
-    expect(
-      nextRunTarget(
-        commodityTypePage.id,
-        answering('commodityType', 'commodityLines'),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/commodities`)
-  })
-
-  it('Should send the commodities list on to origin', () => {
-    expect(
-      nextRunTarget(
-        commoditiesPage.id,
-        answering('commodityType', 'commodityLines', 'countryOfOrigin'),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/origin`)
-  })
-
-  it('Should send origin on to arrival status for a plants or wood notification', () => {
-    expect(
-      nextRunTarget(originPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/arrival-status`)
-  })
-
-  it('Should send origin past arrival status to the details for a potato notification', () => {
-    expect(
-      nextRunTarget(originPage.id, answering(...POTATO_RUN), JOURNEY_ID)
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/arrival-details`)
-  })
-
-  it('Should send arrival status on to the arrival details', () => {
-    expect(
-      nextRunTarget(arrivalStatusPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/arrival-details`)
-  })
-
-  it('Should send the arrival details on to the place of destination', () => {
-    expect(
-      nextRunTarget(arrivalDetailsPage.id, answering(...PLANTS_RUN), JOURNEY_ID)
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/destinations/select`)
-  })
-
-  it('Should end the run on check your answers after the contact step, even with tasks outstanding', () => {
-    expect(
-      nextRunTarget(
-        consignmentContactSelectPage.id,
-        answering(...PLANTS_RUN),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/notification-view`)
-  })
-
-  it('Should fall through to the overview when the last step is out of scope', () => {
-    expect(
-      nextRunTarget(
-        commoditiesPage.id,
-        answering('commodityType', 'commodityLines'),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}`)
-  })
-
-  it('Should fall through to the overview while the entry question is unanswered', () => {
-    expect(
-      nextRunTarget(
-        commodityTypePage.id,
-        answering('commodityLines'),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}`)
-  })
-
-  it('Should decline a step id the run does not hold', () => {
-    expect(
-      nextRunTarget('not-a-step', scopeOf('commodityType'), JOURNEY_ID)
-    ).toBeNull()
-  })
-})
-
-describe('consignor opening-run step', () => {
-  beforeAll(installHighRiskPlantsJourney)
-  it('Should follow destination for plants and wood and skip it for potatoes', () => {
-    expect(
-      nextRunTarget(
-        placeOfDestinationPage.id,
-        answering(...PLANTS_RUN),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/consignors/select`)
-    expect(
-      nextRunTarget(
-        placeOfDestinationPage.id,
-        answering(...POTATO_RUN),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/identification-numbers`)
-  })
-})
-
-it('Should send every commodity type from identification numbers to contact', () => {
-  installHighRiskPlantsJourney()
-  for (const names of [PLANTS_RUN, POTATO_RUN]) {
-    expect(
-      nextRunTarget(
-        identificationNumbersPage.id,
-        answering(...names),
-        JOURNEY_ID
-      )
-    ).toBe(`${SET_BASE}/notifications/${JOURNEY_ID}/consignment/contact/select`)
-  }
 })
 
 describe('#previousRunTarget — where Back goes during the opening run', () => {

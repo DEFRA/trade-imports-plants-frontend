@@ -13,6 +13,7 @@ import {
   expectThreeSaveControls,
   postAnIdNotInTheBook,
   saveAndContinue,
+  saveAndReturnToHub,
   saveOrigin,
   searchBox,
   startNotification
@@ -116,7 +117,7 @@ test.describe('consignor-select feature', () => {
     await expect(page).toHaveURL(PAGE_URL)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(

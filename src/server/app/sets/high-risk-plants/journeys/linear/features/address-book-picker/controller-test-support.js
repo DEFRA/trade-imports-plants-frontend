@@ -11,7 +11,7 @@ import {
   resetMocksAndConfigAfterTests,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
 import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
 import {
@@ -38,6 +38,11 @@ import {
   TECH_IMPORTS_ID,
   TECH_IMPORTS_NAME
 } from './test-support.js'
+
+const redirectAfterSave = ({ nextSlug }, savePayload, journeyId) =>
+  savePayload.exit === 'hub'
+    ? hubPath(journeyId)
+    : pagePath(journeyId, nextSlug)
 
 const SAVE_CONTROLS = [
   ['Save and continue', { action: 'save' }],
@@ -252,14 +257,14 @@ const describeNothingChosen = (picker) => {
     useStubbedHighRiskPlantsJourney()
 
     it.each(SAVE_CONTROLS)(
-      'Should move on to the overview from %s, committing nothing and raising no error',
+      'Should move on from %s, committing nothing and raising no error',
       async (_label, savePayload) => {
         const result = await savedWith(savePayload)
 
         expect(result.view).toBeUndefined()
         expect(result.after[fieldName]).toBeUndefined()
         expect(result.response).toEqual({
-          redirect: hubPath(result.journeyId)
+          redirect: redirectAfterSave(picker, savePayload, result.journeyId)
         })
       }
     )
@@ -273,7 +278,13 @@ const describeNothingChosen = (picker) => {
         { answers: { [fieldName]: edited } }
       )
 
-      expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+      expect(result.response).toEqual({
+        redirect: redirectAfterSave(
+          picker,
+          { action: 'save' },
+          result.journeyId
+        )
+      })
       expect(result.after[fieldName]).toEqual(edited)
     })
   })
@@ -424,14 +435,20 @@ const describeAcceptedAnswers = (picker) => {
   describe(`POST ${pickerName} — accepted answers`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it('Should commit a copy of the chosen record and move on to the overview', async () => {
+    it('Should commit a copy of the chosen record and move on to the next page that applies', async () => {
       const result = await savedWith({
         action: 'save',
         [fieldName]: TECH_IMPORTS_ID
       })
 
+      expect(result.response).toEqual({
+        redirect: redirectAfterSave(
+          picker,
+          { action: 'save' },
+          result.journeyId
+        )
+      })
       expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS_ID))
-      expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
     })
 
     it('Should accept the row carried in the hidden field when no radio is posted', async () => {
@@ -518,6 +535,7 @@ const describeSaveFailures = (picker) => {
  * @param {Function} picker.post - the picker's POST handler
  * @param {(answers?: object) => object} picker.seed - the answers a notification opens the picker with
  * @param {string} picker.fieldName - the answer name the page collects
+ * @param {string} picker.nextSlug - the slug of the page Save and continue opens
  * @param {string} picker.errorText - the error shown for an address not in the book
  * @param {object} picker.previousStep - the page Back opens
  * @param {string} picker.previousStep.slug - that page's slug

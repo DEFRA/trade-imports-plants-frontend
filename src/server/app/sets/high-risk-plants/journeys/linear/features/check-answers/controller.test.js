@@ -21,10 +21,7 @@ import {
   useStubbedHighRiskPlantsJourney,
   TECH_IMPORTS_COPY
 } from '../../test-support.js'
-import {
-  sectionEntry,
-  nextInTaskRow
-} from '../../../../../../flow/navigation.js'
+import { sectionEntry } from '../../../../../../flow/navigation.js'
 import { sectionGatePasses } from '../../../../../../flow/gates.js'
 import { AMEND, makeScope } from '../../../../../../engine/index.js'
 import { sections } from '../../flow/flow.js'
@@ -564,16 +561,13 @@ describe('Check your answers — the Back link', () => {
 })
 
 describe('review navigation', () => {
-  it('Should gate the review hub entry on complete tasks without changing Contact Continue', () => {
+  it('Should gate the review hub entry on complete tasks', () => {
     const section = sections.find(({ id }) => id === 'review')
     const complete = makeScope(COMPLETE_NOTIFICATION)
     expect(sectionGatePasses(section, makeScope({}))).toBe(false)
     expect(sectionGatePasses(section, complete)).toBe(true)
     expect(sectionEntry('review', complete, 'j-1')).toBe(
       `${SET_BASE}/notifications/j-1/notification-view`
-    )
-    expect(nextInTaskRow('consignment-contact-select', complete, 'j-1')).toBe(
-      `${SET_BASE}/notifications/j-1`
     )
     expect(
       STUB_BOOK.some(

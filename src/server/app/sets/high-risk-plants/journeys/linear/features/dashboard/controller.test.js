@@ -85,7 +85,7 @@ const postAmend = async (journeyId, overrides = {}) => {
   const request = journeyRequest(journeyId, overrides)
   const h = stubH(request)
   const response = await amendPost(request, h)
-  return { response, h }
+  return { response, h, request }
 }
 
 const referencesOf = (context) =>
@@ -449,28 +449,43 @@ describe('dashboard banners', () => {
 describe('dashboard amend POST', () => {
   useStubbedHighRiskPlantsJourney()
 
-  it('Should unfreeze a known submitted notification and land on its hub', async () => {
+  it('Should unfreeze a known submitted notification and land on its review page', async () => {
     const submitted = await startSubmitted()
 
     const { response } = await postAmend(submitted.journeyId)
 
-    expect(response.redirect).toBe(hubPath(submitted.journeyId))
+    expect(response.redirect).toBe(pagePath(submitted.journeyId, CYA_SLUG))
     expect(
       (await records.load({ journeyId: submitted.journeyId })).status
     ).toBe(AMEND)
   })
 
-  it('Should open an amend for a submitted notification the session does not know at its hub and leave it amending', async () => {
+  it('Should open an amend for a submitted notification the session does not know at its review page and leave it amending', async () => {
     const submitted = await startSubmitted()
 
     const { response } = await postAmend(submitted.journeyId, {
       knownJourneyIds: []
     })
 
-    expect(response.redirect).toBe(hubPath(submitted.journeyId))
+    expect(response.redirect).toBe(pagePath(submitted.journeyId, CYA_SLUG))
     expect(
       (await records.load({ journeyId: submitted.journeyId })).status
     ).toBe(AMEND)
+  })
+
+  it('Should log the started amendment once with the journey and its organisation', async () => {
+    const submitted = await startSubmitted()
+
+    const { request } = await postAmend(submitted.journeyId)
+
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: {
+        journeyId: submitted.journeyId,
+        organisationId: authenticatedActor.organisationId
+      },
+      message: 'Amendment started, sent to the review page'
+    })
   })
 
   it('Should send an amend for a deleted notification back to the dashboard carrying the amend-refused flag', async () => {

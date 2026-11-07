@@ -19,10 +19,7 @@ import {
   taskRows
 } from './sets/high-risk-plants/journeys/linear/flow/task-rows.js'
 import { sectionCaptionOf } from './sets/high-risk-plants/journeys/linear/flow/section-captions/index.js'
-import {
-  nextRunTarget,
-  previousRunTarget
-} from './sets/high-risk-plants/journeys/linear/flow/run.js'
+import { previousRunTarget } from './sets/high-risk-plants/journeys/linear/flow/run.js'
 import { entryGuardTarget } from './sets/high-risk-plants/journeys/linear/flow/entry-guard.js'
 import {
   LAYOUT,
@@ -69,7 +66,6 @@ export const highRiskPlants = {
           sections,
           taskRows,
           rowStatus,
-          nextRunTarget,
           previousRunTarget,
           flowOnlyKeys: FLOW_ONLY_KEYS,
           entryGuardTarget,

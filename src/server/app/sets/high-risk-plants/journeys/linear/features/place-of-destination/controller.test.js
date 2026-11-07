@@ -96,6 +96,7 @@ describeAddressBookPickerController({
   seed: potatoes,
   previousStep: { slug: 'arrival-details', seed: COMPLETE_NOTIFICATION },
   fieldName: 'placeOfDestination',
+  nextSlug: 'identification-numbers',
   errorText: copy.errors.placeOfDestination
 })
 

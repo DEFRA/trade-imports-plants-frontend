@@ -1,9 +1,10 @@
 import { dashboardPath, hubRoutePath } from '../../../../../../shared/paths.js'
 import { TEMPLATES } from '../../config.js'
-import { sections } from '../../flow/flow.js'
+import { journeySections } from '../../../../../../flow/journey-flow.js'
 import {
   rowEntry,
   rowGatePasses,
+  taskRowsOfSection,
   sectionEntry
 } from '../../../../../../flow/navigation.js'
 import { sectionGatePasses } from '../../../../../../flow/gates.js'
@@ -16,7 +17,7 @@ import {
   OPTIONAL
 } from '../../../../../../bridge/status/index.js'
 import { sectionStatus } from '../../../../../../flow/section-status.js'
-import { rowStatus, taskRowById } from '../../flow/task-rows.js'
+import { rowStatus } from '../../flow/task-rows.js'
 import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
@@ -26,21 +27,6 @@ import { copy as cy } from './copy/copy.cy.js'
 const view = `${TEMPLATES}/features/hub/template`
 
 const copy = copyFor({ en, cy })
-
-/**
- * The numbered task-list groups, in the order the hub renders them, each
- * naming the task rows it holds. A task row arrives with the section that owns
- * it, and a group with no rows is not rendered.
- */
-export const GROUPS = [
-  { id: 'about-the-consignment', rows: ['commodities', 'origin'] },
-  { id: 'arrival-and-destination', rows: ['arrival', 'destination'] },
-  {
-    id: 'consignment-parties',
-    rows: ['consignor', 'identificationNumbers', 'contact']
-  },
-  { id: 'check-and-submit', rows: ['review'] }
-]
 
 const REVIEW_ROW_ID = 'review'
 
@@ -65,7 +51,7 @@ const CANNOT_START_STATUS = {
 }
 
 const reviewSection = () =>
-  sections.find((section) => section.id === REVIEW_ROW_ID)
+  journeySections().find((section) => section.id === REVIEW_ROW_ID)
 
 const buildReviewItem = (
   { title, hint },
@@ -101,18 +87,8 @@ const openRowItem = (base, row, scope, status, journeyId) => ({
   status: statusTag(status)
 })
 
-const buildRowItem = (id, answers, scope, evaluation, journeyId) => {
-  const { title, hint } = copy.rows[id]
-  if (id === REVIEW_ROW_ID) {
-    return buildReviewItem(
-      { title, hint },
-      answers,
-      scope,
-      evaluation,
-      journeyId
-    )
-  }
-  const row = taskRowById(id)
+const buildTaskRowItem = (row, answers, scope, evaluation, journeyId) => {
+  const { title, hint } = copy.rows[row.id]
   const status = rowStatus(row, answers, scope.inScope, evaluation)
   if (isHiddenRow(row, status)) {
     return null
@@ -126,14 +102,39 @@ const buildRowItem = (id, answers, scope, evaluation, journeyId) => {
     : blockedRowItem(base)
 }
 
+const buildTaskGroups = (answers, scope, evaluation, journeyId) =>
+  journeySections()
+    .map((section) => ({ section, rows: taskRowsOfSection(section) }))
+    .filter(({ rows }) => rows.length > 0)
+    .map(({ section, rows }) => ({
+      id: section.id,
+      caption: copy.groups[section.id],
+      items: rows
+        .map((row) =>
+          buildTaskRowItem(row, answers, scope, evaluation, journeyId)
+        )
+        .filter(Boolean)
+    }))
+
+const buildReviewGroup = (answers, scope, evaluation, journeyId) => ({
+  id: 'check-and-submit',
+  caption: copy.groups['check-and-submit'],
+  items: [
+    buildReviewItem(
+      copy.rows[REVIEW_ROW_ID],
+      answers,
+      scope,
+      evaluation,
+      journeyId
+    )
+  ]
+})
+
 const buildGroups = (answers, scope, evaluation, journeyId) =>
-  GROUPS.map((group) => ({
-    id: group.id,
-    caption: copy.groups[group.id],
-    items: group.rows
-      .map((id) => buildRowItem(id, answers, scope, evaluation, journeyId))
-      .filter(Boolean)
-  })).filter((group) => group.items.length > 0)
+  [
+    ...buildTaskGroups(answers, scope, evaluation, journeyId),
+    buildReviewGroup(answers, scope, evaluation, journeyId)
+  ].filter((group) => group.items.length > 0)
 
 const handler = async (request, h) => {
   const { journeyId } = request.params

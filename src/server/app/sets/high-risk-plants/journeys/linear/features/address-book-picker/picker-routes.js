@@ -97,8 +97,7 @@ const commitSelection = async (
     () => renderSaveFailure(picker, request, h, current, chosen, payload)
   )
   return (
-    failure ??
-    h.redirect(await kit.nextTarget(request, picker.page, committed.scope))
+    failure ?? h.redirect(kit.nextTarget(request, picker.page, committed.scope))
   )
 }
 
@@ -129,7 +128,7 @@ const saveSelection = async (
     notInBookMessage: picker.copy.errors[picker.fieldName]
   })
   if (selection.outcome === SELECTION.nothingChosen) {
-    return h.redirect(await kit.nextTarget(request, picker.page, current.scope))
+    return h.redirect(kit.nextTarget(request, picker.page, current.scope))
   }
   if (selection.outcome === SELECTION.notInBook) {
     return renderNotInBook(picker, request, h, current, payload)
