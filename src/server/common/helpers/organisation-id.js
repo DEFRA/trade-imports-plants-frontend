@@ -15,8 +15,13 @@ const storage = new AsyncLocalStorage()
  * Returns undefined when the request is unauthenticated. Callers decide what
  * that means for them; none of them may substitute a guess.
  */
-export const organisationIdOf = (request) =>
-  request?.auth?.credentials?.organisationId
+export const organisationIdOf = (request) => {
+  const credentials = request?.auth?.credentials
+  if (!credentials) {
+    return undefined
+  }
+  return credentials.organisationId ?? credentials.currentRelationshipId
+}
 
 /** Bind the verified organisation for outbound backend calls in this request. */
 export const bindOrganisationId = (organisationId) => {

@@ -16,6 +16,14 @@ describe('organisationIdOf', () => {
     ).toBe('5900001')
   })
 
+  it('Should read currentRelationshipId when organisationId is absent', () => {
+    expect(
+      organisationIdOf({
+        auth: { credentials: { currentRelationshipId: '5900002' } }
+      })
+    ).toBe('5900002')
+  })
+
   it('Should return undefined when the request is unauthenticated', () => {
     expect(organisationIdOf({})).toBeUndefined()
     expect(organisationIdOf(null)).toBeUndefined()
