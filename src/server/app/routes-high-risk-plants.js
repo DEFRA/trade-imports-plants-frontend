@@ -42,8 +42,8 @@ import { configureSession } from './engine/persistence/session.js'
 import { session } from './services/persistence/session/index.js'
 import { registerJourneyCookie } from './engine/journey.js'
 import {
-  bindOrganisationId,
-  organisationIdOf
+  organisationIdOf,
+  withOrganisationId
 } from '../common/helpers/organisation-id.js'
 import {
   enterSetContext,
@@ -63,14 +63,6 @@ export const highRiskPlants = {
           'onPreAuth',
           (_request, h) => {
             enterSetContext(SET_ID)
-            return h.continue
-          },
-          { sandbox: 'plugin' }
-        )
-        server.ext(
-          'onPostAuth',
-          (request, h) => {
-            bindOrganisationId(organisationIdOf(request))
             return h.continue
           },
           { sandbox: 'plugin' }
@@ -97,13 +89,13 @@ export const highRiskPlants = {
         registerJourneyCookie(server)
         server.ext(
           'onPreHandler',
-          async (request, h) => {
-            bindOrganisationId(organisationIdOf(request))
-            const target = await withSetContext(SET_ID, () =>
-              journeyEntryGuardTarget(request, h)
-            )
-            return target ? h.redirect(target).takeover() : h.continue
-          },
+          async (request, h) =>
+            withOrganisationId(organisationIdOf(request), async () => {
+              const target = await withSetContext(SET_ID, () =>
+                journeyEntryGuardTarget(request, h)
+              )
+              return target ? h.redirect(target).takeover() : h.continue
+            }),
           { sandbox: 'plugin' }
         )
         server.route(
