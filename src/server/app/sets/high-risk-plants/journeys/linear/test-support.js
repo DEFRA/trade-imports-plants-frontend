@@ -65,7 +65,7 @@ export const COMPLETE_NOTIFICATION = Object.freeze({
   placeOfDestination: TECH_IMPORTS_COPY
 })
 
-/** A plants-for-planting notification with every question the opening run asks answered. */
+/** A plants-for-planting notification with every question in scope answered. */
 export const COMPLETE_PLANTS_NOTIFICATION = Object.freeze({
   commodityType: 'plants-for-planting',
   commodityLines: [
@@ -123,6 +123,11 @@ const backCases = ({ previousPage }) => [
     'Overview when opened from Overview',
     { query: trailQuery(TRAIL_START.overview) },
     (journeyId) => hubPath(journeyId)
+  ],
+  [
+    'the dashboard when opened from a dashboard card',
+    { query: trailQuery(TRAIL_START.dashboard) },
+    () => dashboardPath()
   ],
   [
     'the review when opened from a Change link',
@@ -216,7 +221,7 @@ export const itSendsCancelToTheDashboardUntilCommodityTypeAnswered = (get) =>
     linkOf: (result) => result.view.context.hubHref
   })
 
-export const PLANTS_RUN = [
+export const PLANTS_OR_WOOD_IN_SCOPE = [
   'commodityType',
   'commodityLines',
   'countryOfOrigin',
@@ -228,7 +233,7 @@ export const PLANTS_RUN = [
   'contactAddress'
 ]
 
-export const POTATO_RUN = [
+export const POTATO_IN_SCOPE = [
   'commodityType',
   'commodityLines',
   'countryOfOrigin',

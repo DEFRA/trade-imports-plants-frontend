@@ -12,7 +12,7 @@ import {
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
 import { configureRecords, records } from './persistence/records.js'
-import { configureSession, openingRunCookie } from './persistence/session.js'
+import { configureSession } from './persistence/session.js'
 import { BackendRequestError } from '../services/persistence/records/errors.js'
 import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
@@ -255,10 +255,9 @@ const requestLocation = (pathOf, journeyId, query) => {
 
 /** Seeds a journey, runs one handler against it and reports the answers before
  * and after. `amend` submits the journey and opens an amendment first;
- * `openingRun` (`RUN_ACTIVE` or `RUN_COMPLETE`) records that phase of the
- * opening run for the journey; `pathOf(journeyId)` gives the request the path
- * it was made to; `saveFailure` makes the records store refuse every save the
- * handler makes with that error. */
+ * `pathOf(journeyId)` gives the request the path it was made to;
+ * `saveFailure` makes the records store refuse every save the handler makes
+ * with that error. */
 export const driveHandler = async (
   handler,
   {
@@ -267,7 +266,6 @@ export const driveHandler = async (
     params = {},
     query = {},
     amend = false,
-    openingRun,
     saveFailure,
     pathOf
   } = {}
@@ -282,9 +280,6 @@ export const driveHandler = async (
     payload,
     params,
     query,
-    state: openingRun
-      ? { [openingRunCookie()]: { [journey.journeyId]: openingRun } }
-      : {},
     ...requestLocation(pathOf, journey.journeyId, query)
   })
   const h = stubH(request)

@@ -9,14 +9,10 @@ import {
 } from '../../../../../shared/paths.js'
 import { store } from '../../../../../engine/store.js'
 import { configureRecords } from '../../../../../engine/persistence/records.js'
-import {
-  configureSession,
-  openingRunCookie
-} from '../../../../../engine/persistence/session.js'
+import { configureSession } from '../../../../../engine/persistence/session.js'
 import { records as recordsStub } from '../../../../../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../../../../../services/persistence/session/stub.js'
 import { journeyRequest, stubH } from '../../../../../engine/test-support.js'
-import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../flow/run-state.js'
 import { installHighRiskPlantsJourney } from '../test-support.js'
 import { SESSION_COOKIE_NAMES } from '../config.js'
 import { useInsFrontendBaseUrl } from '../../../../../../common/test-helpers/use-ins-frontend-base-url.js'
@@ -31,18 +27,10 @@ import {
 
 const ENTRY_SLUG = commodityTypePage.slug
 const NOTIFICATION_VIEW_SLUG = 'notification-view'
-const OTHER_JOURNEY_ID = 'HRP-9999'
 
-const openingRunState = (record) => ({
-  [openingRunCookie()]: record
-})
-
-const guardOn = (journeyId, { path, record } = {}) =>
+const guardOn = (journeyId, { path } = {}) =>
   entryGuardTarget(
-    journeyRequest(journeyId, {
-      path: path ?? hubPath(journeyId),
-      ...(record ? { state: openingRunState(record) } : {})
-    }),
+    journeyRequest(journeyId, { path: path ?? hubPath(journeyId) }),
     stubH()
   )
 
@@ -58,8 +46,6 @@ describe('#guardedJourneyPath', () => {
     expect(guardedJourneyPath(dashboardPath())).toBe(false)
     expect(guardedJourneyPath(createPath())).toBe(false)
     expect(guardedJourneyPath('/some-other-service/commodity-type')).toBe(false)
-    // Another set's journey path: the guard matches on this set's full mount
-    // prefix, not on the `/notifications/` substring every set shares.
     expect(guardedJourneyPath('/another-set/notifications/j-1')).toBe(false)
   })
 
@@ -126,7 +112,7 @@ describe('#entryGuardTarget', () => {
     ).resolves.toBeNull()
   })
 
-  it('Should redirect a journey with neither a run record nor answers to the entry page', async () => {
+  it('Should redirect a journey with no answers to the entry page', async () => {
     const journeyId = await freshJourney()
 
     expect(await guardOn(journeyId)).toBe(pagePath(journeyId, ENTRY_SLUG))
@@ -141,17 +127,6 @@ describe('#entryGuardTarget', () => {
       })
     ).toBe(pagePath(journeyId, ENTRY_SLUG))
   })
-
-  it.each([RUN_ACTIVE, RUN_COMPLETE])(
-    'Should send a journey with no entered answer to the entry page while its opening run is %s',
-    async (phase) => {
-      const journeyId = await freshJourney()
-
-      expect(await guardOn(journeyId, { record: { [journeyId]: phase } })).toBe(
-        pagePath(journeyId, ENTRY_SLUG)
-      )
-    }
-  )
 
   it.each([
     ['Overview', (journeyId) => hubPath(journeyId)],
@@ -211,16 +186,6 @@ describe('#entryGuardTarget', () => {
     const journeyId = await freshJourney({ declaration: 'confirmed' })
 
     expect(await guardOn(journeyId)).toBe(pagePath(journeyId, ENTRY_SLUG))
-  })
-
-  it("Should not let another journey's run record vouch for a fresh journey", async () => {
-    const journeyId = await freshJourney()
-
-    expect(
-      await guardOn(journeyId, {
-        record: { [OTHER_JOURNEY_ID]: RUN_ACTIVE }
-      })
-    ).toBe(pagePath(journeyId, ENTRY_SLUG))
   })
 })
 

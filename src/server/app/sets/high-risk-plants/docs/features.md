@@ -84,8 +84,12 @@ the enforceable detail. Read them when a copy test fails.
 - A page reached from another page ends with the primary alone
   (`showReturnControls: false`), and the trader leaves the way they came in.
 - While a notification is being amended, a page ends exactly as it does on a
-  draft: the same buttons, in the same layout, going to the same places. The
-  status strip shows the Amend status and its Cancel amend link.
+  draft: Save and continue, then Save and return to overview, then Cancel and
+  return to overview wherever the draft page shows it. Save and continue goes on
+  through the journey to check your answers, Save and return to overview goes to
+  the Overview, and Cancel and return to overview goes to the Overview without
+  saving the page. The status strip shows the Amend status and its Cancel amend
+  link.
 
 ## Party edit
 
@@ -123,8 +127,11 @@ L1 passes `allRoutes` to Hapi.
 
 A feature folder is not automatically a flow section or a hub row.
 
-- `journeys/linear/flow/flow.js` defines navigation order.
-- `journeys/linear/flow/task-rows.js` groups pages into hub work items.
+- `journeys/linear/flow/flow.js` defines the journey's one page order, the order
+  Overview lists its tasks in, which Save and continue follows.
+- `journeys/linear/flow/task-rows.js` groups pages into hub work items and decides
+  when a notification is ready to submit. It decides nothing about where Save and
+  continue goes.
 - the hub feature's controller derives its groups from the flow sections, one per section that holds a task row's first page.
 
 See [Journey flow and gates](journey-flow-and-gates.md).
@@ -138,6 +145,11 @@ links, copy and validation. See
 
 ## Check answers and lateness
 
+- Check your answers' Back link goes to where the trader came from: the last
+  journey page, the Overview or the dashboard, on a draft, an amendment and a
+  submitted notification alike. Reached any other way it goes to the Overview on a
+  draft or an amendment and to the dashboard on a submitted notification. See
+  [Back on check your answers](journey-flow-and-gates.md#back-on-check-your-answers).
 - The error summary lists answer and copied-address errors first, then one
   entry per unfinished card in page order. A card already named by an answer
   or address error is not named again.

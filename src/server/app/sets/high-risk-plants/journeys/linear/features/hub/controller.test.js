@@ -1,12 +1,10 @@
 import { SET_BASE } from '../../../../set.js'
 import { describe, expect, it } from 'vitest'
 
-import { openingRunCookie } from '../../../../../../engine/persistence/session.js'
 import { store } from '../../../../../../engine/store.js'
 import { journeyRequest } from '../../../../../../engine/test-support.js'
 import { hubRoutePath } from '../../../../../../shared/paths.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
-import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
   TECH_IMPORTS_COPY,
@@ -61,14 +59,11 @@ const buildH = () => {
   }
 }
 
-const renderHub = async ({ openingRun, seed = {} } = {}) => {
+const renderHub = async ({ seed = {} } = {}) => {
   const journey = await store.create()
   await store.seedAnswers(journey.journeyId, seed)
   const h = buildH()
-  const state = openingRun
-    ? { [openingRunCookie()]: { [journey.journeyId]: openingRun } }
-    : {}
-  await hubGet(journeyRequest(journey.journeyId, { state }), h)
+  await hubGet(journeyRequest(journey.journeyId), h)
   return { journeyId: journey.journeyId, h }
 }
 
@@ -276,20 +271,6 @@ describe('#hubGet', () => {
     const { h } = await renderHub()
 
     expect(h.captured.view.context).not.toHaveProperty('commodityTotals')
-  })
-
-  it('Should complete an active opening run on GET', async () => {
-    const { journeyId, h } = await renderHub({ openingRun: RUN_ACTIVE })
-
-    expect(h.captured.cookies[openingRunCookie()]).toEqual({
-      [journeyId]: RUN_COMPLETE
-    })
-  })
-
-  it('Should leave a journey that never began an opening run untouched', async () => {
-    const { h } = await renderHub()
-
-    expect(h.captured.cookies).not.toHaveProperty(openingRunCookie())
   })
 })
 

@@ -8,8 +8,8 @@ import {
 import { journeySections } from '../../../../../flow/journey-flow.js'
 import {
   installHighRiskPlantsJourney,
-  PLANTS_RUN,
-  POTATO_RUN,
+  PLANTS_OR_WOOD_IN_SCOPE,
+  POTATO_IN_SCOPE,
   scopeOf
 } from '../test-support.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
@@ -37,27 +37,32 @@ describe('#nextStepPath — the next page that applies', () => {
   beforeAll(() => installHighRiskPlantsJourney())
 
   it.each([
-    ['plants or wood', PLANTS_RUN],
-    ['potatoes', POTATO_RUN]
-  ])('Should walk a %s notification through the journey in order', (_, run) => {
-    const scope = scopeOf(...run)
-    const visited = []
-    for (
-      let path = nextAfter(commodityTypePage, scope);
-      path;
-      path = nextAfter(pageAt(path), scope)
-    ) {
-      visited.push(path)
+    ['plants or wood', PLANTS_OR_WOOD_IN_SCOPE],
+    ['potatoes', POTATO_IN_SCOPE]
+  ])(
+    'Should walk a %s notification through the journey in order',
+    (_, questionsInScope) => {
+      const scope = scopeOf(...questionsInScope)
+      const visited = []
+      for (
+        let path = nextAfter(commodityTypePage, scope);
+        path;
+        path = nextAfter(pageAt(path), scope)
+      ) {
+        visited.push(path)
+      }
+      expect(visited).toEqual(
+        expectedOrder({ isPotatoes: questionsInScope === POTATO_IN_SCOPE }).map(
+          (page) => journeyPath(page)
+        )
+      )
     }
-    expect(visited).toEqual(
-      expectedOrder(run === POTATO_RUN).map((page) => journeyPath(page))
-    )
-  })
+  )
 
   it('Should go from the commodities list to origin, never to commodity details', () => {
-    expect(nextAfter(commoditiesPage, scopeOf(...PLANTS_RUN))).toBe(
-      journeyPath(originPage)
-    )
+    expect(
+      nextAfter(commoditiesPage, scopeOf(...PLANTS_OR_WOOD_IN_SCOPE))
+    ).toBe(journeyPath(originPage))
   })
 
   it('Should go from the commodities list to origin with only the commodity type saved', () => {
@@ -67,44 +72,51 @@ describe('#nextStepPath — the next page that applies', () => {
   })
 
   it('Should go from origin to arrival status for plants and wood and to the arrival details for potatoes', () => {
-    expect(nextAfter(originPage, scopeOf(...PLANTS_RUN))).toBe(
+    expect(nextAfter(originPage, scopeOf(...PLANTS_OR_WOOD_IN_SCOPE))).toBe(
       journeyPath(arrivalStatusPage)
     )
-    expect(nextAfter(originPage, scopeOf(...POTATO_RUN))).toBe(
+    expect(nextAfter(originPage, scopeOf(...POTATO_IN_SCOPE))).toBe(
       journeyPath(arrivalDetailsPage)
     )
   })
 
   it('Should go from the place of destination to the consignor for plants and wood and to identification numbers for potatoes', () => {
-    expect(nextAfter(placeOfDestinationPage, scopeOf(...PLANTS_RUN))).toBe(
-      journeyPath(consignorPage)
-    )
-    expect(nextAfter(placeOfDestinationPage, scopeOf(...POTATO_RUN))).toBe(
+    expect(
+      nextAfter(placeOfDestinationPage, scopeOf(...PLANTS_OR_WOOD_IN_SCOPE))
+    ).toBe(journeyPath(consignorPage))
+    expect(nextAfter(placeOfDestinationPage, scopeOf(...POTATO_IN_SCOPE))).toBe(
       journeyPath(identificationNumbersPage)
     )
   })
 
   it('Should go from the contact address to nothing, the review page being the fallback', () => {
     expect(
-      nextAfter(consignmentContactSelectPage, scopeOf(...PLANTS_RUN))
+      nextAfter(
+        consignmentContactSelectPage,
+        scopeOf(...PLANTS_OR_WOOD_IN_SCOPE)
+      )
     ).toBeUndefined()
   })
 
   it('Should go on from commodity details to origin, a sub-page leaving by the journey order', () => {
-    expect(nextAfter(commodityDetailsPage, scopeOf(...PLANTS_RUN))).toBe(
-      journeyPath(originPage)
-    )
+    expect(
+      nextAfter(commodityDetailsPage, scopeOf(...PLANTS_OR_WOOD_IN_SCOPE))
+    ).toBe(journeyPath(originPage))
   })
 
   it('Should refuse a page that belongs to no section', () => {
     expect(() =>
-      nextStepPath('not-a-real-page', scopeOf(...PLANTS_RUN), JOURNEY_ID)
+      nextStepPath(
+        'not-a-real-page',
+        scopeOf(...PLANTS_OR_WOOD_IN_SCOPE),
+        JOURNEY_ID
+      )
     ).toThrow(/not in the journey's sections/)
   })
 
-  it('Should leave the review page to its caller, there being nothing after it in a task row', () => {
+  it('Should answer no next page after the review page, the last in the journey order', () => {
     expect(
-      nextAfter(notificationViewPage, scopeOf(...PLANTS_RUN))
+      nextAfter(notificationViewPage, scopeOf(...PLANTS_OR_WOOD_IN_SCOPE))
     ).toBeUndefined()
   })
 })
@@ -135,7 +147,7 @@ function pageAt(path) {
     .find((page) => page.slug === slug)
 }
 
-function expectedOrder(isPotatoes) {
+function expectedOrder({ isPotatoes }) {
   return [
     commoditiesPage,
     originPage,

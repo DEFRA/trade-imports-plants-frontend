@@ -7,10 +7,7 @@ import {
   DELETED,
   records
 } from '../../../../../../engine/persistence/records.js'
-import {
-  knownJourneysCookie,
-  openingRunCookie
-} from '../../../../../../engine/persistence/session.js'
+import { knownJourneysCookie } from '../../../../../../engine/persistence/session.js'
 import {
   createPath,
   createRoutePath,
@@ -24,7 +21,6 @@ import {
   TRAIL_START,
   withTrail
 } from '../../../../../../shared/kit.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
 import {
   authenticatedActor,
   expectOneLogged,
@@ -532,7 +528,7 @@ describe.each([
     })
   })
 
-  it('Should start a notification, land on its first question carrying where it was started', async () => {
+  it('Should open the first page of the new notification carrying where it was started', async () => {
     const request = journeyRequest()
     const h = stubH(request)
 
@@ -542,9 +538,6 @@ describe.each([
     expect(response.redirect).toBe(
       withTrail(pagePath(newJourneyId, commodityTypePage.slug), [startPlace])
     )
-    expect(h.cookies[openingRunCookie()]).toEqual({
-      [newJourneyId]: RUN_ACTIVE
-    })
   })
 
   it('Should keep an earlier notification listed alongside the new one', async () => {

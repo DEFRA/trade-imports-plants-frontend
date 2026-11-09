@@ -1,7 +1,6 @@
 import {
   flowOnlyAnswersCookie,
-  knownJourneysCookie,
-  openingRunCookie
+  knownJourneysCookie
 } from '../../../engine/persistence/session.js'
 
 const isObject = (value) =>
@@ -17,11 +16,6 @@ const flowOnlyByJourneyFrom = (request) => {
   return isObject(stored) ? stored : {}
 }
 
-const openingRunByJourneyFrom = (request) => {
-  const stored = request?.state?.[openingRunCookie()]
-  return isObject(stored) ? stored : {}
-}
-
 export const session = {
   async knownJourneyIds(request) {
     return knownFrom(request)
@@ -33,18 +27,6 @@ export const session = {
       return
     }
     h.state(knownJourneysCookie(), [...known, journeyId])
-  },
-
-  async openingRun(request, journeyId) {
-    return openingRunByJourneyFrom(request)[journeyId]
-  },
-
-  async setOpeningRun(h, journeyId, phase, request) {
-    const byJourney = openingRunByJourneyFrom(request ?? h?.request)
-    h.state(openingRunCookie(), {
-      ...byJourney,
-      [journeyId]: phase
-    })
   },
 
   async flowOnlyAnswers(request, journeyId) {

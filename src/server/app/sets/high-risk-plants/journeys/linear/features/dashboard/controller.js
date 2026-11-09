@@ -16,7 +16,6 @@ import {
   startJourney
 } from '../../../../../../engine/journey.js'
 import * as kit from '../../../../../../shared/kit.js'
-import { beginOpeningRun } from '../../../../../../flow/run-state.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { commodityTypePage } from '../commodity-type/page.js'
 import { notificationViewPage } from '../check-answers/page.js'
@@ -127,7 +126,6 @@ const amendPost = async (request, h) => {
 
 const openNewNotification = async (request, h, { entry, startPlace }) => {
   const journey = await startJourney(request, h)
-  await beginOpeningRun(request, h, journey.journeyId)
   request.logger.info(
     {
       journeyId: journey.journeyId,

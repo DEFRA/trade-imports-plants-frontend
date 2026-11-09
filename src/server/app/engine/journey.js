@@ -2,7 +2,6 @@ import Boom from '@hapi/boom'
 import {
   flowOnlyAnswersCookie,
   knownJourneysCookie,
-  openingRunCookie,
   session,
   sessionConfiguredFor
 } from './persistence/session.js'
@@ -12,8 +11,7 @@ import { buildActor } from '../../common/helpers/actor-helpers.js'
 
 export {
   flowOnlyAnswersCookie,
-  knownJourneysCookie,
-  openingRunCookie
+  knownJourneysCookie
 } from './persistence/session.js'
 
 /**
@@ -43,11 +41,7 @@ export const registerJourneyCookie = (server) => {
     strictHeader: true
   })
 
-  for (const name of [
-    knownJourneysCookie(),
-    openingRunCookie(),
-    flowOnlyAnswersCookie()
-  ]) {
+  for (const name of [knownJourneysCookie(), flowOnlyAnswersCookie()]) {
     server.state(name, cookieOptions)
   }
 }

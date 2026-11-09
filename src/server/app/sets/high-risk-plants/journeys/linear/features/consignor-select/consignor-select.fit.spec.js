@@ -16,7 +16,8 @@ import {
   saveAndReturnToHub,
   saveOrigin,
   searchBox,
-  startNotification
+  startNotification,
+  startWoodNotificationAtPlaceOfDestination
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { BASE } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
@@ -147,6 +148,21 @@ test.describe('consignor-select feature', () => {
       'href',
       `${BASE}/notifications/${reference}`
     )
+  })
+
+  test('sends Back to the place of destination after Save and continue from it', async ({
+    page
+  }) => {
+    const placeOfDestination =
+      /\/notifications\/[^/]+\/destinations\/select(\?from=[^#]*)?$/
+    await startWoodNotificationAtPlaceOfDestination(page)
+    await saveTheAddressBookParty(page)
+    await expect(page).toHaveURL(PAGE_URL)
+
+    await expect(backLink(page)).toHaveAttribute('href', placeOfDestination)
+    await backLink(page).click()
+
+    await expect(page).toHaveURL(placeOfDestination)
   })
 })
 

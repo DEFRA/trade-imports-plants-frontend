@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test'
 
 import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
 import { signIn } from './sign-in.js'
+import { seedFields } from './seed-fields.js'
+import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
 import { PAGE_SIZE } from '../src/server/app/services/address-book/index.js'
 import { STUB_BOOK_SIZE } from '../src/server/app/services/address-book/stub/index.js'
@@ -649,6 +651,32 @@ export const startWoodNotificationWithOriginSaved = async (page) => {
   return reference
 }
 
+/**
+ * Starts a cut coniferous trees notification with France saved as the origin,
+ * then presses Save and continue through arrival status (not yet arrived) and
+ * arrival details (a date next week) to the place of destination.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string>} the notification's reference
+ */
+export const startWoodNotificationAtPlaceOfDestination = async (page) => {
+  const reference = await startWoodNotificationWithOriginSaved(page)
+  await page
+    .getByRole('radio', {
+      name: statusCopy.statusLabels['not-yet-arrived'],
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
+  await page
+    .getByLabel(arrivalCopy.dateLabels['not-yet-arrived'], { exact: true })
+    .fill(
+      seedFields({ fields: { arrivalDate: { daysFromToday: 7 } } }).arrivalDate
+    )
+  await saveAndContinue(page).click()
+  return reference
+}
+
 const pickAddressBookParty = async (page) => {
   await page
     .getByRole('radio', { name: `Select ${ADDRESS_BOOK_PARTY}`, exact: true })
@@ -680,7 +708,7 @@ export const startPotatoNotification = async (page) => {
 }
 
 /**
- * Walks a seed-potato notification through the opening run as far as the
+ * Walks a seed-potato notification by Save and continue as far as the
  * consignment contact page.
  *
  * @param {import('@playwright/test').Page} page

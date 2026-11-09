@@ -1,8 +1,6 @@
 import { SET_BASE } from '../../../../set.js'
 import { describe, expect, it } from 'vitest'
 import { store } from '../../../../../../engine/store.js'
-import { openingRunCookie } from '../../../../../../engine/persistence/session.js'
-import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import {
   driveHandler,
@@ -13,17 +11,14 @@ import {
   trailQuery,
   stubH
 } from '../../../../../../engine/test-support.js'
-import { hubPath, pagePath } from '../../../../../../shared/paths.js'
-import {
-  CYA_SLUG,
-  TRAIL_START,
-  withTrail
-} from '../../../../../../shared/kit.js'
+import { CYA_SLUG, TRAIL_START } from '../../../../../../shared/kit.js'
 import * as cancelAmend from '../cancel-amend/controller.js'
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import * as ports from '../../../../../../services/ports/index.js'
+import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import {
   COMPLETE_NOTIFICATION,
+  itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney,
   TECH_IMPORTS_COPY
 } from '../../test-support.js'
@@ -135,7 +130,7 @@ describe('Check your answers', () => {
 
   it('Should refuse Continue for an invalid destination copy, naming it once', async () => {
     const result = await driveHandler(post, { seed: invalidDestination })
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.response.redirect).toBeUndefined()
     expect(result.view.context.errorSummary.errorList).toEqual(
       invalidDestinationErrors(result)
@@ -209,7 +204,7 @@ describe('Check your answers', () => {
       )
       expect(result.after).toEqual(invalidOrigin)
       if (handler === post) {
-        expect(result.response.statusCode).toBe(400)
+        expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
       }
     }
   })
@@ -231,7 +226,7 @@ describe('Check your answers', () => {
     const result = await driveHandler(post, {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
     })
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.response.redirect).toBeUndefined()
     expect(result.view.context.errorSummary.disableAutoFocus).toBe(false)
     expect(
@@ -302,7 +297,7 @@ describe('Check your answers — reference-list answers', () => {
   })
 })
 
-describe('Check your answers — outstanding tasks and the opening run', () => {
+describe('Check your answers — outstanding tasks', () => {
   it('Should name every unfinished card on an incomplete notification, in page order, linking to the card on this page', async () => {
     const result = await driveHandler(get, {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' }
@@ -383,27 +378,6 @@ describe('Check your answers — outstanding tasks and the opening run', () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(result.view.context.errorSummary).toBeNull()
     expect(cardsOf(result).every(({ error }) => !error)).toBe(true)
-  })
-
-  it('Should complete the opening run when check your answers is shown', async () => {
-    const journey = await store.create()
-    await store.seedAnswers(journey.journeyId, COMPLETE_NOTIFICATION)
-    const cookies = {}
-    const h = {
-      ...stubH(),
-      state: (name, value) => {
-        cookies[name] = value
-      }
-    }
-    await get(
-      journeyRequest(journey.journeyId, {
-        state: { [openingRunCookie()]: { [journey.journeyId]: RUN_ACTIVE } }
-      }),
-      h
-    )
-    expect(cookies[openingRunCookie()]).toEqual({
-      [journey.journeyId]: RUN_COMPLETE
-    })
   })
 })
 
@@ -498,7 +472,7 @@ describe('Check your answers lateness', () => {
       seed: { commodityType: 'potatoes', countryOfOrigin: 'FR' },
       amend: true
     })
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.response.redirect).toBeUndefined()
     expect(result.view.context.errorSummary.disableAutoFocus).toBe(false)
     expect(result.view.context.errorSummary.errorList).toEqual(
@@ -556,14 +530,11 @@ describe('Check your answers — the Back link', () => {
 
     expect(h.captured.view.context.backLink).toBe(SET_BASE)
   })
+})
 
-  it('Should send Back from the review of an amendment to the overview', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_NOTIFICATION,
-      amend: true
-    })
-    expectBackLinkIsPath(result, hubPath(result.journeyId))
-  })
+itSendsBackToWhereTheTraderCameFrom(get, {
+  seed: COMPLETE_NOTIFICATION,
+  previousPage: 'consignment/contact/select'
 })
 
 const cardActionsText = (view, text) =>
@@ -594,44 +565,6 @@ describe.each([
       return { journeyId: result.journeyId, view: result.view }
     }
 
-    it('Should go Back to the last journey page when the trader pressed Save and continue on it', async () => {
-      const { journeyId, view } = await backFor(
-        trailQuery(TRAIL_START.overview, 'consignment/contact/select')
-      )
-
-      expect(view.context.backLink).toBe(
-        withTrail(pagePath(journeyId, 'consignment/contact/select'), [
-          TRAIL_START.overview
-        ])
-      )
-    })
-
-    it('Should go Back to Overview when the review was opened from Overview', async () => {
-      const { journeyId, view } = await backFor(
-        trailQuery(TRAIL_START.overview)
-      )
-
-      expect(view.context.backLink).toBe(hubPath(journeyId))
-    })
-
-    it('Should go Back to the dashboard when the review was opened from a dashboard card', async () => {
-      const { view } = await backFor(trailQuery(TRAIL_START.dashboard))
-
-      expect(view.context.backLink).toBe(SET_BASE)
-    })
-
-    it('Should go Back to Overview when nothing says where the trader came from', async () => {
-      const { journeyId, view } = await backFor({})
-
-      expect(view.context.backLink).toBe(hubPath(journeyId))
-    })
-
-    it('Should go Back to Overview for a trail naming a place the journey does not have', async () => {
-      const { journeyId, view } = await backFor(trailQuery('not-a-place'))
-
-      expect(view.context.backLink).toBe(hubPath(journeyId))
-    })
-
     it('Should push the review onto its own trail on every Change link', async () => {
       const { view } = await backFor(trailQuery(TRAIL_START.dashboard))
       const hrefs = cardActionsText(view, copy.change)
@@ -661,12 +594,12 @@ describe('Check your answers — a refused Continue', () => {
       query: trailQuery(TRAIL_START.dashboard)
     })
 
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expectBackLinkIsPath(result, SET_BASE)
   })
 })
 
-describe('review navigation', () => {
+describe('Check your answers — the review section gate', () => {
   it('Should gate the review hub entry on complete tasks', () => {
     const section = sections.find(({ id }) => id === 'review')
     const complete = makeScope(COMPLETE_NOTIFICATION)
@@ -675,11 +608,6 @@ describe('review navigation', () => {
     expect(sectionEntry('review', complete, 'j-1')).toBe(
       `${SET_BASE}/notifications/j-1/notification-view`
     )
-    expect(
-      STUB_BOOK.some(
-        ({ id }) => id === COMPLETE_NOTIFICATION.contactAddress.pickedFromId
-      )
-    ).toBe(true)
   })
 })
 
@@ -752,7 +680,7 @@ describe('Check your answers — copied addresses', () => {
       ])
       expect(result.after).toEqual(seed)
       if (handler === post) {
-        expect(result.response.statusCode).toBe(400)
+        expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
       }
     }
   })
@@ -769,7 +697,7 @@ describe('Check your answers — copied addresses', () => {
       }
     }
     const result = await driveHandler(post, { seed })
-    expect(result.response.statusCode).toBe(400)
+    expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
     expect(result.view.context.errorSummary.errorList).toContainEqual({
       text: copy.errors.parties.placeOfDestination,
       href: `${SET_BASE}/notifications/${result.journeyId}/destinations/edit?return=notification-view`

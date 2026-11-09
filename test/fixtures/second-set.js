@@ -42,7 +42,6 @@ export const FEATURE_NAME = 'sundry-details'
 
 export const SESSION_COOKIE_NAMES = Object.freeze({
   knownJourneys: 'sundryGoodsKnownJourneys',
-  openingRun: 'sundryGoodsOpeningRun',
   flowOnlyAnswers: 'sundryGoodsFlowOnlyAnswers'
 })
 
@@ -65,10 +64,10 @@ const sections = [{ id: 'details', pages: [detailsPage] }]
 
 export const GUARDED_JOURNEY_ID = 'SUN-GUARDED'
 
-const guardReadingActiveSetBase = async (request) => {
-  const base = setBase()
+const guardReadingActiveSetBase = (request) => {
+  const setBasePath = setBase()
   return request.params?.journeyId === GUARDED_JOURNEY_ID
-    ? `${base}/notifications/${GUARDED_JOURNEY_ID}`
+    ? `${setBasePath}/notifications/${GUARDED_JOURNEY_ID}`
     : null
 }
 

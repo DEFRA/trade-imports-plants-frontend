@@ -40,7 +40,7 @@ const contactRow = (page) =>
     })
   })
 
-const startInTheRunAtContact = async (page) => {
+const startWoodNotificationAtContact = async (page) => {
   const reference = await startWoodNotificationWithOriginSaved(page)
   await page.goto(contactPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
@@ -48,7 +48,7 @@ const startInTheRunAtContact = async (page) => {
 }
 
 const startAtContact = async (page) => {
-  const reference = await startInTheRunAtContact(page)
+  const reference = await startWoodNotificationAtContact(page)
   await page.goto(`${BASE}/notifications/${reference}`)
   await expect(page).toHaveURL(HUB_URL)
   await page.goto(contactPathOf(reference))
@@ -191,7 +191,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
   test('at the last question, Save and continue goes to check your answers even though the notification is incomplete', async ({
     page
   }) => {
-    await startInTheRunAtContact(page)
+    await startWoodNotificationAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()

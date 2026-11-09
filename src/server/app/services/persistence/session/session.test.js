@@ -3,8 +3,7 @@ import { session } from './stub.js'
 import {
   configureSession,
   flowOnlyAnswersCookie,
-  knownJourneysCookie,
-  openingRunCookie
+  knownJourneysCookie
 } from '../../../engine/persistence/session.js'
 import { recordingH } from '../../../engine/test-support.js'
 import {
@@ -30,7 +29,6 @@ const requestKnowing = (...journeyIds) => ({
 describe('per-set cookie names', () => {
   it('Should answer high-risk-plants’ own names, not the shared defaults', () => {
     expect(knownJourneysCookie()).toBe('highRiskPlantsKnownJourneys')
-    expect(openingRunCookie()).toBe('highRiskPlantsOpeningRun')
     expect(flowOnlyAnswersCookie()).toBe('highRiskPlantsFlowOnlyAnswers')
   })
 })
@@ -56,43 +54,6 @@ describe('#session.knownJourneyIds', () => {
     expect(
       await session.knownJourneyIds(requestKnowing('journey-1', 'journey-2'))
     ).toEqual(['journey-1', 'journey-2'])
-  })
-})
-
-describe('#session.openingRun', () => {
-  it('Should round-trip phases without leaking them between journeys', async () => {
-    const h = recordingH()
-    const request = { state: {} }
-    await session.setOpeningRun(h, 'journey-1', 'active', request)
-    const stored = h.cookies[openingRunCookie()]
-    expect(stored).toEqual({ 'journey-1': 'active' })
-    expect(
-      await session.openingRun(
-        { state: { [openingRunCookie()]: stored } },
-        'journey-1'
-      )
-    ).toBe('active')
-    expect(
-      await session.openingRun(
-        { state: { [openingRunCookie()]: stored } },
-        'journey-2'
-      )
-    ).toBeUndefined()
-  })
-
-  it('Should report no opening run for a fresh session', async () => {
-    expect(await session.openingRun({ state: {} }, 'journey-1')).toBeUndefined()
-  })
-
-  it('Should preserve another journey phase while updating the current one', async () => {
-    const h = recordingH()
-    await session.setOpeningRun(h, 'journey-2', 'complete', {
-      state: { [openingRunCookie()]: { 'journey-1': 'active' } }
-    })
-    expect(h.cookies[openingRunCookie()]).toEqual({
-      'journey-1': 'active',
-      'journey-2': 'complete'
-    })
   })
 })
 
@@ -150,7 +111,6 @@ describe('per-set cookie names with two sets mounted', () => {
   const OTHER_SET = 'session-names-probe'
   const OTHER_NAMES = Object.freeze({
     knownJourneys: 'probeKnownJourneys',
-    openingRun: 'probeOpeningRun',
     flowOnlyAnswers: 'probeFlowOnlyAnswers'
   })
 
@@ -163,12 +123,6 @@ describe('per-set cookie names with two sets mounted', () => {
     )
     expect(withSetContext(OTHER_SET, knownJourneysCookie)).toBe(
       OTHER_NAMES.knownJourneys
-    )
-    expect(withSetContext(SET_ID, openingRunCookie)).toBe(
-      SESSION_COOKIE_NAMES.openingRun
-    )
-    expect(withSetContext(OTHER_SET, openingRunCookie)).toBe(
-      OTHER_NAMES.openingRun
     )
     expect(withSetContext(SET_ID, flowOnlyAnswersCookie)).toBe(
       SESSION_COOKIE_NAMES.flowOnlyAnswers

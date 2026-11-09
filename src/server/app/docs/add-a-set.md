@@ -162,7 +162,6 @@ the kebab-case `<set-id>` from step 1, so `high-risk-plants` gives
 ```js
 export const SESSION_COOKIE_NAMES = {
   knownJourneys: 'highRiskPlantsKnownJourneys',
-  openingRun: 'highRiskPlantsOpeningRun',
   flowOnlyAnswers: 'highRiskPlantsFlowOnlyAnswers'
 }
 ```
@@ -185,10 +184,10 @@ session seam, so the cookies Hapi registers and the ones the set actually uses
 cannot drift apart. Call it inside the set context, after `registerSetMount`
 and `configureSession` — it throws if the session seam is not configured yet.
 
-The gateway ends its registration with the completeness check, which stops the
-server when a seam is unconfigured, because a seam's fallback otherwise answers
-at request time and some fallbacks answer silently. A second-set test fixture
-ends its registration the same way, so a seam it stops configuring fails the
+The gateway ends its registration with `assertSetConfigured`, which stops the
+server when a seam is unconfigured and, through `assertJourneyCookiesRegistered`,
+when a journey cookie name was not registered. A second-set test fixture ends
+its registration the same way, so a seam it stops configuring fails the
 co-residency suite.
 
 ## 5. Mount it

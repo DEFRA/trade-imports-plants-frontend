@@ -2,7 +2,6 @@ import { currentSetId, setKeyed } from '../../shared/set-context.js'
 
 const DEFAULT_COOKIE_NAMES = Object.freeze({
   knownJourneys: 'knownJourneys',
-  openingRun: 'openingRun',
   flowOnlyAnswers: 'flowOnlyAnswers'
 })
 
@@ -14,8 +13,6 @@ const UNCONFIGURED = Object.freeze({
   impl: Object.freeze({
     knownJourneyIds: unconfigured,
     addKnownJourney: unconfigured,
-    openingRun: unconfigured,
-    setOpeningRun: unconfigured,
     flowOnlyAnswers: unconfigured,
     setFlowOnlyAnswers: unconfigured
   }),
@@ -24,8 +21,6 @@ const UNCONFIGURED = Object.freeze({
 
 const store = setKeyed('session', { configuredBy: 'configureSession' })
 
-// Reading before configuration is the un-booted case, which must report itself
-// through `unconfigured` rather than through setKeyed's "no such set" error.
 const current = () =>
   store.has(currentSetId()) ? store.current() : UNCONFIGURED
 
@@ -41,18 +36,12 @@ export const configureSession = (setId, impl, cookieNames) => {
   })
 }
 
-// Per-set accessors rather than one module constant: two sets in one process
-// need two sets of cookie names, and a shared object would let the second
-// registration rename the first set's cookies out from under it.
 export const knownJourneysCookie = () => current().cookieNames.knownJourneys
-export const openingRunCookie = () => current().cookieNames.openingRun
 export const flowOnlyAnswersCookie = () => current().cookieNames.flowOnlyAnswers
 
 export const session = {
   knownJourneyIds: async (...args) => current().impl.knownJourneyIds(...args),
   addKnownJourney: async (...args) => current().impl.addKnownJourney(...args),
-  openingRun: async (...args) => current().impl.openingRun(...args),
-  setOpeningRun: async (...args) => current().impl.setOpeningRun(...args),
   flowOnlyAnswers: async (...args) => current().impl.flowOnlyAnswers(...args),
   setFlowOnlyAnswers: async (...args) =>
     current().impl.setFlowOnlyAnswers(...args)

@@ -271,7 +271,7 @@ describe('POST commodity-type — an accepted answer', () => {
     expect(result.after).toEqual({ commodityType: WOOD_AND_CUT_TREES })
   })
 
-  it('Should redirect to the commodities list, the run’s next step', async () => {
+  it('Should redirect to the commodities list', async () => {
     const result = await driveHandler(post, {
       payload: { commodityType: POTATOES }
     })

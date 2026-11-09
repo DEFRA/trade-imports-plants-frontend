@@ -20,7 +20,6 @@ import {
   withCardErrors
 } from './view-model/incomplete-cards.js'
 import { reviewErrors } from './refusal.js'
-import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
 import { toDisplayParty } from '../../parties/picked-party.js'
 import { partyEditHref } from '../party-edit/edit-href.js'
@@ -80,11 +79,11 @@ const summaryErrors = (current, reviewed) => ({
   ...cardErrorsOf(current, reviewed)
 })
 
-const hidesAnswerErrors = (status, continueRefused) =>
+const hidesAnswerErrors = (status, { continueRefused }) =>
   status === state.SUBMITTED || (status === state.AMEND && !continueRefused)
 
-const shownReviewErrors = (current, continueRefused) =>
-  hidesAnswerErrors(current.journey.status, continueRefused)
+const shownReviewErrors = (current, { continueRefused }) =>
+  hidesAnswerErrors(current.journey.status, { continueRefused })
     ? null
     : reviewErrors(current)
 
@@ -106,7 +105,7 @@ const render = async (
   const changeLinkTrail = kit.trailPlus(request, kit.CYA_SLUG)
   const reviewPageTrail = kit.requestTrail(request)
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
-  const reviewed = await shownReviewErrors(current, continueRefused)
+  const reviewed = await shownReviewErrors(current, { continueRefused })
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -144,10 +143,8 @@ const render = async (
   })
 }
 
-const get = async (request, h) => {
-  await completeOpeningRun(request, h, request.params.journeyId)
-  return render(request, h, await state.get(request, h))
-}
+const get = async (request, h) =>
+  render(request, h, await state.get(request, h))
 
 const post = async (request, h) => {
   const current = await state.get(request, h)

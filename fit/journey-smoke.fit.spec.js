@@ -131,7 +131,7 @@ for (const [name, shape] of Object.entries(happyPaths)) {
   })
 }
 
-const OPENING_RUN_BACK_TARGETS = {
+const BACK_TARGETS_BY_PAGE_ON_FORWARD_WALK = {
   warePotatoes: {
     commodities: 'commodity-type',
     'arrival-details': 'origin',
@@ -146,7 +146,9 @@ const OPENING_RUN_BACK_TARGETS = {
   }
 }
 
-for (const [name, backTargets] of Object.entries(OPENING_RUN_BACK_TARGETS)) {
+for (const [name, backTargets] of Object.entries(
+  BACK_TARGETS_BY_PAGE_ON_FORWARD_WALK
+)) {
   test(`${name}: Back on the commodities list, arrival details, identification numbers and contact opens the step Save and continue came from`, async ({
     page
   }) => {
@@ -171,7 +173,7 @@ for (const [name, backTargets] of Object.entries(OPENING_RUN_BACK_TARGETS)) {
   })
 }
 
-test('following Back and choosing Save and continue carries on to the next step, not the overview', async ({
+test('following Back and choosing Save and continue carries on to the next step', async ({
   page
 }) => {
   await signIn(page)

@@ -18,7 +18,6 @@ import {
 } from '../../../../../../bridge/status/index.js'
 import { sectionStatus } from '../../../../../../flow/section-status.js'
 import { rowStatus } from '../../flow/task-rows.js'
-import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { copy as en } from './copy/copy.en.js'
@@ -140,7 +139,6 @@ const buildGroups = (answers, scope, evaluation, journeyId) =>
 
 const handler = async (request, h) => {
   const { journeyId } = request.params
-  await completeOpeningRun(request, h, journeyId)
   const { journey, answers, scope, evaluation } = await state.get(request, h)
 
   return h.view(view, {
