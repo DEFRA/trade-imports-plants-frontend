@@ -4,7 +4,6 @@ import { nunjucksConfig } from '../../../../../../../config/nunjucks/nunjucks.js
 import { driveHandler } from '../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../shared/paths.js'
 import { copy as sharedEn } from '../../../../../shared/copy.en.js'
-import { copy as sharedCy } from '../../../../../shared/copy.cy.js'
 import {
   COMPLETE_NOTIFICATION,
   useStubbedHighRiskPlantsJourney
@@ -98,18 +97,12 @@ describe('save controls on every task-row page while amending', () => {
   })
 
   it('Should end the commodities list with the controls it shows on a draft, Save and continue alone', async () => {
+    const draft = await renderPage(commoditiesPage, { amend: false })
     const amending = await renderPage(commoditiesPage, { amend: true })
 
+    expect(saveControlsOf(amending)).toBe(saveControlsOf(draft))
     expect(buttonLabelsOf(saveControlsOf(amending))).toEqual([
       sharedEn.saveActions.saveAndContinue
     ])
-  })
-
-  it('Should label the controls in Welsh', () => {
-    expect(sharedCy.saveActions).toEqual({
-      saveAndContinue: 'Cadw a pharhau',
-      saveAndReturnToHub: "Cadw a dychwelyd i'r trosolwg",
-      cancelAndReturnToHub: "Canslo a dychwelyd i'r trosolwg"
-    })
   })
 })

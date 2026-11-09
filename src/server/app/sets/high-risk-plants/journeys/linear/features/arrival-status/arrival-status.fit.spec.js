@@ -12,7 +12,12 @@ import {
   saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  setUrl,
+  notificationPageWithTrail
+} from '../../../../../../../../../fit/set-base.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -27,9 +32,21 @@ import {
 } from './statuses.js'
 import { copy } from './copy/copy.en.js'
 
+const ORIGIN = 'origin'
+const ARRIVAL_STATUS = 'arrival-status'
+const ARRIVAL_DETAILS = 'arrival-details'
 const HUB_URL = setUrl('/notifications/[^/]+$')
-const PAGE_URL = setUrl('/notifications/[^/]+/arrival-status$')
-const ARRIVAL_DETAILS_URL = setUrl('/notifications/[^/]+/arrival-details$')
+const PAGE_URL = notificationPageWithTrail(ARRIVAL_STATUS, [ORIGIN])
+const OVERVIEW_PAGE_URL = notificationPageWithTrail(ARRIVAL_STATUS, [
+  TRAIL_START.overview
+])
+const ARRIVAL_DETAILS_URL = notificationPageWithTrail(ARRIVAL_DETAILS, [
+  ORIGIN,
+  ARRIVAL_STATUS
+])
+const POTATO_ARRIVAL_DETAILS_URL = notificationPageWithTrail(ARRIVAL_DETAILS, [
+  ORIGIN
+])
 
 const STATUS_INPUT_SELECTOR = 'input[name="arrivalStatus"]'
 
@@ -160,7 +177,7 @@ test.describe('arrival-status feature', () => {
 
     await page.getByRole('link', { name: hubCopy.rows.arrival.title }).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
   test('Save and return to overview saves the choice and reaches the overview', async ({
@@ -298,7 +315,7 @@ test.describe('arrival-status — the question potatoes are never asked', () => 
     await addCommodityLine(page, WARE_POTATOES, WARE_POTATO_LINE_FIELDS)
     await saveOrigin(page, reference, SPAIN)
 
-    await expect(page).toHaveURL(ARRIVAL_DETAILS_URL)
+    await expect(page).toHaveURL(POTATO_ARRIVAL_DETAILS_URL)
   })
 
   test('opens the arrival row on the overview at the details page for a potato notification', async ({

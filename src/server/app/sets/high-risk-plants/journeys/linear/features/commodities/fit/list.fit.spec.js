@@ -1,6 +1,8 @@
 import {
   BASE,
   journeyIdFromPage,
+  COMMODITY_REMOVED_URL,
+  pageUrlOnWalk,
   setUrl
 } from '../../../../../../../../../../fit/set-base.js'
 import {
@@ -17,13 +19,14 @@ import { copy as captionsCopy } from '../../../flow/section-captions/copy/copy.e
 import { copy as typeCopy } from '../../commodity-type/copy/copy.en.js'
 import { copy } from '../copy/copy.en.js'
 
-const DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details$')
-const DETAILS_EDIT_URL = setUrl(
-  '/notifications/[^/]+/commodities/details\\?index=\\d+$'
+const WALK = ['commodity-type']
+const DETAILS_URL_WITHOUT_TRAIL = setUrl(
+  '/notifications/[^/]+/commodities/details'
 )
-const LIST_URL = setUrl('/notifications/[^/]+/commodities$')
-const REMOVED_URL = setUrl('/notifications/[^/]+/commodities\\?removed=\\d+$')
-const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
+const DETAILS_URL = pageUrlOnWalk('commodities/details', WALK)
+const DETAILS_EDIT_URL = pageUrlOnWalk('commodities/details\\?index=\\d+', WALK)
+const LIST_URL = pageUrlOnWalk('commodities', WALK)
+const ORIGIN_URL = pageUrlOnWalk('origin', [...WALK, 'commodities'])
 
 const POTATOES = 'potatoes'
 const WOOD = 'wood-and-cut-trees'
@@ -110,7 +113,7 @@ test.describe('commodities list', () => {
 
     await page.goto(listUrlOf(page))
 
-    await expect(page).toHaveURL(DETAILS_URL)
+    await expect(page).toHaveURL(DETAILS_URL_WITHOUT_TRAIL)
   })
 
   test('renders the caption, the heading and every saved line', async ({
@@ -227,7 +230,7 @@ test.describe('commodities list — after a change of commodity type', () => {
     await startWithOneLine(page)
     await changeTypeTo(page, WOOD)
 
-    await expect(page).toHaveURL(REMOVED_URL)
+    await expect(page).toHaveURL(COMMODITY_REMOVED_URL)
     await expect(
       page.getByRole('region', { name: copy.list.removed.title })
     ).toContainText(copy.list.removed.body(1, typeCopy.typeLabels[WOOD]))
@@ -245,7 +248,7 @@ test.describe('commodities list — after a change of commodity type', () => {
 
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(REMOVED_URL)
+    await expect(page).toHaveURL(COMMODITY_REMOVED_URL)
     const summaryLink = page
       .getByRole('alert')
       .getByRole('link', { name: copy.list.errors.commodityLines })
@@ -260,7 +263,7 @@ test.describe('commodities list — after a change of commodity type', () => {
   }) => {
     await startWithOneLine(page)
     await changeTypeTo(page, WOOD)
-    await expect(page).toHaveURL(REMOVED_URL)
+    await expect(page).toHaveURL(COMMODITY_REMOVED_URL)
 
     await expectNoSeriousOrCriticalViolations(
       page,

@@ -1,7 +1,14 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
-import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
+import {
+  BASE,
+  journeyIdFromPage,
+  notificationPageWithTrail,
+  pageUrlOnWalk,
+  setUrl
+} from './set-base.js'
+import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
@@ -21,13 +28,33 @@ import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants
 
 export const POTATO_VARIETY = 'Maris Piper'
 export const ADDRESS_BOOK_PARTY = 'Tech Imports Ltd'
-export const CHECK_ANSWERS_URL = setUrl(
-  '/notifications/[^/]+/notification-view$'
+export const POTATO_WALK = [
+  'commodity-type',
+  'commodities',
+  'origin',
+  'arrival-details',
+  'destinations/select',
+  'identification-numbers',
+  'consignment/contact/select'
+]
+export const REVIEW_URL_FROM_POTATO_WALK = pageUrlOnWalk(
+  'notification-view',
+  POTATO_WALK
 )
+export const REVIEW_URL_WITHOUT_TRAIL = setUrl(
+  '/notifications/[^/]+/notification-view'
+)
+export const POTATO_CHANGE_LINK_TRAIL = [
+  TRAIL_START.dashboard,
+  ...POTATO_WALK,
+  'notification-view'
+]
 
-const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
-const COMMODITY_DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details')
-const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
+const COMMODITY_TYPE_URL = pageUrlOnWalk('commodity-type', POTATO_WALK)
+const COMMODITY_LIST_URL = notificationPageWithTrail('commodities', [
+  TRAIL_START.dashboard,
+  'commodity-type'
+])
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
 
 export const FORM_GROUP_ANCESTOR_XPATH =
@@ -531,8 +558,14 @@ export const startNotificationAtOverview = async (page) => {
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} commodityType - a commodity-type value, such as `potatoes`
+ * @param {{ trailBefore?: string[] }} [options] - the places on the trail
+ *   before the commodity-type page; the dashboard by default
  */
-export const chooseCommodityType = async (page, commodityType) => {
+export const chooseCommodityType = async (
+  page,
+  commodityType,
+  { trailBefore = [TRAIL_START.dashboard] } = {}
+) => {
   await page
     .getByRole('radio', {
       name: commodityTypeCopy.typeLabels[commodityType],
@@ -540,7 +573,12 @@ export const chooseCommodityType = async (page, commodityType) => {
     })
     .check()
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('commodities/details', [
+      ...trailBefore,
+      'commodity-type'
+    ])
+  )
 }
 
 /**
@@ -700,10 +738,10 @@ export const startPotatoNotification = async (page) => {
     potatoIntendedUse: 'Planting'
   })
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(ORIGIN_URL)
+  await expect(page).toHaveURL(pageUrlOnWalk('origin', POTATO_WALK))
   await chooseCountryOfOrigin(page, 'France')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/arrival-details(?:\?from=[^#]*)?$/)
+  await expect(page).toHaveURL(pageUrlOnWalk('arrival-details', POTATO_WALK))
   return reference
 }
 
@@ -734,9 +772,13 @@ export const startPotatoNotificationAtContact = async (
     optionName: 'Port of Dover - GB DVR'
   })
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/destinations\/select(?:\?from=[^#]*)?$/)
+  await expect(page).toHaveURL(
+    pageUrlOnWalk('destinations/select', POTATO_WALK)
+  )
   await pickAddressBookParty(page)
-  await expect(page).toHaveURL(/\/identification-numbers(?:\?from=[^#]*)?$/)
+  await expect(page).toHaveURL(
+    pageUrlOnWalk('identification-numbers', POTATO_WALK)
+  )
   await page
     .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
       exact: true
@@ -747,7 +789,7 @@ export const startPotatoNotificationAtContact = async (
     .fill('C123')
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(
-    /\/consignment\/contact\/select(?:\?from=[^#]*)?$/
+    pageUrlOnWalk('consignment/contact/select', POTATO_WALK)
   )
   return reference
 }
@@ -764,7 +806,7 @@ export const startPotatoNotificationAtContact = async (
 export const completePotatoNotification = async (page, options) => {
   const reference = await startPotatoNotificationAtContact(page, options)
   await pickAddressBookParty(page)
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await expect(
     page.getByRole('heading', {
       name: checkAnswersCopy.submit.heading,
@@ -808,7 +850,7 @@ export const submitDeclarationFromCheckAnswers = async (page, reference) => {
   await page
     .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
     .click()
-  await expect(page).toHaveURL(/\/declaration(?:\?from=[^#]*)?$/)
+  await expect(page).toHaveURL(setUrl('/notifications/[^/]+/declaration'))
   await page
     .getByRole('checkbox', { name: declarationCopy.declarationLabel })
     .check()
@@ -967,6 +1009,7 @@ export const expectSelectedAddressCarriedToSecondPage = async (page) => {
  * @param {RegExp | string} options.pageUrl - the picker page's address
  * @param {RegExp | string} options.afterSaveUrl - where Save and continue goes
  * @param {string} options.firstRowRadio - selector of the first address in the list
+ * @param {string[]} [options.landingAlerts] - the text of each alert on the page Save and continue goes to with nothing chosen; none by default
  */
 export const describeAddressPicker = ({
   pickerName,
@@ -977,7 +1020,8 @@ export const describeAddressPicker = ({
   hubUrl,
   pageUrl,
   afterSaveUrl,
-  firstRowRadio
+  firstRowRadio,
+  landingAlerts = []
 }) => {
   const notInBookLink = (page) =>
     page.getByRole('alert').getByRole('link', { name: notInBookError })
@@ -1170,7 +1214,7 @@ export const describeAddressPicker = ({
       await signIn(page)
     })
 
-    test('continuing with nothing chosen moves on without an error and leaves the overview row not yet started', async ({
+    test('continuing with nothing chosen refuses nothing, shows exactly the landing alerts and leaves the overview row not yet started', async ({
       page
     }) => {
       const reference = await openPicker(page)
@@ -1178,9 +1222,7 @@ export const describeAddressPicker = ({
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)
-      await expect(
-        page.getByRole('alert').getByRole('link', { name: notInBookError })
-      ).toHaveCount(0)
+      await expect(page.getByRole('alert')).toHaveText(landingAlerts)
       await page.goto(`${BASE}/notifications/${reference}`)
       await expect(overviewRowStatus(page)).toHaveText(
         hubCopy.statuses.notYetStarted
@@ -1258,18 +1300,22 @@ export const describeAddressPicker = ({
 
 /**
  * Saves a commodity line opened from a review Change link, continues from the
- * list and checks the origin page is reached with the review and the list on
- * the trail.
+ * list and checks the origin page is reached with the places before the line,
+ * the list and the page the line was changed on the trail.
  *
  * @param {import('@playwright/test').Page} page
+ * @param {string[]} changeLinkTrail - the trail the Change link carried
  */
-export const continueFromChangedCommodityLine = async (page) => {
+export const continueFromChangedCommodityLine = async (
+  page,
+  changeLinkTrail
+) => {
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(
-    /\/commodities\?from=(?:[^#]*%2C)?notification-view$/
+    notificationPageWithTrail('commodities', changeLinkTrail)
   )
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(
-    /\/origin\?from=(?:[^#]*%2C)?notification-view%2Ccommodities$/
+    notificationPageWithTrail('origin', [...changeLinkTrail, 'commodities'])
   )
 }

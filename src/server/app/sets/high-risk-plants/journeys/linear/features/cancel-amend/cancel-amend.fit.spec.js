@@ -1,13 +1,14 @@
 import {
   BASE,
   journeyIdFromPage,
+  pageUrlWithTrail,
   setPath,
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
-  CHECK_ANSWERS_URL,
   changeCommodityType,
   completePotatoNotification,
+  REVIEW_URL_WITHOUT_TRAIL,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
@@ -89,7 +90,7 @@ test('No preserves the amendment and its changes after reload', async ({
   page
 }) => {
   await page.getByRole('button', { name: cancelCopy.noLink }).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page.reload()
   await expect(strip(page).locator(TAG)).toHaveText(
     sharedCopy.journeyStrip.amend
@@ -116,7 +117,7 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
   await expect(cancelAmendLink(page)).toHaveCount(0)
 
   await page.getByRole('button', { name: cancelCopy.noLink }).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await expect(strip(page).locator(TAG)).toHaveText(
     sharedCopy.journeyStrip.amend
   )
@@ -143,7 +144,7 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
 
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
 
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   const summary = page.getByRole('alert')
   await expect(
     summary.getByRole('heading', { name: sharedCopy.errorSummary.title })
@@ -173,7 +174,9 @@ test('The commodities list ends as it does on a draft while amending, and Save a
   ).toHaveCount(0)
 
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(setUrl(`/notifications/${reference}/origin$`))
+  await expect(page).toHaveURL(
+    pageUrlWithTrail(`/notifications/${reference}/origin`, ['commodities'])
+  )
 })
 
 test('Cancel and return to overview while amending opens Overview without saving, and the strip keeps Amend and Cancel amend', async ({

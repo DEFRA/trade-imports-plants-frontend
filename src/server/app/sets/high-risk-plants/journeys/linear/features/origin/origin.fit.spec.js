@@ -11,7 +11,12 @@ import {
   saveAndReturnToHub,
   startNotificationAtOrigin
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  notificationPageWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -23,7 +28,12 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
-const ARRIVAL_DETAILS_URL = setUrl('/notifications/[^/]+/arrival-details$')
+const OVERVIEW_ORIGIN_URL = notificationPageWithTrail('origin', [
+  TRAIL_START.overview
+])
+const ARRIVAL_DETAILS_URL = notificationPageWithTrail('arrival-details', [
+  'origin'
+])
 
 const COUNTRY_INPUT = 'input#countryOfOrigin'
 const COUNTRY_SELECT = 'select[name="countryOfOrigin"]'
@@ -82,7 +92,7 @@ test.describe('origin feature', () => {
 
     await page.getByRole('link', { name: hubCopy.rows.origin.title }).click()
 
-    await expect(page).toHaveURL(ORIGIN_URL)
+    await expect(page).toHaveURL(OVERVIEW_ORIGIN_URL)
   })
 
   test('offers the select text ahead of every country and territory the service primes, by name', async ({

@@ -1,15 +1,25 @@
 import {
   BASE,
-  journeyIdFromPage
+  journeyIdFromPage,
+  notificationPageWithTrail
 } from '../../../../../../../../../fit/set-base.js'
 import { expectNoSeriousOrCriticalViolations } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy } from './copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../commodity-type/copy/copy.en.js'
 
+const COMMODITY_TYPE_FROM_DASHBOARD_URL = notificationPageWithTrail(
+  'commodity-type',
+  [TRAIL_START.dashboard]
+)
+const COMMODITY_TYPE_FROM_INS_URL = notificationPageWithTrail(
+  'commodity-type',
+  [TRAIL_START.ins]
+)
 const CREATED_AT_ASCENDING_SORT = 'createdAt,asc'
 const DEFAULT_SORT = 'arrivalDate,desc'
 const UNMATCHED_REFERENCE = '26-ZZZZZZ'
@@ -17,9 +27,7 @@ const UNMATCHED_REFERENCE = '26-ZZZZZZ'
 const startNotification = async (page) => {
   await page.goto(BASE)
   await page.getByRole('button', { name: copy.startButton }).click()
-  await expect(page).toHaveURL(
-    /\/notifications\/[^/]+\/commodity-type(?:\?from=[^#]*)?$/
-  )
+  await expect(page).toHaveURL(COMMODITY_TYPE_FROM_DASHBOARD_URL)
   const reference = journeyIdFromPage(page)
   await page.goto(BASE)
   return reference
@@ -49,9 +57,7 @@ test.describe('dashboard feature — initial render', () => {
   }) => {
     await page.goto(`${BASE}/start`)
 
-    await expect(page).toHaveURL(
-      /\/notifications\/[^/]+\/commodity-type(?:\?from=[^#]*)?$/
-    )
+    await expect(page).toHaveURL(COMMODITY_TYPE_FROM_INS_URL)
     await expect(
       page.getByRole('heading', { name: commodityTypeCopy.legend })
     ).toBeVisible()
@@ -103,9 +109,7 @@ test.describe('dashboard feature — initial render', () => {
 
     await page.getByRole('button', { name: copy.startButton }).click()
 
-    await expect(page).toHaveURL(
-      /\/notifications\/[^/]+\/commodity-type(?:\?from=[^#]*)?$/
-    )
+    await expect(page).toHaveURL(COMMODITY_TYPE_FROM_DASHBOARD_URL)
   })
 })
 

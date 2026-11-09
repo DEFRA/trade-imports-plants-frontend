@@ -72,7 +72,7 @@ and keyboard-focus tests for one date field, and
 `describeSubmittedSearchPicker`, which registers the hint, width and joined
 button, search button colour, no-JavaScript Enter search and three-state axe tests for one address
 picker's submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
-`POTATO_VARIETY`, `CHECK_ANSWERS_URL` and `WOOD_LINE_FIELDS`; the form-group
+`POTATO_VARIETY`, `REVIEW_URL_FROM_POTATO_WALK` and `WOOD_LINE_FIELDS`; the form-group
 reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
 form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,

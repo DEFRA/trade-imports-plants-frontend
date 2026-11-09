@@ -1,6 +1,7 @@
 import {
   BASE,
   journeyIdFromPage,
+  pageUrlWithTrail,
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
@@ -18,6 +19,7 @@ import {
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { commodityTypes } from '../../../../services/commodities/index.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
@@ -30,10 +32,22 @@ import {
 import { copy } from './copy/copy.en.js'
 
 const HUB_URL = setUrl('/notifications/[^/]+$')
-const PAGE_URL = setUrl('/notifications/[^/]+/commodity-type$')
-const COMMODITY_DETAILS_URL = setUrl(
-  '/notifications/[^/]+/commodities/details$'
-)
+const PAGE_PATH = '/notifications/[^/]+/commodity-type'
+const DETAILS_PATH = '/notifications/[^/]+/commodities/details'
+const PAGE_URL_FROM_DASHBOARD = pageUrlWithTrail(PAGE_PATH, [
+  TRAIL_START.dashboard
+])
+const DETAILS_URL_FROM_DASHBOARD = pageUrlWithTrail(DETAILS_PATH, [
+  TRAIL_START.dashboard,
+  'commodity-type'
+])
+const PAGE_URL_FROM_OVERVIEW = pageUrlWithTrail(PAGE_PATH, [
+  TRAIL_START.overview
+])
+const PAGE_URL_WITHOUT_TRAIL = setUrl(PAGE_PATH)
+const DETAILS_URL_FROM_DEEP_LINK = pageUrlWithTrail(DETAILS_PATH, [
+  'commodity-type'
+])
 const TYPE_INPUT_SELECTOR = 'input[name="commodityType"]'
 
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
@@ -102,13 +116,13 @@ test.describe('commodity-type feature', () => {
   }) => {
     await radioFor(page, 'potatoes').check()
     await saveAndContinue(page).click()
-    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+    await expect(page).toHaveURL(DETAILS_URL_FROM_DASHBOARD)
     await page.goto(hubPathOf(page))
     await page
       .getByRole('link', { name: hubCopy.rows.commodities.title })
       .click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(PAGE_URL_FROM_OVERVIEW)
   })
 
   test('offers the three service commodity types, each with its timing hint', async ({
@@ -146,7 +160,7 @@ test.describe('commodity-type feature', () => {
     await radioFor(page, 'plants-for-planting').check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+    await expect(page).toHaveURL(DETAILS_URL_FROM_DASHBOARD)
 
     await page.goto(pageUrl)
     await expect(radioFor(page, 'plants-for-planting')).toBeChecked()
@@ -160,7 +174,7 @@ test.describe('commodity-type feature', () => {
 
     await radioFor(page, 'potatoes').check()
     await saveAndContinue(page).click()
-    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+    await expect(page).toHaveURL(DETAILS_URL_FROM_DASHBOARD)
 
     await page.goto(pageUrl)
 
@@ -203,7 +217,7 @@ test.describe('commodity-type feature', () => {
   }) => {
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(PAGE_URL_FROM_DASHBOARD)
     await expectCommodityTypeErrorBesideOptions(page)
 
     const summaryLink = commodityTypeErrorSummaryLink(page)
@@ -238,7 +252,7 @@ test.describe('commodity-type feature', () => {
     })
     await saveAndReturnToHub(page).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(PAGE_URL_FROM_DASHBOARD)
     await expect(commodityTypeErrorSummaryLink(page)).toBeVisible()
     await expectCommodityTypeErrorBesideOptions(page)
 
@@ -258,7 +272,7 @@ test.describe('commodity-type feature', () => {
     })
     await saveAndReturnToHub(page).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(PAGE_URL_FROM_DASHBOARD)
     await expect(commodityTypeErrorSummaryLink(page)).toBeVisible()
     await expect(page.locator(`${TYPE_INPUT_SELECTOR}:checked`)).toHaveCount(0)
 
@@ -272,7 +286,7 @@ test.describe('commodity-type feature', () => {
     await radioFor(page, 'potatoes').check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+    await expect(page).toHaveURL(DETAILS_URL_FROM_DASHBOARD)
   })
 
   test('has no serious or critical axe violations on the initial render', async ({
@@ -321,12 +335,12 @@ test.describe('commodity-type as the journey entry page', () => {
       await signIn(deepLinkPage)
       await deepLinkPage.goto(notificationHubPath)
 
-      await expect(deepLinkPage).toHaveURL(PAGE_URL)
+      await expect(deepLinkPage).toHaveURL(PAGE_URL_WITHOUT_TRAIL)
 
       await radioFor(deepLinkPage, 'potatoes').check()
       await saveAndContinue(deepLinkPage).click()
 
-      await expect(deepLinkPage).toHaveURL(COMMODITY_DETAILS_URL)
+      await expect(deepLinkPage).toHaveURL(DETAILS_URL_FROM_DEEP_LINK)
     } finally {
       await deepLinkContext.close()
     }

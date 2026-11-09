@@ -1,6 +1,6 @@
 import {
   ADDRESS_BOOK_PARTY,
-  CHECK_ANSWERS_URL,
+  REVIEW_URL_FROM_POTATO_WALK,
   COPENHAGEN,
   SECOND_PAGE_LINK,
   addressRowRadio,
@@ -14,7 +14,12 @@ import {
   saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  notificationPageWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -25,9 +30,15 @@ import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const HUB_URL = /\/notifications\/[^/]+$/
-const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
-const REVIEW_URL = /\/notification-view(?:\?from=[^#]*)?$/
+const HUB_URL = setUrl('/notifications/[^/]+$')
+const OVERVIEW_PAGE_URL = notificationPageWithTrail(
+  'consignment/contact/select',
+  [TRAIL_START.overview]
+)
+const PAGE_URL = setUrl('/notifications/[^/]+/consignment/contact/select')
+const REVIEW_URL = notificationPageWithTrail('notification-view', [
+  'consignment/contact/select'
+])
 
 const contactPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignment/contact/select`
@@ -47,12 +58,22 @@ const startWoodNotificationAtContact = async (page) => {
   return reference
 }
 
-const startAtContact = async (page) => {
-  const reference = await startWoodNotificationAtContact(page)
+const openContactFromOverview = async (page, reference) => {
   await page.goto(`${BASE}/notifications/${reference}`)
   await expect(page).toHaveURL(HUB_URL)
   await page.goto(contactPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
+}
+
+const startAtContact = async (page) => {
+  const reference = await startWoodNotificationAtContact(page)
+  await openContactFromOverview(page, reference)
+  return reference
+}
+
+const startCompleteNotificationAtContact = async (page) => {
+  const reference = await startPotatoNotificationAtContact(page)
+  await openContactFromOverview(page, reference)
   return reference
 }
 
@@ -63,14 +84,17 @@ describeSubmittedSearchPicker({
 
 describeAddressPicker({
   pickerName: 'consignment contact',
-  openPicker: startAtContact,
+  openPicker: startCompleteNotificationAtContact,
   pathOf: contactPathOf,
   notInBookError: copy.errors.contactAddress,
   hubRowTitle: hubCopy.rows.contact.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
   afterSaveUrl: REVIEW_URL,
-  firstRowRadio: '#contactAddress'
+  firstRowRadio: '#contactAddress',
+  landingAlerts: [
+    `${sharedCopy.errorSummary.title} ${checkAnswersCopy.errors.cards.contact}`
+  ]
 })
 
 test.describe('consignment-contact-select feature', () => {
@@ -108,7 +132,7 @@ test.describe('consignment-contact-select feature', () => {
       .getByRole('link', { name: hubCopy.rows.contact.title, exact: true })
       .click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
   test('offers the three save controls', async ({ page }) => {
@@ -196,7 +220,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+    await expect(page).toHaveURL(REVIEW_URL)
     await expect(
       page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
@@ -254,12 +278,12 @@ test('a potatoes notification is asked for the consignment contact after Save an
   const reference = await startPotatoNotificationAtContact(page)
 
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await page
     .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
     .click()
 
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await expect(
     page.getByRole('alert').getByRole('link', {
       name: checkAnswersCopy.errors.cards.contact,

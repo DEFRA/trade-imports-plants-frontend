@@ -1,7 +1,11 @@
-import { BASE } from '../../../../../../../../../fit/set-base.js'
 import {
-  CHECK_ANSWERS_URL,
+  BASE,
+  notificationPageWithTrail
+} from '../../../../../../../../../fit/set-base.js'
+import {
+  POTATO_CHANGE_LINK_TRAIL,
   POTATO_VARIETY,
+  REVIEW_URL_WITHOUT_TRAIL,
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
   saveAndReturnToHub,
@@ -13,9 +17,11 @@ import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
+const NOTIFICATION_VIEW = 'notification-view'
+
 test.beforeEach(async ({ page }) => signIn(page))
 
-test('renders saved answers, scoped cards and accessible Change links that return to review', async ({
+test('renders saved answers, scoped cards and accessible Change links that open their page on the review trail and go on with Save and continue', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
@@ -41,11 +47,18 @@ test('renders saved answers, scoped cards and accessible Change links that retur
       exact: true
     })
     .click()
-  await expect(page).toHaveURL(/\/origin\?from=(?:[^#]*%2C)?notification-view$/)
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('origin', POTATO_CHANGE_LINK_TRAIL)
+  )
   await saveAndContinue(page).click()
-  await expect(page).not.toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('arrival-details', [
+      ...POTATO_CHANGE_LINK_TRAIL,
+      'origin'
+    ])
+  )
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page
     .getByRole('link', {
       name: 'Change Commodity 1 (Commodity 1)',
@@ -53,12 +66,14 @@ test('renders saved answers, scoped cards and accessible Change links that retur
     })
     .click()
   await expect(page).toHaveURL(
-    /\/commodities\/details\?index=0&from=(?:[^#]*%2C)?notification-view$/
+    notificationPageWithTrail('commodities/details\\?index=0', [
+      NOTIFICATION_VIEW
+    ])
   )
   await page.getByLabel(copy.labels.quantity, { exact: true }).fill('300')
-  await continueFromChangedCommodityLine(page)
+  await continueFromChangedCommodityLine(page, [NOTIFICATION_VIEW])
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page.reload()
   await expect(page.getByText('300', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
@@ -103,7 +118,10 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
     .check()
   await saveAndContinue(page).click()
   await expect(page).toHaveURL(
-    /\/commodities\/details\?index=0&from=(?:[^#]*%2C)?notification-view$/
+    notificationPageWithTrail(
+      'commodities/details\\?index=0',
+      POTATO_CHANGE_LINK_TRAIL
+    )
   )
   await page
     .getByLabel(copy.labels.potatoVariety, { exact: true })
@@ -112,11 +130,11 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   await page
     .getByLabel(copy.labels.potatoIntendedUse, { exact: true })
     .fill('Planting')
-  await continueFromChangedCommodityLine(page)
+  await continueFromChangedCommodityLine(page, POTATO_CHANGE_LINK_TRAIL)
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   const error = page.getByRole('link', { name: /Poland/ })
   await expect(error).toHaveAttribute(
     'href',
@@ -127,5 +145,7 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
     'Check answers with an origin error'
   )
   await error.click()
-  await expect(page).toHaveURL(/\/origin\?from=(?:[^#]*%2C)?notification-view$/)
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('origin', [NOTIFICATION_VIEW])
+  )
 })

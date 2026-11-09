@@ -1,8 +1,9 @@
 import {
   BASE,
-  pageUrlWithTrail,
+  notificationPageWithTrail,
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { copy as typeCopy } from '../commodity-type/copy/copy.en.js'
 import {
   backLink,
@@ -49,7 +50,7 @@ test.describe('overview hub feature', () => {
     await page.goto(BASE)
     await page.getByRole('button', { name: dashboardCopy.startButton }).click()
     await expect(page).toHaveURL(
-      pageUrlWithTrail('/notifications/[^/]+/commodity-type', ['dashboard'])
+      notificationPageWithTrail('commodity-type', [TRAIL_START.dashboard])
     )
     const commodityTypeUrl = page.url()
     const overviewUrl = commodityTypeUrl.replace(

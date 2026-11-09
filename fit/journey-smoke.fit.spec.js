@@ -1,4 +1,5 @@
-import { BASE } from './set-base.js'
+import { pageUrlOnWalk, pageUrlWithTrail } from './set-base.js'
+import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { createRequire } from 'node:module'
 import { expect, test } from '@playwright/test'
 import { signIn } from './sign-in.js'
@@ -18,14 +19,12 @@ import {
   chooseCountryOfOrigin,
   chooseTypeAheadOption,
   expectNoSeriousOrCriticalViolations,
+  POTATO_WALK,
   saveAndContinue,
   startNotification,
   startPotatoNotification,
   submitDeclarationFromCheckAnswers
 } from './high-risk-plants-journey.js'
-
-const onPage = (reference, slug) => (url) =>
-  url.pathname === `${BASE}/notifications/${reference}/${slug}`
 
 const chooseRadio = (page, name) =>
   page.getByRole('radio', { name, exact: true }).check()
@@ -100,20 +99,34 @@ const answerStepAndContinue = async (page, step, shape) => {
   await page.getByRole('button', { name: button, exact: true }).click()
 }
 
+const stepUrl = (reference, step, trail) =>
+  pageUrlWithTrail(
+    `/notifications/${reference}/${step.slug}${step.fields.index === undefined ? '' : `\\?index=${step.fields.index}`}`,
+    trail
+  )
+
+const PAGES_SAVED_WITHOUT_TRAIL_ENTRY = new Set(['commodities/details'])
+
+const trailEntryAfterSaving = (step) =>
+  PAGES_SAVED_WITHOUT_TRAIL_ENTRY.has(step.slug) ? [] : [step.slug]
+
 for (const [name, shape] of Object.entries(happyPaths)) {
   test(`${name}: ${shape.useCase} reaches confirmation`, async ({ page }) => {
     await signIn(page)
     const reference = await startNotification(page)
+    const walked = [TRAIL_START.dashboard]
 
     for (const step of shape.steps) {
       await test.step(step.slug, async () => {
-        const path = `${BASE}/notifications/${reference}/${step.slug}`
-        await expect(page).toHaveURL((url) => url.pathname === path)
+        await expect(page).toHaveURL(stepUrl(reference, step, walked))
         await answerStepAndContinue(page, step, shape)
+        walked.push(...trailEntryAfterSaving(step))
       })
     }
 
-    await expect(page).toHaveURL(/\/notification-view(?:\?from=[^#]*)?$/)
+    await expect(page).toHaveURL(
+      pageUrlWithTrail(`/notifications/${reference}/notification-view`, walked)
+    )
     await expect(
       page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
@@ -155,21 +168,30 @@ for (const [name, backTargets] of Object.entries(
     const shape = happyPaths[name]
     await signIn(page)
     const reference = await startNotification(page)
+    const walked = [TRAIL_START.dashboard]
 
     for (const step of shape.steps) {
       const backTarget = backTargets[step.slug]
       if (backTarget) {
         await test.step(`Back from ${step.slug}`, async () => {
           await backLink(page).click()
-          await expect(page).toHaveURL(onPage(reference, backTarget))
+          await expect(page).toHaveURL(
+            pageUrlWithTrail(
+              `/notifications/${reference}/${backTarget}`,
+              walked.slice(0, -1)
+            )
+          )
           await page.goBack()
-          await expect(page).toHaveURL(onPage(reference, step.slug))
+          await expect(page).toHaveURL(stepUrl(reference, step, walked))
         })
       }
       await answerStepAndContinue(page, step, shape)
+      walked.push(...trailEntryAfterSaving(step))
     }
 
-    await expect(page).toHaveURL(onPage(reference, 'notification-view'))
+    await expect(page).toHaveURL(
+      pageUrlWithTrail(`/notifications/${reference}/notification-view`, walked)
+    )
   })
 }
 
@@ -177,23 +199,23 @@ test('following Back and choosing Save and continue carries on to the next step'
   page
 }) => {
   await signIn(page)
-  const reference = await startPotatoNotification(page)
+  await startPotatoNotification(page)
 
   await backLink(page).click()
-  await expect(page).toHaveURL(onPage(reference, 'origin'))
+  await expect(page).toHaveURL(pageUrlOnWalk('origin', POTATO_WALK))
 
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(onPage(reference, 'arrival-details'))
+  await expect(page).toHaveURL(pageUrlOnWalk('arrival-details', POTATO_WALK))
 })
 
 test('following Back from the arrival details reaches origin and then the commodities list', async ({
   page
 }) => {
   await signIn(page)
-  const reference = await startPotatoNotification(page)
+  await startPotatoNotification(page)
 
   for (const slug of ['origin', 'commodities']) {
     await backLink(page).click()
-    await expect(page).toHaveURL(onPage(reference, slug))
+    await expect(page).toHaveURL(pageUrlOnWalk(slug, POTATO_WALK))
   }
 })

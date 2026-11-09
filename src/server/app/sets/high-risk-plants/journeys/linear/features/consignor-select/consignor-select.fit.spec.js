@@ -19,7 +19,14 @@ import {
   startNotification,
   startWoodNotificationAtPlaceOfDestination
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  notificationPageWithTrail,
+  pagePathWithTrail,
+  pageUrlWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -28,8 +35,20 @@ import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const HUB_URL = /\/notifications\/[^/]+$/
-const PAGE_URL = /\/notifications\/[^/]+\/consignors\/select/
+const HUB_URL = setUrl('/notifications/[^/]+$')
+const PAGE_PATH = '/notifications/[^/]+/consignors/select'
+const PAGE_URL = setUrl(PAGE_PATH)
+const DESTINATION_PATH = '/notifications/[^/]+/destinations/select'
+const TRAIL_TO_DESTINATION = ['origin', 'arrival-status', 'arrival-details']
+const OVERVIEW_PAGE_URL = pageUrlWithTrail(PAGE_PATH, [TRAIL_START.overview])
+const AFTER_DESTINATION_PAGE_URL = pageUrlWithTrail(PAGE_PATH, [
+  ...TRAIL_TO_DESTINATION,
+  'destinations/select'
+])
+const IDENTIFICATION_NUMBERS_URL = notificationPageWithTrail(
+  'identification-numbers',
+  ['consignors/select']
+)
 
 const FIRST_ROW_RADIO = '#consignor'
 
@@ -69,7 +88,7 @@ describeAddressPicker({
   hubRowTitle: hubCopy.rows.consignor.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
-  afterSaveUrl: /\/identification-numbers(?:\?from=[^#]*)?$/,
+  afterSaveUrl: IDENTIFICATION_NUMBERS_URL,
   firstRowRadio: FIRST_ROW_RADIO
 })
 
@@ -106,7 +125,7 @@ test.describe('consignor-select feature', () => {
 
     await page.getByRole('link', { name: hubCopy.rows.consignor.title }).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
   test('opened from the overview, saves the chosen address and returns to the overview', async ({
@@ -115,7 +134,7 @@ test.describe('consignor-select feature', () => {
     const reference = await startAtConsignor(page)
     await page.goto(`${BASE}/notifications/${reference}`)
     await page.getByRole('link', { name: hubCopy.rows.consignor.title }).click()
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndReturnToHub(page).click()
@@ -153,16 +172,19 @@ test.describe('consignor-select feature', () => {
   test('sends Back to the place of destination after Save and continue from it', async ({
     page
   }) => {
-    const placeOfDestination =
-      /\/notifications\/[^/]+\/destinations\/select(\?from=[^#]*)?$/
     await startWoodNotificationAtPlaceOfDestination(page)
     await saveTheAddressBookParty(page)
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(AFTER_DESTINATION_PAGE_URL)
 
-    await expect(backLink(page)).toHaveAttribute('href', placeOfDestination)
+    await expect(backLink(page)).toHaveAttribute(
+      'href',
+      pagePathWithTrail(DESTINATION_PATH, TRAIL_TO_DESTINATION)
+    )
     await backLink(page).click()
 
-    await expect(page).toHaveURL(placeOfDestination)
+    await expect(page).toHaveURL(
+      pageUrlWithTrail(DESTINATION_PATH, TRAIL_TO_DESTINATION)
+    )
   })
 })
 
@@ -213,7 +235,7 @@ test.describe('consignor scope and invalid selections', () => {
       page.getByRole('link', { name: hubCopy.rows.consignor.title })
     ).toHaveCount(0)
     await page.goto(consignorPathOf(reference))
-    await expect(page).not.toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(HUB_URL)
   })
 
   test('does not restore the saved consignor after switching back from potatoes', async ({
