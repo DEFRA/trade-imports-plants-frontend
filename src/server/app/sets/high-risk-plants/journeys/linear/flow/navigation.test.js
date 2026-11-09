@@ -2,7 +2,7 @@ import { SET_BASE } from '../../../set.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import {
-  nextStepPath,
+  nextStepLanding,
   taskRowsOfSection
 } from '../../../../../flow/navigation.js'
 import { journeySections } from '../../../../../flow/journey-flow.js'
@@ -10,6 +10,7 @@ import {
   installHighRiskPlantsJourney,
   PLANTS_OR_WOOD_IN_SCOPE,
   POTATO_IN_SCOPE,
+  scopeAnswering,
   scopeOf
 } from '../test-support.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
@@ -31,9 +32,12 @@ const JOURNEY_ID = 'HRP-0001'
 const journeyPath = (page) =>
   `${SET_BASE}/notifications/${JOURNEY_ID}/${page.slug}`
 
-const nextAfter = (page, scope) => nextStepPath(page.id, scope, JOURNEY_ID)
+const landingAfter = (page, scope) =>
+  nextStepLanding(page.id, scope, JOURNEY_ID)
 
-describe('#nextStepPath — the next page that applies', () => {
+const nextAfter = (page, scope) => landingAfter(page, scope)?.path
+
+describe('#nextStepLanding — where Save and continue lands', () => {
   beforeAll(() => installHighRiskPlantsJourney())
 
   it.each([
@@ -68,6 +72,45 @@ describe('#nextStepPath — the next page that applies', () => {
   it('Should go from the commodities list to origin with only the commodity type saved', () => {
     expect(
       nextAfter(commoditiesPage, scopeOf('commodityType', 'countryOfOrigin'))
+    ).toBe(journeyPath(originPage))
+  })
+
+  it('Should go from origin to the commodity type page when only the country of origin is saved', () => {
+    expect(
+      nextAfter(
+        originPage,
+        scopeAnswering(['countryOfOrigin'], ...PLANTS_OR_WOOD_IN_SCOPE)
+      )
+    ).toBe(journeyPath(commodityTypePage))
+  })
+
+  it('Should go from the place of destination to the commodity type page when no commodity type is saved', () => {
+    expect(
+      nextAfter(
+        placeOfDestinationPage,
+        scopeAnswering(['countryOfOrigin'], ...PLANTS_OR_WOOD_IN_SCOPE)
+      )
+    ).toBe(journeyPath(commodityTypePage))
+  })
+
+  it('Should name the unopened page and the missing answer when it lands on the page that asks for it', () => {
+    expect(
+      landingAfter(
+        originPage,
+        scopeAnswering(['countryOfOrigin'], ...PLANTS_OR_WOOD_IN_SCOPE)
+      ).unopened
+    ).toEqual({
+      pageId: arrivalStatusPage.id,
+      missingAnswerIds: ['commodityType']
+    })
+  })
+
+  it('Should go from the commodities list to origin when the commodity type is saved and the country of origin is not', () => {
+    expect(
+      nextAfter(
+        commoditiesPage,
+        scopeAnswering(['commodityType'], ...PLANTS_OR_WOOD_IN_SCOPE)
+      )
     ).toBe(journeyPath(originPage))
   })
 
@@ -106,7 +149,7 @@ describe('#nextStepPath — the next page that applies', () => {
 
   it('Should refuse a page that belongs to no section', () => {
     expect(() =>
-      nextStepPath(
+      nextStepLanding(
         'not-a-real-page',
         scopeOf(...PLANTS_OR_WOOD_IN_SCOPE),
         JOURNEY_ID

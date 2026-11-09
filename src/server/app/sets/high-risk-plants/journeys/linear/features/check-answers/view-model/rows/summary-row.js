@@ -10,14 +10,14 @@ export const row = (
 ) => ({
   key: { text: key },
   value: { text: valueText(value) },
-  ...editableActions(
+  ...editableActions({
     readOnly,
-    changeAction(
+    actions: changeAction(
       { journeyId, changeLinkTrail },
       obligationId,
       visuallyHiddenText ?? key.toLowerCase()
     )
-  )
+  })
 })
 
 export const readOnlyRow = (key, value) => ({

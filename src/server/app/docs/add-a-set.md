@@ -181,7 +181,8 @@ Then re-export it from [`../routes.js`](../routes.js), which is only a barrel.
 `registerJourneyCookie(server)` takes neither a base nor cookie names: it reads
 the path back from the registered mount and the names back from the configured
 session seam, so the cookies Hapi registers and the ones the set actually uses
-cannot drift apart. Call it inside the set context, after `registerSetMount`
+cannot drift apart. The configured list is `journeyCookieNames()`, so adding or
+removing a journey cookie is one edit to the default names. Call it inside the set context, after `registerSetMount`
 and `configureSession` — it throws if the session seam is not configured yet.
 
 The gateway ends its registration with `assertSetConfigured`, which stops the

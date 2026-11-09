@@ -7,11 +7,14 @@ The platform consumes that policy through `configureJourneyFlow()`.
 Those exports hold the five sections, the seven task rows and the entry guard.
 
 The journey has one page order: the order Overview lists its tasks in. Save and
-continue goes to the next page in that order whose gate passes, and from the last page
+continue goes to the next page in that order that applies, and from the last page
 that applies to check your answers, however the page was reached (a new notification,
 the Overview, a reopened draft, a new browser session, a check your answers
 Change link or an amendment). The session holds no record of how a notification was
-started.
+started. When the next page that applies needs a required earlier answer that is
+missing, Save and continue goes to the page that asks for it instead. This journey's
+required earlier answers are the commodity type and where the consignment is coming
+from.
 
 ## Flow sections
 
@@ -41,7 +44,7 @@ Origin follows commodity details so a line can be added before a country is name
 Arrival status and the consignor are out of scope for potatoes and so passed over.
 
 Normal page gates are derived from `meta.collects`, in-scope obligations and
-earlier continue prerequisites. Author a section or page `gate` only for policy
+the required earlier answers. Author a section or page `gate` only for policy
 that the derived rule cannot express. The animals journey has exactly one
 authored section gate — its `review` section requires
 `scope.readyForCheckYourAnswers` — and this journey should expect to need about
@@ -121,9 +124,8 @@ next page that applies, adding the page saved to the trail, so Back steps throug
 visited pages in reverse. Save and return to overview still goes to the overview. The
 commodity details page opened with no line on the consignment goes Back where the
 commodities list would go. Changing the commodity type so that lines are removed
-removes them whichever button was pressed: Save and return to overview opens Overview,
-and Save and continue opens the commodities list with the commodity type page on the
-trail. Back is the same on a draft and while amending, and a page names no fixed Back
+removes them whichever button was pressed, and opens the commodities list reporting
+the removed lines with the commodity type page on the trail. Back is the same on a draft and while amending, and a page names no fixed Back
 target and no list of earlier pages its Back may open.
 
 A check your answers Change link or error-summary link carries where check your

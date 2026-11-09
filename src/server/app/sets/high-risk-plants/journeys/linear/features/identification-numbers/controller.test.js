@@ -15,6 +15,7 @@ import {
   COMPLETE_PLANTS_NOTIFICATION,
   itSendsBackToWhereTheTraderCameFromOnRefusal,
   itSendsBackToWhereTheTraderCameFrom,
+  originSaved,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -79,7 +80,7 @@ describe('identification numbers', () => {
     'Should trim, persist and ignore hidden payload fields for %s',
     async (commodityType, fields) => {
       const result = await driveHandler(post, {
-        seed: { commodityType, countryOfOrigin: 'FR' },
+        seed: { commodityType, ...originSaved },
         payload: Object.fromEntries(
           IDENTIFICATION_FIELDS.map((name) => [name, ' ID_123 '])
         )
@@ -141,7 +142,7 @@ describe('identification numbers', () => {
   )
   it('Should accept a blank optional reference', async () => {
     const result = await driveHandler(post, {
-      seed: { commodityType: WOOD_AND_CUT_TREES },
+      seed: { commodityType: WOOD_AND_CUT_TREES, ...originSaved },
       payload: {}
     })
     expect(result.response.redirect).toBe(

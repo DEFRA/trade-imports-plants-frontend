@@ -127,8 +127,10 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 3. re-renders raw values with status 400 on error
 4. commits cleaned values with `state.commit()`
 5. redirects through `kit.nextTarget(request, page, committed.scope)`, the shared
-   next-page target: the next page in the journey's one page order whose gate
-   passes, ending at check your answers
+   next-page target: the next page in the journey's one page order that applies,
+   ending at check your answers. Save and continue sends the trader to the page
+   that asks for a missing required earlier answer; see
+   [`journey-flow-and-gates.md`](journey-flow-and-gates.md)
 
 Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
 failure is logged once by `recoverableSave`; render the same values with
@@ -223,7 +225,12 @@ journey's one page order and its task row and nothing else. Its position control
 strictly-earlier prerequisites and the journey's page order, which Save and
 continue follows from every start: the next page that applies, skipping a
 sub-page, which is a page reached only from the page that opens it. Its place in that
-order decides where Save and continue lands on it and on the page before it.
+order decides where Save and continue lands on it and on the page before it. Save and
+continue sends the trader to the page that asks for a missing required earlier answer;
+see [`journey-flow-and-gates.md`](journey-flow-and-gates.md). A
+page stays out of the order as a `subPage: true` page when only the page that opens it
+reaches it, in no section when it is a detour off a list page, and in no task row when
+it is the review, declaration or confirmation.
 
 Import it into
 [`journeys/linear/flow/task-rows.js`](../journeys/linear/flow/task-rows.js). Put
@@ -289,7 +296,9 @@ continue-enforced fields. Add an authored `gate` to the page identity only when
 that rule cannot express the page.
 
 A page's place in Save and continue's order is its place in `journeySections()`; a
-page whose derived gate fails is skipped, as arrival-status is for potatoes. Its Back
+page whose scope rule fails is skipped, as arrival-status is for potatoes, and a page
+missing a required earlier answer sends Save and continue to the page that asks for
+it. Its Back
 comes from `kit.trailBackLink()`: no other file lists it. See
 [`journey-flow-and-gates.md`](journey-flow-and-gates.md), "Entry guard and the Back
 link".

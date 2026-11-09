@@ -139,16 +139,11 @@ const post = async (request, h) => {
   }
 
   if (removed > 0) {
-    const overview = kit.hubExitTarget(request)
     request.logger.info(
-      {
-        journeyId: request.params.journeyId,
-        removed,
-        destination: overview ? 'overview' : 'commodities-list'
-      },
+      { journeyId: request.params.journeyId, removed },
       'Commodity lines removed by a commodity type change'
     )
-    return h.redirect(overview ?? listHrefAfterTypeChange(request, removed))
+    return h.redirect(listHrefAfterTypeChange(request, removed))
   }
   return h.redirect(kit.nextTarget(request, page, committed.scope))
 }

@@ -41,6 +41,11 @@ export const TECH_IMPORTS_COPY = Object.freeze({
   })
 })
 
+const POTATOES = 'potatoes'
+const PLANTS_FOR_PLANTING = 'plants-for-planting'
+
+export const originSaved = Object.freeze({ countryOfOrigin: 'FR' })
+
 export const COMPLETE_POTATO_CONSIGNMENT = Object.freeze({
   commodityType: 'potatoes',
   commodityLines: [
@@ -58,7 +63,7 @@ export const COMPLETE_NOTIFICATION = Object.freeze({
   contactAddress: TECH_IMPORTS_COPY,
   producerIdentificationNumber: 'P123',
   cropIdentificationNumber: 'C123',
-  countryOfOrigin: 'FR',
+  ...originSaved,
   arrivalDate: Object.freeze({ day: '27', month: '3', year: '2026' }),
   arrivalTime: '14:30',
   proposedPlaceOfLanding: 'GB DVR',
@@ -67,11 +72,11 @@ export const COMPLETE_NOTIFICATION = Object.freeze({
 
 /** A plants-for-planting notification with every question in scope answered. */
 export const COMPLETE_PLANTS_NOTIFICATION = Object.freeze({
-  commodityType: 'plants-for-planting',
+  commodityType: PLANTS_FOR_PLANTING,
   commodityLines: [
-    { category: 'plants-for-planting', genus: 'Picea', quantity: '30' }
+    { category: PLANTS_FOR_PLANTING, genus: 'Picea', quantity: '30' }
   ],
-  countryOfOrigin: 'FR',
+  ...originSaved,
   arrivalStatus: 'already-arrived',
   arrivalDate: Object.freeze({ day: '27', month: '3', year: '2026' }),
   placeOfDestination: TECH_IMPORTS_COPY,
@@ -245,10 +250,25 @@ export const POTATO_IN_SCOPE = [
   'contactAddress'
 ]
 
-export const scopeOf = (...names) => ({
+const scopeWith = ({ names, answered }) => ({
   inScope: new Set(names),
-  answered: () => true
+  answered
 })
+
+export const scopeAnswering = (answeredIds, ...names) =>
+  scopeWith({ names, answered: (id) => answeredIds.includes(id) })
+
+export const scopeOf = (...names) => scopeWith({ names, answered: () => true })
+
+const seedOfType = (commodityType, answers) => ({
+  ...originSaved,
+  commodityType,
+  ...answers
+})
+
+export const potatoes = (answers = {}) => seedOfType(POTATOES, answers)
+
+export const plants = (answers = {}) => seedOfType(PLANTS_FOR_PLANTING, answers)
 
 export const pagePathFrom = (startPlace, journeyId, slug) =>
   withTrail(pagePath(journeyId, slug), [TRAIL_START[startPlace]])

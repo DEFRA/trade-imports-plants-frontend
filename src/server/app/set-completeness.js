@@ -1,11 +1,7 @@
-import {
-  flowOnlyAnswersCookie,
-  knownJourneysCookie
-} from './engine/persistence/session.js'
+import { journeyCookieNames } from './engine/persistence/session.js'
 import { unconfiguredSeamsOf, withSetContext } from './shared/set-context.js'
 
-const cookieNamesOf = (setId) =>
-  withSetContext(setId, () => [knownJourneysCookie(), flowOnlyAnswersCookie()])
+const cookieNamesOf = (setId) => withSetContext(setId, journeyCookieNames)
 
 const assertJourneyCookiesRegistered = (server, setId) => {
   const registered = server?.states?.cookies ?? {}

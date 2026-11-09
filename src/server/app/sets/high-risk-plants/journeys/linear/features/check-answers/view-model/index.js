@@ -106,9 +106,9 @@ const partyCard = (
   return {
     id,
     title,
-    ...editableActions(
+    ...editableActions({
       readOnly,
-      partyActions({
+      actions: partyActions({
         field,
         title,
         partyDisplayValues,
@@ -116,7 +116,7 @@ const partyCard = (
         changeLinkTrail,
         reviewPageTrail
       })
-    ),
+    }),
     rows: [
       errorRow(
         copy.labels.name,
@@ -169,7 +169,7 @@ const commodityCards = ({
       )
       return {
         title,
-        ...editableActions(readOnly, actions),
+        ...editableActions({ readOnly, actions }),
         rows: [
           readOnlyRow(
             copy.labels.category,

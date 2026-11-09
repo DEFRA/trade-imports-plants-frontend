@@ -3,6 +3,7 @@ import { session } from './stub.js'
 import {
   configureSession,
   flowOnlyAnswersCookie,
+  journeyCookieNames,
   knownJourneysCookie
 } from '../../../engine/persistence/session.js'
 import { recordingH } from '../../../engine/test-support.js'
@@ -30,6 +31,15 @@ describe('per-set cookie names', () => {
   it('Should answer high-risk-plants’ own names, not the shared defaults', () => {
     expect(knownJourneysCookie()).toBe('highRiskPlantsKnownJourneys')
     expect(flowOnlyAnswersCookie()).toBe('highRiskPlantsFlowOnlyAnswers')
+  })
+
+  it('Should list every cookie name the set is configured with', () => {
+    expect(journeyCookieNames().toSorted()).toEqual(
+      [
+        'highRiskPlantsKnownJourneys',
+        'highRiskPlantsFlowOnlyAnswers'
+      ].toSorted()
+    )
   })
 })
 

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { hubPath } from '../../../../../../shared/paths.js'
 import {
   COMPLETE_NOTIFICATION,
+  plants,
+  potatoes,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import {
@@ -22,17 +24,8 @@ const get = placeOfDestination.routes.find(
 ).handler
 const post = postHandlerOf(placeOfDestination)
 
-const PLANTS_FOR_PLANTING = 'plants-for-planting'
-const POTATOES = 'potatoes'
 const PLACE_OF_DESTINATION_SELECT = 'place-of-destination'
 const TECH_IMPORTS = 'tech-imports-ltd'
-
-const potatoes = (answers = {}) => ({ commodityType: POTATOES, ...answers })
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 describe('#meta', () => {
   it('Should own the place-of-destination obligation at its own slug', () => {

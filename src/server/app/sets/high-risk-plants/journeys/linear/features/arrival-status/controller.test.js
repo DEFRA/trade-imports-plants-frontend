@@ -15,6 +15,8 @@ import {
   COMPLETE_PLANTS_NOTIFICATION,
   itSendsBackToWhereTheTraderCameFromOnRefusal,
   itSendsBackToWhereTheTraderCameFrom,
+  originSaved,
+  plants,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -32,11 +34,6 @@ const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 const POTATOES = 'potatoes'
 const UNOFFERED_STATUS = 'maybe'
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 describe('#meta', () => {
   it('Should own the arrivalStatus obligation on the arrival-status page', () => {
@@ -183,6 +180,7 @@ describe('POST arrival-status — an accepted answer', () => {
     })
 
     expect(result.after).toEqual({
+      ...originSaved,
       commodityType: PLANTS_FOR_PLANTING,
       arrivalStatus: ALREADY_ARRIVED
     })

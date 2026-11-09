@@ -341,17 +341,19 @@ describe('POST commodity-type — changing the type of a consignment with lines'
     })
   })
 
-  it('Should remove the lines the new type does not hold and open Overview when Save and return to overview was pressed', async () => {
+  it('Should remove the lines the new type does not hold and open the commodities list reporting them when Save and return to overview was pressed', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: { commodityType: WOOD_AND_CUT_TREES, exit: 'hub' }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1&from=commodity-type`
+    })
     expect(result.after.commodityLines ?? []).toEqual([])
   })
 
-  it('Should log the removal once with the number of lines and where the trader goes', async () => {
+  it('Should log the removal once with the number of lines', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: { commodityType: WOOD_AND_CUT_TREES, exit: 'hub' }
@@ -359,11 +361,7 @@ describe('POST commodity-type — changing the type of a consignment with lines'
 
     expectOneLogged(result.logger, {
       level: 'info',
-      fields: {
-        journeyId: result.journeyId,
-        removed: 1,
-        destination: 'overview'
-      },
+      fields: { journeyId: result.journeyId, removed: 1 },
       message: 'Commodity lines removed by a commodity type change'
     })
   })

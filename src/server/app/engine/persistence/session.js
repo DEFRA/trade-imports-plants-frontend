@@ -24,9 +24,7 @@ const store = setKeyed('session', { configuredBy: 'configureSession' })
 const current = () =>
   store.has(currentSetId()) ? store.current() : UNCONFIGURED
 
-/** Whether this set has been through `configureSession`. Callers that must run
- * after it — `registerJourneyCookie` reads the configured cookie names — ask
- * rather than silently taking the default names. */
+/** Whether `configureSession` has run for this set. */
 export const sessionConfiguredFor = (setId) => store.has(setId)
 
 export const configureSession = (setId, impl, cookieNames) => {
@@ -38,6 +36,13 @@ export const configureSession = (setId, impl, cookieNames) => {
 
 export const knownJourneysCookie = () => current().cookieNames.knownJourneys
 export const flowOnlyAnswersCookie = () => current().cookieNames.flowOnlyAnswers
+
+/**
+ * The names of the active set's journey cookies.
+ *
+ * @returns {string[]} every journey cookie name the set is configured with.
+ */
+export const journeyCookieNames = () => Object.values(current().cookieNames)
 
 export const session = {
   knownJourneyIds: async (...args) => current().impl.knownJourneyIds(...args),

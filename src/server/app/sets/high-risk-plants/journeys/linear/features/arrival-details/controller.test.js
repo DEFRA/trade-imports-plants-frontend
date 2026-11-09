@@ -16,6 +16,9 @@ import {
   COMPLETE_PLANTS_NOTIFICATION,
   itSendsBackToWhereTheTraderCameFromOnRefusal,
   itSendsBackToWhereTheTraderCameFrom,
+  originSaved,
+  plants,
+  potatoes,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
@@ -27,20 +30,12 @@ const get = arrivalDetails.routes.find(
 ).handler
 const post = postHandlerOf(arrivalDetails)
 
-const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const POTATOES = 'potatoes'
 const DOVER = 'GB DVR'
 const ARRIVAL_DATE_HREF = '#arrivalDate'
 const A_DATE = '27/3/2026'
 const A_DATE_PARTS = { day: '27', month: '3', year: '2026' }
 const A_TIME = '14:30'
-
-const potatoes = (answers = {}) => ({ commodityType: POTATOES, ...answers })
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 const potatoPayload = (overrides = {}) => ({
   arrivalDate: A_DATE,
@@ -444,6 +439,7 @@ describe('POST arrival-details — accepted answers', () => {
     })
 
     expect(result.after).toEqual({
+      ...originSaved,
       commodityType: POTATOES,
       arrivalDate: A_DATE_PARTS,
       arrivalTime: A_TIME,

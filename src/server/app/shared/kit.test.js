@@ -20,7 +20,6 @@ import {
   hubExitTarget,
   logRefusal,
   pageRoutes,
-  readReturnMarker,
   REFUSAL_LOG_MESSAGE,
   recoverableSave
 } from './kit.js'
@@ -296,26 +295,6 @@ describe('#logRefusal', () => {
       errorCodes: [],
       reason: 'no-line'
     })
-  })
-})
-
-describe('#readReturnMarker — the page a request says it came from', () => {
-  const allowedSlugs = ['applicant', 'notification-view']
-
-  it('Should be empty when the request carries no marker', () => {
-    expect(readReturnMarker({ query: {} }, allowedSlugs)).toEqual({})
-  })
-
-  it('Should honour a marker naming an allowed slug', () => {
-    expect(
-      readReturnMarker({ query: { return: 'applicant' } }, allowedSlugs)
-    ).toEqual({ honouredSlug: 'applicant' })
-  })
-
-  it('Should refuse a marker naming anything else, holding the value received', () => {
-    expect(
-      readReturnMarker({ query: { return: '//evil.example' } }, allowedSlugs)
-    ).toEqual({ refusedMarker: '//evil.example' })
   })
 })
 

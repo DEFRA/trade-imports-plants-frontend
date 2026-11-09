@@ -10,6 +10,7 @@ import {
 import { hubPath } from '../../../../../../shared/paths.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
+  plants,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import {
@@ -26,11 +27,6 @@ const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const CONSIGNOR_SELECT = 'consignor-select'
 const TECH_IMPORTS = 'tech-imports-ltd'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 describe('#meta', () => {
   it('Should own the consignor-select obligation at its own slug', () => {

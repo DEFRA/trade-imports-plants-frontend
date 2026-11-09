@@ -1,7 +1,6 @@
 import Boom from '@hapi/boom'
 import {
-  flowOnlyAnswersCookie,
-  knownJourneysCookie,
+  journeyCookieNames,
   session,
   sessionConfiguredFor
 } from './persistence/session.js'
@@ -41,7 +40,7 @@ export const registerJourneyCookie = (server) => {
     strictHeader: true
   })
 
-  for (const name of [knownJourneysCookie(), flowOnlyAnswersCookie()]) {
+  for (const name of journeyCookieNames()) {
     server.state(name, cookieOptions)
   }
 }
