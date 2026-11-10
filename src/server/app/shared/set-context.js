@@ -77,6 +77,10 @@ export const withSetContext = (setId, fn) => storage.run({ setId }, fn)
 
 export const enterSetContext = (setId) => storage.enterWith({ setId })
 
+/** Run lifecycle code with this request's verified organisation and set bound. */
+export const runInRequestContext = (request, setId, fn) =>
+  withOrganisationId(organisationIdOf(request), () => withSetContext(setId, fn))
+
 /**
  * An `onRequest` extension that enters the set whose mount the request path
  * falls under, before routing.
@@ -95,9 +99,7 @@ export const setContextExtension = {
 const contextualMethod = (setId, method) =>
   typeof method === 'function'
     ? (request, h) =>
-        withOrganisationId(organisationIdOf(request), () =>
-          withSetContext(setId, () => method(request, h))
-        )
+        runInRequestContext(request, setId, () => method(request, h))
     : method
 
 const contextualEntry = (setId, entry) => {

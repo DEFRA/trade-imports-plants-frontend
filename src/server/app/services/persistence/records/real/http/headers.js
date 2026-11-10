@@ -1,17 +1,24 @@
-import { currentOrganisationId } from '../../../../../../common/helpers/organisation-id.js'
 import { getTraceId } from '@defra/hapi-tracing'
+
+import {
+  currentOrganisationId,
+  ORGANISATION_ID_HEADER
+} from '../../../../../../common/helpers/organisation-id.js'
+import { createLogger } from '../../../../../../common/helpers/logging/logger.js'
 import { tracingHeader } from '../config.js'
 
-export const ORGANISATION_ID_HEADER = 'Trade-Imports-Organisation-Id'
+const logger = createLogger()
+
+export { ORGANISATION_ID_HEADER }
 
 export const headers = () => {
-  const organisationId =
-    currentOrganisationId() ??
-    (process.env.NODE_ENV === 'test' ? '5900001' : undefined)
+  const organisationId = currentOrganisationId()
   if (!organisationId) {
-    throw new Error(
+    const err = new Error(
       'Cannot reach the notifications backend without an organisation from the signed-in session'
     )
+    logger.warn({ err }, err.message)
+    throw err
   }
   return {
     'Content-Type': 'application/json',

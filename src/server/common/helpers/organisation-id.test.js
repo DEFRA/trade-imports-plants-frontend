@@ -1,11 +1,23 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
-  bindOrganisationId,
   currentOrganisationId,
+  enterOrganisationIdForTests,
   organisationIdOf,
+  sessionOrganisationId,
   withOrganisationId
 } from './organisation-id.js'
+
+describe('sessionOrganisationId', () => {
+  it('Should prefer organisationId over currentRelationshipId when both are set', () => {
+    expect(
+      sessionOrganisationId({
+        organisationId: '5900001',
+        currentRelationshipId: '5900002'
+      })
+    ).toBe('5900001')
+  })
+})
 
 describe('organisationIdOf', () => {
   it('Should read organisationId from verified session credentials', () => {
@@ -32,15 +44,17 @@ describe('organisationIdOf', () => {
 })
 
 describe('organisation id binding', () => {
-  it('Should expose the value bound for this request', () => {
-    bindOrganisationId('5900001')
-
-    expect(currentOrganisationId()).toBe('5900001')
+  afterEach(() => {
+    enterOrganisationIdForTests(undefined)
   })
 
-  it('Should scope currentOrganisationId to withOrganisationId', () => {
+  it('Should scope currentOrganisationId to withOrganisationId and restore after', () => {
+    enterOrganisationIdForTests('outer-org')
+
     withOrganisationId('org-scoped', () => {
       expect(currentOrganisationId()).toBe('org-scoped')
     })
+
+    expect(currentOrganisationId()).toBe('outer-org')
   })
 })

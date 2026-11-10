@@ -17,6 +17,10 @@ import { records as recordsStub } from '../services/persistence/records/stub/ind
 import { session as sessionStub } from '../services/persistence/session/stub.js'
 import { currentSetId } from '../shared/set-context.js'
 import { pagePath } from '../shared/paths.js'
+import {
+  enterOrganisationIdForTests,
+  organisationIdOf
+} from '../../common/helpers/organisation-id.js'
 
 export const authenticatedCredentials = Object.freeze({
   contactId: 2100010101,
@@ -155,23 +159,28 @@ export const unavailableBackendError = (operation) =>
 export const journeyRequest = (
   journeyId,
   { knownJourneyIds, ...overrides } = {}
-) => ({
-  app: {},
-  payload: {},
-  query: {},
-  headers: {},
-  logger: recordingLogger(),
-  auth: {
-    isAuthenticated: true,
-    credentials: authenticatedCredentials
-  },
-  ...overrides,
-  params: { journeyId, ...overrides.params },
-  state: {
-    [knownJourneysCookie()]: knownJourneyIds ?? (journeyId ? [journeyId] : []),
-    ...overrides.state
+) => {
+  const request = {
+    app: {},
+    payload: {},
+    query: {},
+    headers: {},
+    logger: recordingLogger(),
+    auth: {
+      isAuthenticated: true,
+      credentials: authenticatedCredentials
+    },
+    ...overrides,
+    params: { journeyId, ...overrides.params },
+    state: {
+      [knownJourneysCookie()]:
+        knownJourneyIds ?? (journeyId ? [journeyId] : []),
+      ...overrides.state
+    }
   }
-})
+  enterOrganisationIdForTests(organisationIdOf(request))
+  return request
+}
 
 export const recordingH = () => cookieRecorder()
 
