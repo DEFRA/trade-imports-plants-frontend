@@ -65,8 +65,9 @@ to the `onPreHandler` entry guard alike.
 cross asynchronous boundaries after `onPreAuth`. Run the gateway's registration
 inside `withSetContext(setId, …)` and pass every route through
 `routeWithSetContext(setId, route)`, which wraps the handler and any
-route-owned lifecycle extension. Server-wide routes stay outside every set
-context.
+route-owned lifecycle extension. The `onPreHandler` entry guard must run inside
+`runInRequestContext(request, setId, …)` so the verified session organisation
+and set are both bound. Server-wide routes stay outside every set context.
 
 ## The mount prefix is not a choice
 

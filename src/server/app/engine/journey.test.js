@@ -26,11 +26,16 @@ import { assembleFulfilments } from '../bridge/assemble-fulfilments.js'
 import { session as sessionStub } from '../services/persistence/session/stub.js'
 import {
   authenticatedActor,
+  authenticatedCredentials,
   backendJourneyId,
   backendNotification,
   journeyRequest,
   recordingH
 } from './test-support.js'
+import {
+  organisationIdOf,
+  withOrganisationId
+} from '../../common/helpers/organisation-id.js'
 import { obligationSet } from '../model/obligations/manifest.js'
 import {
   FLOW_ONLY_KEY,
@@ -359,7 +364,7 @@ describe('#listKnownJourneys against the backend', () => {
     fetchMocker.resetMocks()
   })
 
-  it('Should request the page asked for without the organisation', async () => {
+  it('Should request the page asked for with the organisation header', async () => {
     fetchMocker.mockResponse(
       JSON.stringify({
         page: 2,
@@ -370,14 +375,29 @@ describe('#listKnownJourneys against the backend', () => {
       })
     )
 
-    await listKnownJourneys(
-      journeyRequest(backendJourneyId, { knownJourneyIds: [backendJourneyId] }),
-      { page: 2 }
-    )
+    const request = journeyRequest(backendJourneyId, {
+      knownJourneyIds: [backendJourneyId],
+      auth: {
+        isAuthenticated: true,
+        credentials: {
+          ...authenticatedCredentials,
+          organisationId: '5900042',
+          currentRelationshipId: '5900009'
+        }
+      }
+    })
 
-    const [request] = fetchMocker.requests()
-    expect(request.url).toBe(`${notificationsUrl}?page=2&sort=arrivalDate,desc`)
-    expect(request.headers.get('Trade-Imports-Organisation-Id')).toBeNull()
+    await withOrganisationId(organisationIdOf(request), async () => {
+      await listKnownJourneys(request, { page: 2 })
+    })
+
+    const [backendRequest] = fetchMocker.requests()
+    expect(backendRequest.url).toBe(
+      `${notificationsUrl}?page=2&sort=arrivalDate,desc`
+    )
+    expect(backendRequest.headers.get('Trade-Imports-Organisation-Id')).toBe(
+      '5900042'
+    )
   })
 })
 
