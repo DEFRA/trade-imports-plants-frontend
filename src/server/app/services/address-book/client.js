@@ -1,4 +1,6 @@
 import { getTraceId } from '@defra/hapi-tracing'
+
+import { ORGANISATION_ID_HEADER } from '../../../common/helpers/organisation-id.js'
 import { addressBookCountryName } from '../countries/index.js'
 import { HTTP_STATUS_NOT_FOUND } from '../../lib/http-status.js'
 import { BackendRequestError } from '../persistence/records/errors.js'
@@ -23,7 +25,7 @@ const addressesUrl = (orgId, addressId) => {
 
 const headers = (orgId) => ({
   'Content-Type': 'application/json',
-  'Trade-Imports-Organisation-Id': orgId,
+  [ORGANISATION_ID_HEADER]: orgId,
   [tracingHeader]: getTraceId() ?? ''
 })
 

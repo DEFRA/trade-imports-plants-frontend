@@ -44,6 +44,7 @@ import {
   enterSetContext,
   registerSetMount,
   routeWithSetContext,
+  runInRequestContext,
   withSetContext
 } from './shared/set-context.js'
 import { SET_BASE, SET_ID } from './sets/high-risk-plants/set.js'
@@ -84,7 +85,7 @@ export const highRiskPlants = {
         server.ext(
           'onPreHandler',
           async (request, h) => {
-            const target = await withSetContext(SET_ID, () =>
+            const target = await runInRequestContext(request, SET_ID, () =>
               journeyEntryGuardTarget(request, h)
             )
             return target ? h.redirect(target).takeover() : h.continue
