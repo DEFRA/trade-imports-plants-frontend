@@ -186,7 +186,10 @@ describe('#hubGet', () => {
     const { h } = await renderHub()
 
     const [, originRow] = h.captured.view.context.groups[0].items
-    expect(originRow).not.toHaveProperty('href')
+    expect(originRow).toEqual({
+      title: { text: copy.rows.origin.title },
+      status: CANNOT_START_STATUS
+    })
   })
 
   it('Should open the origin row once the commodity type is answered', async () => {

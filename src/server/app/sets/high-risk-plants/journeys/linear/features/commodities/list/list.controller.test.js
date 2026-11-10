@@ -208,13 +208,15 @@ describe('POST commodities — continuing', () => {
     })
   })
 
-  it('Should hold an empty consignment at the collection floor', async () => {
+  it('Should hold a consignment left empty by a type change at the collection floor, still reporting the removed lines', async () => {
     const result = await driveHandler(post, {
       seed: { commodityType: POTATOES },
-      payload: {}
+      payload: {},
+      query: { removed: '2', ...trailQuery(COMMODITY_TYPE_SLUG) }
     })
 
     expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.removedCount).toBe(2)
     expect(result.view.context.errorSummary.errorList).toEqual([
       { text: ADD_AT_LEAST_ONE, href: '#commodityLines' }
     ])

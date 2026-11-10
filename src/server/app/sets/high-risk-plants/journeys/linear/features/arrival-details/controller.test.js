@@ -4,10 +4,11 @@ import {
   driveHandler,
   expectNoRefusalLogged,
   postHandlerOf,
+  trailQuery,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
-import { withTrail } from '../../../../../../shared/kit.js'
+import { TRAIL_START, withTrail } from '../../../../../../shared/kit.js'
 import { placeOfDestinationPage } from '../place-of-destination/page.js'
 import { arrivalDetailsPage } from './page.js'
 import { validatorDefaults } from '../../../../../../shared/copy.en.js'
@@ -457,16 +458,17 @@ describe('POST arrival-details — accepted answers', () => {
     expect(result.after.proposedPlaceOfLanding).toBeUndefined()
   })
 
-  it('Should redirect to the place of destination, the next page that applies', async () => {
+  it('Should redirect to the place of destination, carrying Overview and arrival details, when opened from Overview', async () => {
     const result = await driveHandler(post, {
       seed: potatoes(),
-      payload: potatoPayload()
+      payload: potatoPayload(),
+      query: trailQuery(TRAIL_START.overview)
     })
 
     expect(result.response).toEqual({
       redirect: withTrail(
         pagePath(result.journeyId, placeOfDestinationPage.slug),
-        [arrivalDetailsPage.slug]
+        [TRAIL_START.overview, arrivalDetailsPage.slug]
       )
     })
   })

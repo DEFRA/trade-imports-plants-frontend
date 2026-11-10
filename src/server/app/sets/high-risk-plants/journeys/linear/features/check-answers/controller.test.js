@@ -462,6 +462,19 @@ describe('Check your answers lateness', () => {
     )
   })
 
+  it('Should show a draft review as editable with the Draft status and no Delete or Cancel amendment link', async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+
+    expect(result.view.context).toMatchObject({
+      readOnly: false,
+      deleteHref: null
+    })
+    expect(result.view.context.journeyStrip).toEqual({
+      reference: result.journeyId,
+      status: { text: 'Draft', classes: 'govuk-tag--blue' }
+    })
+  })
+
   it('Should show no error summary on opening an incomplete amend review', async () => {
     const result = await driveHandler(get, { amend: true })
     expect(result.view.context.errorSummary).toBeNull()
@@ -529,6 +542,18 @@ describe('Check your answers — the Back link', () => {
     await get(journeyRequest(journeyId, { query: { cancelled: '1' } }), h)
 
     expect(h.captured.view.context.backLink).toBe(SET_BASE)
+  })
+
+  it('Should send Back from an amendment opened with no trail to Overview', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_NOTIFICATION,
+      amend: true
+    })
+
+    expectBackLinkIsPath(
+      result,
+      `${SET_BASE}/notifications/${result.journeyId}`
+    )
   })
 })
 

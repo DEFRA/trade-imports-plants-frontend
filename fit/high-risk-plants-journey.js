@@ -430,6 +430,9 @@ export const describeDatePickerLook = ({
  * Fails unless the journey form offers Save and continue, Save and return to
  * overview and Cancel and return to overview in that order, with Save and
  * return to overview as the form's last button.
+ * Save and continue and Save and return to overview must be the only buttons
+ * in one button group.
+ * Cancel and return to overview must sit below that group.
  *
  * @param {import('@playwright/test').Page} page
  */
@@ -447,6 +450,17 @@ export const expectThreeSaveControls = async (page) => {
   ])
   await expect(form.getByRole('button').last()).toHaveText(
     sharedCopy.saveActions.saveAndReturnToHub
+  )
+
+  const buttonGroup = form.locator('.govuk-button-group', {
+    has: saveAndContinue(page)
+  })
+  await expect(buttonGroup.getByRole('button')).toHaveText([
+    sharedCopy.saveActions.saveAndContinue,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
+  expect(await documentTop(cancelAndReturnToHub(page))).toBeGreaterThanOrEqual(
+    await documentBottom(buttonGroup)
   )
 }
 

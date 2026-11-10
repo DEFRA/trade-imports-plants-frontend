@@ -63,9 +63,19 @@ holds the steps more than one spec takes: `startNotification`,
 `addCommodityLine`, `saveOrigin`, `chooseCountryOfOrigin`,
 `chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
 `startPotatoNotificationAtContact`, `completePotatoNotification`, `openDeclaration`,
-`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which also proves the primary and
-Save and return to overview buttons and the Cancel and return to overview link appear in that order,
-found by role inside the journey form,
+`expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which finds the save controls by
+role inside the journey form. It fails unless Save and continue, Save and return to overview and
+Cancel and return to overview appear in that order. The two buttons must be the only buttons in one
+button group, and the link must sit below that group,
+`saveAndReturnToHub`, which finds the Save and return to overview button,
+`startNotificationAtOverview`, which starts a notification, saves potatoes as its commodity type and opens its Overview,
+`startWoodNotificationAtPlaceOfDestination`, which starts a cut coniferous trees notification and walks it through arrival to the place of destination page,
+`submitDeclarationFromCheckAnswers`, which submits the declaration from the review,
+`overwriteRadioInputs`, which unticks a page's radio inputs and ticks the first with the posted value given,
+`continueFromChangedCommodityLine`, which continues from a commodity line opened from a review Change link and checks the trail,
+`POTATO_WALK`, the pages a potato notification visits in order,
+`POTATO_CHANGE_LINK_TRAIL`, the trail a review Change link carries after that walk,
+`REVIEW_URL_WITHOUT_TRAIL`, the review page's URL with no trail,
 `govukColourOf`, which reads one GOV.UK colour token at run time,
 `describeDatePickerLook`, which registers the button, position, mouse-focus
 and keyboard-focus tests for one date field, and
@@ -90,11 +100,13 @@ through the save control its `saveControlOf` option names (Save and continue by 
 `withoutJavaScript`, which reopens the page in a context with JavaScript switched off;
 `pickerResultsSummary`, which finds the paragraph straight after the results
 heading (the count, or the no-matches message), and
-`expectPickerResultsLayout`, which fails unless the count, the one radio group
-named "Select an address" and the link-free content under the page heading are
-The type-ahead style tests (typography, focus indicator, error border, and the
+`expectPickerResultsLayout`, which fails unless the count sits straight under the results heading, the page's radios form the one radio group
+named "Select an address" and the only content between the page heading and the form is one link-free paragraph.
+The type-ahead style tests (typography, focus indicator, error border, the search button's blue square and white magnifying glass, and the
 no-JavaScript label size) compare the enhanced input or the label with a GOV.UK
 reference element read at run time.
+The type-ahead announcement tests read the search box's accessible description and the
+polite status region's result count and highlighted-option text.
 They and the readers `govukReferenceStyleOf`, `measureJoinedSearchButton` and
 `boldLettersOf` live in `type-ahead.fit.spec.js`, so the coverage report never
 counts them as source.

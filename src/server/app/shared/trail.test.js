@@ -62,6 +62,20 @@ describe('the trail of places the trader came from', () => {
       expect(pushed.at(0)).toBe('scalars')
       expect(pushed.at(-1)).toBe('items')
     })
+
+    it('Should point Back at the newest place of a trail, carrying the places before it', () => {
+      const request = trailRequestOf(['overview', 'scalars', 'items'])
+
+      expect(trailBackLink(request)).toBe(
+        '/high-risk-plants/notifications/j-1/items?from=overview%2Cscalars'
+      )
+    })
+
+    it('Should point Back at Overview from an empty trail', () => {
+      expect(trailBackLink(trailRequestOf([]))).toBe(
+        '/high-risk-plants/notifications/j-1'
+      )
+    })
   })
 
   describe('#carryTrail', () => {
