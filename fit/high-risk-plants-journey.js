@@ -1112,6 +1112,15 @@ export const describeAddressPicker = ({
       await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
     })
 
+    test('carries a newly ticked address through the paging links', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+
+      await expectSelectedAddressCarriedToSecondPage(page)
+    })
+
     test('carries a saved address through the paging links', async ({
       page
     }) => {
