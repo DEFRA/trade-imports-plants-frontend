@@ -69,7 +69,7 @@ describe('#nextStepLanding — where Save and continue lands', () => {
     ).toBe(journeyPath(originPage))
   })
 
-  it('Should go from the commodities list to origin with only the commodity type saved', () => {
+  it('Should go from the commodities list to origin when the commodity type and country of origin are in scope', () => {
     expect(
       nextAfter(commoditiesPage, scopeOf('commodityType', 'countryOfOrigin'))
     ).toBe(journeyPath(originPage))
