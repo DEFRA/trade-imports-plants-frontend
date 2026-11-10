@@ -3,7 +3,7 @@ import { copyFor } from '../../../../../../../shared/copy.js'
 import * as countries from '../../../../../../../services/countries/index.js'
 import * as ports from '../../../../../../../services/ports/index.js'
 import { lineFieldsFor } from '../../../../../services/commodities/index.js'
-import { detailsHref } from '../../commodities/links.js'
+import { detailsPath } from '../../commodities/links.js'
 import { addressText } from '../../address-book-picker/address-lines.js'
 import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
@@ -12,7 +12,7 @@ import { errorRow } from './rows/error-row.js'
 import { changeAction, editableActions } from './rows/change-link.js'
 import { dateText } from './rows/value-text.js'
 import { anchorOf } from './incomplete-cards.js'
-import { CYA_SLUG } from '../../../../../../../shared/kit.js'
+import { CYA_SLUG, withTrail } from '../../../../../../../shared/kit.js'
 import { partyOf } from '../../../parties/index.js'
 import { partyEditHref } from '../../party-edit/edit-href.js'
 import { copy as arrivalEn } from '../../arrival-details/copy/copy.en.js'
@@ -51,12 +51,24 @@ const IDENTIFIERS = [
   'consignmentNumber'
 ]
 
-const partyActions = (field, title, partyDisplayValues, journeyId) => {
-  const actions = changeAction(journeyId, field, title)
+const partyActions = ({
+  field,
+  title,
+  partyDisplayValues,
+  journeyId,
+  changeLinkTrail,
+  reviewPageTrail
+}) => {
+  const actions = changeAction({ journeyId, changeLinkTrail }, field, title)
   if (partyDisplayValues) {
     const partyRegistryEntry = partyOf(field)
     actions.items.push({
-      href: partyEditHref(journeyId, partyRegistryEntry, CYA_SLUG),
+      href: partyEditHref(
+        journeyId,
+        partyRegistryEntry,
+        CYA_SLUG,
+        reviewPageTrail
+      ),
       text: copy.editDetails,
       visuallyHiddenText: title
     })
@@ -78,7 +90,14 @@ const ADDRESS_FIELDS = [
 const partyCard = (
   { field, id },
   title,
-  { partyDisplayValuesById, partyFieldErrorsById, journeyId, readOnly }
+  {
+    partyDisplayValuesById,
+    partyFieldErrorsById,
+    journeyId,
+    changeLinkTrail,
+    reviewPageTrail,
+    readOnly
+  }
 ) => {
   const partyDisplayValues = partyDisplayValuesById[field]
   const fieldErrors = partyFieldErrorsById[field] ?? {}
@@ -87,10 +106,17 @@ const partyCard = (
   return {
     id,
     title,
-    ...editableActions(
+    ...editableActions({
       readOnly,
-      partyActions(field, title, partyDisplayValues, journeyId)
-    ),
+      actions: partyActions({
+        field,
+        title,
+        partyDisplayValues,
+        journeyId,
+        changeLinkTrail,
+        reviewPageTrail
+      })
+    }),
     rows: [
       errorRow(
         copy.labels.name,
@@ -122,18 +148,28 @@ const partyCard = (
   }
 }
 
-const commodityCards = (answers, evaluation, journeyId, readOnly) =>
+const commodityCards = ({
+  answers,
+  evaluation,
+  journeyId,
+  changeLinkTrail,
+  readOnly
+}) =>
   collectionView(answers, ['commodityLines'], evaluation).map(
     ({ index, entry }) => {
       const title = `${copy.cards.commodity} ${index + 1}`
-      const actions = changeAction(journeyId, 'commodityLines', title)
-      actions.items[0].href = detailsHref(
-        { params: { journeyId }, query: { change: '1' } },
-        { index }
+      const actions = changeAction(
+        { journeyId, changeLinkTrail },
+        'commodityLines',
+        title
+      )
+      actions.items[0].href = withTrail(
+        detailsPath(journeyId, index),
+        changeLinkTrail
       )
       return {
         title,
-        ...editableActions(readOnly, actions),
+        ...editableActions({ readOnly, actions }),
         rows: [
           readOnlyRow(
             copy.labels.category,
@@ -150,23 +186,24 @@ const commodityCards = (answers, evaluation, journeyId, readOnly) =>
     }
   )
 
-/**
- * Everything a section builder needs: the journey's answers and scope, the
- * identifiers the change links are built from, and the two row helpers that
- * close over them. Assembled once by `buildSections` and passed to each
- * section so the builders stay small and independently readable.
- */
 const sectionContext = async (
   { journey, answers, scope, evaluation },
-  { partyDisplayValuesById, partyFieldErrorsById },
-  readOnly
+  {
+    partyDisplayValuesById,
+    partyFieldErrorsById,
+    changeLinkTrail,
+    reviewPageTrail,
+    readOnly
+  }
 ) => {
   const journeyId = journey.journeyId
   const answerRow = (field, value = answers[field]) =>
-    row(journeyId, readOnly, copy.labels[field], value, field)
-  // Pre-resolve the reference-data-backed labels so the section builders can
-  // stay synchronous. The readers self-load; buildSections is the natural
-  // await point since it is already the async gateway to check-answers.
+    row(
+      { journeyId, changeLinkTrail, readOnly },
+      copy.labels[field],
+      value,
+      field
+    )
   const originCountryLabel = await countries.countryDisplayLabel(
     answers.countryOfOrigin
   )
@@ -179,6 +216,8 @@ const sectionContext = async (
     evaluation,
     partyDisplayValuesById,
     partyFieldErrorsById,
+    changeLinkTrail,
+    reviewPageTrail,
     journeyId,
     readOnly,
     arrivalState: arrivalStateOf(answers, scope),
@@ -196,6 +235,7 @@ const consignmentSection = ({
   answers,
   evaluation,
   journeyId,
+  changeLinkTrail,
   readOnly,
   answerRow,
   originCountryLabel
@@ -211,7 +251,13 @@ const consignmentSection = ({
         answerRow('countryOfOrigin', originCountryLabel)
       ]
     },
-    ...commodityCards(answers, evaluation, journeyId, readOnly)
+    ...commodityCards({
+      answers,
+      evaluation,
+      journeyId,
+      changeLinkTrail,
+      readOnly
+    })
   ]
 })
 
@@ -220,6 +266,7 @@ const arrivalRows = ({
   scope,
   arrivalState,
   journeyId,
+  changeLinkTrail,
   readOnly,
   answerRow,
   scopedRows,
@@ -229,8 +276,7 @@ const arrivalRows = ({
     ? [answerRow('arrivalStatus', copy.statusLabels[answers.arrivalStatus])]
     : []),
   row(
-    journeyId,
-    readOnly,
+    { journeyId, changeLinkTrail, readOnly },
     arrivalCopy.dateLabels[arrivalState],
     dateText(answers.arrivalDate),
     'arrivalDate'
@@ -288,13 +334,15 @@ export const buildSections = async (
   journeyState,
   partyDisplayValuesById,
   readOnly,
-  { partyFieldErrorsById = {} } = {}
+  { partyFieldErrorsById = {}, changeLinkTrail, reviewPageTrail } = {}
 ) => {
-  const context = await sectionContext(
-    journeyState,
-    { partyDisplayValuesById, partyFieldErrorsById },
+  const context = await sectionContext(journeyState, {
+    partyDisplayValuesById,
+    partyFieldErrorsById,
+    changeLinkTrail,
+    reviewPageTrail,
     readOnly
-  )
+  })
   return [
     consignmentSection(context),
     arrivalSection(context),

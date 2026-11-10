@@ -55,7 +55,6 @@ describe('high-risk-plants plugin registration', () => {
     expect(Object.keys(server.states.cookies)).toEqual(
       expect.arrayContaining([
         'highRiskPlantsKnownJourneys',
-        'highRiskPlantsOpeningRun',
         'highRiskPlantsFlowOnlyAnswers'
       ])
     )

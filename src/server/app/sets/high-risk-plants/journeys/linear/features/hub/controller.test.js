@@ -1,20 +1,18 @@
 import { SET_BASE } from '../../../../set.js'
 import { describe, expect, it } from 'vitest'
 
-import { openingRunCookie } from '../../../../../../engine/persistence/session.js'
-import { store } from '../../../../../../engine/store.js'
-import { journeyRequest } from '../../../../../../engine/test-support.js'
+import { driveHandler } from '../../../../../../engine/test-support.js'
 import { hubRoutePath } from '../../../../../../shared/paths.js'
 import { SURFACES } from '../../../../../../shared/kit.js'
-import { RUN_ACTIVE, RUN_COMPLETE } from '../../../../../../flow/run-state.js'
 import {
+  COMPLETE_NOTIFICATION,
   COMPLETE_POTATO_CONSIGNMENT,
   TECH_IMPORTS_COPY,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 
 import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
-import { GROUPS, routes } from './controller.js'
+import { routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 
 const REVIEW_GROUP_ID = 'check-and-submit'
@@ -40,38 +38,6 @@ const POTATOES = 'potatoes'
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const FRANCE = 'FR'
 
-const buildH = () => {
-  const captured = { cookies: {} }
-  return {
-    view: (template, context) => {
-      captured.view = { template, context }
-      return captured.view
-    },
-    redirect: (to) => {
-      captured.redirect = to
-      return { redirect: to }
-    },
-    state: (name, value) => {
-      captured.cookies[name] = value
-    },
-    unstate: (name) => {
-      delete captured.cookies[name]
-    },
-    captured
-  }
-}
-
-const renderHub = async ({ openingRun, seed = {} } = {}) => {
-  const journey = await store.create()
-  await store.seedAnswers(journey.journeyId, seed)
-  const h = buildH()
-  const state = openingRun
-    ? { [openingRunCookie()]: { [journey.journeyId]: openingRun } }
-    : {}
-  await hubGet(journeyRequest(journey.journeyId, { state }), h)
-  return { journeyId: journey.journeyId, h }
-}
-
 describe('#hubGet', () => {
   useStubbedHighRiskPlantsJourney()
 
@@ -82,12 +48,14 @@ describe('#hubGet', () => {
   })
 
   it('Should title the hub Overview and render it on the form surface', async () => {
-    const { h } = await renderHub()
+    const {
+      view: { view: template, context }
+    } = await driveHandler(hubGet)
 
-    expect(h.captured.view.template).toBe(
+    expect(template).toBe(
       'high-risk-plants/journeys/linear/features/hub/template'
     )
-    expect(h.captured.view.context).toMatchObject({
+    expect(context).toMatchObject({
       heading: 'Overview',
       pageTitle: 'Overview',
       copy,
@@ -96,43 +64,43 @@ describe('#hubGet', () => {
   })
 
   it('Should point the back link and the Return to dashboard button at the dashboard', async () => {
-    const { h } = await renderHub()
+    const { view } = await driveHandler(hubGet)
 
-    expect(h.captured.view.context.backLink).toBe(SET_BASE)
-    expect(h.captured.view.context.dashboardHref).toBe(SET_BASE)
+    expect(view.context.backLink).toBe(SET_BASE)
+    expect(view.context.dashboardHref).toBe(SET_BASE)
   })
 
   it('Should render no breadcrumbs, no progress line and no section caption', async () => {
-    const { h } = await renderHub()
+    const { view } = await driveHandler(hubGet)
 
-    expect(h.captured.view.context.breadcrumbs).toBeUndefined()
-    expect(h.captured.view.context.progressLine).toBeUndefined()
-    expect(h.captured.view.context.caption).toBeUndefined()
+    expect(view.context.breadcrumbs).toBeUndefined()
+    expect(view.context.progressLine).toBeUndefined()
+    expect(view.context.caption).toBeUndefined()
   })
 
   it('Should carry the shared chrome copy and the journey reference strip', async () => {
-    const { journeyId, h } = await renderHub()
+    const { journeyId, view } = await driveHandler(hubGet)
 
-    expect(h.captured.view.context.sharedCopy.layout.serviceName).toBe(
+    expect(view.context.sharedCopy.layout.serviceName).toBe(
       'Import notification service'
     )
-    expect(h.captured.view.context.journeyStrip).toEqual({
+    expect(view.context.journeyStrip).toEqual({
       reference: journeyId,
       status: { text: 'Draft', classes: 'govuk-tag--blue' }
     })
   })
 
   it('Should render the about-the-consignment group and its two rows', async () => {
-    const { journeyId, h } = await renderHub()
+    const { journeyId, view } = await driveHandler(hubGet)
 
-    expect(h.captured.view.context.groups).toEqual([
+    expect(view.context.groups).toEqual([
       {
         id: CONSIGNMENT_GROUP_ID,
         caption: copy.groups[CONSIGNMENT_GROUP_ID],
         items: [
           expect.objectContaining({
             title: { text: copy.rows.commodities.title },
-            href: `${SET_BASE}/notifications/${journeyId}/commodity-type`,
+            href: `${SET_BASE}/notifications/${journeyId}/commodity-type?from=overview`,
             status: {
               tag: {
                 text: copy.statuses.notYetStarted,
@@ -188,19 +156,24 @@ describe('#hubGet', () => {
   })
 
   it('Should offer no link to origin until the entry question is answered', async () => {
-    const { h } = await renderHub()
+    const { view } = await driveHandler(hubGet)
 
-    const [, originRow] = h.captured.view.context.groups[0].items
-    expect(originRow).not.toHaveProperty('href')
+    const [, originRow] = view.context.groups[0].items
+    expect(originRow).toEqual({
+      title: { text: copy.rows.origin.title },
+      status: CANNOT_START_STATUS
+    })
   })
 
   it('Should open the origin row once the commodity type is answered', async () => {
-    const { journeyId, h } = await renderHub({
+    const { journeyId, view } = await driveHandler(hubGet, {
       seed: { commodityType: POTATOES }
     })
 
-    const [, originRow] = h.captured.view.context.groups[0].items
-    expect(originRow.href).toBe(`${SET_BASE}/notifications/${journeyId}/origin`)
+    const [, originRow] = view.context.groups[0].items
+    expect(originRow.href).toBe(
+      `${SET_BASE}/notifications/${journeyId}/origin?from=overview`
+    )
     expect(originRow.status).toEqual({
       tag: {
         text: copy.statuses.notYetStarted,
@@ -210,11 +183,11 @@ describe('#hubGet', () => {
   })
 
   it('Should complete the origin row once a country is named', async () => {
-    const { h } = await renderHub({
+    const { view } = await driveHandler(hubGet, {
       seed: { commodityType: POTATOES, countryOfOrigin: FRANCE }
     })
 
-    const [, originRow] = h.captured.view.context.groups[0].items
+    const [, originRow] = view.context.groups[0].items
     expect(originRow.status).toEqual({
       tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
@@ -222,75 +195,76 @@ describe('#hubGet', () => {
 
   it('Should still complete the origin row when the stored country is no longer offered by the origin block', async () => {
     const UNOFFERED_COUNTRY = 'ZZ'
-    const { h } = await renderHub({
+    const { view } = await driveHandler(hubGet, {
       seed: { commodityType: POTATOES, countryOfOrigin: UNOFFERED_COUNTRY }
     })
 
-    const [, originRow] = h.captured.view.context.groups[0].items
+    const [, originRow] = view.context.groups[0].items
     expect(originRow.status).toEqual({
       tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
   })
 
-  it('Should give the commodities row no hint — no source writes one', async () => {
-    const { h } = await renderHub()
+  it('Should give the commodities row no hint', async () => {
+    const { view } = await driveHandler(hubGet)
 
-    const [row] = h.captured.view.context.groups[0].items
+    const [row] = view.context.groups[0].items
     expect(row).not.toHaveProperty('hint')
   })
 
   it('Should hold the commodities row in progress on a type with no line', async () => {
-    const { h } = await renderHub({ seed: { commodityType: POTATOES } })
+    const { view } = await driveHandler(hubGet, {
+      seed: { commodityType: POTATOES }
+    })
 
-    const [row] = h.captured.view.context.groups[0].items
+    const [row] = view.context.groups[0].items
     expect(row.status).toEqual({
       tag: { text: copy.statuses.inProgress, classes: 'govuk-tag--light-blue' }
     })
   })
 
   it('Should complete the commodities row once a line answers every field its category asks for', async () => {
-    const { journeyId, h } = await renderHub({
+    const { journeyId, view } = await driveHandler(hubGet, {
       seed: COMPLETE_POTATO_CONSIGNMENT
     })
 
-    const [row] = h.captured.view.context.groups[0].items
+    const [row] = view.context.groups[0].items
     expect(row.status).toEqual({
       tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
     })
     expect(row.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/commodity-type`
+      `${SET_BASE}/notifications/${journeyId}/commodity-type?from=overview`
     )
   })
 
   it('Should render the review group after the answer groups', async () => {
-    const { h } = await renderHub()
+    const { view } = await driveHandler(hubGet)
 
-    expect(GROUPS.find((group) => group.id === REVIEW_GROUP_ID).rows).toEqual([
-      'review'
-    ])
-    expect(h.captured.view.context.groups.map((group) => group.id)).toEqual(
+    expect(view.context.groups.map((group) => group.id)).toEqual(
       RENDERED_GROUP_IDS
     )
   })
 
-  it('Should carry no commodity totals — the animals panel is not copied', async () => {
-    const { h } = await renderHub()
+  it('Should carry no commodity totals in the view context', async () => {
+    const { view } = await driveHandler(hubGet)
 
-    expect(h.captured.view.context).not.toHaveProperty('commodityTotals')
+    expect(view.context).not.toHaveProperty('commodityTotals')
   })
+})
 
-  it('Should complete an active opening run on GET', async () => {
-    const { journeyId, h } = await renderHub({ openingRun: RUN_ACTIVE })
+describe('#hubGet — the task links', () => {
+  useStubbedHighRiskPlantsJourney()
 
-    expect(h.captured.cookies[openingRunCookie()]).toEqual({
-      [journeyId]: RUN_COMPLETE
-    })
-  })
+  it('Should link every task row to its page with exactly the Overview mark added', async () => {
+    const { view } = await driveHandler(hubGet, { seed: COMPLETE_NOTIFICATION })
+    const items = view.context.groups.flatMap((group) => group.items)
 
-  it('Should leave a journey that never began an opening run untouched', async () => {
-    const { h } = await renderHub()
-
-    expect(h.captured.cookies).not.toHaveProperty(openingRunCookie())
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items) {
+      const [pagePathOfRow] = item.href.split('?')
+      expect(pagePathOfRow).not.toContain('?')
+      expect(item.href).toBe(`${pagePathOfRow}?from=overview`)
+    }
   })
 })
 
@@ -298,8 +272,8 @@ describe('#hubGet — the arrival row', () => {
   useStubbedHighRiskPlantsJourney()
 
   const arrivalRowIn = async (seed) => {
-    const { journeyId, h } = await renderHub({ seed })
-    const [arrivalRow] = h.captured.view.context.groups[1].items
+    const { journeyId, view } = await driveHandler(hubGet, { seed })
+    const [arrivalRow] = view.context.groups[1].items
     return { journeyId, arrivalRow }
   }
 
@@ -310,7 +284,7 @@ describe('#hubGet — the arrival row', () => {
     })
 
     expect(arrivalRow.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/arrival-details`
+      `${SET_BASE}/notifications/${journeyId}/arrival-details?from=overview`
     )
     expect(arrivalRow.status).toEqual({
       tag: {
@@ -336,7 +310,7 @@ describe('#hubGet — the arrival row', () => {
     })
 
     expect(arrivalRow.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/arrival-status`
+      `${SET_BASE}/notifications/${journeyId}/arrival-status?from=overview`
     )
     expect(arrivalRow.status).toEqual({
       tag: {
@@ -364,8 +338,8 @@ describe('#hubGet — the destination row', () => {
   useStubbedHighRiskPlantsJourney()
 
   const destinationRowIn = async (seed) => {
-    const { journeyId, h } = await renderHub({ seed })
-    const [, destinationRow] = h.captured.view.context.groups[1].items
+    const { journeyId, view } = await driveHandler(hubGet, { seed })
+    const [, destinationRow] = view.context.groups[1].items
     return { journeyId, destinationRow }
   }
 
@@ -386,7 +360,7 @@ describe('#hubGet — the destination row', () => {
       })
 
       expect(destinationRow.href).toBe(
-        `${SET_BASE}/notifications/${journeyId}/destinations/select`
+        `${SET_BASE}/notifications/${journeyId}/destinations/select?from=overview`
       )
       expect(destinationRow.status).toEqual({
         tag: {
@@ -414,9 +388,11 @@ describe('#hubGet — consignor', () => {
   useStubbedHighRiskPlantsJourney()
 
   it('Should show identification numbers and contact in the parties group for potatoes', async () => {
-    const { h } = await renderHub({ seed: { commodityType: POTATOES } })
+    const { view } = await driveHandler(hubGet, {
+      seed: { commodityType: POTATOES }
+    })
     expect(
-      h.captured.view.context.groups
+      view.context.groups
         .find(({ id }) => id === PARTIES_GROUP_ID)
         .items.map((item) => item.title.text)
     ).toEqual([copy.rows.identificationNumbers.title, copy.rows.contact.title])
@@ -424,27 +400,27 @@ describe('#hubGet — consignor', () => {
 
   it('Should link plants and wood to the picker and complete a picked copy', async () => {
     for (const commodityType of [PLANTS_FOR_PLANTING, 'wood-and-cut-trees']) {
-      const { journeyId, h } = await renderHub({
+      const { journeyId, view } = await driveHandler(hubGet, {
         seed: {
           commodityType,
           countryOfOrigin: FRANCE,
           consignor: TECH_IMPORTS_COPY
         }
       })
-      const group = h.captured.view.context.groups.find(
+      const group = view.context.groups.find(
         ({ id }) => id === PARTIES_GROUP_ID
       )
       expect(group.items).toEqual([
         {
           title: { text: copy.rows.consignor.title },
-          href: `${SET_BASE}/notifications/${journeyId}/consignors/select`,
+          href: `${SET_BASE}/notifications/${journeyId}/consignors/select?from=overview`,
           status: {
             tag: { text: copy.statuses.completed, classes: COMPLETED_TAG_CLASS }
           }
         },
         {
           title: { text: copy.rows.identificationNumbers.title },
-          href: `${SET_BASE}/notifications/${journeyId}/identification-numbers`,
+          href: `${SET_BASE}/notifications/${journeyId}/identification-numbers?from=overview`,
           status:
             commodityType === 'wood-and-cut-trees'
               ? { text: copy.statuses.optional }
@@ -457,7 +433,7 @@ describe('#hubGet — consignor', () => {
         },
         {
           title: { text: copy.rows.contact.title },
-          href: `${SET_BASE}/notifications/${journeyId}/consignment/contact/select`,
+          href: `${SET_BASE}/notifications/${journeyId}/consignment/contact/select?from=overview`,
           status: {
             tag: {
               text: copy.statuses.notYetStarted,
@@ -467,5 +443,30 @@ describe('#hubGet — consignor', () => {
         }
       ])
     }
+  })
+})
+
+describe('#hubGet — the order of the task rows', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it('Should list the task rows under each caption in the order Save and continue visits them', async () => {
+    const { view } = await driveHandler(hubGet, {
+      seed: { commodityType: PLANTS_FOR_PLANTING }
+    })
+
+    expect(
+      view.context.groups.map((group) =>
+        group.items.map((item) => item.title.text)
+      )
+    ).toEqual([
+      [copy.rows.commodities.title, copy.rows.origin.title],
+      [copy.rows.arrival.title, copy.rows.destination.title],
+      [
+        copy.rows.consignor.title,
+        copy.rows.identificationNumbers.title,
+        copy.rows.contact.title
+      ],
+      [copy.rows.review.title]
+    ])
   })
 })

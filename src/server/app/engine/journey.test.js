@@ -9,7 +9,6 @@ import {
   replaceJourneyFulfilment,
   flowOnlyAnswersCookie,
   knownJourneysCookie,
-  openingRunCookie,
   registerJourneyCookie,
   softDeleteJourney,
   startJourney
@@ -515,11 +514,7 @@ describe('#registerJourneyCookie', () => {
     registerJourneyCookie(server)
 
     expect(Object.keys(server.states).toSorted()).toEqual(
-      [
-        knownJourneysCookie(),
-        openingRunCookie(),
-        flowOnlyAnswersCookie()
-      ].toSorted()
+      [knownJourneysCookie(), flowOnlyAnswersCookie()].toSorted()
     )
     for (const [name, options] of Object.entries(server.states)) {
       expect(options.path, `${name} is not scoped to the set base`).toBe(

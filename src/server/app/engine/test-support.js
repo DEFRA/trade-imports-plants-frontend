@@ -5,13 +5,14 @@ import { restoreConfigAfterEach } from '../../common/test-helpers/restore-config
 import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
 import {
+  CYA_SLUG,
   REFUSAL_LOG_MESSAGE,
   SAVE_FALLBACK_LOG_MESSAGE
 } from '../shared/kit.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
 import { configureRecords, records } from './persistence/records.js'
-import { configureSession, openingRunCookie } from './persistence/session.js'
+import { configureSession } from './persistence/session.js'
 import { BackendRequestError } from '../services/persistence/records/errors.js'
 import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
@@ -263,10 +264,9 @@ const requestLocation = (pathOf, journeyId, query) => {
 
 /** Seeds a journey, runs one handler against it and reports the answers before
  * and after. `amend` submits the journey and opens an amendment first;
- * `openingRun` (`RUN_ACTIVE` or `RUN_COMPLETE`) records that phase of the
- * opening run for the journey; `pathOf(journeyId)` gives the request the path
- * it was made to; `saveFailure` makes the records store refuse every save the
- * handler makes with that error. */
+ * `pathOf(journeyId)` gives the request the path it was made to;
+ * `saveFailure` makes the records store refuse every save the handler makes
+ * with that error. */
 export const driveHandler = async (
   handler,
   {
@@ -275,7 +275,6 @@ export const driveHandler = async (
     params = {},
     query = {},
     amend = false,
-    openingRun,
     saveFailure,
     pathOf
   } = {}
@@ -290,9 +289,6 @@ export const driveHandler = async (
     payload,
     params,
     query,
-    state: openingRun
-      ? { [openingRunCookie()]: { [journey.journeyId]: openingRun } }
-      : {},
     ...requestLocation(pathOf, journey.journeyId, query)
   })
   const h = stubH(request)
@@ -315,6 +311,13 @@ export const driveHandler = async (
     logger: request.logger
   }
 }
+
+export const trailQuery = (...entries) => ({ from: entries.join(',') })
+
+export const reviewChangeLinkQuery = () => trailQuery(CYA_SLUG)
+
+export const trailRequestOf = (entries) =>
+  journeyRequest('j-1', { query: trailQuery(...entries) })
 
 export const postHandlerOf = (featureModule) =>
   featureModule.routes.find((route) => route.method === 'POST').handler

@@ -23,7 +23,7 @@ import {
   TECH_IMPORTS_COPY,
   installHighRiskPlantsJourney
 } from '../test-support.js'
-import { GROUPS } from '../features/hub/controller.js'
+import { copy as hubCopy } from '../features/hub/copy/copy.en.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import {
   commoditiesPage,
@@ -89,14 +89,11 @@ describe('#taskRows — the rows the hub can resolve', () => {
     expect(taskRowById('about-the-consignment')).toBeUndefined()
   })
 
-  it('Should give the hub a row for every id its groups name', () => {
-    const unresolved = GROUPS.flatMap((group) => group.rows).filter(
-      (id) => id !== REVIEW_ROW_ID && taskRowById(id) === undefined
+  it('Should give the hub a title for every task row', () => {
+    const untitled = taskRows.filter(
+      (row) => hubCopy.rows[row.id] === undefined
     )
-    expect(
-      unresolved,
-      'a hub group may only name a task row or the review row'
-    ).toEqual([])
+    expect(untitled, 'a task row needs hub copy').toEqual([])
   })
 })
 

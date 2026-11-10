@@ -2,18 +2,24 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
   expectNoRefusalLogged,
   postHandlerOf,
+  trailQuery,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { TRAIL_START, withTrail } from '../../../../../../shared/kit.js'
+import { placeOfDestinationPage } from '../place-of-destination/page.js'
+import { arrivalDetailsPage } from './page.js'
 import { validatorDefaults } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_PLANTS_NOTIFICATION,
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFromOnRefusal,
+  itSendsBackToWhereTheTraderCameFrom,
+  originSaved,
+  plants,
+  potatoes,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
@@ -25,19 +31,12 @@ const get = arrivalDetails.routes.find(
 ).handler
 const post = postHandlerOf(arrivalDetails)
 
-const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const POTATOES = 'potatoes'
 const DOVER = 'GB DVR'
+const ARRIVAL_DATE_HREF = '#arrivalDate'
 const A_DATE = '27/3/2026'
 const A_DATE_PARTS = { day: '27', month: '3', year: '2026' }
 const A_TIME = '14:30'
-
-const potatoes = (answers = {}) => ({ commodityType: POTATOES, ...answers })
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 const potatoPayload = (overrides = {}) => ({
   arrivalDate: A_DATE,
@@ -194,49 +193,26 @@ describe('GET arrival-details — the potato-only fields', () => {
     expect(result.view.context.dateField.value).toBe(A_DATE)
   })
 
-  it('Should send Back to the overview when the page is opened from the overview', async () => {
+  it('Should show no error summary when the page is opened from the overview', async () => {
     const result = await driveHandler(get, { seed: potatoes() })
 
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     expect(result.view.context.errorSummary).toBeNull()
   })
 
-  it('Should send Back to arrival status for plants or wood while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'arrival-status')
+  itSendsBackToWhereTheTraderCameFromOnRefusal(post, {
+    seed: COMPLETE_NOTIFICATION,
+    payload: potatoPayload({ arrivalDate: '' }),
+    savedPage: 'origin'
   })
 
-  it('Should send Back to origin for potatoes while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'origin')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    previousPage: 'arrival-status'
   })
 
-  itSendsBackCarryingChangeTo(get, [
-    [
-      'arrival status for plants or wood',
-      COMPLETE_PLANTS_NOTIFICATION,
-      'arrival-status'
-    ],
-    ['origin for potatoes', COMPLETE_NOTIFICATION, 'origin']
-  ])
-
-  it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
-    const result = await driveHandler(post, {
-      seed: COMPLETE_NOTIFICATION,
-      payload: potatoPayload({ arrivalDate: '' }),
-      openingRun: RUN_ACTIVE
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, 'origin')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_NOTIFICATION,
+    previousPage: 'origin'
   })
 })
 
@@ -326,7 +302,7 @@ describe('POST arrival-details — the answers it refuses', () => {
       copy.errors.arrivalDate.invalid
     )
     expect(result.view.context.errorSummary.errorList).toEqual([
-      { text: copy.errors.arrivalDate.invalid, href: '#arrivalDate' }
+      { text: copy.errors.arrivalDate.invalid, href: ARRIVAL_DATE_HREF }
     ])
     expect(result.after.arrivalDate).toBeUndefined()
   })
@@ -424,7 +400,7 @@ describe('POST arrival-details — the answers it refuses', () => {
       proposedPlaceOfLanding: DOVER
     })
     expect(result.view.context.errorSummary.errorList).toEqual([
-      { text: copy.errors.arrivalDate.invalid, href: '#arrivalDate' },
+      { text: copy.errors.arrivalDate.invalid, href: ARRIVAL_DATE_HREF },
       { text: validatorDefaults.time, href: '#arrivalTime' }
     ])
   })
@@ -435,7 +411,12 @@ describe('POST arrival-details — the answers it refuses', () => {
       payload: { arrivalDate: A_DATE }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: withTrail(
+        pagePath(result.journeyId, placeOfDestinationPage.slug),
+        [arrivalDetailsPage.slug]
+      )
+    })
     expect(result.after.arrivalTime).toBeUndefined()
   })
 })
@@ -459,6 +440,7 @@ describe('POST arrival-details — accepted answers', () => {
     })
 
     expect(result.after).toEqual({
+      ...originSaved,
       commodityType: POTATOES,
       arrivalDate: A_DATE_PARTS,
       arrivalTime: A_TIME,
@@ -476,13 +458,19 @@ describe('POST arrival-details — accepted answers', () => {
     expect(result.after.proposedPlaceOfLanding).toBeUndefined()
   })
 
-  it('Should redirect to the overview, the page after the arrival section', async () => {
+  it('Should redirect to the place of destination, carrying Overview and arrival details, when opened from Overview', async () => {
     const result = await driveHandler(post, {
       seed: potatoes(),
-      payload: potatoPayload()
+      payload: potatoPayload(),
+      query: trailQuery(TRAIL_START.overview)
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: withTrail(
+        pagePath(result.journeyId, placeOfDestinationPage.slug),
+        [TRAIL_START.overview, arrivalDetailsPage.slug]
+      )
+    })
   })
 
   it('Should honour Save and return to overview', async () => {
@@ -581,6 +569,30 @@ describe('POST arrival-details — Save and return to overview', () => {
   })
 })
 
+describe('POST arrival-details — while amending', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it.each([
+    ['Save and continue', {}],
+    ['Save and return to overview', { exit: 'hub' }]
+  ])(
+    'Should refuse a missing date on %s, naming it and keeping the other entries',
+    async (_button, buttonPayload) => {
+      const result = await driveHandler(post, {
+        amend: true,
+        seed: plants({ arrivalStatus: ALREADY_ARRIVED }),
+        payload: { arrivalDate: '', ...buttonPayload }
+      })
+
+      expect(result.response.statusCode).toBe(400)
+      expect(result.view.context.errorSummary.errorList[0].href).toBe(
+        ARRIVAL_DATE_HREF
+      )
+      expect(result.view.context.errors.arrivalDate).toBeDefined()
+      expect(result.after).toEqual(result.before)
+    }
+  )
+})
 describe('POST arrival-details — save failures', () => {
   useStubbedHighRiskPlantsJourney()
 

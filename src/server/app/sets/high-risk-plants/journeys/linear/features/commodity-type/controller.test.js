@@ -5,14 +5,24 @@ import {
   driveHandler,
   expectBackLinkIsPath,
   expectNoRefusalLogged,
+  expectOneLogged,
   expectOneSaveFallbackLogged,
   postHandlerOf,
+  reviewChangeLinkQuery,
+  trailQuery,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
+import {
+  dashboardPath,
+  hubPath,
+  pagePath
+} from '../../../../../../shared/paths.js'
+import { CYA_SLUG, TRAIL_START } from '../../../../../../shared/kit.js'
+import { useInsFrontendBaseUrl } from '../../../../../../../common/test-helpers/use-ins-frontend-base-url.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
   itSendsBackToTheDashboardUntilCommodityTypeAnswered,
+  itSendsCancelToTheDashboardUntilCommodityTypeAnswered,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { commodityTypes } from '../../../../services/commodities/index.js'
@@ -107,14 +117,69 @@ describe('GET commodity-type', () => {
   })
 
   itSendsBackToTheDashboardUntilCommodityTypeAnswered(get)
+  itSendsCancelToTheDashboardUntilCommodityTypeAnswered(get)
 
-  it('Should send Back to the overview once answered on a draft opened from a Change link', async () => {
-    const result = await driveHandler(get, {
-      seed: { commodityType: PLANTS_FOR_PLANTING },
-      query: { change: '1' }
+  describe('where Back goes by where the trader came from', () => {
+    const setInsFrontendBaseUrl = useInsFrontendBaseUrl()
+    const answered = { commodityType: PLANTS_FOR_PLANTING }
+
+    it.each([
+      ['no answer', {}],
+      ['an answer', answered]
+    ])(
+      'Should send Back to the dashboard for a notification started from the dashboard with %s',
+      async (_state, seed) => {
+        const result = await driveHandler(get, {
+          seed,
+          query: trailQuery(TRAIL_START.dashboard)
+        })
+
+        expectBackLinkIsPath(result, dashboardPath())
+      }
+    )
+
+    it.each([
+      ['no answer', {}],
+      ['an answer', answered]
+    ])(
+      'Should send Back to the Import Notification Service type question for a notification started there with %s',
+      async (_state, seed) => {
+        setInsFrontendBaseUrl('http://ins.example/')
+
+        const result = await driveHandler(get, {
+          seed,
+          query: trailQuery(TRAIL_START.ins)
+        })
+
+        expectBackLinkIsPath(result, 'http://ins.example/notification-type')
+      }
+    )
+
+    it('Should send Back to Overview when opened from Overview', async () => {
+      const result = await driveHandler(get, {
+        seed: answered,
+        query: trailQuery(TRAIL_START.overview)
+      })
+
+      expectBackLinkIsPath(result, hubPath(result.journeyId))
     })
 
-    expectBackLinkIsPath(result, hubPath(result.journeyId))
+    it('Should send Back to the review when opened from a Change link', async () => {
+      const result = await driveHandler(get, {
+        seed: answered,
+        query: reviewChangeLinkQuery()
+      })
+
+      expectBackLinkIsPath(result, pagePath(result.journeyId, CYA_SLUG))
+    })
+
+    it('Should send Back to the dashboard with no answer and a trail naming a place the journey does not have', async () => {
+      const result = await driveHandler(get, {
+        query: trailQuery('not-a-place')
+      })
+
+      expectBackLinkIsPath(result, dashboardPath())
+    })
   })
 })
 
@@ -206,13 +271,13 @@ describe('POST commodity-type — an accepted answer', () => {
     expect(result.after).toEqual({ commodityType: WOOD_AND_CUT_TREES })
   })
 
-  it('Should redirect to the commodities list, the run’s next step', async () => {
+  it('Should redirect to the commodities list', async () => {
     const result = await driveHandler(post, {
       payload: { commodityType: POTATOES }
     })
 
     expect(result.response).toEqual({
-      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities`
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?from=commodity-type`
     })
   })
 
@@ -239,14 +304,14 @@ describe('POST commodity-type — changing the type of a consignment with lines'
     expect(result.after.commodityLines ?? []).toEqual([])
   })
 
-  it('Should report the count on the commodities list it redirects to', async () => {
+  it('Should report the count on the commodities list it redirects to, with the commodity type on the trail', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: { commodityType: PLANTS_FOR_PLANTING }
     })
 
     expect(result.response).toEqual({
-      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1`
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1&from=commodity-type`
     })
   })
 
@@ -260,31 +325,45 @@ describe('POST commodity-type — changing the type of a consignment with lines'
       COMPLETE_POTATO_CONSIGNMENT.commodityLines
     )
     expect(result.response).toEqual({
-      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities`
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?from=commodity-type`
     })
   })
 
-  it('Should carry a change context through the redirect', async () => {
+  it('Should carry the trail through the redirect', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: { commodityType: WOOD_AND_CUT_TREES },
-      query: { change: '1' }
+      query: reviewChangeLinkQuery()
     })
 
     expect(result.response).toEqual({
-      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1&change=1`
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1&from=notification-view%2Ccommodity-type`
     })
   })
 
-  it('Should let an unreported removal win over the hub exit', async () => {
+  it('Should remove the lines the new type does not hold and open the commodities list reporting them when Save and return to overview was pressed', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: { commodityType: WOOD_AND_CUT_TREES, exit: 'hub' }
     })
 
-    expect(result.response.redirect).toBe(
-      `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1`
-    )
+    expect(result.response).toEqual({
+      redirect: `${SET_BASE}/notifications/${result.journeyId}/commodities?removed=1&from=commodity-type`
+    })
+    expect(result.after.commodityLines ?? []).toEqual([])
+  })
+
+  it('Should log the removal once with the number of lines', async () => {
+    const result = await driveHandler(post, {
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: { commodityType: WOOD_AND_CUT_TREES, exit: 'hub' }
+    })
+
+    expectOneLogged(result.logger, {
+      level: 'info',
+      fields: { journeyId: result.journeyId, removed: 1 },
+      message: 'Commodity lines removed by a commodity type change'
+    })
   })
 })
 

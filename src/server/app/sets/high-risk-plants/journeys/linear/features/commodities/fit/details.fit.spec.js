@@ -1,4 +1,4 @@
-import { setUrl } from '../../../../../../../../../../fit/set-base.js'
+import { pageUrlOnWalk } from '../../../../../../../../../../fit/set-base.js'
 import {
   chooseCommodityCategory,
   expectNoSeriousOrCriticalViolations,
@@ -12,11 +12,10 @@ import { copy as captionsCopy } from '../../../flow/section-captions/copy/copy.e
 import { copy as typeCopy } from '../../commodity-type/copy/copy.en.js'
 import { copy } from '../copy/copy.en.js'
 
-const DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details$')
-const DETAILS_EDIT_URL = setUrl(
-  '/notifications/[^/]+/commodities/details\\?index=\\d+$'
-)
-const LIST_URL = setUrl('/notifications/[^/]+/commodities$')
+const WALK = ['commodity-type']
+const DETAILS_URL = pageUrlOnWalk('commodities/details', WALK)
+const DETAILS_EDIT_URL = pageUrlOnWalk('commodities/details\\?index=\\d+', WALK)
+const LIST_URL = pageUrlOnWalk('commodities', WALK)
 
 const POTATOES = 'potatoes'
 const PLANTS = 'plants-for-planting'

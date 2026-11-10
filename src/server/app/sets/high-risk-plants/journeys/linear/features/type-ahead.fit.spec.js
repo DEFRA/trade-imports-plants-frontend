@@ -27,6 +27,7 @@ const countries = countryAndSubdivisionEntries()
 const france = countries.find(({ code }) => code === 'FR')
 const ireland = countries.find(({ code }) => code === 'IE')
 const reunion = countries.find(({ code }) => code === 'FR-LRE')
+const iceland = countries.find(({ code }) => code === 'IS')
 
 const inputFor = (page, inputId) => page.locator(`input#${inputId}`)
 
@@ -296,9 +297,77 @@ test.describe('country of origin change announcement', () => {
   })
 })
 
+test.describe('country of origin type-ahead announcements', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page)
+    await startNotificationAtOrigin(page)
+  })
+
+  const statusRegion = (page, announcement) => {
+    const escaped = announcement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return page
+      .locator('#countryOfOrigin__status--A, #countryOfOrigin__status--B')
+      .filter({ hasText: new RegExp(`^${escaped}\\s*$`) })
+  }
+
+  test('describes the search box by the assistive hint', async ({ page }) => {
+    const assistiveHint =
+      'When autocomplete results are available use up and down arrows to review and enter to select. Touch device users, explore by touch or with swipe gestures.'
+
+    await expect(inputFor(page, 'countryOfOrigin')).toHaveAccessibleDescription(
+      assistiveHint
+    )
+  })
+
+  test('announces how many results are available after typing', async ({
+    page
+  }) => {
+    await inputFor(page, 'countryOfOrigin').fill(iceland.name)
+
+    await expect(page.getByRole('option')).toHaveCount(1)
+    await expect(statusRegion(page, '1 result is available.')).toHaveCount(1)
+  })
+
+  test('announces the highlighted country with its place among the results', async ({
+    page
+  }) => {
+    const input = inputFor(page, 'countryOfOrigin')
+    await input.fill(iceland.name)
+    await expect(page.getByRole('option')).toHaveCount(1)
+
+    await input.press('ArrowDown')
+
+    await expect(
+      statusRegion(
+        page,
+        `1 result is available. ${iceland.name} 1 of 1 is highlighted`
+      )
+    ).toHaveCount(1)
+  })
+})
+
 test.describe('country of origin type-ahead styles', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
+  })
+
+  test('draws the search button GOV.UK blue with a white magnifying glass', async ({
+    page
+  }) => {
+    await startNotificationAtOrigin(page)
+    const button = page.locator(AUTOCOMPLETE_BUTTON)
+
+    await expect(button).toHaveCSS(
+      'background-color',
+      await govukColourOf(page, 'brand')
+    )
+    await expect
+      .poll(() =>
+        button.evaluate(
+          (element) => getComputedStyle(element, '::before').backgroundColor
+        )
+      )
+      .toBe(await govukColourOf(page, 'inverse-text'))
   })
 
   test('uses GOV.UK typography for the enhanced input and its options', async ({

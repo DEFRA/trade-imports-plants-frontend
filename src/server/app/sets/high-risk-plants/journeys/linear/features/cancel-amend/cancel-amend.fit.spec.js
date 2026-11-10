@@ -1,13 +1,14 @@
 import {
   BASE,
   journeyIdFromPage,
+  pageUrlWithTrail,
   setPath,
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
-  CHECK_ANSWERS_URL,
   changeCommodityType,
   completePotatoNotification,
+  REVIEW_URL_WITHOUT_TRAIL,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
@@ -27,6 +28,7 @@ const cancelAmendLink = (page) =>
     name: sharedCopy.journeyStrip.cancelAmend,
     exact: true
   })
+const CANCEL_AMEND_URL = /\/cancel-amend$/
 const cyaHref = setPath('/notifications/[^/]+/notification-view$')
 
 test.beforeEach(async ({ page }) => {
@@ -61,7 +63,7 @@ test.beforeEach(async ({ page }) => {
       exact: true
     })
     .click()
-  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
 })
 
 test('renders accessible confirmation copy, actions and a bare heading', async ({
@@ -88,7 +90,7 @@ test('No preserves the amendment and its changes after reload', async ({
   page
 }) => {
   await page.getByRole('button', { name: cancelCopy.noLink }).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page.reload()
   await expect(strip(page).locator(TAG)).toHaveText(
     sharedCopy.journeyStrip.amend
@@ -108,14 +110,14 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
 
   await cancelAmendLink(page).click()
 
-  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
   await expect(
     page.getByRole('heading', { name: cancelCopy.title, level: 1 })
   ).toBeVisible()
   await expect(cancelAmendLink(page)).toHaveCount(0)
 
   await page.getByRole('button', { name: cancelCopy.noLink }).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await expect(strip(page).locator(TAG)).toHaveText(
     sharedCopy.journeyStrip.amend
   )
@@ -142,7 +144,7 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
 
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
 
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   const summary = page.getByRole('alert')
   await expect(
     summary.getByRole('heading', { name: sharedCopy.errorSummary.title })
@@ -158,35 +160,50 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   )
 })
 
-test('The commodities list ends with Save and return and Save and continue while amending', async ({
+test('The commodities list ends as it does on a draft while amending, and Save and continue opens origin', async ({
   page
 }) => {
   const reference = journeyIdFromPage(page)
   const listUrl = `${BASE}/notifications/${reference}/commodities`
-  const saveAndReturn = page.getByRole('button', {
-    name: sharedCopy.saveActions.saveAndReturn,
-    exact: true
-  })
   await page.goto(listUrl)
-  await expect(saveAndReturn).toBeVisible()
   await expect(saveAndContinue(page)).toBeVisible()
   await expect(
     page.getByRole('button', {
       name: sharedCopy.saveActions.saveAndReturnToHub
     })
   ).toHaveCount(0)
-  await expect(
-    page.getByRole('link', {
-      name: sharedCopy.saveActions.cancelAndReturnToHub
-    })
-  ).toHaveCount(0)
 
-  await saveAndReturn.click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
-
-  await page.goto(listUrl)
   await saveAndContinue(page).click()
+  await expect(page).toHaveURL(
+    pageUrlWithTrail(`/notifications/${reference}/origin`, ['commodities'])
+  )
+})
+
+test('Cancel and return to overview while amending opens Overview without saving, and the strip keeps Amend and Cancel amend', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
+  await page
+    .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
+      exact: true
+    })
+    .fill('NotSaved1')
+  await page
+    .getByRole('link', { name: sharedCopy.saveActions.cancelAndReturnToHub })
+    .click()
+
   await expect(page).toHaveURL(setUrl(`/notifications/${reference}$`))
+  await expect(strip(page).locator(TAG)).toHaveText(
+    sharedCopy.journeyStrip.amend
+  )
+  await expect(cancelAmendLink(page)).toBeVisible()
+  await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
+  await expect(
+    page.getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
+      exact: true
+    })
+  ).not.toHaveValue('NotSaved1')
 })
 
 test('Cancel amend on the Overview opens the confirmation page', async ({
@@ -195,7 +212,7 @@ test('Cancel amend on the Overview opens the confirmation page', async ({
   const reference = journeyIdFromPage(page)
   await page.goto(`${BASE}/notifications/${reference}`)
   await cancelAmendLink(page).click()
-  await expect(page).toHaveURL(/\/cancel-amend$/)
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
   await expect(
     page.getByRole('heading', { name: cancelCopy.title, level: 1 })
   ).toBeVisible()
@@ -218,7 +235,7 @@ test.describe('without JavaScript', () => {
         `${BASE}/notifications/${reference}/identification-numbers`
       )
       await cancelAmendLink(noJs).click()
-      await expect(noJs).toHaveURL(/\/cancel-amend$/)
+      await expect(noJs).toHaveURL(CANCEL_AMEND_URL)
       await noJs.getByRole('button', { name: cancelCopy.confirmButton }).click()
 
       await expect(noJs).toHaveURL(/\/notification-view\?cancelled=1$/)

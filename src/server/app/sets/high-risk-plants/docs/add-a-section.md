@@ -7,10 +7,11 @@ The code uses three separate terms:
 
 - a **feature group** is a nested folder under `journeys/linear/features/` that
   owns related pages, copy and persistence bindings
-- a **flow section** is an entry in `journeys/linear/flow/flow.js`; it controls
-  page order and, within one task row, where Save and continue goes
+- a **flow section** is an entry in `journeys/linear/flow/flow.js`; it places its
+  pages in the journey's one page order, which is where Save and continue goes
 - a **task row** is an entry in `journeys/linear/flow/task-rows.js`; it is the
-  item shown on the hub and it drives submit readiness
+  item shown on the hub and it drives submit readiness. It decides nothing about
+  where Save and continue goes
 
 This recipe creates all three. Do not call the hub entry a section in code.
 
@@ -59,10 +60,10 @@ Trace registration through these:
 - [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js) —
   this set's gateway; [`routes.js`](../../../routes.js) only re-exports it
 
-The hub feature and `flow/task-rows.test.js` already exist. The hub lands with
-`GROUPS` carrying its four numbered groups, each with an empty `rows` array, and
-`taskRows` empty, so the first task row adds only its `taskRows` entry, its
-`GROUPS` placement and its rows copy.
+The hub feature and `flow/task-rows.test.js` already exist. The hub derives its
+groups from the flow sections, and
+`taskRows` is empty, so the first task row adds only its `taskRows` entry and its
+rows copy; the hub lists a row under the flow section that holds its first page.
 
 ## 1. Define the user task and its data
 
@@ -209,20 +210,18 @@ to `sections`:
 }
 ```
 
-The array order is journey order. Outside the opening run, Save and continue
-moves to the first gate-passing later page of the section only when it belongs
-to the same task row, and otherwise returns to the hub. The section's place among
-other sections also controls strictly-earlier continue prerequisites.
+The array order is journey order and Overview's group order. Save and continue
+goes to the next page that applies, from every start; nothing returns to the hub.
+The section's place among other sections also controls strictly-earlier continue
+prerequisites.
 
 Normal page and section gates are derived from `meta.collects`, in-scope
 obligations and earlier continue prerequisites. Add an authored `gate` only for
 a flow fact that those rules cannot express. Add focused navigation and gate
 tests for every conditional page or branch.
 
-Add these pages to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
-only if product behaviour puts them in the opening run. A page joining the run
-takes a `RUN_STEPS` entry with its `backCandidates`. Update opening-run tests
-when you do.
+These pages' place in Save and continue's order is their place in the section's `pages`
+array, and their Back link comes from `kit.trailBackLink()`.
 
 ## 6. Add one task row and wire it to the hub
 
@@ -238,7 +237,7 @@ The row status defaults to the union of those pages' `collects` — that is what
 `rowParts()` computes. Use `parts` only when the row needs a collection facet.
 Use `conditional: true` only when the hub must hide a Not applicable row.
 
-Add the task-row id to the right object in the hub controller's `GROUPS` list.
+Add the task-row id to the right object in the flow section that holds its first page.
 Add the row title and hint to both hub copy bundles. Add a new numbered hub
 group only when the design requires a new heading; if so, add its caption to
 both locale bundles too.
@@ -266,7 +265,7 @@ This set's gateway,
 [`src/server/app/routes-high-risk-plants.js`](../../../routes-high-risk-plants.js)
 (the [`routes.js`](../../../routes.js) barrel only re-exports it), already
 imports the journey's
-`sections`, `taskRows`, `rowStatus`, `nextRunTarget`, `previousRunTarget`,
+`sections`, `taskRows`, `rowStatus`, `insTypeQuestionUrl`,
 `FLOW_ONLY_KEYS`, `entryGuardTarget`, `sectionCaptionOf` and `LAYOUT`. It passes them to
 [`configureJourneyFlow()`](../../../flow/journey-flow.js). Because it injects the
 whole exported arrays, adding a section or task row to the existing modules needs
@@ -278,8 +277,7 @@ Registration work for the feature group is therefore limited to:
 2. add its binding bundle to `featureEvaluationBindings`
 3. add page identities to `sections` and `taskRows`
 4. add task-row ids and copy to the hub
-5. add pages to `run.js` only when they belong in the opening run
-6. place the task-row id on its check-answers card in `REVIEW_CARDS`
+5. place the task-row id on its check-answers card in `REVIEW_CARDS`
 
 Change `journeys/linear/config.js` or the `configureJourneyFlow()` call only when
 the journey's template identity, cookie identity or injected policy surface
@@ -360,8 +358,8 @@ set-up in the test file.
 
 The controller-test helpers are listed in [Test support](add-a-page.md#test-support), with `useStubbedJourney` as the set-up.
 
-A new section's answers join `COMPLETE_NOTIFICATION`. A new section that the
-opening run reaches adds its step to `completePotatoNotification` in
+A new section's answers join `COMPLETE_NOTIFICATION`. A new section that a
+potato notification reaches by Save and continue adds its step to `completePotatoNotification` in
 [`fit/high-risk-plants-journey.js`](../../../../../../fit/high-risk-plants-journey.js).
 
 ## Logging
@@ -379,14 +377,17 @@ Do not sleep.
 
 Cover the complete task:
 
-- the hub row, initial status and first-page link
-- happy-path movement through every page and back to the hub
+- the Overview row reaching the group's first page, with its initial status
+- Save and continue carrying on through every page of the group into the next page
+  of the journey
 - each page's persisted values after reload
 - each validation rule in its own test
 - preservation of all entered values on error
 - every error-summary link moving focus to the right control
 - each conditional branch, skipped page and out-of-scope value purge
-- Back, Save and return to overview, Cancel and Change navigation
+- Back returning to where the trader came from, Save and return to overview, Cancel
+  and Change navigation
+- the same controls while amending as on a draft
 - the completed hub-row status
 - all check-answers values and Change targets
 

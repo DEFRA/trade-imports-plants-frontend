@@ -24,7 +24,7 @@ tests, and a `fit/` folder holding both browser specs.
 
 ## Page identity
 
-A `page.js` exports `{ id, slug }` and imports nothing. The controller spreads
+A `page.js` exports `{ id, slug }` (plus an authored `gate` where needed and `subPage: true` on a page reached only from the page that opens it) and imports nothing. The controller spreads
 the same object into `meta`, while
 [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js) uses it in
 section order. Keeping the identity leaf import-free avoids a controller–flow
@@ -83,13 +83,13 @@ the enforceable detail. Read them when a copy test fails.
   "Overview". "Hub" is the internal name for it and never appears on screen.
 - A page reached from another page ends with the primary alone
   (`showReturnControls: false`), and the trader leaves the way they came in.
-- While a notification is being amended, a page passes `amend` and ends with
-  "Save and return" (back to the review, posting with `?change=1`) and "Save
-  and continue" (on, never back to the review) side by side, then a secondary
-  "Save and return to overview" button on its own line below them, with no
-  cancel link. Each save button carries its own `formaction`, so no new field
-  is posted. A page reached from another page or a picker
-  (`hubExitWhileAmending: false`) ends with the first two only.
+- While a notification is being amended, a page ends exactly as it does on a
+  draft: Save and continue, then Save and return to overview, then Cancel and
+  return to overview wherever the draft page shows it. Save and continue goes on
+  through the journey to check your answers, Save and return to overview goes to
+  the Overview, and Cancel and return to overview goes to the Overview without
+  saving the page. The status strip shows the Amend status and its Cancel amend
+  link.
 
 ## Party edit
 
@@ -127,10 +127,12 @@ L1 passes `allRoutes` to Hapi.
 
 A feature folder is not automatically a flow section or a hub row.
 
-- `journeys/linear/flow/flow.js` defines navigation order.
-- `journeys/linear/flow/task-rows.js` groups pages into hub work items.
-- the hub feature's controller groups task-row ids for presentation.
-- `journeys/linear/flow/run.js` defines the opening-run sequence.
+- `journeys/linear/flow/flow.js` defines the journey's one page order, the order
+  Overview lists its tasks in, which Save and continue follows.
+- `journeys/linear/flow/task-rows.js` groups pages into hub work items and decides
+  when a notification is ready to submit. It decides nothing about where Save and
+  continue goes.
+- the hub feature's controller derives its groups from the flow sections, one per section that holds a task row's first page.
 
 See [Journey flow and gates](journey-flow-and-gates.md).
 
@@ -143,6 +145,11 @@ links, copy and validation. See
 
 ## Check answers and lateness
 
+- Check your answers' Back link goes to where the trader came from: the last
+  journey page, the Overview or the dashboard, on a draft, an amendment and a
+  submitted notification alike. Reached any other way it goes to the Overview on a
+  draft or an amendment and to the dashboard on a submitted notification. See
+  [Back on check your answers](journey-flow-and-gates.md#back-on-check-your-answers).
 - The error summary lists answer and copied-address errors first, then one
   entry per unfinished card in page order. A card already named by an answer
   or address error is not named again.

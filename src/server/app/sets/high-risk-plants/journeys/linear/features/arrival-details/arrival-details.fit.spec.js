@@ -13,7 +13,11 @@ import {
   startNotification,
   WOOD_LINE_FIELDS
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  notificationPageWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -22,15 +26,44 @@ import {
   validatorDefaults
 } from '../../../../../../shared/copy.en.js'
 import { copy as captionsCopy } from '../../flow/section-captions/copy/copy.en.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED, NOT_YET_ARRIVED } from '../arrival-status/statuses.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const ARRIVAL_STATUS_URL = setUrl('/notifications/[^/]+/arrival-status$')
-const PAGE_URL = setUrl('/notifications/[^/]+/arrival-details$')
+const ORIGIN = 'origin'
+const ARRIVAL_STATUS = 'arrival-status'
+const ARRIVAL_DETAILS = 'arrival-details'
+
+const ARRIVAL_STATUS_URL = setUrl(`/notifications/[^/]+/${ARRIVAL_STATUS}`)
+const PAGE_URL = setUrl(`/notifications/[^/]+/${ARRIVAL_DETAILS}`)
 const HUB_URL = setUrl('/notifications/[^/]+$')
-const DESTINATION_URL = setUrl('/notifications/[^/]+/destinations/select$')
+const ARRIVAL_STATUS_AFTER_ORIGIN_URL = notificationPageWithTrail(
+  ARRIVAL_STATUS,
+  [ORIGIN]
+)
+const POTATO_PAGE_URL = notificationPageWithTrail(ARRIVAL_DETAILS, [ORIGIN])
+const WOOD_PAGE_URL = notificationPageWithTrail(ARRIVAL_DETAILS, [
+  ORIGIN,
+  ARRIVAL_STATUS
+])
+const OVERVIEW_PAGE_URL = notificationPageWithTrail(ARRIVAL_DETAILS, [
+  TRAIL_START.overview
+])
+const ARRIVAL_DETAILS_AFTER_STATUS_URL = notificationPageWithTrail(
+  ARRIVAL_DETAILS,
+  [ARRIVAL_STATUS]
+)
+const POTATO_DESTINATION_URL = notificationPageWithTrail(
+  'destinations/select',
+  [ORIGIN, ARRIVAL_DETAILS]
+)
+const WOOD_DESTINATION_URL = notificationPageWithTrail('destinations/select', [
+  ORIGIN,
+  ARRIVAL_STATUS,
+  ARRIVAL_DETAILS
+])
 
 const DATE_INPUT = 'input#arrivalDate'
 const TIME_INPUT = 'input#arrivalTime'
@@ -83,7 +116,7 @@ const startAtPotatoDetails = async (page) => {
   await chooseCommodityType(page, POTATOES)
   await addCommodityLine(page, WARE_POTATOES, WARE_POTATO_LINE_FIELDS)
   await saveOrigin(page, reference, SPAIN)
-  await expect(page).toHaveURL(PAGE_URL)
+  await expect(page).toHaveURL(POTATO_PAGE_URL)
   return reference
 }
 
@@ -92,7 +125,7 @@ const startAtWoodDetails = async (page, status) => {
   await chooseCommodityType(page, WOOD_AND_CUT_TREES)
   await addCommodityLine(page, CUT_CONIFEROUS_TREES, WOOD_LINE_FIELDS)
   await saveOrigin(page, reference, FRANCE)
-  await expect(page).toHaveURL(ARRIVAL_STATUS_URL)
+  await expect(page).toHaveURL(ARRIVAL_STATUS_AFTER_ORIGIN_URL)
   await page
     .getByRole('radio', {
       name: arrivalStatusCopy.statusLabels[status],
@@ -100,7 +133,7 @@ const startAtWoodDetails = async (page, status) => {
     })
     .check()
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(PAGE_URL)
+  await expect(page).toHaveURL(WOOD_PAGE_URL)
   return reference
 }
 
@@ -123,7 +156,9 @@ test.describe('arrival-details — a potato notification', () => {
     await expectThreeSaveControls(page)
   })
 
-  test('sends Back to origin in the opening run', async ({ page }) => {
+  test('sends Back to origin after Save and continue on origin', async ({
+    page
+  }) => {
     const reference = await startAtPotatoDetails(page)
 
     await expect(backLink(page)).toHaveAttribute(
@@ -202,7 +237,7 @@ test.describe('arrival-details — a potato notification', () => {
 
     await answerArrivalAndSave(page)
 
-    await expect(page).toHaveURL(DESTINATION_URL)
+    await expect(page).toHaveURL(POTATO_DESTINATION_URL)
 
     await page.goto(arrivalDetailsPathOf(reference))
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_DATE)
@@ -229,7 +264,7 @@ test.describe('arrival-details — a potato notification', () => {
 
     await page.getByRole('link', { name: hubCopy.rows.arrival.title }).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
   test('Cancel and return to overview reaches the overview without saving', async ({
@@ -322,7 +357,7 @@ test.describe('arrival-details — the question a plants notification is asked',
       .check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(ARRIVAL_DETAILS_AFTER_STATUS_URL)
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_PAST_DATE)
   })
 
@@ -332,7 +367,7 @@ test.describe('arrival-details — the question a plants notification is asked',
     await page.locator(DATE_INPUT).fill(A_PAST_DATE)
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(DESTINATION_URL)
+    await expect(page).toHaveURL(WOOD_DESTINATION_URL)
     await page.goto(arrivalDetailsPathOf(reference))
     await expect(page.locator(DATE_INPUT)).toHaveValue(A_PAST_DATE)
   })
@@ -350,7 +385,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(POTATO_PAGE_URL)
     const summary = page.getByRole('alert')
     await expect(
       summary.getByRole('link', { name: copy.errors.arrivalDate.required })
@@ -446,7 +481,7 @@ test.describe('arrival-details — the answers it refuses', () => {
 
     await answerArrivalAndSave(page)
 
-    await expect(page).toHaveURL(DESTINATION_URL)
+    await expect(page).toHaveURL(POTATO_DESTINATION_URL)
   })
 })
 
@@ -522,7 +557,7 @@ test.describe('arrival-details — answers that leave scope when the commodity t
     const reference = await startAtPotatoDetails(page)
 
     await answerArrivalAndSave(page)
-    await expect(page).toHaveURL(DESTINATION_URL)
+    await expect(page).toHaveURL(POTATO_DESTINATION_URL)
 
     await changeCommodityType(page, reference, WOOD_AND_CUT_TREES)
     await changeCommodityType(page, reference, POTATOES)

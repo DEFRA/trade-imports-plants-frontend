@@ -3,7 +3,6 @@ import {
   createRoutePath,
   dashboardPath,
   dashboardRoutePath,
-  hubPath,
   pagePath,
   pageRoutePath,
   startRoutePath
@@ -17,9 +16,9 @@ import {
   startJourney
 } from '../../../../../../engine/journey.js'
 import * as kit from '../../../../../../shared/kit.js'
-import { beginOpeningRun } from '../../../../../../flow/run-state.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { commodityTypePage } from '../commodity-type/page.js'
+import { notificationViewPage } from '../check-answers/page.js'
 import { dashboardPage } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
@@ -35,6 +34,9 @@ import { sortOptions } from './view-model/sort-options.js'
 const view = `${TEMPLATES}/features/dashboard/template`
 
 const copy = copyFor({ en, cy })
+
+const organisationIdOf = (request) =>
+  buildActor(request.auth?.credentials)?.organisationId
 
 const DECIMAL = 10
 
@@ -105,33 +107,53 @@ const listGet = async (request, h) => renderDashboard(request, h)
 
 const amendPost = async (request, h) => {
   const journey = await amendJourney(request, h, request.params.journeyId)
+  if (!journey) {
+    return h.redirect(`${dashboardPath()}?amendRefused=1`)
+  }
+  request.logger.info(
+    {
+      journeyId: journey.journeyId,
+      organisationId: organisationIdOf(request)
+    },
+    'Amendment started, sent to the review page'
+  )
   return h.redirect(
-    journey ? hubPath(journey.journeyId) : `${dashboardPath()}?amendRefused=1`
+    kit.withTrail(pagePath(journey.journeyId, notificationViewPage.slug), [
+      kit.TRAIL_START.dashboard
+    ])
   )
 }
 
-const openNewNotification = async (request, h, { entry }) => {
+const openNewNotification = async (request, h, { entry, startPlace }) => {
   const journey = await startJourney(request, h)
-  await beginOpeningRun(request, h, journey.journeyId)
   request.logger.info(
     {
       journeyId: journey.journeyId,
       entry,
-      organisationId: buildActor(request.auth?.credentials)?.organisationId
+      organisationId: organisationIdOf(request)
     },
     'New notification opened'
   )
-  return h.redirect(pagePath(journey.journeyId, commodityTypePage.slug))
+  return h.redirect(
+    kit.withTrail(pagePath(journey.journeyId, commodityTypePage.slug), [
+      startPlace
+    ])
+  )
 }
 
 const createPost = async (request, h) =>
-  openNewNotification(request, h, { entry: 'list-create' })
+  openNewNotification(request, h, {
+    entry: 'list-create',
+    startPlace: kit.TRAIL_START.dashboard
+  })
 
 const startGet = async (request, h) =>
-  (await openNewNotification(request, h, { entry: 'start' })).header(
-    'Cache-Control',
-    'no-store'
-  )
+  (
+    await openNewNotification(request, h, {
+      entry: 'start',
+      startPlace: kit.TRAIL_START.ins
+    })
+  ).header('Cache-Control', 'no-store')
 
 export const routes = [
   {

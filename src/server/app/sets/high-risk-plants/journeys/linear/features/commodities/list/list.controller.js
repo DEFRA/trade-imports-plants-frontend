@@ -49,7 +49,6 @@ const buildView = (request, h, model) => {
   const errors = model.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      request,
       backLink: model.backLink,
       journey: model.journey,
       page,
@@ -78,7 +77,7 @@ const pageState = async (request, h) => {
   const { journey, answers, scope, evaluation } = current
   return {
     journey,
-    backLink: await kit.runBackLink(request, page.id, current),
+    backLink: kit.trailBackLink(request),
     scope,
     commodityType: answers.commodityType,
     lines: state.collectionView(answers, [LINES], evaluation),
@@ -130,7 +129,7 @@ const post = async (request, h) => {
       HTTP_STATUS_BAD_REQUEST
     )
   }
-  return h.redirect(await kit.nextTarget(request, page, current.scope))
+  return h.redirect(kit.nextTarget(request, page, current.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

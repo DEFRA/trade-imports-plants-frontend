@@ -12,6 +12,7 @@ import {
   setIdForPath,
   withSetContext
 } from '../../../server/app/shared/set-context.js'
+import { buildInsFrontendUrl } from '../../../server/common/helpers/ins-frontend-url.js'
 import { countSessionResolution } from '../../../server/common/helpers/call-counts/call-counts.js'
 import { pageMaturityContext } from '../../../server/app/page-maturity/page-maturity.js'
 
@@ -44,8 +45,7 @@ const resolveSession = (request, sessionId) => {
   return request.server.app.cache.get(sessionId)
 }
 
-const insAddressBookUrl = () =>
-  `${config.get('tradeImportsInsFrontend.baseUrl').replace(/\/$/, '')}/address-book`
+const insAddressBookUrl = () => buildInsFrontendUrl('/address-book')
 
 async function context(request) {
   if (!webpackManifest) {

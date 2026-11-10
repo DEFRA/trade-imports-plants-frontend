@@ -1,11 +1,16 @@
 import { hubPath, pagePath } from '../shared/paths.js'
-import { pageGatePasses } from './gates.js'
+import { pageGatePasses, pageAppliesTo } from './gates.js'
 import { journeySections, journeyTaskRows } from './journey-flow.js'
+import { earliestMissingAnswerPage } from './prerequisites.js'
 
-const sectionOfPage = (pageId) =>
-  journeySections().find((section) =>
-    section.pages.some((page) => page.id === pageId)
+const flowPages = () => journeySections().flatMap((section) => section.pages)
+
+const belongsToTaskRow = (page) =>
+  journeyTaskRows().some((row) =>
+    row.pages.some((rowPage) => rowPage.id === page.id)
   )
+
+const isStep = (page) => !page.subPage && belongsToTaskRow(page)
 
 export const sectionEntry = (sectionId, scope, journeyId) => {
   const section = journeySections().find(
@@ -22,37 +27,60 @@ export const rowEntry = (row, scope, journeyId) => {
   return page ? pagePath(journeyId, page.slug) : hubPath(journeyId)
 }
 
-/** Whether the hub can open a task row at all — true when any of its pages is
- * reachable, which is exactly the question `rowEntry` answers when it picks the
- * page to link to. Not the first page alone: a row whose opening question is
- * out of scope for this notification still has to be enterable when a later
- * page in it is asked of everyone. */
 export const rowGatePasses = (row, scope) =>
   row.pages.some((page) => pageGatePasses(page, scope))
 
-const nextSectionPage = (pageId, scope) => {
-  const section = sectionOfPage(pageId)
-  if (!section) {
+const askingPagePath = (missing, journeyId) => {
+  const asking = flowPages().find((page) => page.id === missing.askingPageId)
+  return pagePath(journeyId, asking.slug)
+}
+
+const landingOnAskingPage = (next, missing, journeyId) => ({
+  path: askingPagePath(missing, journeyId),
+  unopened: { pageId: next.id, missingAnswerIds: missing.missingAnswerIds }
+})
+
+/**
+ * Where Save and continue lands after a page.
+ *
+ * @param {string} pageId - the page saved.
+ * @param {object} scope - the journey's scope.
+ * @param {string} journeyId - the journey being worked on.
+ * @returns {{ path: string, unopened?: { pageId: string, missingAnswerIds: string[] } }|undefined}
+ * the next page that applies when the journey offers it, else the page that
+ * asks for the earliest missing required earlier answer, with the unopened
+ * page and every missing answer id. Undefined past the last step.
+ * @throws {Error} when the page is in no section.
+ */
+export const nextStepLanding = (pageId, scope, journeyId) => {
+  const pages = flowPages()
+  const index = pages.findIndex((page) => page.id === pageId)
+  if (index === -1) {
+    throw new Error(`Page '${pageId}' is not in the journey's sections`)
+  }
+  const next = pages
+    .slice(index + 1)
+    .filter(isStep)
+    .find((page) => pageAppliesTo(page, scope))
+  if (!next) {
     return undefined
   }
-  const index = section.pages.findIndex((page) => page.id === pageId)
-  return section.pages
-    .slice(index + 1)
-    .find((page) => pageGatePasses(page, scope))
+  const missing = next.gate
+    ? undefined
+    : earliestMissingAnswerPage(next.id, scope)
+  if (!missing) {
+    return { path: pagePath(journeyId, next.slug) }
+  }
+  return landingOnAskingPage(next, missing, journeyId)
 }
 
-const taskRowOfPage = (pageId) =>
-  journeyTaskRows().find((row) => row.pages.some((page) => page.id === pageId))
+const firstPageIndexIn = (section, row) =>
+  section.pages.findIndex((page) => page.id === row.pages[0].id)
 
-const staysInTaskRow = (row, page) =>
-  !row || row.pages.some((candidate) => candidate.id === page.id)
-
-/** Where a save goes outside the opening run: on to the next page of the same
- * task row, otherwise back to the hub. A page outside every task row keeps its
- * section's order. */
-export const nextInTaskRow = (pageId, scope, journeyId) => {
-  const next = nextSectionPage(pageId, scope)
-  return next && staysInTaskRow(taskRowOfPage(pageId), next)
-    ? pagePath(journeyId, next.slug)
-    : hubPath(journeyId)
-}
+export const taskRowsOfSection = (section) =>
+  journeyTaskRows()
+    .filter((row) => firstPageIndexIn(section, row) !== -1)
+    .sort(
+      (rowA, rowB) =>
+        firstPageIndexIn(section, rowA) - firstPageIndexIn(section, rowB)
+    )

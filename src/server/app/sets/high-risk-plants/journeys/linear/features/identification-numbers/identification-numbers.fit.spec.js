@@ -1,5 +1,4 @@
 import {
-  CHECK_ANSWERS_URL,
   chooseCommodityType,
   backLink,
   changeCommodityType,
@@ -8,7 +7,12 @@ import {
   saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  COMMODITY_REMOVED_URL,
+  notificationPageWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -19,17 +23,21 @@ import { copy as hubCopy } from '../hub/copy/copy.en.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 
-const COMMODITY_REMOVED_URL = setUrl(
-  '/notifications/[^/]+/commodities\\?removed=\\d+$'
-)
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const PAGE_URL = setUrl('/notifications/[^/]+/identification-numbers')
+const CONTACT_URL = notificationPageWithTrail('consignment/contact/select', [
+  'identification-numbers'
+])
+const REVIEW_URL = notificationPageWithTrail('notification-view', [
+  'identification-numbers',
+  'consignment/contact/select'
+])
 
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 
 const openOverviewFromReview = async (page) => {
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
-  await page.goto(page.url().replace(/\/notification-view$/, ''))
+  await expect(page).toHaveURL(REVIEW_URL)
+  await page.goto(page.url().replace(/\/notification-view(?:\?.*)?$/, ''))
   await expect(page).toHaveURL(HUB_URL)
 }
 
@@ -97,7 +105,7 @@ for (const [commodityType, fields] of branches) {
         }
       }
       await saveAndContinue(page).click()
-      await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+      await expect(page).toHaveURL(CONTACT_URL)
       await saveAndContinue(page).click()
       await openOverviewFromReview(page)
       await expect(
@@ -110,7 +118,7 @@ for (const [commodityType, fields] of branches) {
       await page
         .getByRole('link', { name: hubCopy.rows.identificationNumbers.title })
         .click()
-      await expect(page).toHaveURL(url)
+      await expect(page).toHaveURL(`${url}?from=overview`)
       await page.reload()
       for (const name of fields) {
         await expect(input(page, name)).toHaveValue('ID_123')
@@ -199,7 +207,7 @@ test('wood can leave the optional reference blank and the overview labels it Opt
   await signIn(page)
   await startAtIdentification(page)
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await expect(page).toHaveURL(CONTACT_URL)
   await saveAndContinue(page).click()
   await openOverviewFromReview(page)
   const row = page.getByRole('listitem').filter({
@@ -218,18 +226,18 @@ test('changing commodity type purges the supplier number and preserves the commo
   await input(page, 'supplierIdentificationNumber').fill('GB-12345')
   await input(page, 'consignmentNumber').fill('REF')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await expect(page).toHaveURL(CONTACT_URL)
   await saveAndContinue(page).click()
   await openOverviewFromReview(page)
   await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await chooseCommodityType(page, 'potatoes')
+  await chooseCommodityType(page, 'potatoes', { trailBefore: [] })
   await page.goto(identificationPathOf(reference))
   await expect(input(page, 'supplierIdentificationNumber')).toHaveCount(0)
   await expect(input(page, 'producerIdentificationNumber')).toBeVisible()
   await expect(input(page, 'cropIdentificationNumber')).toBeVisible()
   await expect(input(page, 'consignmentNumber')).toHaveValue('REF')
   await page.goto(`${BASE}/notifications/${reference}/commodity-type`)
-  await chooseCommodityType(page, PLANTS_FOR_PLANTING)
+  await chooseCommodityType(page, PLANTS_FOR_PLANTING, { trailBefore: [] })
   await page.goto(identificationPathOf(reference))
   await expect(input(page, 'supplierIdentificationNumber')).toHaveValue('')
   await expect(input(page, 'consignmentNumber')).toHaveValue('REF')

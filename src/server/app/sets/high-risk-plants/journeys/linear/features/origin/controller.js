@@ -13,7 +13,6 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import * as countries from '../../../../../../services/countries/index.js'
 import * as commodities from '../../../../services/commodities/index.js'
-import { entryBackLink } from '../../flow/entry-guard.js'
 import { CATEGORY, LINES } from '../commodities/fields.js'
 import { originPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -82,16 +81,10 @@ const errorsFor = async (payload, constraints) => {
 export const originErrors = async (current) =>
   errorsFor(current.answers, constraintsOn(categoriesOf(current)))
 
-const backLinkFor = (request, current) =>
-  kit.runBackLink(request, page.id, current, {
-    fallback: entryBackLink(current.journey, current.answers)
-  })
-
 const render = async (h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(view, {
     ...kit.base(copy.title, {
-      request: h.request,
       backLink: options.backLink,
       journey: current.journey,
       page,
@@ -123,7 +116,7 @@ const get = async (request, h) => {
     current,
     { [COUNTRY_FIELD]: staleCountry ? '' : stored },
     {
-      backLink: await backLinkFor(request, current),
+      backLink: kit.trailBackLink(request),
       constraints: constraintsOn(categoriesOf(current)),
       errors: staleCountry
         ? { [COUNTRY_FIELD]: copy.errors.countryNoLongerAvailable }
@@ -136,7 +129,7 @@ const post = async (request, h) => {
   const payload = request.payload ?? {}
   const values = { [COUNTRY_FIELD]: payload[COUNTRY_FIELD] ?? '' }
   const current = await state.get(request, h)
-  const backLink = await backLinkFor(request, current)
+  const backLink = kit.trailBackLink(request)
   const constraints = constraintsOn(categoriesOf(current))
   const errors = await errorsFor(payload, constraints)
   if (errors) {
@@ -166,7 +159,7 @@ const post = async (request, h) => {
     return failure
   }
 
-  return h.redirect(await kit.nextTarget(request, page, committed.scope))
+  return h.redirect(kit.nextTarget(request, page, committed.scope))
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

@@ -2,18 +2,24 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
   expectNoRefusalLogged,
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   postHandlerOf,
+  reviewChangeLinkQuery,
+  trailQuery,
   unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
-import { hubPath, pagePath } from '../../../../../../../shared/paths.js'
-import { RUN_ACTIVE } from '../../../../../../../flow/run-state.js'
+import { pagePath } from '../../../../../../../shared/paths.js'
+import {
+  CYA_SLUG,
+  TRAIL_START,
+  withTrail
+} from '../../../../../../../shared/kit.js'
+import { originPage } from '../../origin/page.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney
 } from '../../../test-support.js'
 import * as list from './list.controller.js'
@@ -24,6 +30,7 @@ const post = postHandlerOf(list)
 const POTATOES = 'potatoes'
 const ADD_AT_LEAST_ONE = 'Add at least one commodity'
 const LIST_SLUG = 'commodities'
+const COMMODITY_TYPE_SLUG = 'commodity-type'
 const DETAILS_SLUG = 'commodities/details'
 
 const TWO_LINES = {
@@ -126,24 +133,23 @@ describe('GET commodities', () => {
     }
   )
 
-  it('Should send Back to the overview when the page is opened from the overview', async () => {
-    const result = await driveHandler(get, { seed: TWO_LINES })
-
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: TWO_LINES,
+    previousPage: COMMODITY_TYPE_SLUG
   })
 
-  it('Should send Back to the commodity type while the opening run is on', async () => {
+  it('Should send Back to the previous page on the trail, carrying the rest of the trail', async () => {
     const result = await driveHandler(get, {
       seed: TWO_LINES,
-      openingRun: RUN_ACTIVE
+      query: trailQuery(TRAIL_START.overview, COMMODITY_TYPE_SLUG)
     })
 
-    expectBackLinkIsPage(result, 'commodity-type')
+    expect(result.view.context.backLink).toBe(
+      withTrail(pagePath(result.journeyId, COMMODITY_TYPE_SLUG), [
+        TRAIL_START.overview
+      ])
+    )
   })
-
-  itSendsBackCarryingChangeTo(get, [
-    ['the commodity type', TWO_LINES, 'commodity-type']
-  ])
 })
 
 describe('POST commodities — removing a line', () => {
@@ -189,22 +195,28 @@ describe('POST commodities — removing a line', () => {
 describe('POST commodities — continuing', () => {
   useStubbedHighRiskPlantsJourney()
 
-  it('Should leave the section for the overview once a line exists', async () => {
+  it('Should go on to origin once a line exists', async () => {
     const result = await driveHandler(post, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
       payload: {}
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: withTrail(pagePath(result.journeyId, originPage.slug), [
+        LIST_SLUG
+      ])
+    })
   })
 
-  it('Should hold an empty consignment at the collection floor', async () => {
+  it('Should hold a consignment left empty by a type change at the collection floor, still reporting the removed lines', async () => {
     const result = await driveHandler(post, {
       seed: { commodityType: POTATOES },
-      payload: {}
+      payload: {},
+      query: { removed: '2', ...trailQuery(COMMODITY_TYPE_SLUG) }
     })
 
     expect(result.response.statusCode).toBe(400)
+    expect(result.view.context.removedCount).toBe(2)
     expect(result.view.context.errorSummary.errorList).toEqual([
       { text: ADD_AT_LEAST_ONE, href: '#commodityLines' }
     ])
@@ -251,5 +263,40 @@ describe('POST commodities — save failures', () => {
         saveFailure: new TypeError('programming failure')
       })
     ).rejects.toThrow(new TypeError('programming failure'))
+  })
+})
+
+describe.each([
+  ['opened from Overview', {}],
+  ['opened from a Change link', { query: reviewChangeLinkQuery() }],
+  ['while amending', { amend: true }]
+])('POST commodities — %s', (_start, start) => {
+  useStubbedHighRiskPlantsJourney()
+
+  it('Should keep the trader on the list after removing a line', async () => {
+    const result = await driveHandler(post, {
+      ...start,
+      seed: TWO_LINES,
+      payload: { action: 'remove:0' }
+    })
+
+    expect(result.response.redirect).toBe(
+      `${pagePath(result.journeyId, LIST_SLUG)}${start.query ? '?from=notification-view' : ''}`
+    )
+  })
+
+  it('Should go on to origin when the list is continued', async () => {
+    const result = await driveHandler(post, {
+      ...start,
+      seed: COMPLETE_POTATO_CONSIGNMENT,
+      payload: {}
+    })
+
+    expect(result.response.redirect).toBe(
+      withTrail(pagePath(result.journeyId, originPage.slug), [
+        ...(start.query ? [CYA_SLUG] : []),
+        LIST_SLUG
+      ])
+    )
   })
 })

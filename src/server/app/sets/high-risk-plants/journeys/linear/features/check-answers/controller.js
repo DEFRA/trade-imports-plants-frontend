@@ -9,6 +9,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
+import { declarationPage } from '../declaration/page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
@@ -19,7 +20,6 @@ import {
   withCardErrors
 } from './view-model/incomplete-cards.js'
 import { reviewErrors } from './refusal.js'
-import { completeOpeningRun } from '../../../../../../flow/run-state.js'
 import { PARTIES, partyOf } from '../../parties/index.js'
 import { toDisplayParty } from '../../parties/picked-party.js'
 import { partyEditHref } from '../party-edit/edit-href.js'
@@ -45,17 +45,22 @@ const partyDisplayValuesFor = async ({ answers, scope }) => {
 
 const PARTY_KEY_PREFIX = 'party:'
 
-const summaryHrefFor = (current) => (key) => {
-  const { journeyId } = current.journey
-  if (key.startsWith(PARTY_KEY_PREFIX)) {
-    return partyEditHref(
-      journeyId,
-      partyOf(key.slice(PARTY_KEY_PREFIX.length)),
-      kit.CYA_SLUG
+const summaryHrefFor =
+  (current, { changeLinkTrail, reviewPageTrail }) =>
+  (key) => {
+    const { journeyId } = current.journey
+    if (key.startsWith(PARTY_KEY_PREFIX)) {
+      return partyEditHref(
+        journeyId,
+        partyOf(key.slice(PARTY_KEY_PREFIX.length)),
+        kit.CYA_SLUG,
+        reviewPageTrail
+      )
+    }
+    return (
+      cardAnchorHref(key) ?? changeHref({ journeyId, changeLinkTrail }, key)
     )
   }
-  return cardAnchorHref(key) ?? changeHref(journeyId, key)
-}
 
 const cardErrorsOf = (current, { answerErrors, partyErrors }) =>
   incompleteCardErrors(current, [
@@ -74,18 +79,21 @@ const summaryErrors = (current, reviewed) => ({
   ...cardErrorsOf(current, reviewed)
 })
 
-const hidesAnswerErrors = (status, continueRefused) =>
+const hidesAnswerErrors = (status, { continueRefused }) =>
   status === state.SUBMITTED || (status === state.AMEND && !continueRefused)
 
-const shownReviewErrors = (current, continueRefused) =>
-  hidesAnswerErrors(current.journey.status, continueRefused)
+const shownReviewErrors = (current, { continueRefused }) =>
+  hidesAnswerErrors(current.journey.status, { continueRefused })
     ? null
     : reviewErrors(current)
 
-const backLinkFor = (journey) =>
-  journey.status === state.SUBMITTED
-    ? dashboardPath()
-    : hubPath(journey.journeyId)
+const backLinkFor = (request, journey) =>
+  kit.trailBackLink(request, {
+    fallback:
+      journey.status === state.SUBMITTED
+        ? dashboardPath()
+        : hubPath(journey.journeyId)
+  })
 
 const render = async (
   request,
@@ -94,14 +102,16 @@ const render = async (
   { continueRefused = false } = {}
 ) => {
   const readOnly = current.journey.status === state.SUBMITTED
+  const changeLinkTrail = kit.trailPlus(request, kit.CYA_SLUG)
+  const reviewPageTrail = kit.requestTrail(request)
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
-  const reviewed = await shownReviewErrors(current, continueRefused)
+  const reviewed = await shownReviewErrors(current, { continueRefused })
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
     ...kit.base(copy.title, {
       journey: current.journey,
       page,
-      backLink: backLinkFor(current.journey)
+      backLink: backLinkFor(request, current.journey)
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
@@ -118,12 +128,14 @@ const render = async (
     lateRule: lateRuleText(current.answers.commodityType, copy.late),
     sections: withCardErrors(
       await buildSections(current, partyDisplayValuesById, readOnly, {
-        partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {}
+        partyFieldErrorsById: reviewed?.partyFieldErrorsById ?? {},
+        changeLinkTrail,
+        reviewPageTrail
       }),
       reviewed ? cardErrorsOf(current, reviewed) : {}
     ),
     errorSummary: kit.errorSummary(errors, {
-      href: summaryHrefFor(current),
+      href: summaryHrefFor(current, { changeLinkTrail, reviewPageTrail }),
       disableAutoFocus: !continueRefused
     }),
     deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
@@ -131,10 +143,8 @@ const render = async (
   })
 }
 
-const get = async (request, h) => {
-  await completeOpeningRun(request, h, request.params.journeyId)
-  return render(request, h, await state.get(request, h))
-}
+const get = async (request, h) =>
+  render(request, h, await state.get(request, h))
 
 const post = async (request, h) => {
   const current = await state.get(request, h)
@@ -154,7 +164,10 @@ const post = async (request, h) => {
       HTTP_STATUS_BAD_REQUEST
     )
   }
-  return h.redirect(await kit.nextTarget(request, page, current.scope))
+  return h.redirect(
+    kit.hubExitTarget(request) ??
+      pagePath(current.journey.journeyId, declarationPage.slug)
+  )
 }
 
 export const routes = kit.pageRoutes(page, { get, post })

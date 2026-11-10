@@ -2,17 +2,21 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
   expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { withTrail } from '../../../../../../shared/kit.js'
+import { arrivalDetailsPage } from '../arrival-details/page.js'
+import { arrivalStatusPage } from './page.js'
 import { PLANTS_WOOD_DAYS_AFTER_ARRIVAL } from '../timing-windows.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFromOnRefusal,
+  itSendsBackToWhereTheTraderCameFrom,
+  originSaved,
+  plants,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -30,11 +34,6 @@ const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'
 const POTATOES = 'potatoes'
 const UNOFFERED_STATUS = 'maybe'
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 describe('#meta', () => {
   it('Should own the arrivalStatus obligation on the arrival-status page', () => {
@@ -113,34 +112,15 @@ describe('GET arrival-status', () => {
     ).toBe(ALREADY_ARRIVED)
   })
 
-  it('Should send Back to the overview when the page is opened from the overview', async () => {
-    const result = await driveHandler(get, { seed: plants() })
-
-    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
+  itSendsBackToWhereTheTraderCameFromOnRefusal(post, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    payload: {},
+    savedPage: 'origin'
   })
 
-  it('Should send Back to origin while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-
-    expectBackLinkIsPage(result, 'origin')
-  })
-
-  itSendsBackCarryingChangeTo(get, [
-    ['origin', COMPLETE_PLANTS_NOTIFICATION, 'origin']
-  ])
-
-  it('Should keep Back on origin when the page is shown again after a refusal in the run', async () => {
-    const result = await driveHandler(post, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      payload: {},
-      openingRun: RUN_ACTIVE
-    })
-
-    expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, 'origin')
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    previousPage: 'origin'
   })
 })
 
@@ -200,6 +180,7 @@ describe('POST arrival-status — an accepted answer', () => {
     })
 
     expect(result.after).toEqual({
+      ...originSaved,
       commodityType: PLANTS_FOR_PLANTING,
       arrivalStatus: ALREADY_ARRIVED
     })
@@ -214,13 +195,17 @@ describe('POST arrival-status — an accepted answer', () => {
     expect(result.after.arrivalStatus).toBe(NOT_YET_ARRIVED)
   })
 
-  it('Should redirect to the overview, the page after the arrival section', async () => {
+  it('Should redirect to the arrival details, the next page that applies', async () => {
     const result = await driveHandler(post, {
       seed: plants(),
       payload: { arrivalStatus: NOT_YET_ARRIVED }
     })
 
-    expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
+    expect(result.response).toEqual({
+      redirect: withTrail(pagePath(result.journeyId, arrivalDetailsPage.slug), [
+        arrivalStatusPage.slug
+      ])
+    })
   })
 
   it('Should honour Save and return to overview', async () => {

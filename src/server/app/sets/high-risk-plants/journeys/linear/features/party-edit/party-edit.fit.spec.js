@@ -11,7 +11,9 @@ import {
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import {
   BASE,
-  journeyIdFromPage
+  journeyIdFromPage,
+  notificationPageWithTrail,
+  setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
@@ -19,8 +21,11 @@ import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const CONTACT_URL = /\/notifications\/[^/]+\/consignment\/contact\/select$/
-const EDIT_URL = /\/notifications\/[^/]+\/consignment\/contact\/edit\?/
+const CONTACT_URL = setUrl('/notifications/[^/]+/consignment/contact/select')
+const EDIT_URL = notificationPageWithTrail(
+  'consignment/contact/edit\\?return=consignment%2Fcontact%2Fselect',
+  []
+)
 
 const FRANCE = 'France'
 const WOOD_AND_CUT_TREES = 'wood-and-cut-trees'

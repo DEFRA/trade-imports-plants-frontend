@@ -41,12 +41,11 @@ const fields = (scope) =>
         : [requiredMaxText(name, MAX_IDENTIFICATION_LENGTH, copy.errors[name])]
     )
   )
-const render = async (request, h, current, values, options = {}) => {
+const render = (request, h, current, values, options = {}) => {
   const errors = options.errors ?? {}
   return h.view(`${TEMPLATES}/features/identification-numbers/template`, {
     ...kit.base(copy.title, {
-      request,
-      backLink: await kit.runBackLink(request, page.id, current),
+      backLink: kit.trailBackLink(request),
       journey: current.journey,
       page,
       recoverableError: options.recoverableError ?? false
@@ -67,7 +66,7 @@ const post = async (request, h) => {
   const values = valuesFrom(request.payload ?? {}, current.scope)
   const { errors, value } = validate(fields(current.scope), values)
   if (errors) {
-    return (await render(request, h, current, values, { errors })).code(
+    return render(request, h, current, values, { errors }).code(
       HTTP_STATUS_BAD_REQUEST
     )
   }
@@ -82,13 +81,13 @@ const post = async (request, h) => {
       )
     },
     async () =>
-      (
-        await render(request, h, current, values, { recoverableError: true })
-      ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+      render(request, h, current, values, { recoverableError: true }).code(
+        HTTP_STATUS_INTERNAL_SERVER_ERROR
+      )
   )
   if (failure) {
     return failure
   }
-  return h.redirect(await kit.nextTarget(request, page, committed.scope))
+  return h.redirect(kit.nextTarget(request, page, committed.scope))
 }
 export const routes = kit.pageRoutes(page, { get, post })

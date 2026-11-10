@@ -2,18 +2,20 @@ import { describe, expect, it } from 'vitest'
 
 import {
   driveHandler,
-  expectBackLinkIsPage,
-  expectBackLinkIsPath,
   expectNoRefusalLogged,
   postHandlerOf,
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
-import { hubPath } from '../../../../../../shared/paths.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import { hubPath, pagePath } from '../../../../../../shared/paths.js'
+import { withTrail } from '../../../../../../shared/kit.js'
+import { consignmentContactSelectPage } from '../consignment-contact-select/page.js'
+import { identificationNumbersPage } from './page.js'
 import {
   COMPLETE_NOTIFICATION,
   COMPLETE_PLANTS_NOTIFICATION,
-  itSendsBackCarryingChangeTo,
+  itSendsBackToWhereTheTraderCameFromOnRefusal,
+  itSendsBackToWhereTheTraderCameFrom,
+  originSaved,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy } from './copy/copy.en.js'
@@ -61,54 +63,24 @@ describe('identification numbers', () => {
       expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     }
   )
-  it('Should send Back to the consignor for plants or wood while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-    expectBackLinkIsPage(result, CONSIGNOR_SLUG)
+  itSendsBackToWhereTheTraderCameFromOnRefusal(post, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    payload: { supplierIdentificationNumber: '' },
+    savedPage: CONSIGNOR_SLUG
   })
-  it('Should send Back to the place of destination for potatoes while the opening run is on', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_NOTIFICATION,
-      openingRun: RUN_ACTIVE
-    })
-    expectBackLinkIsPage(result, DESTINATION_SLUG)
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_PLANTS_NOTIFICATION,
+    previousPage: CONSIGNOR_SLUG
   })
-  itSendsBackCarryingChangeTo(get, [
-    [
-      'the consignor for plants or wood',
-      COMPLETE_PLANTS_NOTIFICATION,
-      CONSIGNOR_SLUG
-    ],
-    [
-      'the place of destination for potatoes',
-      COMPLETE_NOTIFICATION,
-      DESTINATION_SLUG
-    ]
-  ])
-  it('Should send Back to the overview when the page is opened from a Change link while amending', async () => {
-    const result = await driveHandler(get, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      query: { change: '1' },
-      amend: true
-    })
-    expectBackLinkIsPath(result, hubPath(result.journeyId))
-  })
-  it('Should keep Back on the consignor when the page is shown again after a refusal in the run', async () => {
-    const result = await driveHandler(post, {
-      seed: COMPLETE_PLANTS_NOTIFICATION,
-      payload: { supplierIdentificationNumber: '' },
-      openingRun: RUN_ACTIVE
-    })
-    expect(result.response.statusCode).toBe(400)
-    expectBackLinkIsPage(result, CONSIGNOR_SLUG)
+  itSendsBackToWhereTheTraderCameFrom(get, {
+    seed: COMPLETE_NOTIFICATION,
+    previousPage: DESTINATION_SLUG
   })
   it.each(branches)(
     'Should trim, persist and ignore hidden payload fields for %s',
     async (commodityType, fields) => {
       const result = await driveHandler(post, {
-        seed: { commodityType, countryOfOrigin: 'FR' },
+        seed: { commodityType, ...originSaved },
         payload: Object.fromEntries(
           IDENTIFICATION_FIELDS.map((name) => [name, ' ID_123 '])
         )
@@ -118,7 +90,12 @@ describe('identification numbers', () => {
           fields.includes(name) ? 'ID_123' : undefined
         )
       }
-      expect(result.response.redirect).toBe(hubPath(result.journeyId))
+      expect(result.response.redirect).toBe(
+        withTrail(
+          pagePath(result.journeyId, consignmentContactSelectPage.slug),
+          [identificationNumbersPage.slug]
+        )
+      )
     }
   )
   const required = branches
@@ -165,10 +142,14 @@ describe('identification numbers', () => {
   )
   it('Should accept a blank optional reference', async () => {
     const result = await driveHandler(post, {
-      seed: { commodityType: WOOD_AND_CUT_TREES },
+      seed: { commodityType: WOOD_AND_CUT_TREES, ...originSaved },
       payload: {}
     })
-    expect(result.response.redirect).toBe(hubPath(result.journeyId))
+    expect(result.response.redirect).toBe(
+      withTrail(pagePath(result.journeyId, consignmentContactSelectPage.slug), [
+        identificationNumbersPage.slug
+      ])
+    )
   })
   it('Should refuse a blank mandatory number on Save and return to overview, naming it, and save nothing', async () => {
     const result = await driveHandler(post, {

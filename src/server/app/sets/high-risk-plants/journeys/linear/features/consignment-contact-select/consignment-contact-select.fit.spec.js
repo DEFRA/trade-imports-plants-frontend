@@ -1,6 +1,6 @@
 import {
   ADDRESS_BOOK_PARTY,
-  CHECK_ANSWERS_URL,
+  REVIEW_URL_FROM_POTATO_WALK,
   COPENHAGEN,
   SECOND_PAGE_LINK,
   addressRowRadio,
@@ -14,7 +14,12 @@ import {
   saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  notificationPageWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -25,8 +30,15 @@ import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy } from './copy/copy.en.js'
 
-const HUB_URL = /\/notifications\/[^/]+$/
-const PAGE_URL = /\/notifications\/[^/]+\/consignment\/contact\/select/
+const HUB_URL = setUrl('/notifications/[^/]+$')
+const OVERVIEW_PAGE_URL = notificationPageWithTrail(
+  'consignment/contact/select',
+  [TRAIL_START.overview]
+)
+const PAGE_URL = setUrl('/notifications/[^/]+/consignment/contact/select')
+const REVIEW_URL = notificationPageWithTrail('notification-view', [
+  'consignment/contact/select'
+])
 
 const contactPathOf = (reference) =>
   `${BASE}/notifications/${reference}/consignment/contact/select`
@@ -39,19 +51,29 @@ const contactRow = (page) =>
     })
   })
 
-const startInTheRunAtContact = async (page) => {
+const startWoodNotificationAtContact = async (page) => {
   const reference = await startWoodNotificationWithOriginSaved(page)
   await page.goto(contactPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
   return reference
 }
 
-const startAtContact = async (page) => {
-  const reference = await startInTheRunAtContact(page)
+const openContactFromOverview = async (page, reference) => {
   await page.goto(`${BASE}/notifications/${reference}`)
   await expect(page).toHaveURL(HUB_URL)
   await page.goto(contactPathOf(reference))
   await expect(page).toHaveURL(PAGE_URL)
+}
+
+const startAtContact = async (page) => {
+  const reference = await startWoodNotificationAtContact(page)
+  await openContactFromOverview(page, reference)
+  return reference
+}
+
+const startCompleteNotificationAtContact = async (page) => {
+  const reference = await startPotatoNotificationAtContact(page)
+  await openContactFromOverview(page, reference)
   return reference
 }
 
@@ -62,14 +84,17 @@ describeSubmittedSearchPicker({
 
 describeAddressPicker({
   pickerName: 'consignment contact',
-  openPicker: startAtContact,
+  openPicker: startCompleteNotificationAtContact,
   pathOf: contactPathOf,
   notInBookError: copy.errors.contactAddress,
   hubRowTitle: hubCopy.rows.contact.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
-  afterSaveUrl: HUB_URL,
-  firstRowRadio: '#contactAddress'
+  afterSaveUrl: REVIEW_URL,
+  firstRowRadio: '#contactAddress',
+  landingAlerts: [
+    `${sharedCopy.errorSummary.title} ${checkAnswersCopy.errors.cards.contact}`
+  ]
 })
 
 test.describe('consignment-contact-select feature', () => {
@@ -107,7 +132,7 @@ test.describe('consignment-contact-select feature', () => {
       .getByRole('link', { name: hubCopy.rows.contact.title, exact: true })
       .click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
   test('offers the three save controls', async ({ page }) => {
@@ -139,7 +164,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndContinue(page).click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
@@ -155,7 +180,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
 
     await addressRowRadio(page, COPENHAGEN).check()
-    await saveAndContinue(page).click()
+    await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
@@ -163,18 +188,6 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await page.goto(contactPathOf(reference))
     await expect(selectedAddressInset(page, COPENHAGEN)).toBeVisible()
     await expect(addressRowRadio(page, COPENHAGEN)).toHaveCount(0)
-  })
-
-  test('Save and return to overview marks the contact row complete', async ({
-    page
-  }) => {
-    await startAtContact(page)
-
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndReturnToHub(page).click()
-
-    await expect(page).toHaveURL(HUB_URL)
-    await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
   })
 
   test('Cancel and return to overview leaves the contact row not yet started', async ({
@@ -194,20 +207,20 @@ test.describe('consignment-contact-select — the overview task row', () => {
   })
 })
 
-test.describe('consignment-contact-select — the end of the opening run', () => {
+test.describe('consignment-contact-select — the end of Save and continue', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page)
   })
 
-  test('in the opening run, Continue goes to check your answers even though the notification is incomplete', async ({
+  test('at the last question, Save and continue goes to check your answers even though the notification is incomplete', async ({
     page
   }) => {
-    await startInTheRunAtContact(page)
+    await startWoodNotificationAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
     await saveAndContinue(page).click()
 
-    await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+    await expect(page).toHaveURL(REVIEW_URL)
     await expect(
       page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
@@ -224,44 +237,53 @@ test.describe('consignment-contact-select — a blank save', () => {
     await signIn(page)
   })
 
-  for (const action of [
-    sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub
-  ]) {
-    test(`blank contact permits ${action} and leaves the task not yet started`, async ({
-      page
-    }) => {
-      const reference = await startAtContact(page)
+  const expectTaskNotYetStarted = async (page, reference) => {
+    await page.goto(`${BASE}/notifications/${reference}`)
+    await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
 
-      await page.getByRole('button', { name: action, exact: true }).click()
-
-      await expect(page).toHaveURL(HUB_URL)
-      await expect(contactRow(page)).toContainText(
-        hubCopy.statuses.notYetStarted
-      )
-
-      await page.goto(contactPathOf(reference))
-      await expect(
-        page.getByText(new RegExp(`^${pickerCopy.selectedAddressPrefix}`))
-      ).toHaveCount(0)
-      await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
-    })
+    await page.goto(contactPathOf(reference))
+    await expect(
+      page.getByText(new RegExp(`^${pickerCopy.selectedAddressPrefix}`))
+    ).toHaveCount(0)
+    await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
   }
+
+  test('blank contact Save and continue opens the review page and leaves the task not yet started', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await saveAndContinue(page).click()
+
+    await expect(page).toHaveURL(REVIEW_URL)
+    await expectTaskNotYetStarted(page, reference)
+  })
+
+  test('blank contact Save and return to overview opens Overview and leaves the task not yet started', async ({
+    page
+  }) => {
+    const reference = await startAtContact(page)
+
+    await saveAndReturnToHub(page).click()
+
+    await expect(page).toHaveURL(HUB_URL)
+    await expectTaskNotYetStarted(page, reference)
+  })
 })
 
-test('a potatoes notification is asked for the consignment contact in the opening run, and cannot go on from the review while its Overview task is not started', async ({
+test('a potatoes notification is asked for the consignment contact after Save and continue, and cannot go on from the review while its Overview task is not started', async ({
   page
 }) => {
   await signIn(page)
   const reference = await startPotatoNotificationAtContact(page)
 
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await page
     .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
     .click()
 
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await expect(
     page.getByRole('alert').getByRole('link', {
       name: checkAnswersCopy.errors.cards.contact,

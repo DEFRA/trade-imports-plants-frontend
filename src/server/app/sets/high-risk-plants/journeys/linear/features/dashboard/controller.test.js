@@ -1,4 +1,5 @@
 import { SET_BASE, SET_ID } from '../../../../set.js'
+import { pagePathFrom } from '../../test-support.js'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -6,10 +7,7 @@ import {
   DELETED,
   records
 } from '../../../../../../engine/persistence/records.js'
-import {
-  knownJourneysCookie,
-  openingRunCookie
-} from '../../../../../../engine/persistence/session.js'
+import { knownJourneysCookie } from '../../../../../../engine/persistence/session.js'
 import {
   createPath,
   createRoutePath,
@@ -17,8 +15,12 @@ import {
   pagePath,
   startRoutePath
 } from '../../../../../../shared/paths.js'
-import { CYA_SLUG, SURFACES } from '../../../../../../shared/kit.js'
-import { RUN_ACTIVE } from '../../../../../../flow/run-state.js'
+import {
+  CYA_SLUG,
+  SURFACES,
+  TRAIL_START,
+  withTrail
+} from '../../../../../../shared/kit.js'
 import {
   authenticatedActor,
   expectOneLogged,
@@ -81,11 +83,16 @@ const renderListView = async (overrides = {}) => {
 const renderList = async (overrides = {}) =>
   (await renderListView(overrides)).context
 
+const expectAmendOpenedAtReview = async (journeyId, response) => {
+  expect(response.redirect).toBe(pagePathFrom('dashboard', journeyId, CYA_SLUG))
+  expect((await records.load({ journeyId })).status).toBe(AMEND)
+}
+
 const postAmend = async (journeyId, overrides = {}) => {
   const request = journeyRequest(journeyId, overrides)
   const h = stubH(request)
   const response = await amendPost(request, h)
-  return { response, h }
+  return { response, h, request }
 }
 
 const referencesOf = (context) =>
@@ -311,7 +318,9 @@ describe('dashboard row actions', () => {
     })
     expect(row.submitted).toMatch(/^\d{1,2} \w{3} \d{4}$/)
     expect(textOf(row)).toEqual(['View', 'Amend', DELETE_ACTION])
-    expect(row.actions[0].href).toBe(pagePath(submitted.journeyId, CYA_SLUG))
+    expect(row.actions[0].href).toBe(
+      pagePathFrom('dashboard', submitted.journeyId, CYA_SLUG)
+    )
     expect(row.actions[1].postAction).toBe(
       pagePath(submitted.journeyId, 'amend')
     )
@@ -449,28 +458,37 @@ describe('dashboard banners', () => {
 describe('dashboard amend POST', () => {
   useStubbedHighRiskPlantsJourney()
 
-  it('Should unfreeze a known submitted notification and land on its hub', async () => {
+  it('Should unfreeze a known submitted notification and land on its review page', async () => {
     const submitted = await startSubmitted()
 
     const { response } = await postAmend(submitted.journeyId)
 
-    expect(response.redirect).toBe(hubPath(submitted.journeyId))
-    expect(
-      (await records.load({ journeyId: submitted.journeyId })).status
-    ).toBe(AMEND)
+    await expectAmendOpenedAtReview(submitted.journeyId, response)
   })
 
-  it('Should open an amend for a submitted notification the session does not know at its hub and leave it amending', async () => {
+  it('Should open an amend for a submitted notification the session does not know at its review page and leave it amending', async () => {
     const submitted = await startSubmitted()
 
     const { response } = await postAmend(submitted.journeyId, {
       knownJourneyIds: []
     })
 
-    expect(response.redirect).toBe(hubPath(submitted.journeyId))
-    expect(
-      (await records.load({ journeyId: submitted.journeyId })).status
-    ).toBe(AMEND)
+    await expectAmendOpenedAtReview(submitted.journeyId, response)
+  })
+
+  it('Should log the started amendment once with the journey and its organisation', async () => {
+    const submitted = await startSubmitted()
+
+    const { request } = await postAmend(submitted.journeyId)
+
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: {
+        journeyId: submitted.journeyId,
+        organisationId: authenticatedActor.organisationId
+      },
+      message: 'Amendment started, sent to the review page'
+    })
   })
 
   it('Should send an amend for a deleted notification back to the dashboard carrying the amend-refused flag', async () => {
@@ -487,9 +505,9 @@ describe('dashboard amend POST', () => {
 })
 
 describe.each([
-  ['create POST', createPost, 'list-create'],
-  ['start entry', startGet, 'start']
-])('dashboard %s', (_name, openNotification, entry) => {
+  ['create POST', createPost, 'list-create', TRAIL_START.dashboard],
+  ['start entry', startGet, 'start', TRAIL_START.ins]
+])('dashboard %s', (_name, openNotification, entry, startPlace) => {
   useStubbedHighRiskPlantsJourney()
 
   it('Should log the new notification, its organisation and the entry once', async () => {
@@ -510,7 +528,7 @@ describe.each([
     })
   })
 
-  it('Should start a notification, begin its opening run and land on its first question', async () => {
+  it('Should open the first page of the new notification carrying where it was started', async () => {
     const request = journeyRequest()
     const h = stubH(request)
 
@@ -518,11 +536,8 @@ describe.each([
 
     const newJourneyId = h.cookies[knownJourneysCookie()].at(-1)
     expect(response.redirect).toBe(
-      pagePath(newJourneyId, commodityTypePage.slug)
+      withTrail(pagePath(newJourneyId, commodityTypePage.slug), [startPlace])
     )
-    expect(h.cookies[openingRunCookie()]).toEqual({
-      [newJourneyId]: RUN_ACTIVE
-    })
   })
 
   it('Should keep an earlier notification listed alongside the new one', async () => {

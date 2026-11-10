@@ -1,8 +1,17 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
-import { BASE, journeyIdFromPage, setUrl } from './set-base.js'
+import {
+  BASE,
+  journeyIdFromPage,
+  notificationPageWithTrail,
+  pageUrlOnWalk,
+  setUrl
+} from './set-base.js'
+import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { signIn } from './sign-in.js'
+import { seedFields } from './seed-fields.js'
+import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
 import { PAGE_SIZE } from '../src/server/app/services/address-book/index.js'
 import { STUB_BOOK_SIZE } from '../src/server/app/services/address-book/stub/index.js'
@@ -19,13 +28,33 @@ import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants
 
 export const POTATO_VARIETY = 'Maris Piper'
 export const ADDRESS_BOOK_PARTY = 'Tech Imports Ltd'
-export const CHECK_ANSWERS_URL = setUrl(
-  '/notifications/[^/]+/notification-view$'
+export const POTATO_WALK = [
+  'commodity-type',
+  'commodities',
+  'origin',
+  'arrival-details',
+  'destinations/select',
+  'identification-numbers',
+  'consignment/contact/select'
+]
+export const REVIEW_URL_FROM_POTATO_WALK = pageUrlOnWalk(
+  'notification-view',
+  POTATO_WALK
 )
+export const REVIEW_URL_WITHOUT_TRAIL = setUrl(
+  '/notifications/[^/]+/notification-view'
+)
+export const POTATO_CHANGE_LINK_TRAIL = [
+  TRAIL_START.dashboard,
+  ...POTATO_WALK,
+  'notification-view'
+]
 
-const COMMODITY_TYPE_URL = setUrl('/notifications/[^/]+/commodity-type$')
-const COMMODITY_DETAILS_URL = setUrl('/notifications/[^/]+/commodities/details')
-const COMMODITY_LIST_URL = setUrl('/notifications/[^/]+/commodities$')
+const COMMODITY_TYPE_URL = pageUrlOnWalk('commodity-type', POTATO_WALK)
+const COMMODITY_LIST_URL = notificationPageWithTrail('commodities', [
+  TRAIL_START.dashboard,
+  'commodity-type'
+])
 const ORIGIN_URL = setUrl('/notifications/[^/]+/origin$')
 
 export const FORM_GROUP_ANCESTOR_XPATH =
@@ -401,6 +430,9 @@ export const describeDatePickerLook = ({
  * Fails unless the journey form offers Save and continue, Save and return to
  * overview and Cancel and return to overview in that order, with Save and
  * return to overview as the form's last button.
+ * Save and continue and Save and return to overview must be the only buttons
+ * in one button group.
+ * Cancel and return to overview must sit below that group.
  *
  * @param {import('@playwright/test').Page} page
  */
@@ -418,6 +450,17 @@ export const expectThreeSaveControls = async (page) => {
   ])
   await expect(form.getByRole('button').last()).toHaveText(
     sharedCopy.saveActions.saveAndReturnToHub
+  )
+
+  const buttonGroup = form.locator('.govuk-button-group', {
+    has: saveAndContinue(page)
+  })
+  await expect(buttonGroup.getByRole('button')).toHaveText([
+    sharedCopy.saveActions.saveAndContinue,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
+  expect(await documentTop(cancelAndReturnToHub(page))).toBeGreaterThanOrEqual(
+    await documentBottom(buttonGroup)
   )
 }
 
@@ -503,13 +546,40 @@ export const startNotification = async (page) => {
 }
 
 /**
+ * Starts a notification, saves potatoes as its commodity type and opens its
+ * Overview.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string>} the notification's reference
+ */
+export const startNotificationAtOverview = async (page) => {
+  const reference = await startNotification(page)
+  await page
+    .getByRole('radio', {
+      name: commodityTypeCopy.typeLabels.potatoes,
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
+  await page.goto(`${BASE}/notifications/${reference}`)
+  await expect(page).toHaveURL(setUrl('/notifications/[^/]+$'))
+  return reference
+}
+
+/**
  * Answers the commodity-type question for a notification with no commodity
  * lines, landing on the commodity details page.
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} commodityType - a commodity-type value, such as `potatoes`
+ * @param {{ trailBefore?: string[] }} [options] - the places on the trail
+ *   before the commodity-type page; the dashboard by default
  */
-export const chooseCommodityType = async (page, commodityType) => {
+export const chooseCommodityType = async (
+  page,
+  commodityType,
+  { trailBefore = [TRAIL_START.dashboard] } = {}
+) => {
   await page
     .getByRole('radio', {
       name: commodityTypeCopy.typeLabels[commodityType],
@@ -517,7 +587,12 @@ export const chooseCommodityType = async (page, commodityType) => {
     })
     .check()
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(COMMODITY_DETAILS_URL)
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('commodities/details', [
+      ...trailBefore,
+      'commodity-type'
+    ])
+  )
 }
 
 /**
@@ -628,6 +703,32 @@ export const startWoodNotificationWithOriginSaved = async (page) => {
   return reference
 }
 
+/**
+ * Starts a cut coniferous trees notification with France saved as the origin,
+ * then presses Save and continue through arrival status (not yet arrived) and
+ * arrival details (a date next week) to the place of destination.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string>} the notification's reference
+ */
+export const startWoodNotificationAtPlaceOfDestination = async (page) => {
+  const reference = await startWoodNotificationWithOriginSaved(page)
+  await page
+    .getByRole('radio', {
+      name: statusCopy.statusLabels['not-yet-arrived'],
+      exact: true
+    })
+    .check()
+  await saveAndContinue(page).click()
+  await page
+    .getByLabel(arrivalCopy.dateLabels['not-yet-arrived'], { exact: true })
+    .fill(
+      seedFields({ fields: { arrivalDate: { daysFromToday: 7 } } }).arrivalDate
+    )
+  await saveAndContinue(page).click()
+  return reference
+}
+
 const pickAddressBookParty = async (page) => {
   await page
     .getByRole('radio', { name: `Select ${ADDRESS_BOOK_PARTY}`, exact: true })
@@ -651,15 +752,15 @@ export const startPotatoNotification = async (page) => {
     potatoIntendedUse: 'Planting'
   })
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(ORIGIN_URL)
+  await expect(page).toHaveURL(pageUrlOnWalk('origin', POTATO_WALK))
   await chooseCountryOfOrigin(page, 'France')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/arrival-details$/)
+  await expect(page).toHaveURL(pageUrlOnWalk('arrival-details', POTATO_WALK))
   return reference
 }
 
 /**
- * Walks a seed-potato notification through the opening run as far as the
+ * Walks a seed-potato notification by Save and continue as far as the
  * consignment contact page.
  *
  * @param {import('@playwright/test').Page} page
@@ -685,9 +786,13 @@ export const startPotatoNotificationAtContact = async (
     optionName: 'Port of Dover - GB DVR'
   })
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/destinations\/select$/)
+  await expect(page).toHaveURL(
+    pageUrlOnWalk('destinations/select', POTATO_WALK)
+  )
   await pickAddressBookParty(page)
-  await expect(page).toHaveURL(/\/identification-numbers$/)
+  await expect(page).toHaveURL(
+    pageUrlOnWalk('identification-numbers', POTATO_WALK)
+  )
   await page
     .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {
       exact: true
@@ -697,7 +802,9 @@ export const startPotatoNotificationAtContact = async (
     .getByLabel(idsCopy.fields.cropIdentificationNumber.label, { exact: true })
     .fill('C123')
   await saveAndContinue(page).click()
-  await expect(page).toHaveURL(/\/consignment\/contact\/select$/)
+  await expect(page).toHaveURL(
+    pageUrlOnWalk('consignment/contact/select', POTATO_WALK)
+  )
   return reference
 }
 
@@ -713,7 +820,7 @@ export const startPotatoNotificationAtContact = async (
 export const completePotatoNotification = async (page, options) => {
   const reference = await startPotatoNotificationAtContact(page, options)
   await pickAddressBookParty(page)
-  await expect(page).toHaveURL(CHECK_ANSWERS_URL)
+  await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await expect(
     page.getByRole('heading', {
       name: checkAnswersCopy.submit.heading,
@@ -757,7 +864,7 @@ export const submitDeclarationFromCheckAnswers = async (page, reference) => {
   await page
     .getByRole('button', { name: checkAnswersCopy.continue, exact: true })
     .click()
-  await expect(page).toHaveURL(/\/declaration$/)
+  await expect(page).toHaveURL(setUrl('/notifications/[^/]+/declaration'))
   await page
     .getByRole('checkbox', { name: declarationCopy.declarationLabel })
     .check()
@@ -916,6 +1023,7 @@ export const expectSelectedAddressCarriedToSecondPage = async (page) => {
  * @param {RegExp | string} options.pageUrl - the picker page's address
  * @param {RegExp | string} options.afterSaveUrl - where Save and continue goes
  * @param {string} options.firstRowRadio - selector of the first address in the list
+ * @param {string[]} [options.landingAlerts] - the text of each alert on the page Save and continue goes to with nothing chosen; none by default
  */
 export const describeAddressPicker = ({
   pickerName,
@@ -926,7 +1034,8 @@ export const describeAddressPicker = ({
   hubUrl,
   pageUrl,
   afterSaveUrl,
-  firstRowRadio
+  firstRowRadio,
+  landingAlerts = []
 }) => {
   const notInBookLink = (page) =>
     page.getByRole('alert').getByRole('link', { name: notInBookError })
@@ -1001,6 +1110,15 @@ export const describeAddressPicker = ({
       await searchAddressBook(page, DENMARK)
 
       await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
+    })
+
+    test('carries a newly ticked address through the paging links', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+
+      await expectSelectedAddressCarriedToSecondPage(page)
     })
 
     test('carries a saved address through the paging links', async ({
@@ -1119,7 +1237,7 @@ export const describeAddressPicker = ({
       await signIn(page)
     })
 
-    test('continuing with nothing chosen moves on without an error and leaves the overview row not yet started', async ({
+    test('continuing with nothing chosen refuses nothing, shows exactly the landing alerts and leaves the overview row not yet started', async ({
       page
     }) => {
       const reference = await openPicker(page)
@@ -1127,7 +1245,7 @@ export const describeAddressPicker = ({
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)
-      await expect(page.getByRole('alert')).toHaveCount(0)
+      await expect(page.getByRole('alert')).toHaveText(landingAlerts)
       await page.goto(`${BASE}/notifications/${reference}`)
       await expect(overviewRowStatus(page)).toHaveText(
         hubCopy.statuses.notYetStarted
@@ -1201,4 +1319,26 @@ export const describeAddressPicker = ({
       await expect(page).toHaveURL(afterSaveUrl)
     })
   })
+}
+
+/**
+ * Saves a commodity line opened from a review Change link, continues from the
+ * list and checks the origin page is reached with the places before the line,
+ * the list and the page the line was changed on the trail.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string[]} changeLinkTrail - the trail the Change link carried
+ */
+export const continueFromChangedCommodityLine = async (
+  page,
+  changeLinkTrail
+) => {
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('commodities', changeLinkTrail)
+  )
+  await saveAndContinue(page).click()
+  await expect(page).toHaveURL(
+    notificationPageWithTrail('origin', [...changeLinkTrail, 'commodities'])
+  )
 }

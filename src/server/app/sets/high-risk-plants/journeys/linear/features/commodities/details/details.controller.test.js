@@ -4,10 +4,13 @@ import {
   driveHandler,
   expectNoRefusalLogged,
   postHandlerOf,
+  reviewChangeLinkQuery,
+  trailQuery,
   unavailableBackendError
 } from '../../../../../../../engine/test-support.js'
 import { makeScope } from '../../../../../../../engine/index.js'
-import { pagePath } from '../../../../../../../shared/paths.js'
+import { hubPath, pagePath } from '../../../../../../../shared/paths.js'
+import { TRAIL_START, withTrail } from '../../../../../../../shared/kit.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../../lib/http-status.js'
 import {
   COMPLETE_POTATO_CONSIGNMENT,
@@ -49,6 +52,7 @@ describe('#meta', () => {
     expect(details.meta).toEqual({
       id: 'commodity-details',
       slug: 'commodities/details',
+      subPage: true,
       collects: []
     })
   })
@@ -168,24 +172,35 @@ describe('GET commodities/details', () => {
     expect(result.response.redirect).toBe(pagePath(result.journeyId, LIST_SLUG))
   })
 
-  it('Should send Back to the entry question until the collection holds a line', async () => {
+  it('Should send Back to the page Save and continue was pressed on, carrying the trail beneath it, until the collection holds a line', async () => {
+    const result = await driveHandler(get, {
+      seed: { commodityType: POTATOES },
+      query: trailQuery(TRAIL_START.overview, COMMODITY_TYPE_SLUG)
+    })
+
+    expect(result.view.context.backLink).toBe(
+      withTrail(pagePath(result.journeyId, COMMODITY_TYPE_SLUG), [
+        TRAIL_START.overview
+      ])
+    )
+  })
+
+  it('Should send Back to Overview when there is no line and nothing says where the trader came from', async () => {
     const result = await driveHandler(get, {
       seed: { commodityType: POTATOES }
     })
 
-    expect(result.view.context.backLink).toBe(
-      pagePath(result.journeyId, COMMODITY_TYPE_SLUG)
-    )
+    expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
   })
 
-  it('Should send Back to the list once the collection holds a line', async () => {
+  it('Should send Back to the list, carrying the trail, once the collection holds a line', async () => {
     const result = await driveHandler(get, {
       seed: COMPLETE_POTATO_CONSIGNMENT,
-      query: { index: '0' }
+      query: { index: '0', ...trailQuery(TRAIL_START.overview) }
     })
 
     expect(result.view.context.backLink).toBe(
-      pagePath(result.journeyId, LIST_SLUG)
+      withTrail(pagePath(result.journeyId, LIST_SLUG), [TRAIL_START.overview])
     )
   })
 
@@ -194,6 +209,19 @@ describe('GET commodities/details', () => {
 
     expect(result.response.redirect).toBe(
       pagePath(result.journeyId, COMMODITY_TYPE_SLUG)
+    )
+  })
+
+  it('Should send a commodity type that offers no category back to the question, carrying the trail beneath the details page', async () => {
+    const result = await driveHandler(get, {
+      seed: {},
+      query: trailQuery(TRAIL_START.overview, COMMODITY_TYPE_SLUG)
+    })
+
+    expect(result.response.redirect).toBe(
+      withTrail(pagePath(result.journeyId, COMMODITY_TYPE_SLUG), [
+        TRAIL_START.overview
+      ])
     )
   })
 })
@@ -460,15 +488,15 @@ describe('POST commodities/details — saving a line', () => {
     ])
   })
 
-  it('Should carry a change context through every redirect', async () => {
+  it('Should carry the trail through every redirect', async () => {
     const result = await driveHandler(post, {
       seed: { commodityType: POTATOES },
       payload: { category: SEED_POTATOES },
-      query: { change: '1' }
+      query: reviewChangeLinkQuery()
     })
 
     expect(result.response.redirect).toMatch(
-      /\/commodities\/details\?index=0&change=1$/
+      /\/commodities\/details\?index=0&from=notification-view$/
     )
   })
 })
@@ -500,4 +528,39 @@ describe('POST commodities/details — save failures', () => {
       })
     ).rejects.toThrow(new TypeError('programming failure'))
   })
+})
+
+describe('POST commodities/details — saving a line from a Change link or an amendment', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it.each([
+    [
+      'a Change link',
+      { query: reviewChangeLinkQuery() },
+      '?from=notification-view'
+    ],
+    ['an amendment', { amend: true }, '']
+  ])(
+    'Should return to the list when saved from %s',
+    async (_start, start, listQuery) => {
+      const result = await driveHandler(post, {
+        ...start,
+        seed: {
+          commodityType: POTATOES,
+          commodityLines: [{ category: SEED_POTATOES }]
+        },
+        payload: {
+          index: '0',
+          category: SEED_POTATOES,
+          potatoVariety: MARIS_PIPER,
+          quantity: POTATO_QUANTITY,
+          potatoIntendedUse: PLANTING
+        }
+      })
+
+      expect(result.response.redirect).toBe(
+        `${pagePath(result.journeyId, LIST_SLUG)}${listQuery}`
+      )
+    }
+  )
 })

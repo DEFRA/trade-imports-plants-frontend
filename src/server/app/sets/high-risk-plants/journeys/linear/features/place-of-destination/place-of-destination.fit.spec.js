@@ -14,7 +14,11 @@ import {
   searchBox,
   startNotification
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
-import { BASE, setUrl } from '../../../../../../../../../fit/set-base.js'
+import {
+  BASE,
+  notificationPageWithTrail,
+  setUrl
+} from '../../../../../../../../../fit/set-base.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -23,9 +27,19 @@ import { copy as pickerCopy } from '../address-book-picker/copy/copy.en.js'
 import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as arrivalStatusCopy } from '../arrival-status/copy/copy.en.js'
 import { ALREADY_ARRIVED } from '../arrival-status/statuses.js'
+import { TRAIL_START } from '../../../../../../shared/trail.js'
 import { copy } from './copy/copy.en.js'
 
-const ARRIVAL_STATUS_URL = setUrl('/notifications/[^/]+/arrival-status$')
+const ARRIVAL_STATUS_URL = notificationPageWithTrail('arrival-status', [
+  'origin'
+])
+const IDENTIFICATION_NUMBERS_URL = notificationPageWithTrail(
+  'identification-numbers',
+  ['destinations/select']
+)
+const OVERVIEW_PAGE_URL = notificationPageWithTrail('destinations/select', [
+  TRAIL_START.overview
+])
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const PAGE_URL = setUrl('/notifications/[^/]+/destinations/select')
 
@@ -87,7 +101,7 @@ describeAddressPicker({
   hubRowTitle: hubCopy.rows.destination.title,
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
-  afterSaveUrl: /\/identification-numbers$/,
+  afterSaveUrl: IDENTIFICATION_NUMBERS_URL,
   firstRowRadio: FIRST_ROW_RADIO
 })
 
@@ -126,24 +140,13 @@ test.describe('place-of-destination feature', () => {
       .getByRole('link', { name: hubCopy.rows.destination.title })
       .click()
 
-    await expect(page).toHaveURL(PAGE_URL)
+    await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
   test('offers the three save controls', async ({ page }) => {
     await startAtDestination(page)
 
     await expectThreeSaveControls(page)
-  })
-
-  test('sends Back to the arrival details in the opening run', async ({
-    page
-  }) => {
-    const reference = await startAtDestination(page)
-
-    await expect(backLink(page)).toHaveAttribute(
-      'href',
-      `${BASE}/notifications/${reference}/arrival-details`
-    )
   })
 
   test('sends Back to the overview when opened from the overview', async ({

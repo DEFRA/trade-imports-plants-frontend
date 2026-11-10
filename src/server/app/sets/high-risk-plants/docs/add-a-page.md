@@ -64,7 +64,7 @@ journeys/linear/features/<name>/
 If the page joins an existing multi-page feature, add its controller and
 template inside that group. Keep the browser spec in that group's `fit/` folder.
 
-`page.js` exports only `{ id, slug }` and imports nothing. The controller and
+`page.js` exports `{ id, slug }`, an authored `gate` where the derived gate cannot express the page, and `subPage: true` on a page reached only from the page that opens it, and imports nothing. The controller and
 flow import the same object. This prevents a module cycle through flow, status
 and the controller.
 
@@ -111,11 +111,14 @@ whose root another page already owns.
 Use one `render()` helper for GET and POST errors. Build the common view with
 `kit.base()`. Pass `journey` so the shared reference strip renders. A page that
 shows no status strip still passes `journey`, with `showJourneyStrip: false`.
-Pass `page` so the section caption renders. The normal back link is `hubPath(journey.journeyId)`.
-A page that is a step of the opening run takes its back link from
-`kit.runBackLink()`, which opens the previous run step while the run is active,
-and on a draft opened from a review Change link, where it carries change
-context. It falls back to the overview otherwise.
+Pass `page` so the section caption renders. A journey page takes its back link from
+the shared Back rule, `kit.trailBackLink(request)`, which reads where the trader came
+from off the link or form and falls back to the overview when the request names none.
+A page names no fixed Back target and no list of earlier pages its Back may open. A
+page with a different fallback
+passes it: `kit.trailBackLink(request, { fallback })`. A link that moves the trader on
+pushes the page onto the trail with `kit.pushTrail()`, and a link that brings the
+trader back to the same page carries it with `kit.carryTrail()`.
 
 GET calls `state.get()` once and prefills from `answers`. POST:
 
@@ -123,7 +126,11 @@ GET calls `state.get()` once and prefills from `answers`. POST:
 2. validates with [`src/server/app/lib/validate/index.js`](../../../lib/validate/index.js)
 3. re-renders raw values with status 400 on error
 4. commits cleaned values with `state.commit()`
-5. redirects through `await kit.nextTarget(request, page, committed.scope)`
+5. redirects through `kit.nextTarget(request, page, committed.scope)`, the shared
+   next-page target: the next page in the journey's one page order that applies,
+   ending at check your answers. Save and continue sends the trader to the page
+   that asks for a missing required earlier answer; see
+   [`journey-flow-and-gates.md`](journey-flow-and-gates.md)
 
 Wrap the write in `kit.recoverableSave(request, …)`. A marked persistence
 failure is logged once by `recoverableSave`; render the same values with
@@ -200,7 +207,9 @@ Import the controller namespace in
 
 `src/server/app/routes-high-risk-plants.js` — this set's gateway, re-exported by
 the `routes.js` barrel — wraps `allRoutes` in its set context and passes them to
-Hapi. `buildDispatch(SET_ID, dispatchPages)` rejects an unsafe obligation name,
+Hapi. Its wiring passes the journey flow its sections, task rows and policy and no
+routing targets: where Save and continue goes comes only from the page order.
+`buildDispatch(SET_ID, dispatchPages)` rejects an unsafe obligation name,
 two page owners and an uncovered obligation.
 
 Run `npm run test:high-risk-plants`. Dispatch should now build. If it does not,
@@ -211,16 +220,23 @@ owner to silence coverage.
 
 Import the page identity into
 [`journeys/linear/flow/flow.js`](../journeys/linear/flow/flow.js). Put it in the
-right `sections` entry, or add the first section. Its position controls
-strictly-earlier prerequisites and where Save and continue goes outside the
-opening run (`nextInTaskRow()`: the next page of the section only when it is in
-the same task row).
+right `sections` entry, or add the first section. A new question page goes into the
+journey's one page order and its task row and nothing else. Its position controls
+strictly-earlier prerequisites and the journey's page order, which Save and
+continue follows from every start: the next page that applies, skipping a
+sub-page, which is a page reached only from the page that opens it. Its place in that
+order decides where Save and continue lands on it and on the page before it. Save and
+continue sends the trader to the page that asks for a missing required earlier answer;
+see [`journey-flow-and-gates.md`](journey-flow-and-gates.md). A
+page stays out of the order as a `subPage: true` page when only the page that opens it
+reaches it, in no section when it is a detour off a list page, and in no task row when
+it is the review, declaration or confirmation.
 
 Import it into
 [`journeys/linear/flow/task-rows.js`](../journeys/linear/flow/task-rows.js). Put
 it in an existing task row when those pages form one user task. Add a task row
-only when the page needs its own entry on the hub. A task row is the hub entry;
-a flow section is the navigation sequence.
+only when the page needs its own entry on the hub. A task row places pages on
+Overview and decides readiness; it does not change where Save and continue goes.
 
 Decide the page's caption in
 [`journeys/linear/flow/section-captions/`](../journeys/linear/flow/section-captions/index.js):
@@ -229,7 +245,7 @@ test. The coverage test fails until you do one or the other.
 
 If you add a task row, also:
 
-- add the row id to one `GROUPS` entry in the hub feature's controller
+- the hub lists the row under the section that holds its first page; a new section needs a caption under `groups` in the hub copy
 - add matching English and Welsh `rows` copy in the hub feature
 - update the hub's `copy/copy.test.js`, the hub feature spec and
   `journeys/linear/flow/task-rows.test.js`
@@ -237,8 +253,8 @@ If you add a task row, also:
 The hub feature is the worked example for those bullets.
 
 - [`journeys/linear/features/hub/controller.js`](../journeys/linear/features/hub/controller.js)
-  holds `GROUPS` — the numbered groups in the order the hub renders them, each
-  naming its row ids. It turns a row id into a task-list item: a row
+  derives the numbered groups from the flow sections, in the order the hub
+  renders them, then appends the check-and-submit group. It turns a row into a task-list item: a row
   whose gate passes gets its `rowEntry()` link and a status tag, a row whose
   gate fails gets the "Cannot start yet" status and no link, and a conditional
   row that is not applicable is dropped. A group with no items is not rendered.
@@ -269,8 +285,8 @@ The hub feature is the worked example for those bullets.
   your row.
 - [`journeys/linear/flow/task-rows.test.js`](../journeys/linear/flow/task-rows.test.js)
   proves that state from the flow side — `taskRows` holds the rows landed so far
-  and `taskRowById()` resolves each of them — and that every id a `GROUPS` entry names
-  resolves to a task row or the review row. It covers `rowParts()` and
+  and `taskRowById()` resolves each of them — and that every row has hub copy
+  title. It covers `rowParts()` and
   `rowStatus()` over fixture rows: an explicit `parts` list wins over the
   obligations the row's pages collect, an out-of-scope row is not applicable,
   and an in-scope row nobody has answered is optional.
@@ -279,16 +295,13 @@ The hub feature is the worked example for those bullets.
 continue-enforced fields. Add an authored `gate` to the page identity only when
 that rule cannot express the page.
 
-Add the page to [`journeys/linear/flow/run.js`](../journeys/linear/flow/run.js)
-only when it belongs in the opening run — that is, add it to `RUN_STEPS` in
-journey order. A step whose derived gate fails is skipped, as arrival-status is
-for potatoes. A run step names its `backCandidates`, the earlier steps its Back
-link may open, nearest first. The same `backCandidates` give the page's Back
-link on a draft opened from a review Change link. Inserting a step mid-run
-updates the following step's `backCandidates`. Update its run tests if you do.
-The controller's `render` takes its Back link from
-`kit.runBackLink(request, page.id, current, { fallback })`, where `fallback` is
-a named option that defaults to the overview.
+A page's place in Save and continue's order is its place in `journeySections()`; a
+page whose scope rule fails is skipped, as arrival-status is for potatoes, and a page
+missing a required earlier answer sends Save and continue to the page that asks for
+it. Its Back
+comes from `kit.trailBackLink()`: no other file lists it. See
+[`journey-flow-and-gates.md`](journey-flow-and-gates.md), "Entry guard and the Back
+link".
 
 ## 7. Add check-answers and backend mapping when needed
 
@@ -347,7 +360,7 @@ In `controller.test.js`, cover:
 - unexpected errors throwing
 
 Add or update flow tests for section order, skip behaviour, task-row entry,
-status and opening-run behaviour.
+status and Back from each entry point, through itSendsBackToWhereTheTraderCameFrom.
 
 ## Test support
 
@@ -357,9 +370,14 @@ set-up in the test file:
 - controller tests:
   [`engine/test-support.js`](../../../engine/test-support.js) exports:
   - `driveHandler` seeds a journey, runs one handler and returns the answers
-    before and after and the logger; its `openingRun` option (`RUN_ACTIVE` or
-    `RUN_COMPLETE`) records that phase of the opening run, and `saveFailure`
-    makes every save the handler makes fail with the error it is given
+    before and after and the logger; its `amend` option opens an amendment, its
+    `query` option carries a trail, and `saveFailure` makes every save the handler
+    makes fail with the error it is given
+  - these drive a page from every start: a new notification (a `trailQuery` of the
+    dashboard start place), a reopened draft (a seeded journey with no
+    trail), the Overview (a `trailQuery` of the Overview place), a new browser
+    session (`driveHandler` with no session state, the default), a check your
+    answers Change link (`reviewChangeLinkQuery`) and an amendment (`amend`)
   - `postHandlerOf` and `postHandlerEndingWith` return a feature module's POST
     handler
   - `useStubbedJourney(setId, dispatchPages)` configures the stub records and
@@ -394,6 +412,16 @@ set-up in the test file:
     `addressBookRequestUrls` put the address book on the network boundary and
     report the requests made to it
   - `expectBackLinkIsPage` and `expectBackLinkIsPath` assert the Back link
+  - `trailQuery(...places)` and `reviewChangeLinkQuery()` build the query of a
+    request that carries a trail, newest place last
+  - `itSendsBackToWhereTheTraderCameFrom`, from
+    [`journeys/linear/test-support.js`](../journeys/linear/test-support.js),
+    registers the Back cases of a page; it takes the GET handler and an options
+    object with an optional `seed` and the `previousPage` slug
+  - `itSendsBackToWhereTheTraderCameFromOnRefusal`, from the same file, registers
+    the test that the page shown again after a refused save keeps its Back; it takes
+    the POST handler and an options object with the refused `payload`, the
+    `savedPage` slug Save and continue was pressed on and an optional `seed`
   - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line,
     and `expectNoRefusalLogged` asserts it holds none
   - `expectOneSaveFallbackLogged` asserts it holds exactly one save fallback line
@@ -402,8 +430,8 @@ set-up in the test file:
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)
   — `describeAddressBookPickerController` registers the controller tests every
-  picker shares, and a picker's call also names the previous run step's slug and
-  the answers that make that step apply;
+  picker shares, and a picker's call names the page Save and continue was
+  pressed on before it and the answers that make that page apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
   — `pickerViewModelSuites` builds the view model and paging test cases, and
   `addressResponseForABookHoldingADeletedRecord` is the address response for a
@@ -450,13 +478,15 @@ locator. Never use a sleep.
 Cover:
 
 - initial render, heading, copy, hints, controls and service-backed options
-- happy-path save and the correct next-page or hub redirect
+- happy-path Save and continue landing on the next page in the journey order, or on
+  check your answers from the last page
 - reload and persistence of every entered value
 - each validation rule in its own test
 - preservation of entered values on error
 - every error-summary link moving focus to its control
-- back, Save and return to overview, Cancel and Change navigation as applicable
-- on every page in a task row's `pages` (`journeys/linear/flow/task-rows.js`) and on every party picker, `amend: amend` in the object `saveActions` takes, so the page takes the amend ending (Save and return, Save and continue, Save and return to overview) while the notification is being amended. `kit.base()` supplies `amend` when the controller passes it the request (`request`, or `h.request` where the render has only the toolkit). The party pickers (consignor-select, place-of-destination, consignment-contact-select) also pass `hubExitWhileAmending: false`, so they show only Save and return and Save and continue while amending, and keep their three controls outside an amendment. A page reached from another page (`showReturnControls: false`, such as the commodities list) also passes `amend`, and shows only Save and return and Save and continue while amending. A collection-entry sub-page (commodities details) keeps its own write actions and passes no `amend`: it saves back to its list, which carries the row's amend ending. `features/amend-endings.test.js` renders every task-row page while amending and fails if one loses the ending.
+- Back returning to the page the trader came from, Save and return to overview,
+  Cancel and Change navigation as applicable
+- the same controls while amending as on a draft: every page passes `saveActions` the same arguments on a draft and while amending. `features/amend-endings.test.js` renders every task-row page on a draft and while amending, checks each one for those controls and fails if their endings differ.
 - conditional scope, skip and purge behaviour
 - the check-answers rows and Change links
 

@@ -5,7 +5,7 @@ import {
   itemDetailPage,
   itemsPage
 } from '../../../../test/fixtures/index.js'
-import { AMEND, DRAFT, SUBMITTED } from '../engine/index.js'
+import { AMEND, DRAFT } from '../engine/index.js'
 import {
   expectOneLogged,
   expectOneRefusalLogged,
@@ -15,12 +15,11 @@ import {
   unavailableBackendError
 } from '../engine/test-support.js'
 import {
-  appendChangeContext,
   base,
   dateField,
+  hubExitTarget,
   logRefusal,
   pageRoutes,
-  readReturnMarker,
   REFUSAL_LOG_MESSAGE,
   recoverableSave
 } from './kit.js'
@@ -91,16 +90,7 @@ describe('#dateField — MoJ date-picker view model', () => {
   })
 })
 
-describe('#base — amending', () => {
-  it('Should be true only for a journey being amended', () => {
-    expect(base('title', { journey: { status: AMEND } }).amending).toBe(true)
-    expect(base('title', { journey: { status: DRAFT } }).amending).toBe(false)
-    expect(base('title', { journey: { status: SUBMITTED } }).amending).toBe(
-      false
-    )
-    expect(base('title').amending).toBe(false)
-  })
-
+describe('#base — journey strip', () => {
   it('Should offer Cancel amend in the strip only for a journey being amended', () => {
     const amending = { journeyId: 'j', status: AMEND }
     expect(base('t', { journey: amending }).journeyStrip.cancelAmend).toEqual({
@@ -131,28 +121,6 @@ describe('#base — amending', () => {
     expect(view.journeyStrip).toBeNull()
     expect(view.concurrencyToken).toBe(7)
   })
-
-  const ORIGIN_PATH = '/n/j-1/origin'
-  const originRequest = {
-    path: ORIGIN_PATH,
-    url: new URL(`http://x${ORIGIN_PATH}?change=1&return=addresses`)
-  }
-
-  it("Should give an amended journey's page the two save-button form actions, keeping its own query", () => {
-    expect(
-      base('t', { journey: { status: AMEND }, request: originRequest }).amend
-    ).toEqual({
-      returnAction: `${ORIGIN_PATH}?change=1&return=addresses`,
-      continueAction: `${ORIGIN_PATH}?return=addresses`
-    })
-  })
-
-  it('Should give no amend form actions outside an amendment or without the request', () => {
-    expect(
-      base('t', { journey: { status: DRAFT }, request: originRequest }).amend
-    ).toBeNull()
-    expect(base('t', { journey: { status: AMEND } }).amend).toBeNull()
-  })
 })
 
 describe('#pageRoutes — a save refused as stale', () => {
@@ -170,13 +138,16 @@ describe('#pageRoutes — a save refused as stale', () => {
     const request = journeyRequest('journey-1', {
       payload: { concurrencyToken: '3' },
       path: '/notifications/journey-1/origin',
-      url: new URL('http://localhost/notifications/journey-1/origin?change=1')
+      url: new URL(
+        'http://localhost/notifications/journey-1/origin?from=notification-view'
+      )
     })
 
     const response = await postRoute.handler(request, stubH(request))
 
     expect(response).toEqual({
-      redirect: '/notifications/journey-1/origin?change=1&staleAction=1'
+      redirect:
+        '/notifications/journey-1/origin?from=notification-view&staleAction=1'
     })
     expect(request.logger.entries).toEqual([
       {
@@ -327,32 +298,14 @@ describe('#logRefusal', () => {
   })
 })
 
-describe('#appendChangeContext — the change marker on an href', () => {
-  it('Should start the query string on an href without one', () => {
-    expect(appendChangeContext('/a')).toBe('/a?change=1')
-  })
+describe('#hubExitTarget — Save and return to overview', () => {
+  const params = { journeyId: 'journey-1' }
 
-  it('Should join to the query string an href already has', () => {
-    expect(appendChangeContext('/a?x=1')).toBe('/a?x=1&change=1')
-  })
-})
-
-describe('#readReturnMarker — the page a request says it came from', () => {
-  const allowedSlugs = ['applicant', 'notification-view']
-
-  it('Should be empty when the request carries no marker', () => {
-    expect(readReturnMarker({ query: {} }, allowedSlugs)).toEqual({})
-  })
-
-  it('Should honour a marker naming an allowed slug', () => {
-    expect(
-      readReturnMarker({ query: { return: 'applicant' } }, allowedSlugs)
-    ).toEqual({ honouredSlug: 'applicant' })
-  })
-
-  it('Should refuse a marker naming anything else, holding the value received', () => {
-    expect(
-      readReturnMarker({ query: { return: '//evil.example' } }, allowedSlugs)
-    ).toEqual({ refusedMarker: '//evil.example' })
+  it('Should be the overview only for the named hub exit', () => {
+    expect(hubExitTarget({ payload: { exit: 'hub' }, params })).toMatch(
+      /journey-1$/
+    )
+    expect(hubExitTarget({ payload: {}, params })).toBeNull()
+    expect(hubExitTarget({ params })).toBeNull()
   })
 })

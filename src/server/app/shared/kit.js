@@ -1,19 +1,25 @@
 import { dashboardPath, hubPath, pagePath, pageRoutePath } from './paths.js'
 import { setIdForPath, withSetContext } from './set-context.js'
 import { AMEND, DELETED, DRAFT, SUBMITTED } from '../engine/index.js'
-import { nextInTaskRow } from '../flow/navigation.js'
-import {
-  journeyLayout,
-  journeyNextRunTarget,
-  journeyPreviousRunTarget,
-  journeySectionCaption
-} from '../flow/journey-flow.js'
-import { inOpeningRun } from '../flow/run-state.js'
+import { nextStepLanding } from '../flow/navigation.js'
+import { journeyLayout, journeySectionCaption } from '../flow/journey-flow.js'
 import { copyFor } from './copy.js'
 import { copy as sharedEn } from './copy.en.js'
 import { copy as sharedCy } from './copy.cy.js'
 import { isRecoverableBackendError } from '../services/persistence/records/errors.js'
-import { amendFormActions } from './amend-form-actions.js'
+import { pushTrail } from './trail.js'
+
+export {
+  carryTrail,
+  pushTrail,
+  readReturnMarker,
+  requestTrail,
+  TRAIL_START,
+  trailBackLink,
+  trailPlus,
+  withReturnMarker,
+  withTrail
+} from './trail.js'
 
 export const routeOptions = { auth: 'session' }
 
@@ -146,87 +152,41 @@ export const logRefusal = (request, { fieldErrors = {}, ...details } = {}) =>
 export const hubExitTarget = (request) =>
   request.payload?.exit === 'hub' ? hubPath(request.params.journeyId) : null
 
-export const changeContext = (request) => Boolean(request.query.change)
-
-/** The href with `change=1` added to its query string. */
-export const appendChangeContext = (href) =>
-  `${href}${href.includes('?') ? '&' : '?'}change=1`
-
-export const withChangeContext = (request, href) =>
-  changeContext(request) ? appendChangeContext(href) : href
-
-/**
- * Reads the `return` marker a request carries.
- *
- * @param {object} request - the request being answered.
- * @param {string[]} allowedSlugs - the page slugs the marker may name.
- * @returns {{ honouredSlug?: string, refusedMarker?: string }} `{}` without a
- * marker, `{ honouredSlug }` when the marker is one of `allowedSlugs`, else
- * `{ refusedMarker }` holding the value received.
- */
-export const readReturnMarker = (request, allowedSlugs) => {
-  const marker = request.query?.return
-  if (marker === undefined) {
-    return {}
-  }
-  return allowedSlugs.includes(marker)
-    ? { honouredSlug: marker }
-    : { refusedMarker: marker }
-}
-
-export const exitTarget = (request, fallback) =>
-  hubExitTarget(request) ??
-  (changeContext(request)
-    ? pagePath(request.params.journeyId, CYA_SLUG)
-    : fallback)
-
-export const runTarget = async (request, stepId, scope) =>
-  (await inOpeningRun(request, request.params.journeyId))
-    ? journeyNextRunTarget(stepId, scope, request.params.journeyId)
-    : null
-
-const previousStepBackLink = async (request, stepId, { journey, scope }) => {
+const nextPagePath = (request, page, scope) => {
   const { journeyId } = request.params
-  const opensInRun = await inOpeningRun(request, journeyId)
-  const draftOpenedFromChangeLink =
-    !opensInRun && journey.status === DRAFT && changeContext(request)
-  if (!opensInRun && !draftOpenedFromChangeLink) {
-    return null
+  const landing = nextStepLanding(page.id, scope, journeyId)
+  if (!landing) {
+    return pagePath(journeyId, CYA_SLUG)
   }
-  const previousStep = journeyPreviousRunTarget(stepId, scope, journeyId)
-  return draftOpenedFromChangeLink && previousStep
-    ? appendChangeContext(previousStep)
-    : previousStep
+  if (landing.unopened) {
+    request.logger.info(
+      {
+        journeyId,
+        route: request.route?.path,
+        savedPageId: page.id,
+        unopenedPageId: landing.unopened.pageId,
+        missingAnswerIds: landing.unopened.missingAnswerIds
+      },
+      'Save and continue opened the page that asks for a missing earlier answer'
+    )
+  }
+  return landing.path
 }
 
 /**
- * Where a run step's Back link goes.
+ * Where a valid save on a page goes next.
  *
  * @param {object} request - the request being answered.
- * @param {string} stepId - the run step's id.
- * @param {{ journey: object, scope: object }} state - the journey and its
- * scope.
- * @param {object} [options]
- * @param {string} [options.fallback] - the path answered when no earlier step
- * applies. Defaults to the overview's path.
- * @returns {Promise<string>} the previous run step's path while the opening
- * run is active, and on a draft request carrying change context, where it
- * carries change context too. Otherwise, the fallback.
+ * @param {object} page - the page being saved.
+ * @param {object} scope - the journey's scope.
+ * @returns {string} the overview's path when Save and return to overview was
+ * pressed, else the next page that applies, else the review's path, carrying
+ * the request's trail plus the page saved. A next page that needs a required
+ * earlier answer that is missing gives the page that asks for it, logged once.
  */
-export const runBackLink = async (
-  request,
-  stepId,
-  { journey, scope },
-  { fallback = hubPath(journey.journeyId) } = {}
-) =>
-  (await previousStepBackLink(request, stepId, { journey, scope })) ?? fallback
-
-export const nextTarget = async (request, page, scope) =>
-  exitTarget(
-    request,
-    (await runTarget(request, page.id, scope)) ??
-      nextInTaskRow(page.id, scope, request.params.journeyId)
-  )
+export const nextTarget = (request, page, scope) =>
+  hubExitTarget(request) ??
+  pushTrail(request, nextPagePath(request, page, scope), page.slug)
 
 export const SERVER_WIDE_LAYOUT = 'shared/layout.njk'
 
@@ -271,10 +231,6 @@ export const chromeFor = (title, requestPath) => {
  * @param {object} [options.page] - the page identity. Supply it and the view
  * gains the `caption` naming the section of the journey the page belongs to;
  * omit it on a page the journey deliberately leaves uncaptioned.
- * @param {object} [options.request] - the request being answered. Supply it
- * on a page that ends with `saveActions`, and the view gains `amend`: the two
- * form actions its save buttons carry while the journey is being amended, or
- * null otherwise.
  * @param {boolean} [options.showJourneyStrip] - false leaves the status strip off the page.
  * @returns {object} the common view model.
  */
@@ -287,12 +243,10 @@ export const base = (
     page,
     recoverableError = false,
     offerCancelAmend = true,
-    showJourneyStrip = true,
-    request
+    showJourneyStrip = true
   } = {}
 ) => {
   const hasJourney = journeyId != null
-  const amending = journey?.status === AMEND
   return {
     layout: journeyLayout(),
     pageTitle: title,
@@ -303,11 +257,6 @@ export const base = (
     journeyStrip: showJourneyStrip
       ? journeyStrip(journey, { offerCancelAmend })
       : null,
-    amending,
-    amend:
-      amending && request
-        ? amendFormActions(request.path ?? '', request.url?.searchParams)
-        : null,
     concurrencyToken: journey?.concurrencyToken ?? null,
     sharedCopy,
     recoverableError,

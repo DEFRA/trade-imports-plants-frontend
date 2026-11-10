@@ -4,11 +4,13 @@ import * as commodityTypeController from '../commodity-type/controller.js'
 import {
   driveHandler,
   expectOneRefusalLogged,
-  postHandlerOf
+  postHandlerOf,
+  reviewChangeLinkQuery
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
+  plants,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import {
@@ -25,11 +27,6 @@ const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const CONSIGNOR_SELECT = 'consignor-select'
 const TECH_IMPORTS = 'tech-imports-ltd'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
-
-const plants = (answers = {}) => ({
-  commodityType: PLANTS_FOR_PLANTING,
-  ...answers
-})
 
 describe('#meta', () => {
   it('Should own the consignor-select obligation at its own slug', () => {
@@ -60,11 +57,13 @@ describeAddressBookPickerController({
   get,
   post,
   seed: plants,
-  previousStep: {
+  previousPage: {
     slug: 'destinations/select',
     seed: COMPLETE_PLANTS_NOTIFICATION
   },
   fieldName: 'consignor',
+  slug: 'consignors/select',
+  nextSlug: 'identification-numbers',
   errorText: copy.errors.consignor
 })
 
@@ -76,7 +75,7 @@ describe('GET consignor-select — the address this notification holds', () => {
 
     const result = await driveHandler(get, {
       seed: plants({ consignor: edited }),
-      query: { change: '1' }
+      query: reviewChangeLinkQuery()
     })
 
     expect(result.view.context.heldCopy).toEqual({
@@ -84,7 +83,7 @@ describe('GET consignor-select — the address this notification holds', () => {
       name: EDITED_NAME,
       summary: '18 Dockside Road, London, E14 9GE, United Kingdom',
       editDetails: 'Edit details',
-      editHref: `${hubPath(result.journeyId)}/consignors/edit?return=consignors%2Fselect&change=1`
+      editHref: `${hubPath(result.journeyId)}/consignors/edit?return=consignors%2Fselect&from=notification-view`
     })
   })
 
