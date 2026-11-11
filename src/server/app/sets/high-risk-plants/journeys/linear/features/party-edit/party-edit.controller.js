@@ -10,6 +10,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { addressBookCountries } from '../../../../../../services/countries/index.js'
 import { PARTIES } from '../../parties/index.js'
+import { partyEditPage } from './page.js'
 import {
   addressRules,
   FIELDS,
@@ -125,7 +126,7 @@ const post = (party) => async (request, h) => {
 
 export const routes = PARTIES.flatMap((party) =>
   kit.pageRoutes(
-    { slug: party.editSlug },
+    { slug: party.editSlug, maturity: partyEditPage.maturity },
     { get: get(party), post: post(party) }
   )
 )

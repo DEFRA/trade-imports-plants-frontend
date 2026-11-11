@@ -61,6 +61,7 @@ describe('#meta', () => {
     expect(origin.meta).toEqual({
       id: 'origin',
       slug: 'origin',
+      maturity: 'exploring',
       collects: ['countryOfOrigin']
     })
   })

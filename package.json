@@ -18,6 +18,7 @@
     "fit:start": "NODE_ENV=development node .",
     "fit:start:workspace": "npm run check:workspace-stack && npm run fit:start",
     "check:workspace-stack": "node scripts/check-workspace-stack.js",
+    "check:signed-off-tests": "node scripts/signed-off-tests.js",
     "test:fit": "npm run build:frontend && DEMO_SLOWMO=0 DEMO_PACE_MS=0 playwright test --pass-with-no-tests",
     "test:fit:journeys": "npm run test:fit -- --project=journeys",
     "test:fit:features": "npm run test:fit -- --project=features",

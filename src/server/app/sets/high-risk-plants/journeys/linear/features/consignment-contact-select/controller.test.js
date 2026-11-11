@@ -33,6 +33,7 @@ describe('#meta', () => {
     expect(contact.meta).toEqual({
       id: 'consignment-contact-select',
       slug: 'consignment/contact/select',
+      maturity: 'exploring',
       collects: ['contactAddress']
     })
   })

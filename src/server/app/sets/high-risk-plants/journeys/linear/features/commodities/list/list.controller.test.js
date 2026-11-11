@@ -51,6 +51,7 @@ describe('#meta', () => {
     expect(list.meta).toEqual({
       id: 'commodities',
       slug: 'commodities',
+      maturity: 'exploring',
       collects: ['commodityLines']
     })
   })

@@ -50,6 +50,7 @@ describe('#meta', () => {
     expect(arrivalDetails.meta).toEqual({
       id: 'arrival-details',
       slug: 'arrival-details',
+      maturity: 'exploring',
       collects: ['arrivalDate', 'arrivalTime', 'proposedPlaceOfLanding']
     })
   })

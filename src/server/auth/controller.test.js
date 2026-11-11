@@ -8,6 +8,9 @@ import { readEmfDocuments } from '../common/test-helpers/emf-documents.js'
 import { verifyToken } from '../../auth/verify-token.js'
 import { getPermissions } from '../../auth/get-permissions.js'
 import { copy as sharedEn } from '../app/shared/copy.en.js'
+import { documentOf } from '../common/test-helpers/document-of.js'
+import { BANNER_CLASSES } from '../app/page-maturity/levels.js'
+import { copy as pageMaturityEn } from '../app/page-maturity/copy/copy.en.js'
 
 vi.mock('../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
@@ -161,6 +164,17 @@ describe('#authController', () => {
     )
     expect(verifyToken).not.toHaveBeenCalled()
     expect(getPermissions).not.toHaveBeenCalled()
+  })
+
+  test('GET /auth/sign-in-oidc shows the Exploring level in the phase banner of the unauthorised page', async () => {
+    const { payload } = await signInOidc({ organisationId: null })
+    const levelBanner = documentOf(payload).querySelector(
+      `.${BANNER_CLASSES.exploring}`
+    )
+
+    expect(levelBanner.textContent).toContain(
+      pageMaturityEn.levels.exploring.tag
+    )
   })
 
   test('GET /auth/sign-in-oidc renders unauthorised when token verification fails', async () => {
