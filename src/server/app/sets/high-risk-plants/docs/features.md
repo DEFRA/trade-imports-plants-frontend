@@ -47,6 +47,13 @@ level from [`auth/page.js`](../../../../auth/page.js).
 
 A page's level changes through a reviewed pull request.
 
+A page at `agreed` or `readyForLive` is signed off. The **Signed-off pages**
+pull request check lists every test, Playwright spec or snapshot in its
+feature folder that a pull request changes or deletes, and fails when it lists
+any. It is not a required check: a listed change needs a person's decision,
+recorded on a Jira ticket, rather than blocking the merge. Run it locally with
+`npm run check:signed-off-tests -- origin/main`.
+
 ## Collecting controllers
 
 A controller normally owns:
