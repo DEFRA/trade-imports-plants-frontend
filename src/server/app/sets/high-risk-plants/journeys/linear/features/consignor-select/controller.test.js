@@ -33,6 +33,7 @@ describe('#meta', () => {
     expect(consignor.meta).toEqual({
       id: CONSIGNOR_SELECT,
       slug: 'consignors/select',
+      maturity: 'exploring',
       collects: ['consignor']
     })
   })

@@ -22,6 +22,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
+import { hubPage } from './page.js'
 
 const view = `${TEMPLATES}/features/hub/template`
 
@@ -151,5 +152,10 @@ const handler = async (request, h) => {
 }
 
 export const routes = [
-  { method: 'GET', path: hubRoutePath(), options: kit.routeOptions, handler }
+  {
+    method: 'GET',
+    path: hubRoutePath(),
+    options: kit.pageRouteOptions(hubPage),
+    handler
+  }
 ]

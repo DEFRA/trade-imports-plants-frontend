@@ -53,6 +53,7 @@ describe('#meta', () => {
       id: 'commodity-details',
       slug: 'commodities/details',
       subPage: true,
+      maturity: 'exploring',
       collects: []
     })
   })

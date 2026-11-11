@@ -64,7 +64,11 @@ journeys/linear/features/<name>/
 If the page joins an existing multi-page feature, add its controller and
 template inside that group. Keep the browser spec in that group's `fit/` folder.
 
-`page.js` exports `{ id, slug }`, an authored `gate` where the derived gate cannot express the page, and `subPage: true` on a page reached only from the page that opens it, and imports nothing. The controller and
+`page.js` exports `{ id, slug, maturity }`, an authored `gate` where the derived gate cannot express the page, and `subPage: true` on a page reached only from the page that opens it, and imports nothing. `maturity` is the
+page's level in the phase banner, as a level id from
+[`page-maturity/levels.js`](../../../page-maturity/levels.js); a new page in a
+notification journey takes the level its section's pages have
+([features.md](features.md#page-maturity)). The controller and
 flow import the same object. This prevents a module cycle through flow, status
 and the controller.
 

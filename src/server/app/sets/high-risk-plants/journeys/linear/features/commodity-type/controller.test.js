@@ -43,6 +43,7 @@ describe('#meta', () => {
     expect(commodityType.meta).toEqual({
       id: 'commodity-type',
       slug: 'commodity-type',
+      maturity: 'exploring',
       collects: ['commodityType']
     })
   })

@@ -159,7 +159,7 @@ export const routes = [
   {
     method: 'GET',
     path: dashboardRoutePath(),
-    options: kit.routeOptions,
+    options: kit.pageRouteOptions(dashboardPage),
     handler: listGet
   },
   {

@@ -37,7 +37,7 @@ export const routes = [
   {
     method: 'GET',
     path: pageRoutePath(page.slug),
-    options: kit.routeOptions,
+    options: kit.pageRouteOptions(page),
     handler: get
   }
 ]

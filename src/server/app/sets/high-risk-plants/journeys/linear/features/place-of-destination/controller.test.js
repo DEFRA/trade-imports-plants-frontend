@@ -32,6 +32,7 @@ describe('#meta', () => {
     expect(placeOfDestination.meta).toEqual({
       id: PLACE_OF_DESTINATION_SELECT,
       slug: 'destinations/select',
+      maturity: 'exploring',
       collects: ['placeOfDestination']
     })
   })
