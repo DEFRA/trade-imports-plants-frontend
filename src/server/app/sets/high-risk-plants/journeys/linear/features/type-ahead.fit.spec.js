@@ -4,6 +4,7 @@ import {
   FORM_GROUP_ANCESTOR_XPATH,
   chooseCommodityCategory,
   chooseCommodityType,
+  errorSummaryLinks,
   expectNoSeriousOrCriticalViolations,
   expectGovukLabelSize,
   expectStyle,
@@ -21,9 +22,8 @@ import { copy as arrivalCopy } from './arrival-details/copy/copy.en.js'
 import { copy as commodityCopy } from './commodities/copy/copy.en.js'
 import { copy as originCopy } from './origin/copy/copy.en.js'
 
-const AUTOCOMPLETE_BUTTON = '.app-autocomplete__button'
-const AUTOCOMPLETE_CONTAINER =
-  'xpath=ancestor::*[contains(@class,"app-autocomplete")][1]'
+const COMBOBOX_WRAPPER = 'xpath=ancestor::*[.//*[@role="listbox"]][1]'
+const SEARCH_BUTTON_BESIDE_WRAPPER = `${COMBOBOX_WRAPPER}/following-sibling::*[@aria-hidden="true"]`
 const COUNTRY_SELECT = 'select#countryOfOrigin-select'
 const DOVER_OPTION = 'Port of Dover - GB DVR'
 const countries = countryAndSubdivisionEntries()
@@ -134,11 +134,10 @@ for (const typeAhead of typeAheads) {
       page
     }) => {
       const input = inputFor(page, inputId)
-      await expect(
-        input
-          .locator(AUTOCOMPLETE_CONTAINER)
-          .locator('.autocomplete__dropdown-arrow-down')
-      ).toHaveCSS('display', 'none')
+      await expect(input.locator(COMBOBOX_WRAPPER).locator('svg')).toHaveCSS(
+        'display',
+        'none'
+      )
 
       const measurements = await measureJoinedSearchButton(input)
       expect(measurements.buttonWidth).toBe(measurements.buttonHeight)
@@ -151,9 +150,7 @@ for (const typeAhead of typeAheads) {
       page
     }) => {
       const input = inputFor(page, inputId)
-      const button = input
-        .locator(AUTOCOMPLETE_CONTAINER)
-        .locator(AUTOCOMPLETE_BUTTON)
+      const button = input.locator(SEARCH_BUTTON_BESIDE_WRAPPER)
       const urlBeforeClick = page.url()
 
       await expect(button).toHaveAttribute('aria-hidden', 'true')
@@ -231,11 +228,8 @@ for (const typeAhead of typeAheads) {
           ''
         )
         await expect(formGroup.getByRole('button')).toHaveCount(0)
-        await expect(
-          noJavaScript.locator(
-            '.autocomplete__wrapper, .app-autocomplete__button'
-          )
-        ).toHaveCount(0)
+        await expect(formGroup.getByRole('listbox')).toHaveCount(0)
+        await expect(formGroup.locator('[aria-hidden="true"]')).toHaveCount(0)
       })
     })
   })
@@ -353,7 +347,9 @@ test.describe('country of origin type-ahead styles', () => {
     page
   }) => {
     await startNotificationAtOrigin(page)
-    const button = page.locator(AUTOCOMPLETE_BUTTON)
+    const button = inputFor(page, 'countryOfOrigin').locator(
+      SEARCH_BUTTON_BESIDE_WRAPPER
+    )
 
     await expect(button).toHaveCSS(
       'background-color',
@@ -417,9 +413,7 @@ test.describe('country of origin type-ahead styles', () => {
     await startNotificationAtOrigin(page)
     await saveAndContinue(page).click()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: originCopy.errors.countryRequired
-      })
+      errorSummaryLinks(page, originCopy.errors.countryRequired)
     ).toBeVisible()
 
     const input = inputFor(page, 'countryOfOrigin')
@@ -440,8 +434,7 @@ test.describe('country of origin type-ahead styles', () => {
 
 const measureJoinedSearchButton = (input) =>
   input.evaluate((inputElement) => {
-    const container = inputElement.closest('.app-autocomplete')
-    const button = container.querySelector('.app-autocomplete__button')
+    const button = inputElement.parentElement.nextElementSibling
     const inputEdges = inputElement.getBoundingClientRect()
     const buttonEdges = button.getBoundingClientRect()
     return {

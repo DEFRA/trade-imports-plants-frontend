@@ -97,6 +97,24 @@ const computedStyle = (locator, property) =>
   )
 
 /**
+ * The page's error summary.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {import('@playwright/test').Locator}
+ */
+export const errorSummary = (page) => page.getByRole('alert')
+
+/**
+ * The links of the page's error summary, narrowed to the one named when a name is given.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} [name] - the link's accessible name.
+ * @returns {import('@playwright/test').Locator}
+ */
+export const errorSummaryLinks = (page, name) =>
+  errorSummary(page).getByRole('link', { name })
+
+/**
  * Fails unless the element has each computed style given.
  *
  * @param {import('@playwright/test').Locator} element
@@ -277,7 +295,7 @@ const searchByPressingEnter = async (page, { search, term }) => {
   await box.fill(term)
   await Promise.all([page.waitForEvent('load'), box.press('Enter')])
   await expect(box).toHaveValue(term)
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(errorSummary(page)).toHaveCount(0)
 }
 
 export const DENMARK = 'Denmark'
@@ -1105,8 +1123,7 @@ export const describeAddressPicker = ({
   firstRowRadio,
   landingAlerts = []
 }) => {
-  const notInBookLink = (page) =>
-    page.getByRole('alert').getByRole('link', { name: notInBookError })
+  const notInBookLink = (page) => errorSummaryLinks(page, notInBookError)
   const overviewRowStatus = (page) =>
     page
       .getByRole('listitem')
@@ -1282,7 +1299,7 @@ export const describeAddressPicker = ({
 
       await page.goto(pathOf(reference))
       await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
-      await expect(page.getByRole('alert')).toHaveCount(0)
+      await expect(errorSummary(page)).toHaveCount(0)
     })
 
     test('Cancel and return to overview reaches the overview without saving', async ({
@@ -1313,7 +1330,7 @@ export const describeAddressPicker = ({
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)
-      await expect(page.getByRole('alert')).toHaveText(landingAlerts)
+      await expect(errorSummary(page)).toHaveText(landingAlerts)
       await page.goto(`${BASE}/notifications/${reference}`)
       await expect(overviewRowStatus(page)).toHaveText(
         hubCopy.statuses.notYetStarted

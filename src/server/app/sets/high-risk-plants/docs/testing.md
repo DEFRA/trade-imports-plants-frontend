@@ -112,8 +112,9 @@ The type-ahead announcement tests read the search box's accessible description a
 polite status region's result count and highlighted-option text.
 The readers `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, because no other spec uses them.
-The coverage report and the quality gate count only application source under
-`src/`, never browser-test files (`*.fit.spec.js`), unit tests or the `fit/`
+The coverage report and the quality gate count application source under `src/`
+apart from `src/client/` and `src/server/app/services/_capture/capture.js`.
+They never count browser-test files (`*.fit.spec.js`), unit tests or the `fit/`
 helpers, so where a reader lives depends only on how many specs use it.
 When a second spec needs a step, move it there in the same change and delete every local copy.
 
