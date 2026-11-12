@@ -1,15 +1,5 @@
 import { matchPositions } from './search-fold.js'
-
-const escapeHtml = (text) => {
-  const htmlEscapes = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }
-  return text.replace(/[&<>"']/g, (char) => htmlEscapes[char])
-}
+import { escapeHtml } from './escape-html.js'
 
 const strongMatch = (text) =>
   `<strong class="govuk-!-font-weight-bold">${escapeHtml(text)}</strong>`
