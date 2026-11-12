@@ -388,7 +388,7 @@ test.describe('country of origin type-ahead styles', () => {
     }
   })
 
-  test('gives the enhanced input the focus colour, outline width and inset shadow size of a focused GOV.UK input', async ({
+  test('gives the enhanced input the GOV.UK focus colour and outline width, and the inset shadow of a focused GOV.UK input', async ({
     page
   }) => {
     await startNotificationAtOrigin(page)
@@ -400,21 +400,15 @@ test.describe('country of origin type-ahead styles', () => {
       focused: true,
       properties: ['outline-width', 'box-shadow']
     })
-    const withoutColour = (shadow) => shadow.replace(/rgba?\([^)]*\)\s*/, '')
 
     await input.focus()
 
-    const inputShadow = await input.evaluate(
-      (element) => window.getComputedStyle(element).boxShadow
-    )
     await expect(input).toHaveCSS('outline-color', focusColour)
     await expect(input).toHaveCSS(
       'outline-width',
       govukFocused['outline-width']
     )
-    expect(withoutColour(inputShadow)).toBe(
-      withoutColour(govukFocused['box-shadow'])
-    )
+    await expect(input).toHaveCSS('box-shadow', govukFocused['box-shadow'])
   })
 
   test('gives the enhanced input the standard GOV.UK error border', async ({
