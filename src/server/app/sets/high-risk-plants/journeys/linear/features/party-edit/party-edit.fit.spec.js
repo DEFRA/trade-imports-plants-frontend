@@ -1,4 +1,5 @@
 import {
+  errorSummaryLinks,
   ADDRESS_BOOK_PARTY,
   WOOD_LINE_FIELDS,
   addCommodityLine,
@@ -92,9 +93,7 @@ test.describe('edit a copied address', () => {
     await page.getByLabel(copy.fields.postcode).fill('')
     await page.getByRole('button', { name: copy.save }).click()
 
-    const link = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.errors.postcode.required })
+    const link = errorSummaryLinks(page, copy.errors.postcode.required)
     await expect(link).toBeVisible()
     await link.click()
     await expect(page.getByLabel(copy.fields.postcode)).toBeFocused()

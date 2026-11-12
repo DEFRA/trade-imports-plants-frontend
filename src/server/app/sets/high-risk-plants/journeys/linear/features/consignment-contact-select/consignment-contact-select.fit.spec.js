@@ -1,4 +1,6 @@
 import {
+  errorSummary,
+  errorSummaryLinks,
   ADDRESS_BOOK_PARTY,
   REVIEW_URL_FROM_POTATO_WALK,
   COPENHAGEN,
@@ -225,9 +227,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
       page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
     ).toBeVisible()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: checkAnswersCopy.errors.cards.arrivalDetails
-      })
+      errorSummaryLinks(page, checkAnswersCopy.errors.cards.arrivalDetails)
     ).toBeVisible()
   })
 })
@@ -285,7 +285,7 @@ test('a potatoes notification is asked for the consignment contact after Save an
 
   await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await expect(
-    page.getByRole('alert').getByRole('link', {
+    errorSummary(page).getByRole('link', {
       name: checkAnswersCopy.errors.cards.contact,
       exact: true
     })

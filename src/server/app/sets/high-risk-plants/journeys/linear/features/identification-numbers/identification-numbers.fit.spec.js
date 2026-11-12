@@ -1,4 +1,5 @@
 import {
+  errorSummary,
   chooseCommodityType,
   backLink,
   changeCommodityType,
@@ -144,9 +145,10 @@ for (const [commodityType, fields] of branches) {
           }
           await input(page, name).fill(invalid)
           await saveAndContinue(page).click()
-          const link = page
-            .getByRole('alert')
-            .getByRole('link', { name: copy.errors[name][rule], exact: true })
+          const link = errorSummary(page).getByRole('link', {
+            name: copy.errors[name][rule],
+            exact: true
+          })
           await link.click()
           await expect(input(page, name)).toBeFocused()
           for (const field of fields) {
@@ -192,7 +194,7 @@ for (const [commodityType, fields] of branches) {
       )
       await input(page, 'consignmentNumber').fill('bad-reference')
       await saveAndContinue(page).click()
-      await expect(page.getByRole('alert')).toBeVisible()
+      await expect(errorSummary(page)).toBeVisible()
       await expectNoSeriousOrCriticalViolations(
         page,
         'Identification numbers errors'

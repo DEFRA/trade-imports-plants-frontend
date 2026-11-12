@@ -87,7 +87,7 @@ button, search button colour, no-JavaScript Enter search and three-state axe tes
 picker's submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
 `POTATO_VARIETY`, `REVIEW_URL_FROM_POTATO_WALK` and `WOOD_LINE_FIELDS`; the form-group
 reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
-form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
+form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; `errorSummary`, which finds the page's error summary by its alert role; `errorSummaryLinks`, which finds the error summary's links, narrowed to the one named when a name is given; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
 `SECOND_PAGE_LINK`, `THIRD_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
 `NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
@@ -112,10 +112,13 @@ The type-ahead announcement tests read the search box's accessible description a
 polite status region's result count and highlighted-option text.
 The readers `measureJoinedSearchButton` and `boldLettersOf` live in
 `type-ahead.fit.spec.js`, because no other spec uses them.
-The coverage report and the quality gate count application source under `src/`
-apart from `src/client/` and `src/server/app/services/_capture/capture.js`.
-They never count browser-test files (`*.fit.spec.js`), unit tests or the `fit/`
-helpers, so where a reader lives depends only on how many specs use it.
+The SonarCloud quality gate counts application source under `src/` apart from
+`src/client/` and `src/server/app/services/_capture/capture.js`
+(`sonar.coverage.exclusions` in `sonar-project.properties`), and never counts
+`*.fit.spec.js` files or unit tests (`sonar.exclusions`). The local Vitest
+coverage report counts all of `src/**/*.js` (`coverage.include` in
+`vitest.config.js`). Neither counts the `fit/` helpers, which sit outside `src/`.
+So where a reader lives depends only on how many specs use it.
 When a second spec needs a step, move it there in the same change and delete every local copy.
 
 The browser tests here prove appearance by position, size relative to

@@ -1,4 +1,5 @@
 import {
+  errorSummaryLinks,
   ADDRESS_BOOK_PARTY,
   WOOD_LINE_FIELDS,
   addCommodityLine,
@@ -209,11 +210,7 @@ test.describe('consignor-select — accessibility', () => {
   }) => {
     await startAtConsignor(page)
     await postAnIdNotInTheBook(page)
-    await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.consignor
-      })
-    ).toBeVisible()
+    await expect(errorSummaryLinks(page, copy.errors.consignor)).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(page, 'Consignor error state')
   })

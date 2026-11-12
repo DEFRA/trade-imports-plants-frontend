@@ -1136,11 +1136,11 @@ export const describeAddressPicker = ({
   landingAlerts = []
 }) => {
   const notInBookLink = (page) => errorSummaryLinks(page, notInBookError)
-  const overviewRowStatus = (page) =>
+  const notYetStartedStatusOnOverviewRow = (page) =>
     page
       .getByRole('listitem')
       .filter({ has: page.getByRole('link', { name: hubRowTitle }) })
-      .locator('.govuk-task-list__status')
+      .getByText(hubCopy.statuses.notYetStarted, { exact: true })
 
   test.describe(`${pickerName} — listing, searching and paging`, () => {
     test.beforeEach(async ({ page }) => {
@@ -1344,9 +1344,7 @@ export const describeAddressPicker = ({
       await expect(page).toHaveURL(afterSaveUrl)
       await expect(errorSummary(page)).toHaveText(landingAlerts)
       await page.goto(`${BASE}/notifications/${reference}`)
-      await expect(overviewRowStatus(page)).toHaveText(
-        hubCopy.statuses.notYetStarted
-      )
+      await expect(notYetStartedStatusOnOverviewRow(page)).toBeVisible()
     })
 
     test('continuing with nothing chosen after a search that found nothing moves on', async ({

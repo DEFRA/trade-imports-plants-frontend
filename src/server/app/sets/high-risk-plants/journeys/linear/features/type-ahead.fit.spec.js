@@ -139,7 +139,10 @@ for (const typeAhead of typeAheads) {
         'none'
       )
 
-      const measurements = await measureJoinedSearchButton(input)
+      const measurements = await measureJoinedSearchButton(
+        input,
+        input.locator(SEARCH_BUTTON_BESIDE_WRAPPER)
+      )
       expect(measurements.buttonWidth).toBe(measurements.buttonHeight)
       expect(measurements.buttonTop).toBe(measurements.inputTop)
       expect(measurements.buttonBottom).toBe(measurements.inputBottom)
@@ -432,22 +435,20 @@ test.describe('country of origin type-ahead styles', () => {
   })
 })
 
-const measureJoinedSearchButton = (input) =>
-  input.evaluate((inputElement) => {
-    const button = inputElement.parentElement.nextElementSibling
-    const inputEdges = inputElement.getBoundingClientRect()
-    const buttonEdges = button.getBoundingClientRect()
-    return {
-      inputTop: inputEdges.top,
-      inputBottom: inputEdges.bottom,
-      inputRight: inputEdges.right,
-      buttonTop: buttonEdges.top,
-      buttonBottom: buttonEdges.bottom,
-      buttonRight: buttonEdges.right,
-      buttonWidth: buttonEdges.width,
-      buttonHeight: buttonEdges.height
-    }
-  })
+const measureJoinedSearchButton = async (input, button) => {
+  const inputEdges = await input.boundingBox()
+  const buttonEdges = await button.boundingBox()
+  return {
+    inputTop: inputEdges.y,
+    inputBottom: inputEdges.y + inputEdges.height,
+    inputRight: inputEdges.x + inputEdges.width,
+    buttonTop: buttonEdges.y,
+    buttonBottom: buttonEdges.y + buttonEdges.height,
+    buttonRight: buttonEdges.x + buttonEdges.width,
+    buttonWidth: buttonEdges.width,
+    buttonHeight: buttonEdges.height
+  }
+}
 
 const boldLettersOf = (page, suggestionName) =>
   page
