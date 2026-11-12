@@ -95,7 +95,7 @@ address picker page by the address's name, `selectedAddressInset`, which
 finds the selected-address inset by the address's name, and `searchBox`, which
 finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
-one single-address picker; `postAnIdNotInTheBook`, which posts a picker with an id the
+one single-address picker, among them the test that the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border (each read from a reference element at run time); `postAnIdNotInTheBook`, which posts a picker with an id the
 book does not hold, appended as a hidden input under the first radio's name,
 through the save control its `saveControlOf` option names (Save and continue by default);
 `postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;
@@ -104,7 +104,7 @@ through the save control its `saveControlOf` option names (Save and continue by 
 `pickerResultsSummary`, which finds the paragraph straight after the results
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count sits straight under the results heading, the page's radios form the one radio group
-named "Select an address" and the only content between the page heading and the form is one link-free paragraph.
+named "Select an address", that group's legend is hidden from sight (its position, overflow and clip-path match a GOV.UK visually-hidden reference element read at run time) and the only content between the page heading and the form is one link-free paragraph.
 The type-ahead style tests (typography, focus indicator, error border, the search button's blue square and white magnifying glass, and the
 no-JavaScript label size) compare the enhanced input or the label with a GOV.UK
 reference element read at run time.

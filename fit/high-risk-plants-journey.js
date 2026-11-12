@@ -1004,8 +1004,9 @@ export const pickerResultsSummary = (page) =>
 /**
  * Fails unless an address picker page shows the results heading with the
  * count straight under it, offers its radios as one group named by that
- * heading, and has only a paragraph with no link between the page heading and
- * the form.
+ * heading, whose legend is hidden from sight as a GOV.UK visually-hidden
+ * element is, and has only a paragraph with no link between the page heading
+ * and the form.
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} count - the count the first page reads
@@ -1017,6 +1018,16 @@ export const expectPickerResultsLayout = async (page, count) => {
       .getByRole('group', { name: pickerCopy.resultsHeading })
       .getByRole('radio')
   ).toHaveCount(PAGE_SIZE)
+  await expectStyle(
+    page
+      .getByRole('group', { name: pickerCopy.resultsHeading })
+      .locator('legend'),
+    await measureReferenceElement(page, {
+      tagName: 'span',
+      className: 'govuk-visually-hidden',
+      properties: ['position', 'overflow', 'clip-path']
+    })
+  )
   await expect(page.getByRole('radio')).toHaveCount(PAGE_SIZE)
 
   const heading = page.getByRole('heading', { level: 1 })
@@ -1096,7 +1107,8 @@ export const expectSelectedAddressCarriedToSecondPage = async (page) => {
 /**
  * Declares the tests every single-address picker shares: listing and counting
  * the address book, searching and paging it, saving and leaving the page,
- * moving on with no address chosen and refusing an address not in the book.
+ * moving on with no address chosen and refusing an address not in the book,
+ * which also gives the radios' form group the GOV.UK error border.
  *
  * @param {object} options
  * @param {string} options.pickerName - names the picker in the test group titles
@@ -1362,6 +1374,37 @@ export const describeAddressPicker = ({
       await expect(searchBox(page)).toHaveValue(DENMARK)
       await notInBookLink(page).click()
       await expect(page.locator(firstRowRadio)).toBeFocused()
+    })
+
+    test("the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border", async ({
+      page
+    }) => {
+      const formGroup = () =>
+        page
+          .getByRole('group', { name: pickerCopy.resultsHeading })
+          .locator('xpath=..')
+      const formGroupStyleOf = (className) =>
+        measureReferenceElement(page, {
+          tagName: 'div',
+          className,
+          properties: [
+            'border-left-style',
+            'border-left-width',
+            'border-left-color',
+            'margin-bottom'
+          ]
+        })
+      await openPicker(page)
+
+      await expectStyle(formGroup(), await formGroupStyleOf('govuk-form-group'))
+
+      await postAnIdNotInTheBook(page)
+
+      await expect(notInBookLink(page)).toBeVisible()
+      await expectStyle(
+        formGroup(),
+        await formGroupStyleOf('govuk-form-group govuk-form-group--error')
+      )
     })
 
     test('an address not in the book is refused on Save and return to overview, staying on the page and keeping the search', async ({
