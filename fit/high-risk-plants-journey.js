@@ -91,8 +91,74 @@ const documentBottom = (locator) =>
 
 const computedStyle = (locator, property) =>
   locator.evaluate(
-    (el, name) => window.getComputedStyle(el).getPropertyValue(name),
-    property
+    (el, request) =>
+      window.getComputedStyle(el).getPropertyValue(request.property),
+    { property }
+  )
+
+/**
+ * Fails unless the element has each computed style given.
+ *
+ * @param {import('@playwright/test').Locator} element
+ * @param {Record<string, string>} styles - each CSS property's expected computed value
+ */
+export const expectStyle = async (element, styles) => {
+  for (const [property, value] of Object.entries(styles)) {
+    await expect(element).toHaveCSS(property, value)
+  }
+}
+
+/**
+ * Reads computed properties of an element made only from the given class names
+ * and inline styles, then removes it.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ tagName: string, className?: string, cssText?: string, focused?: boolean, properties: string[] }} reference
+ * @returns {Promise<Record<string, string>>} each property's computed value
+ */
+export const measureReferenceElement = (
+  page,
+  { tagName, className = '', cssText = '', focused = false, properties }
+) =>
+  page.evaluate(
+    (request) => {
+      const reference = document.createElement(request.tagName)
+      reference.className = request.className
+      reference.style.cssText = request.cssText
+      document.body.append(reference)
+      try {
+        if (request.focused) {
+          reference.focus()
+        }
+        const style = window.getComputedStyle(reference)
+        return Object.fromEntries(
+          request.properties.map((property) => [
+            property,
+            style.getPropertyValue(property)
+          ])
+        )
+      } finally {
+        reference.remove()
+      }
+    },
+    { tagName, className, cssText, focused, properties }
+  )
+
+/**
+ * Fails unless the label has the computed font size and weight of a GOV.UK label of the given size.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').Locator} label
+ * @param {'s' | 'm' | 'l' | 'xl'} size
+ */
+export const expectGovukLabelSize = async (page, label, size) =>
+  expectStyle(
+    label,
+    await measureReferenceElement(page, {
+      tagName: 'label',
+      className: `govuk-label govuk-label--${size}`,
+      properties: ['font-size', 'font-weight']
+    })
   )
 
 /**
@@ -102,15 +168,14 @@ const computedStyle = (locator, property) =>
  * @param {string} token - the token's name, such as `focus` for `--govuk-focus-colour`
  * @returns {Promise<string>} the colour as `rgb(…)`
  */
-export const govukColourOf = (page, token) =>
-  page.evaluate((name) => {
-    const reference = document.createElement('span')
-    reference.style.color = `var(--govuk-${name}-colour)`
-    document.body.append(reference)
-    const { color } = window.getComputedStyle(reference)
-    reference.remove()
-    return color
-  }, token)
+export const govukColourOf = async (page, token) => {
+  const { color } = await measureReferenceElement(page, {
+    tagName: 'span',
+    cssText: `color: var(--govuk-${token}-colour)`,
+    properties: ['color']
+  })
+  return color
+}
 
 const datePickerOf = (page, label) =>
   page.locator('.moj-datepicker', { has: page.getByLabel(label) })
@@ -521,15 +586,18 @@ export const overwriteRadioInputs = async (
 ) => {
   const inputs = page.locator(inputSelector)
   await expect(inputs.first()).toBeAttached()
-  await inputs.evaluateAll((elements, value) => {
-    elements.forEach((element) => {
-      element.checked = false
-    })
-    if (value) {
-      elements[0].value = value
-      elements[0].checked = true
-    }
-  }, postedValue)
+  await inputs.evaluateAll(
+    (elements, request) => {
+      elements.forEach((element) => {
+        element.checked = false
+      })
+      if (request.postedValue) {
+        elements[0].value = request.postedValue
+        elements[0].checked = true
+      }
+    },
+    { postedValue }
+  )
 }
 
 /**
@@ -951,14 +1019,14 @@ const postUnknownAddressId = async (
   { saveControlOf = saveAndContinue } = {}
 ) => {
   await journeyFormOf(page).evaluate(
-    (form, { name, id }) => {
+    (form, request) => {
       const input = document.createElement('input')
       input.type = 'hidden'
-      input.name = name
-      input.value = id
+      input.name = request.fieldName
+      input.value = request.unknownAddressId
       form.append(input)
     },
-    { name: fieldName, id: NOT_IN_THE_BOOK }
+    { fieldName, unknownAddressId: NOT_IN_THE_BOOK }
   )
   await saveControlOf(page).click()
 }

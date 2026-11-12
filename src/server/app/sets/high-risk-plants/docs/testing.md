@@ -77,6 +77,9 @@ button group, and the link must sit below that group,
 `POTATO_CHANGE_LINK_TRAIL`, the trail a review Change link carries after that walk,
 `REVIEW_URL_WITHOUT_TRAIL`, the review page's URL with no trail,
 `govukColourOf`, which reads one GOV.UK colour token at run time,
+`measureReferenceElement`, which reads computed properties of an element made only from the given class names and inline styles, then removes it,
+`expectStyle`, which fails unless an element has each computed style given,
+`expectGovukLabelSize`, which fails unless a label has the computed font size and weight of a GOV.UK label of the given size,
 `describeDatePickerLook`, which registers the button, position, mouse-focus
 and keyboard-focus tests for one date field, and
 `describeSubmittedSearchPicker`, which registers the hint, width and joined
@@ -107,9 +110,11 @@ no-JavaScript label size) compare the enhanced input or the label with a GOV.UK
 reference element read at run time.
 The type-ahead announcement tests read the search box's accessible description and the
 polite status region's result count and highlighted-option text.
-They and the readers `govukReferenceStyleOf`, `measureJoinedSearchButton` and
-`boldLettersOf` live in `type-ahead.fit.spec.js`, so the coverage report never
-counts them as source.
+The readers `measureJoinedSearchButton` and `boldLettersOf` live in
+`type-ahead.fit.spec.js`, because no other spec uses them.
+The coverage report and the quality gate count only application source under
+`src/`, never browser-test files (`*.fit.spec.js`), unit tests or the `fit/`
+helpers, so where a reader lives depends only on how many specs use it.
 When a second spec needs a step, move it there in the same change and delete every local copy.
 
 The browser tests here prove appearance by position, size relative to

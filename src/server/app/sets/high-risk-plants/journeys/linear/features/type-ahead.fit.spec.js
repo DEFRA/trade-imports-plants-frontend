@@ -5,7 +5,10 @@ import {
   chooseCommodityCategory,
   chooseCommodityType,
   expectNoSeriousOrCriticalViolations,
+  expectGovukLabelSize,
+  expectStyle,
   govukColourOf,
+  measureReferenceElement,
   saveAndContinue,
   startNotification,
   startNotificationAtOrigin,
@@ -221,12 +224,7 @@ for (const typeAhead of typeAheads) {
         await expect(select).toBeVisible()
         await expect(select).toHaveAccessibleName(label)
         await expect(select).toHaveAccessibleDescription(hint ?? '')
-        const govukLabel = await govukReferenceStyleOf(page, {
-          element: 'label',
-          classes: `govuk-label govuk-label--${labelSize}`,
-          properties: ['font-size', 'font-weight']
-        })
-        await expectStyle(formGroup.locator('label'), govukLabel)
+        await expectGovukLabelSize(page, formGroup.locator('label'), labelSize)
         await expect(select.locator('option').first()).toHaveText(selectText)
         await expect(select.locator('option').first()).toHaveJSProperty(
           'value',
@@ -379,7 +377,9 @@ test.describe('country of origin type-ahead styles', () => {
     const option = page.getByRole('option', { name: france.name, exact: true })
     await expect(option).toBeVisible()
 
-    const govukInputFont = await govukReferenceStyleOf(page, {
+    const govukInputFont = await measureReferenceElement(page, {
+      tagName: 'input',
+      className: 'govuk-input',
       properties: ['font-family', 'font-size']
     })
     await expect(input).toHaveCSS('font-family', /^"?GDS Transport/)
@@ -394,7 +394,9 @@ test.describe('country of origin type-ahead styles', () => {
     await startNotificationAtOrigin(page)
     const input = inputFor(page, 'countryOfOrigin')
     const focusColour = await govukColourOf(page, 'focus')
-    const govukFocused = await govukReferenceStyleOf(page, {
+    const govukFocused = await measureReferenceElement(page, {
+      tagName: 'input',
+      className: 'govuk-input',
       focused: true,
       properties: ['outline-width', 'box-shadow']
     })
@@ -429,8 +431,9 @@ test.describe('country of origin type-ahead styles', () => {
     const input = inputFor(page, 'countryOfOrigin')
     await expectStyle(
       input,
-      await govukReferenceStyleOf(page, {
-        classes: 'govuk-input govuk-input--error',
+      await measureReferenceElement(page, {
+        tagName: 'input',
+        className: 'govuk-input govuk-input--error',
         properties: ['border-top-color', 'border-top-width']
       })
     )
@@ -440,39 +443,6 @@ test.describe('country of origin type-ahead styles', () => {
     )
   })
 })
-
-const govukReferenceStyleOf = (
-  page,
-  { element = 'input', classes = 'govuk-input', focused = false, properties }
-) =>
-  page.evaluate(
-    ({ tagName, className, isFocused, names }) => {
-      const reference = document.createElement(tagName)
-      reference.className = className
-      document.body.append(reference)
-      if (isFocused) {
-        reference.focus()
-      }
-      const style = window.getComputedStyle(reference)
-      const values = Object.fromEntries(
-        names.map((name) => [name, style.getPropertyValue(name)])
-      )
-      reference.remove()
-      return values
-    },
-    {
-      tagName: element,
-      className: classes,
-      isFocused: focused,
-      names: properties
-    }
-  )
-
-const expectStyle = async (locator, style) => {
-  for (const [property, value] of Object.entries(style)) {
-    await expect(locator).toHaveCSS(property, value)
-  }
-}
 
 const measureJoinedSearchButton = (input) =>
   input.evaluate((inputElement) => {

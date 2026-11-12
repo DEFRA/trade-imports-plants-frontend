@@ -7,6 +7,7 @@ import {
   changeCommodityType,
   visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
+  expectGovukLabelSize,
   expectThreeSaveControls,
   saveAndContinue,
   saveOrigin,
@@ -103,13 +104,16 @@ const answerArrivalAndSave = async (page) => {
 const arrivalDetailsPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-details`
 
-const selectPortMissingFromTheList = (page, code) =>
-  page.locator(PORT_SELECT).evaluate((select, portCode) => {
-    const option = document.createElement('option')
-    option.value = portCode
-    select.append(option)
-    select.value = portCode
-  }, code)
+const selectPortMissingFromTheList = (page, portCode) =>
+  page.locator(PORT_SELECT).evaluate(
+    (select, request) => {
+      const option = document.createElement('option')
+      option.value = request.portCode
+      select.append(option)
+      select.value = request.portCode
+    },
+    { portCode }
+  )
 
 const startAtPotatoDetails = async (page) => {
   const reference = await startNotification(page)
@@ -214,8 +218,10 @@ test.describe('arrival-details — a potato notification', () => {
     }) => {
       await startAtPotatoDetails(page)
 
-      await expect(page.locator(`label[for="${fieldId}"]`)).toHaveClass(
-        /govuk-label--m/
+      await expectGovukLabelSize(
+        page,
+        page.locator(`label[for="${fieldId}"]`),
+        'm'
       )
     })
   }
@@ -330,8 +336,10 @@ test.describe('arrival-details — the question a plants notification is asked',
     }) => {
       await startAtWoodDetails(page, status)
 
-      await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
-        /govuk-label--m/
+      await expectGovukLabelSize(
+        page,
+        page.locator('label[for="arrivalDate"]'),
+        'm'
       )
     })
   }
