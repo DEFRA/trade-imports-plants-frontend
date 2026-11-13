@@ -13,6 +13,7 @@ import {
 import { fulfilmentToNotification } from '../mapper.js'
 import { isRecoverableBackendError } from '../errors.js'
 import { enterOrganisationIdForTests } from '../../../../../common/helpers/organisation-id.js'
+import { logger } from './http/get-fulfilment.js'
 import { mapStatus, records } from './index.js'
 
 const fetchMocker = createFetchMock(vi)
@@ -168,6 +169,30 @@ describe('real records adapter — canonical fulfilment boundary', () => {
       expect(loaded).toBeUndefined()
     }
   )
+
+  it('Should log the reference and organisation when the fulfilment GET returns 403', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+    fetchMocker.mockResponse('Forbidden', { status: 403 })
+
+    const loaded = await records.load({ journeyId })
+
+    expect(loaded).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(
+      'Backend refused fulfilment read for notification REFERENCE-0001, organisation 5900001'
+    )
+    warn.mockRestore()
+  })
+
+  it('Should not log when the fulfilment GET returns 404', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+    fetchMocker.mockResponse('Not Found', { status: 404 })
+
+    const loaded = await records.load({ journeyId })
+
+    expect(loaded).toBeUndefined()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
 })
 
 describe('real records adapter — fulfilment writes', () => {

@@ -1,11 +1,12 @@
 import { statusCodes } from '../../../../../../common/constants/status-codes.js'
 import { createLogger } from '../../../../../../common/helpers/logging/logger.js'
+import { currentOrganisationId } from '../../../../../../common/helpers/organisation-id.js'
 import { backendFetch } from '../../../../../../common/helpers/call-counts/backend-fetch.js'
 import { notificationsUrl } from '../config.js'
 import { failed } from './failed.js'
 import { headers } from './headers.js'
 
-const logger = createLogger()
+export const logger = createLogger()
 
 const REFUSED_STATUSES = [statusCodes.notFound, statusCodes.forbidden]
 
@@ -20,8 +21,7 @@ export const getFulfilment = async (journeyId) => {
   if (REFUSED_STATUSES.includes(response.status)) {
     if (response.status === statusCodes.forbidden) {
       logger.warn(
-        { journeyId, status: response.status },
-        'Notification fulfilments refused by the backend'
+        `Backend refused fulfilment read for notification ${journeyId}, organisation ${currentOrganisationId()}`
       )
     }
     return undefined
