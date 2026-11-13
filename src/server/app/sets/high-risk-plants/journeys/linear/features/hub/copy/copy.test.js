@@ -45,6 +45,11 @@ describe('#copy', () => {
     ])
   })
 
+  it('Should name the task list region in both locales', () => {
+    expect(copy.taskListRegionLabel).toBe('Notification tasklist')
+    expect(cy.taskListRegionLabel).toBe('Rhestr dasgau’r hysbysiad')
+  })
+
   it('Should title the commodities row in both locales', () => {
     expect(copy.rows.commodities).toEqual({ title: 'What are you importing?' })
     expect(cy.rows.commodities).toEqual({
@@ -60,15 +65,11 @@ describe('#copy', () => {
   })
 
   it('Should title the arrival row in both locales', () => {
-    // The animals string for the same task, and the Welsh the spec gives the
-    // arrival-details page (journey-spec.json pages[arrival-details].titleCy).
     expect(copy.rows.arrival).toEqual({ title: 'Arrival details' })
     expect(cy.rows.arrival).toEqual({ title: 'Manylion cyrraedd' })
   })
 
   it('Should title the destination row in both locales', () => {
-    // The animals string for the same party, and the Welsh the spec gives the
-    // page (journey-spec.json pages[place-of-destination].titleCy).
     expect(copy.rows.destination).toEqual({ title: 'Place of destination' })
     expect(cy.rows.destination).toEqual({ title: 'Man cyrchfan' })
   })
