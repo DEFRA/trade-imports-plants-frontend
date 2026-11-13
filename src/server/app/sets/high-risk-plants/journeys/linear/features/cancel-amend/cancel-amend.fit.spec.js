@@ -83,7 +83,11 @@ test('renders accessible confirmation copy, actions and a bare heading', async (
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveAttribute('href', cyaHref)
-  await expect(page.locator('.govuk-caption-l')).toHaveCount(0)
+  const beforeTitle = page
+    .getByRole('heading', { name: cancelCopy.title, level: 1 })
+    .locator('xpath=preceding-sibling::*')
+  await expect(beforeTitle).toHaveCount(1)
+  await expect(beforeTitle).toContainText(sharedCopy.journeyStrip.amend)
   await expectNoSeriousOrCriticalViolations(page, 'Cancel amendment page')
 })
 

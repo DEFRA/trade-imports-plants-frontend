@@ -1,5 +1,6 @@
 import {
   errorSummary,
+  errorSummaryLinks,
   chooseCommodityType,
   backLink,
   changeCommodityType,
@@ -145,8 +146,7 @@ for (const [commodityType, fields] of branches) {
           }
           await input(page, name).fill(invalid)
           await saveAndContinue(page).click()
-          const link = errorSummary(page).getByRole('link', {
-            name: copy.errors[name][rule],
+          const link = errorSummaryLinks(page, copy.errors[name][rule], {
             exact: true
           })
           await link.click()

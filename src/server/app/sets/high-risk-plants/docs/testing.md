@@ -87,7 +87,7 @@ button, search button colour, no-JavaScript Enter search and three-state axe tes
 picker's submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
 `POTATO_VARIETY`, `REVIEW_URL_FROM_POTATO_WALK` and `WOOD_LINE_FIELDS`; the form-group
 reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
-form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; `errorSummary`, which finds the page's error summary by its alert role; `errorSummaryLinks`, which finds the error summary's links, narrowed to the one named when a name is given; the address-book
+form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; `errorSummary`, which finds the page's error summary by its alert role; `errorSummaryLinks`, which finds the error summary's links, narrowed to the one named when a name is given, and matching the whole accessible name when given `{ exact: true }`; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
 `SECOND_PAGE_LINK`, `THIRD_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
 `NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
@@ -115,10 +115,9 @@ The readers `measureJoinedSearchButton` and `boldLettersOf` live in
 The SonarCloud quality gate counts application source under `src/` apart from
 `src/client/` and `src/server/app/services/_capture/capture.js`
 (`sonar.coverage.exclusions` in `sonar-project.properties`), and never counts
-`*.fit.spec.js` files or unit tests (`sonar.exclusions`). The local Vitest
-coverage report counts all of `src/**/*.js` (`coverage.include` in
-`vitest.config.js`). Neither counts the `fit/` helpers, which sit outside `src/`.
-So where a reader lives depends only on how many specs use it.
+`*.fit.spec.js` files or unit tests (`sonar.exclusions`). The Vitest coverage
+report (`coverage.exclude` in `vitest.config.js`) also counts only application
+source, never `*.test.js` or `*.fit.spec.js` files.
 When a second spec needs a step, move it there in the same change and delete every local copy.
 
 The browser tests here prove appearance by position, size relative to

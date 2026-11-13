@@ -109,10 +109,11 @@ export const errorSummary = (page) => page.getByRole('alert')
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} [name] - the link's accessible name.
+ * @param {{ exact?: boolean }} [options] - exact: true matches the whole accessible name only.
  * @returns {import('@playwright/test').Locator}
  */
-export const errorSummaryLinks = (page, name) =>
-  errorSummary(page).getByRole('link', { name })
+export const errorSummaryLinks = (page, name, { exact } = {}) =>
+  errorSummary(page).getByRole('link', { name, exact })
 
 /**
  * Fails unless the element has each computed style given.

@@ -1,5 +1,4 @@
 import {
-  errorSummary,
   errorSummaryLinks,
   ADDRESS_BOOK_PARTY,
   REVIEW_URL_FROM_POTATO_WALK,
@@ -285,8 +284,7 @@ test('a potatoes notification is asked for the consignment contact after Save an
 
   await expect(page).toHaveURL(REVIEW_URL_FROM_POTATO_WALK)
   await expect(
-    errorSummary(page).getByRole('link', {
-      name: checkAnswersCopy.errors.cards.contact,
+    errorSummaryLinks(page, checkAnswersCopy.errors.cards.contact, {
       exact: true
     })
   ).toBeVisible()
