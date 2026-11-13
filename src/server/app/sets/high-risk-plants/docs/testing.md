@@ -77,6 +77,9 @@ button group, and the link must sit below that group,
 `POTATO_CHANGE_LINK_TRAIL`, the trail a review Change link carries after that walk,
 `REVIEW_URL_WITHOUT_TRAIL`, the review page's URL with no trail,
 `govukColourOf`, which reads one GOV.UK colour token at run time,
+`measureReferenceElement`, which reads computed properties of an element made only from the given class names and inline styles, then removes it,
+`expectStyle`, which fails unless an element has each computed style given,
+`expectGovukLabelSize`, which fails unless a label has the computed font size and weight of a GOV.UK label of the given size,
 `describeDatePickerLook`, which registers the button, position, mouse-focus
 and keyboard-focus tests for one date field, and
 `describeSubmittedSearchPicker`, which registers the hint, width and joined
@@ -84,7 +87,7 @@ button, search button colour, no-JavaScript Enter search and three-state axe tes
 picker's submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
 `POTATO_VARIETY`, `REVIEW_URL_FROM_POTATO_WALK` and `WOOD_LINE_FIELDS`; the form-group
 reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
-form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; the address-book
+form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; `errorSummary`, which finds the page's error summary by its alert role; `errorSummaryLinks`, which finds the error summary's links, narrowed to the one named when a name is given, and matching the whole accessible name when given `{ exact: true }`; the address-book
 values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
 `SECOND_PAGE_LINK`, `THIRD_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
 `NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
@@ -92,7 +95,7 @@ address picker page by the address's name, `selectedAddressInset`, which
 finds the selected-address inset by the address's name, and `searchBox`, which
 finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
-one single-address picker; `postAnIdNotInTheBook`, which posts a picker with an id the
+one single-address picker, among them the test that the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border (each read from a reference element at run time); `postAnIdNotInTheBook`, which posts a picker with an id the
 book does not hold, appended as a hidden input under the first radio's name,
 through the save control its `saveControlOf` option names (Save and continue by default);
 `postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;
@@ -101,15 +104,20 @@ through the save control its `saveControlOf` option names (Save and continue by 
 `pickerResultsSummary`, which finds the paragraph straight after the results
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count sits straight under the results heading, the page's radios form the one radio group
-named "Select an address" and the only content between the page heading and the form is one link-free paragraph.
+named "Select an address", that group's legend is hidden from sight (its position, overflow and clip-path match a GOV.UK visually-hidden reference element read at run time) and the only content between the page heading and the form is one link-free paragraph.
 The type-ahead style tests (typography, focus indicator, error border, the search button's blue square and white magnifying glass, and the
 no-JavaScript label size) compare the enhanced input or the label with a GOV.UK
 reference element read at run time.
 The type-ahead announcement tests read the search box's accessible description and the
 polite status region's result count and highlighted-option text.
-They and the readers `govukReferenceStyleOf`, `measureJoinedSearchButton` and
-`boldLettersOf` live in `type-ahead.fit.spec.js`, so the coverage report never
-counts them as source.
+The readers `measureJoinedSearchButton` and `boldLettersOf` live in
+`type-ahead.fit.spec.js`, because no other spec uses them.
+The SonarCloud quality gate counts application source under `src/` apart from
+`src/client/` and `src/server/app/services/_capture/capture.js`
+(`sonar.coverage.exclusions` in `sonar-project.properties`), and never counts
+`*.fit.spec.js` files or unit tests (`sonar.exclusions`). The Vitest coverage
+report (`coverage.exclude` in `vitest.config.js`) also counts only application
+source, never `*.test.js` or `*.fit.spec.js` files.
 When a second spec needs a step, move it there in the same change and delete every local copy.
 
 The browser tests here prove appearance by position, size relative to

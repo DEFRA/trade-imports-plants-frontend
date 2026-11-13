@@ -91,8 +91,93 @@ const documentBottom = (locator) =>
 
 const computedStyle = (locator, property) =>
   locator.evaluate(
-    (el, name) => window.getComputedStyle(el).getPropertyValue(name),
-    property
+    (el, request) =>
+      window.getComputedStyle(el).getPropertyValue(request.property),
+    { property }
+  )
+
+/**
+ * The page's error summary.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {import('@playwright/test').Locator}
+ */
+export const errorSummary = (page) => page.getByRole('alert')
+
+/**
+ * The links of the page's error summary, narrowed to the one named when a name is given.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} [name] - the link's accessible name.
+ * @param {{ exact?: boolean }} [options] - exact: true matches the whole accessible name only.
+ * @returns {import('@playwright/test').Locator}
+ */
+export const errorSummaryLinks = (page, name, { exact } = {}) =>
+  errorSummary(page).getByRole('link', { name, exact })
+
+/**
+ * Fails unless the element has each computed style given.
+ *
+ * @param {import('@playwright/test').Locator} element
+ * @param {Record<string, string>} styles - each CSS property's expected computed value
+ */
+export const expectStyle = async (element, styles) => {
+  for (const [property, value] of Object.entries(styles)) {
+    await expect(element).toHaveCSS(property, value)
+  }
+}
+
+/**
+ * Reads computed properties of an element made only from the given class names
+ * and inline styles, then removes it.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {{ tagName: string, className?: string, cssText?: string, focused?: boolean, properties: string[] }} reference
+ * @returns {Promise<Record<string, string>>} each property's computed value
+ */
+export const measureReferenceElement = (
+  page,
+  { tagName, className = '', cssText = '', focused = false, properties }
+) =>
+  page.evaluate(
+    (request) => {
+      const reference = document.createElement(request.tagName)
+      reference.className = request.className
+      reference.style.cssText = request.cssText
+      document.body.append(reference)
+      try {
+        if (request.focused) {
+          reference.focus()
+        }
+        const style = window.getComputedStyle(reference)
+        return Object.fromEntries(
+          request.properties.map((property) => [
+            property,
+            style.getPropertyValue(property)
+          ])
+        )
+      } finally {
+        reference.remove()
+      }
+    },
+    { tagName, className, cssText, focused, properties }
+  )
+
+/**
+ * Fails unless the label has the computed font size and weight of a GOV.UK label of the given size.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').Locator} label
+ * @param {'s' | 'm' | 'l' | 'xl'} size
+ */
+export const expectGovukLabelSize = async (page, label, size) =>
+  expectStyle(
+    label,
+    await measureReferenceElement(page, {
+      tagName: 'label',
+      className: `govuk-label govuk-label--${size}`,
+      properties: ['font-size', 'font-weight']
+    })
   )
 
 /**
@@ -102,15 +187,14 @@ const computedStyle = (locator, property) =>
  * @param {string} token - the token's name, such as `focus` for `--govuk-focus-colour`
  * @returns {Promise<string>} the colour as `rgb(…)`
  */
-export const govukColourOf = (page, token) =>
-  page.evaluate((name) => {
-    const reference = document.createElement('span')
-    reference.style.color = `var(--govuk-${name}-colour)`
-    document.body.append(reference)
-    const { color } = window.getComputedStyle(reference)
-    reference.remove()
-    return color
-  }, token)
+export const govukColourOf = async (page, token) => {
+  const { color } = await measureReferenceElement(page, {
+    tagName: 'span',
+    cssText: `color: var(--govuk-${token}-colour)`,
+    properties: ['color']
+  })
+  return color
+}
 
 const datePickerOf = (page, label) =>
   page.locator('.moj-datepicker', { has: page.getByLabel(label) })
@@ -212,7 +296,7 @@ const searchByPressingEnter = async (page, { search, term }) => {
   await box.fill(term)
   await Promise.all([page.waitForEvent('load'), box.press('Enter')])
   await expect(box).toHaveValue(term)
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(errorSummary(page)).toHaveCount(0)
 }
 
 export const DENMARK = 'Denmark'
@@ -521,15 +605,18 @@ export const overwriteRadioInputs = async (
 ) => {
   const inputs = page.locator(inputSelector)
   await expect(inputs.first()).toBeAttached()
-  await inputs.evaluateAll((elements, value) => {
-    elements.forEach((element) => {
-      element.checked = false
-    })
-    if (value) {
-      elements[0].value = value
-      elements[0].checked = true
-    }
-  }, postedValue)
+  await inputs.evaluateAll(
+    (elements, request) => {
+      elements.forEach((element) => {
+        element.checked = false
+      })
+      if (request.postedValue) {
+        elements[0].value = request.postedValue
+        elements[0].checked = true
+      }
+    },
+    { postedValue }
+  )
 }
 
 /**
@@ -918,8 +1005,9 @@ export const pickerResultsSummary = (page) =>
 /**
  * Fails unless an address picker page shows the results heading with the
  * count straight under it, offers its radios as one group named by that
- * heading, and has only a paragraph with no link between the page heading and
- * the form.
+ * heading, whose legend is hidden from sight as a GOV.UK visually-hidden
+ * element is, and has only a paragraph with no link between the page heading
+ * and the form.
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} count - the count the first page reads
@@ -931,6 +1019,16 @@ export const expectPickerResultsLayout = async (page, count) => {
       .getByRole('group', { name: pickerCopy.resultsHeading })
       .getByRole('radio')
   ).toHaveCount(PAGE_SIZE)
+  await expectStyle(
+    page
+      .getByRole('group', { name: pickerCopy.resultsHeading })
+      .locator('legend'),
+    await measureReferenceElement(page, {
+      tagName: 'span',
+      className: 'govuk-visually-hidden',
+      properties: ['position', 'overflow', 'clip-path']
+    })
+  )
   await expect(page.getByRole('radio')).toHaveCount(PAGE_SIZE)
 
   const heading = page.getByRole('heading', { level: 1 })
@@ -951,14 +1049,14 @@ const postUnknownAddressId = async (
   { saveControlOf = saveAndContinue } = {}
 ) => {
   await journeyFormOf(page).evaluate(
-    (form, { name, id }) => {
+    (form, request) => {
       const input = document.createElement('input')
       input.type = 'hidden'
-      input.name = name
-      input.value = id
+      input.name = request.fieldName
+      input.value = request.unknownAddressId
       form.append(input)
     },
-    { name: fieldName, id: NOT_IN_THE_BOOK }
+    { fieldName, unknownAddressId: NOT_IN_THE_BOOK }
   )
   await saveControlOf(page).click()
 }
@@ -1010,7 +1108,8 @@ export const expectSelectedAddressCarriedToSecondPage = async (page) => {
 /**
  * Declares the tests every single-address picker shares: listing and counting
  * the address book, searching and paging it, saving and leaving the page,
- * moving on with no address chosen and refusing an address not in the book.
+ * moving on with no address chosen and refusing an address not in the book,
+ * which also gives the radios' form group the GOV.UK error border.
  *
  * @param {object} options
  * @param {string} options.pickerName - names the picker in the test group titles
@@ -1037,13 +1136,12 @@ export const describeAddressPicker = ({
   firstRowRadio,
   landingAlerts = []
 }) => {
-  const notInBookLink = (page) =>
-    page.getByRole('alert').getByRole('link', { name: notInBookError })
-  const overviewRowStatus = (page) =>
+  const notInBookLink = (page) => errorSummaryLinks(page, notInBookError)
+  const notYetStartedStatusOnOverviewRow = (page) =>
     page
       .getByRole('listitem')
       .filter({ has: page.getByRole('link', { name: hubRowTitle }) })
-      .locator('.govuk-task-list__status')
+      .getByText(hubCopy.statuses.notYetStarted, { exact: true })
 
   test.describe(`${pickerName} — listing, searching and paging`, () => {
     test.beforeEach(async ({ page }) => {
@@ -1214,7 +1312,7 @@ export const describeAddressPicker = ({
 
       await page.goto(pathOf(reference))
       await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
-      await expect(page.getByRole('alert')).toHaveCount(0)
+      await expect(errorSummary(page)).toHaveCount(0)
     })
 
     test('Cancel and return to overview reaches the overview without saving', async ({
@@ -1245,11 +1343,9 @@ export const describeAddressPicker = ({
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)
-      await expect(page.getByRole('alert')).toHaveText(landingAlerts)
+      await expect(errorSummary(page)).toHaveText(landingAlerts)
       await page.goto(`${BASE}/notifications/${reference}`)
-      await expect(overviewRowStatus(page)).toHaveText(
-        hubCopy.statuses.notYetStarted
-      )
+      await expect(notYetStartedStatusOnOverviewRow(page)).toBeVisible()
     })
 
     test('continuing with nothing chosen after a search that found nothing moves on', async ({
@@ -1277,6 +1373,37 @@ export const describeAddressPicker = ({
       await expect(searchBox(page)).toHaveValue(DENMARK)
       await notInBookLink(page).click()
       await expect(page.locator(firstRowRadio)).toBeFocused()
+    })
+
+    test("the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border", async ({
+      page
+    }) => {
+      const formGroup = () =>
+        page
+          .getByRole('group', { name: pickerCopy.resultsHeading })
+          .locator('xpath=..')
+      const formGroupStyleOf = (className) =>
+        measureReferenceElement(page, {
+          tagName: 'div',
+          className,
+          properties: [
+            'border-left-style',
+            'border-left-width',
+            'border-left-color',
+            'margin-bottom'
+          ]
+        })
+      await openPicker(page)
+
+      await expectStyle(formGroup(), await formGroupStyleOf('govuk-form-group'))
+
+      await postAnIdNotInTheBook(page)
+
+      await expect(notInBookLink(page)).toBeVisible()
+      await expectStyle(
+        formGroup(),
+        await formGroupStyleOf('govuk-form-group govuk-form-group--error')
+      )
     })
 
     test('an address not in the book is refused on Save and return to overview, staying on the page and keeping the search', async ({

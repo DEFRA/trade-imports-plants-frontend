@@ -7,8 +7,11 @@ import {
   changeCommodityType,
   visitOverviewThenOpen,
   expectNoSeriousOrCriticalViolations,
+  expectGovukLabelSize,
   expectThreeSaveControls,
   saveAndContinue,
+  errorSummary,
+  errorSummaryLinks,
   saveOrigin,
   startNotification,
   WOOD_LINE_FIELDS
@@ -103,13 +106,16 @@ const answerArrivalAndSave = async (page) => {
 const arrivalDetailsPathOf = (reference) =>
   `${BASE}/notifications/${reference}/arrival-details`
 
-const selectPortMissingFromTheList = (page, code) =>
-  page.locator(PORT_SELECT).evaluate((select, portCode) => {
-    const option = document.createElement('option')
-    option.value = portCode
-    select.append(option)
-    select.value = portCode
-  }, code)
+const selectPortMissingFromTheList = (page, portCode) =>
+  page.locator(PORT_SELECT).evaluate(
+    (select, request) => {
+      const option = document.createElement('option')
+      option.value = request.portCode
+      select.append(option)
+      select.value = request.portCode
+    },
+    { portCode }
+  )
 
 const startAtPotatoDetails = async (page) => {
   const reference = await startNotification(page)
@@ -214,8 +220,10 @@ test.describe('arrival-details — a potato notification', () => {
     }) => {
       await startAtPotatoDetails(page)
 
-      await expect(page.locator(`label[for="${fieldId}"]`)).toHaveClass(
-        /govuk-label--m/
+      await expectGovukLabelSize(
+        page,
+        page.locator(`label[for="${fieldId}"]`),
+        'm'
       )
     })
   }
@@ -330,8 +338,10 @@ test.describe('arrival-details — the question a plants notification is asked',
     }) => {
       await startAtWoodDetails(page, status)
 
-      await expect(page.locator('label[for="arrivalDate"]')).toHaveClass(
-        /govuk-label--m/
+      await expectGovukLabelSize(
+        page,
+        page.locator('label[for="arrivalDate"]'),
+        'm'
       )
     })
   }
@@ -386,7 +396,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(POTATO_PAGE_URL)
-    const summary = page.getByRole('alert')
+    const summary = errorSummary(page)
     await expect(
       summary.getByRole('link', { name: copy.errors.arrivalDate.required })
     ).toBeVisible()
@@ -416,9 +426,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await saveAndContinue(page).click()
 
     await expect(
-      page
-        .getByRole('alert')
-        .getByRole('link', { name: copy.errors.arrivalDate.invalid })
+      errorSummaryLinks(page, copy.errors.arrivalDate.invalid)
     ).toBeVisible()
     await expect(page.locator(DATE_INPUT)).toHaveValue('31/2/2026')
     await expect(page.locator(TIME_INPUT)).toHaveValue(A_TIME)
@@ -434,9 +442,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await saveAndContinue(page).click()
 
     await expect(
-      page
-        .getByRole('alert')
-        .getByRole('link', { name: copy.errors.arrivalDate.inFuture })
+      errorSummaryLinks(page, copy.errors.arrivalDate.inFuture)
     ).toBeVisible()
   })
 
@@ -448,9 +454,7 @@ test.describe('arrival-details — the answers it refuses', () => {
     await chooseTypeAheadOption(page, DOVER_PLACE_OF_LANDING)
     await saveAndContinue(page).click()
 
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: validatorDefaults.time })
+    const summaryLink = errorSummaryLinks(page, validatorDefaults.time)
     await expect(summaryLink).toBeVisible()
 
     await summaryLink.click()
@@ -468,16 +472,14 @@ test.describe('arrival-details — the answers it refuses', () => {
     await saveAndContinue(page).click()
 
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.proposedPlaceOfLanding
-      })
+      errorSummaryLinks(page, copy.errors.proposedPlaceOfLanding)
     ).toBeVisible()
   })
 
   test('recovers once every answer is given', async ({ page }) => {
     await startAtPotatoDetails(page)
     await saveAndContinue(page).click()
-    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(errorSummary(page)).toBeVisible()
 
     await answerArrivalAndSave(page)
 
@@ -510,9 +512,7 @@ test.describe('arrival-details — accessibility', () => {
     await startAtPotatoDetails(page)
     await saveAndContinue(page).click()
     await expect(
-      page
-        .getByRole('alert')
-        .getByRole('link', { name: copy.errors.arrivalDate.required })
+      errorSummaryLinks(page, copy.errors.arrivalDate.required)
     ).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(

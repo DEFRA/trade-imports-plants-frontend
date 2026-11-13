@@ -6,6 +6,7 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
+  errorSummary,
   changeCommodityType,
   completePotatoNotification,
   REVIEW_URL_WITHOUT_TRAIL,
@@ -82,7 +83,11 @@ test('renders accessible confirmation copy, actions and a bare heading', async (
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
   ).toHaveAttribute('href', cyaHref)
-  await expect(page.locator('.govuk-caption-l')).toHaveCount(0)
+  const beforeTitle = page
+    .getByRole('heading', { name: cancelCopy.title, level: 1 })
+    .locator('xpath=preceding-sibling::*')
+  await expect(beforeTitle).toHaveCount(1)
+  await expect(beforeTitle).toContainText(sharedCopy.journeyStrip.amend)
   await expectNoSeriousOrCriticalViolations(page, 'Cancel amendment page')
 })
 
@@ -140,12 +145,12 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
   const reference = journeyIdFromPage(page)
   await changeCommodityType(page, reference, 'wood-and-cut-trees')
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(errorSummary(page)).toHaveCount(0)
 
   await page.getByRole('button', { name: copy.continue, exact: true }).click()
 
   await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
-  const summary = page.getByRole('alert')
+  const summary = errorSummary(page)
   await expect(
     summary.getByRole('heading', { name: sharedCopy.errorSummary.title })
   ).toBeVisible()

@@ -1,4 +1,5 @@
 import {
+  errorSummaryLinks,
   addCommodityLine,
   chooseCommodityType,
   chooseCountryOfOrigin,
@@ -188,9 +189,7 @@ test.describe('origin feature', () => {
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(ORIGIN_URL)
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.errors.countryRequired })
+    const summaryLink = errorSummaryLinks(page, copy.errors.countryRequired)
     await expect(summaryLink).toBeVisible()
 
     await summaryLink.click()
@@ -201,9 +200,7 @@ test.describe('origin feature', () => {
     await startNotificationAtOrigin(page)
     await saveAndContinue(page).click()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.countryRequired
-      })
+      errorSummaryLinks(page, copy.errors.countryRequired)
     ).toBeVisible()
 
     await chooseCountryOfOrigin(page, FRANCE)
@@ -229,9 +226,7 @@ test.describe('origin feature', () => {
     await startNotificationAtOrigin(page)
     await saveAndContinue(page).click()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.countryRequired
-      })
+      errorSummaryLinks(page, copy.errors.countryRequired)
     ).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(page, 'Origin error state')
@@ -311,9 +306,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
 
     await expect(page).toHaveURL(ORIGIN_URL)
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.narrowing[WARE_POTATOES]
-      })
+      errorSummaryLinks(page, copy.errors.narrowing[WARE_POTATOES])
     ).toBeVisible()
   })
 
@@ -355,9 +348,7 @@ test.describe('origin — the country list narrowed by the commodities', () => {
 
     await expect(page).toHaveURL(ORIGIN_URL)
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.narrowing[EU_MEMBER_STATES]
-      })
+      errorSummaryLinks(page, copy.errors.narrowing[EU_MEMBER_STATES])
     ).toBeVisible()
   })
 })

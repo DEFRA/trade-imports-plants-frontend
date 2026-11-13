@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { BASE } from '../../../../../../../../fit/set-base.js'
+import { errorSummaryLinks } from '../../../../../../../../fit/high-risk-plants-journey.js'
 import { signIn } from '../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../shared/copy.en.js'
 import { copy as commodityTypeCopy } from './commodity-type/copy/copy.en.js'
@@ -38,9 +39,7 @@ test.describe('page title', () => {
       .click()
 
     await expect(
-      page
-        .getByRole('alert')
-        .getByRole('link', { name: commodityTypeCopy.errors.commodityType })
+      errorSummaryLinks(page, commodityTypeCopy.errors.commodityType)
     ).toBeVisible()
     await expect(page).toHaveTitle(
       `${errorTitlePrefix}${commodityTypeCopy.title} - ${serviceName} - ${govukSuffix}`

@@ -1,4 +1,5 @@
 import {
+  errorSummaryLinks,
   WOOD_LINE_FIELDS,
   addCommodityLine,
   backLink,
@@ -188,9 +189,7 @@ test.describe('place-of-destination — accessibility', () => {
     await startAtDestination(page)
     await postAnIdNotInTheBook(page)
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.placeOfDestination
-      })
+      errorSummaryLinks(page, copy.errors.placeOfDestination)
     ).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(
