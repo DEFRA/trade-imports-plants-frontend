@@ -6,6 +6,7 @@ import {
   setUrl
 } from '../../../../../../../../../../fit/set-base.js'
 import {
+  errorSummaryLinks,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
   saveAndReturnToHub,
@@ -249,9 +250,7 @@ test.describe('commodities list — after a change of commodity type', () => {
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(COMMODITY_REMOVED_URL)
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.list.errors.commodityLines })
+    const summaryLink = errorSummaryLinks(page, copy.list.errors.commodityLines)
     await expect(summaryLink).toBeVisible()
 
     await summaryLink.click()

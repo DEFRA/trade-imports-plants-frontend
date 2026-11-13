@@ -1,4 +1,5 @@
 import {
+  errorSummaryLinks,
   addCommodityLine,
   chooseCommodityType,
   backLink,
@@ -78,9 +79,7 @@ const expectRequiredStatusErrorFocusingFirstRadio = async (page) => {
     copy.errors.arrivalStatus
   )
 
-  const summaryLink = page
-    .getByRole('alert')
-    .getByRole('link', { name: copy.errors.arrivalStatus })
+  const summaryLink = errorSummaryLinks(page, copy.errors.arrivalStatus)
   await expect(summaryLink).toBeVisible()
 
   await summaryLink.click()
@@ -246,9 +245,7 @@ test.describe('arrival-status feature', () => {
     await saveAndContinue(page).click()
 
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.arrivalStatus
-      })
+      errorSummaryLinks(page, copy.errors.arrivalStatus)
     ).toBeVisible()
     await expect(page.locator(`${STATUS_INPUT_SELECTOR}:checked`)).toHaveCount(
       0
@@ -259,9 +256,7 @@ test.describe('arrival-status feature', () => {
     await startAtArrivalStatus(page)
     await saveAndContinue(page).click()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.arrivalStatus
-      })
+      errorSummaryLinks(page, copy.errors.arrivalStatus)
     ).toBeVisible()
 
     await radioFor(page, NOT_YET_ARRIVED).check()
@@ -290,9 +285,7 @@ test.describe('arrival-status feature', () => {
     await startAtArrivalStatus(page)
     await saveAndContinue(page).click()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.errors.arrivalStatus
-      })
+      errorSummaryLinks(page, copy.errors.arrivalStatus)
     ).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(

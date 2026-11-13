@@ -5,6 +5,7 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
+  errorSummaryLinks,
   WOOD_LINE_FIELDS,
   addCommodityLine,
   backLink,
@@ -64,7 +65,7 @@ const radioFor = (page, value) =>
 const hubPathOf = (page) => `${BASE}/notifications/${journeyIdFromPage(page)}`
 
 const commodityTypeErrorSummaryLink = (page) =>
-  page.getByRole('alert').getByRole('link', { name: copy.errors.commodityType })
+  errorSummaryLinks(page, copy.errors.commodityType)
 
 const expectCommodityTypeErrorBesideOptions = (page) =>
   expect(page.getByRole('group', { name: copy.legend })).toContainText(

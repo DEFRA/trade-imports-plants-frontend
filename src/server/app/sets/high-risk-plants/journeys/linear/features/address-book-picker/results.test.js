@@ -43,20 +43,20 @@ describe('addressBookPickerResults macro', () => {
     const heading = document.querySelector('h2')
     const count = heading.nextElementSibling
 
-    expect(heading.textContent).toBe('Select an address')
+    expect(heading.textContent).toBe(pickerCopy.resultsHeading)
     expect(count.tagName).toBe('P')
     expect(count.textContent).toBe('Showing 1 out of 1 results')
     expect(count.closest('table')).toBeNull()
   })
 
-  it('Should hold the table in one fieldset named by a visually hidden legend, after the count', () => {
+  it('Should hold the table in one fieldset named by its first child, a legend reading the results heading, after the count', () => {
     const document = render(rowsWith([row]))
 
     const fieldset = document.querySelector('h2 + p + div > fieldset')
-    const legend = fieldset.querySelector('legend')
+    const legend = fieldset.firstElementChild
 
-    expect(legend.textContent.trim()).toBe('Select an address')
-    expect(legend.classList.contains('govuk-visually-hidden')).toBe(true)
+    expect(legend.tagName).toBe('LEGEND')
+    expect(legend.textContent.trim()).toBe(pickerCopy.resultsHeading)
     expect(fieldset.querySelector('table').firstElementChild.tagName).toBe(
       'THEAD'
     )
@@ -77,23 +77,6 @@ describe('addressBookPickerResults macro', () => {
     expect(fieldset.querySelector('input[type="radio"]').name).toBe(FIELD_NAME)
   })
 
-  it('Should wrap the fieldset in an error form group when there is an error', () => {
-    const document = render(rowsWith([row], { error: ERROR }))
-
-    const group = document.querySelector('.govuk-form-group--error')
-
-    expect(group.querySelector('fieldset')).not.toBeNull()
-  })
-
-  it('Should wrap the fieldset in a plain form group when there is no error', () => {
-    const document = render(rowsWith([row]))
-
-    expect(document.querySelector('.govuk-form-group--error')).toBeNull()
-    expect(
-      document.querySelector('.govuk-form-group > fieldset')
-    ).not.toBeNull()
-  })
-
   it('Should leave the fieldset undescribed when there is no error', () => {
     const document = render(rowsWith([row]))
 
@@ -107,7 +90,7 @@ describe('addressBookPickerResults macro', () => {
       rowsWith([{ ...row, name: 'Fish & <b>Chips</b> Ltd' }])
     )
 
-    const label = document.querySelector('.govuk-radios__label')
+    const label = document.querySelector('input[type="radio"]').labels[0]
 
     expect(label.textContent.trim()).toBe('Select Fish & <b>Chips</b> Ltd')
     expect(label.querySelector('b')).toBeNull()

@@ -1,5 +1,6 @@
 import { BASE } from '../../../../../../../../../fit/set-base.js'
 import {
+  errorSummaryLinks,
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
   openDeclaration,
@@ -90,9 +91,10 @@ test('requires confirmation, focuses the checkbox from the summary and has an ac
   await page
     .getByRole('button', { name: declarationCopy.continueButton, exact: true })
     .click()
-  const link = page
-    .getByRole('alert')
-    .getByRole('link', { name: declarationCopy.errors.declarationRequired })
+  const link = errorSummaryLinks(
+    page,
+    declarationCopy.errors.declarationRequired
+  )
   await expect(link).toBeVisible()
   await link.click()
   await expect(

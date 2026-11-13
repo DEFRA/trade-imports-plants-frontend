@@ -1,5 +1,7 @@
 import { pageUrlOnWalk } from '../../../../../../../../../../fit/set-base.js'
 import {
+  errorSummary,
+  errorSummaryLinks,
   chooseCommodityCategory,
   expectNoSeriousOrCriticalViolations,
   saveAndContinue,
@@ -138,9 +140,7 @@ test.describe('commodity details — choosing a category', () => {
       page.getByRole('group', { name: copy.details.categoryLegend })
     ).toContainText(copy.details.errors.category)
 
-    const summaryLink = page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.details.errors.category })
+    const summaryLink = errorSummaryLinks(page, copy.details.errors.category)
     await summaryLink.click()
     await expect(page.locator(CATEGORY_RADIOS).first()).toBeFocused()
   })
@@ -156,9 +156,7 @@ test.describe('commodity details — choosing a category', () => {
 
     await page.getByRole('button', { name: copy.details.continue }).click()
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.details.errors.category
-      })
+      errorSummaryLinks(page, copy.details.errors.category)
     ).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(
@@ -261,9 +259,7 @@ test.describe('commodity details — the fields a category asks for', () => {
     await saveAndContinue(page).click()
 
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.details.errors.quantity.required
-      })
+      errorSummaryLinks(page, copy.details.errors.quantity.required)
     ).toBeVisible()
     await expect(fieldNamed(page, 'potatoVariety')).toHaveValue(MARIS_PIPER)
   })
@@ -275,10 +271,7 @@ test.describe('commodity details — the fields a category asks for', () => {
     await chooseCategory(page, SEED_POTATOES)
 
     await saveAndContinue(page).click()
-    await page
-      .getByRole('alert')
-      .getByRole('link', { name: copy.details.errors.quantity.required })
-      .click()
+    await errorSummaryLinks(page, copy.details.errors.quantity.required).click()
 
     await expect(fieldNamed(page, 'quantity')).toBeFocused()
   })
@@ -294,9 +287,7 @@ test.describe('commodity details — the fields a category asks for', () => {
     await saveAndContinue(page).click()
 
     await expect(
-      page.getByRole('alert').getByRole('link', {
-        name: copy.details.errors.quantity.invalid
-      })
+      errorSummaryLinks(page, copy.details.errors.quantity.invalid)
     ).toBeVisible()
   })
 
@@ -326,7 +317,7 @@ test.describe('commodity details — the fields a category asks for', () => {
     )
 
     await saveAndContinue(page).click()
-    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(errorSummary(page)).toBeVisible()
 
     await expectNoSeriousOrCriticalViolations(
       page,
