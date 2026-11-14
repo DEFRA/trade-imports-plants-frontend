@@ -11,7 +11,8 @@ import {
   completePotatoNotification,
   REVIEW_URL_WITHOUT_TRAIL,
   expectNoSeriousOrCriticalViolations,
-  saveAndContinue
+  saveAndContinue,
+  withoutJavaScript
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -24,6 +25,7 @@ import { copy as declarationCopy } from '../declaration/copy/copy.en.js'
 
 const TAG = '.govuk-tag'
 const strip = (page) => page.locator('.app-journey-strip')
+const submittedHeaderTag = (page) => page.locator(`main ${TAG}`)
 const cancelAmendLink = (page) =>
   strip(page).getByRole('link', {
     name: sharedCopy.journeyStrip.cancelAmend,
@@ -264,13 +266,7 @@ test.describe('without JavaScript', () => {
     browser
   }) => {
     const reference = journeyIdFromPage(page)
-    const context = await browser.newContext({
-      javaScriptEnabled: false,
-      storageState: await page.context().storageState()
-    })
-    try {
-      const noJs = await context.newPage()
-
+    await withoutJavaScript(page, browser, async (noJs) => {
       await noJs.goto(
         `${BASE}/notifications/${reference}/identification-numbers`
       )
@@ -279,12 +275,10 @@ test.describe('without JavaScript', () => {
       await noJs.getByRole('button', { name: cancelCopy.confirmButton }).click()
 
       await expect(noJs).toHaveURL(/\/notification-view\?cancelled=1$/)
-      await expect(strip(noJs).locator(TAG)).toHaveText(
+      await expect(submittedHeaderTag(noJs)).toHaveText(
         sharedCopy.journeyStrip.submitted
       )
-    } finally {
-      await context.close()
-    }
+    })
   })
 })
 
@@ -309,7 +303,9 @@ test('confirmation restores the submitted snapshot and an accessible success vie
 }) => {
   await page.getByRole('button', { name: cancelCopy.confirmButton }).click()
   await expect(page).toHaveURL(/\/notification-view\?cancelled=1$/)
-  await expect(page.getByText('Submitted', { exact: true })).toBeVisible()
+  await expect(submittedHeaderTag(page)).toHaveText(
+    sharedCopy.journeyStrip.submitted
+  )
   await expect(page.getByText('DiscardMe99', { exact: true })).toHaveCount(0)
   await expect(page.getByText('P123', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Change/ })).toHaveCount(0)

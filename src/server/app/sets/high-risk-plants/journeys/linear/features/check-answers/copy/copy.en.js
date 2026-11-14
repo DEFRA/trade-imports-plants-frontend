@@ -83,6 +83,17 @@ export const copy = {
     consignmentNumber: 'Consignment number (optional)'
   },
   delete: 'Delete notification',
+  submittedHeader: {
+    amend: 'Amend this notification',
+    dateSubmitted: (date) => `Date submitted: ${date}`
+  },
+  importReferences: {
+    heading: 'Import reference numbers',
+    warning:
+      'You must use the correct reference and code on the customs declaration or your consignment will be delayed.',
+    warningIcon: 'Warning',
+    notificationReference: 'Notification reference'
+  },
   typeLabels: {
     potatoes: 'Potatoes (seed or ware)',
     'plants-for-planting': 'Plants for planting',

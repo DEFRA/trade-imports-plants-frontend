@@ -10,10 +10,14 @@ import { copyFor } from '../../../../../../shared/copy.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
 import { declarationPage } from '../declaration/page.js'
-import { deleteNotificationPage } from '../delete-notification/page.js'
+import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
+import {
+  deleteButtonFor,
+  submittedHeader
+} from './view-model/submitted-header.js'
 import { changeHref } from './view-model/rows/change-link.js'
 import {
   cardAnchorHref,
@@ -96,12 +100,6 @@ const backLinkFor = (request, journey) =>
         : hubPath(journey.journeyId)
   })
 
-const deleteButtonFor = (journey) => ({
-  text: copy.delete,
-  href: pagePath(journey.journeyId, deleteNotificationPage.slug),
-  classes: 'govuk-button--warning'
-})
-
 const buttonsAfterPrimaryFor = (journey) => {
   const cancelAmendHref = kit.cancelAmendHref(journey)
   if (cancelAmendHref) {
@@ -129,15 +127,17 @@ const render = async (
   const reviewed = await shownReviewErrors(current, { continueRefused })
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
   return h.view(view, {
-    ...kit.base(copy.title, {
+    ...kit.base(readOnly ? current.journey.journeyId : copy.title, {
       journey: current.journey,
       page,
       backLink: backLinkFor(request, current.journey),
-      offerCancelAmend: false
+      offerCancelAmend: false,
+      showJourneyStrip: !readOnly
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
     readOnly,
+    submittedHeader: readOnly ? submittedHeader(current.journey) : null,
     lateWarning:
       current.journey.status === state.DRAFT &&
       lateness(
@@ -160,14 +160,33 @@ const render = async (
       href: summaryHrefFor(current, { changeLinkTrail, reviewPageTrail }),
       disableAutoFocus: !continueRefused
     }),
-    deleteButton: deleteButtonFor(current.journey),
     buttonsAfterPrimary: buttonsAfterPrimaryFor(current.journey),
     amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }
 
-const get = async (request, h) =>
-  render(request, h, await state.get(request, h))
+const redirectToNotificationList = (request, h) => {
+  request.logger.info(
+    {
+      journeyId: request.params.journeyId,
+      path: request.path,
+      organisationId: organisationIdOf(request)
+    },
+    'Notification not found, sent to the notification list'
+  )
+  return h.redirect(dashboardPath())
+}
+
+const get = async (request, h) => {
+  try {
+    return await render(request, h, await state.get(request, h))
+  } catch (error) {
+    if (state.isJourneyNotFound(error)) {
+      return redirectToNotificationList(request, h)
+    }
+    throw error
+  }
+}
 
 const post = async (request, h) => {
   const current = await state.get(request, h)

@@ -10,11 +10,14 @@ import {
   expectNoSeriousOrCriticalViolations,
   saveAndReturnToHub,
   continueFromChangedCommodityLine,
-  saveAndContinue
+  saveAndContinue,
+  submitDeclarationFromCheckAnswers,
+  withoutJavaScript
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
 import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
+import { notificationDateText } from '../review/notification-date.js'
 import { copy } from './copy/copy.en.js'
 import { copy as deleteCopy } from '../delete-notification/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
@@ -197,4 +200,116 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   await expect(page).toHaveURL(
     notificationPageWithTrail('origin', [NOTIFICATION_VIEW])
   )
+})
+
+test.describe('a submitted notification', () => {
+  let reference
+
+  const main = (page) => page.getByRole('main')
+  const importReferences = (page) =>
+    page.getByRole('region', { name: copy.importReferences.heading })
+
+  let submittedBefore
+  let submittedAfter
+
+  test.beforeEach(async ({ page }) => {
+    reference = await completePotatoNotification(page)
+    submittedBefore = Date.now()
+    await submitDeclarationFromCheckAnswers(page, reference)
+    submittedAfter = Date.now()
+    await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+    await expect(
+      page.getByRole('heading', { level: 1, name: reference, exact: true })
+    ).toBeVisible()
+  })
+
+  test('is headed by its reference with a green Submitted tag beside it, no status bar and a title naming the reference', async ({
+    page
+  }) => {
+    await expect(main(page).locator('.govuk-tag')).toHaveText(
+      sharedCopy.journeyStrip.submitted
+    )
+    await expect(main(page).locator('.govuk-tag')).toHaveClass(
+      /govuk-tag--green/
+    )
+    await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+    await expect(page).toHaveTitle(
+      `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
+    )
+  })
+
+  test('dates the notification under its header', async ({ page }) => {
+    const submittedLines = new Set(
+      [submittedBefore, submittedAfter].map((instant) =>
+        copy.submittedHeader.dateSubmitted(notificationDateText(instant))
+      )
+    )
+    const alternatives = [...submittedLines].map(RegExp.escape).join('|')
+
+    await expect(page.getByText(/^Date submitted: /)).toHaveText(
+      new RegExp(`^(${alternatives})$`)
+    )
+  })
+
+  test('offers Amend this notification and a warning Delete notification in its header, and Delete notification nowhere else', async ({
+    page
+  }) => {
+    const controls = main(page)
+      .locator('.govuk-button-group')
+      .first()
+      .locator('> *')
+
+    await expect(controls).toHaveText([copy.submittedHeader.amend, copy.delete])
+    await expect(controls.nth(1)).toHaveClass(/govuk-button--warning/)
+    await expect(deleteButton(page)).toHaveCount(1)
+  })
+
+  test('Amend this notification opens the amendment review', async ({
+    page
+  }) => {
+    await page.getByRole('button', { name: copy.submittedHeader.amend }).click()
+
+    await expect(page.locator('.app-journey-strip .govuk-tag')).toHaveText(
+      sharedCopy.journeyStrip.amend
+    )
+  })
+
+  test('shows the import reference numbers with the warning and the notification reference, and no customs document code', async ({
+    page
+  }) => {
+    const section = importReferences(page)
+
+    await expect(section.getByText(copy.importReferences.warning)).toBeVisible()
+    await expect(section.locator('.govuk-summary-list__key')).toHaveText([
+      copy.importReferences.notificationReference
+    ])
+    await expect(section.locator('.govuk-summary-list__value')).toHaveText([
+      reference
+    ])
+  })
+
+  test('shows the import reference numbers as text with no button when JavaScript is off', async ({
+    page,
+    browser
+  }) => {
+    await withoutJavaScript(page, browser, async (noJs) => {
+      const section = importReferences(noJs)
+
+      await expect(
+        section.getByText(copy.importReferences.warning)
+      ).toBeVisible()
+      await expect(section.locator('.govuk-summary-list__value')).toHaveText([
+        reference
+      ])
+      await expect(section.getByRole('button')).toHaveCount(0)
+    })
+  })
+})
+
+test('opening the view of a notification that does not exist goes to the notification list', async ({
+  page
+}) => {
+  await page.goto(`${BASE}/notifications/GBN-0000-0000-0000/notification-view`)
+
+  await expect(page).toHaveURL(BASE)
 })

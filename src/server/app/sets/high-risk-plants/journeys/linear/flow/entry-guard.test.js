@@ -112,6 +112,14 @@ describe('#entryGuardTarget', () => {
     ).resolves.toBeNull()
   })
 
+  it('Should let a guarded path through for a notification that does not exist, for its page to answer', async () => {
+    expect(
+      await guardOn('GBN-0000-0000-0000', {
+        path: pagePath('GBN-0000-0000-0000', NOTIFICATION_VIEW_SLUG)
+      })
+    ).toBeNull()
+  })
+
   it('Should redirect a journey with no answers to the entry page', async () => {
     const journeyId = await freshJourney()
 

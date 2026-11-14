@@ -83,6 +83,17 @@ export const copy = {
     consignmentNumber: 'Rhif y llwyth (dewisol)'
   },
   delete: 'Dileu’r hysbysiad',
+  submittedHeader: {
+    amend: 'Diwygio’r hysbysiad hwn',
+    dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}`
+  },
+  importReferences: {
+    heading: 'Cyfeirnodau mewnforio',
+    warning:
+      'Rhaid i chi ddefnyddio’r cyfeirnod a’r cod cywir ar y datganiad tollau neu bydd oedi i’ch llwyth.',
+    warningIcon: 'Rhybudd',
+    notificationReference: 'Cyfeirnod yr hysbysiad'
+  },
   typeLabels: {
     potatoes: 'Tatws (hadyd neu fwyd)',
     'plants-for-planting': 'Planhigion i’w plannu',

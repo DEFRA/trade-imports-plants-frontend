@@ -450,16 +450,45 @@ describe('Check your answers lateness', () => {
     classes: 'govuk-button--warning'
   })
 
-  it('Should offer the delete path when the notification is submitted', async () => {
+  it('Should offer the delete path in the header when the notification is submitted', async () => {
     const journeyId = await submittedJourneyId()
     const submitted = stubH()
 
     await get(journeyRequest(journeyId), submitted)
 
-    expect(submitted.captured.view.context).toMatchObject({
-      readOnly: true,
-      deleteButton: deleteButtonTo(journeyId)
-    })
+    expect(submitted.captured.view.context.readOnly).toBe(true)
+    expect(
+      submitted.captured.view.context.submittedHeader.actions.delete
+    ).toEqual(deleteButtonTo(journeyId))
+  })
+
+  it('Should head a submitted view with its reference, a header and no strip', async () => {
+    const journeyId = await submittedJourneyId()
+    const submitted = stubH()
+    await get(journeyRequest(journeyId), submitted)
+
+    expect(submitted.captured.view.context.pageTitle).toBe(journeyId)
+    expect(submitted.captured.view.context.journeyStrip).toBeNull()
+    expect(submitted.captured.view.context.submittedHeader.reference).toBe(
+      journeyId
+    )
+    expect(submitted.captured.view.context.submittedHeader.status.text).toBe(
+      'Submitted'
+    )
+  })
+
+  it('Should head a draft with its title and the strip, and no submitted header', async () => {
+    const draft = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+
+    expect(draft.view.context.pageTitle).toBe(copy.title)
+    expect(draft.view.context.journeyStrip.status.text).toBe('Draft')
+    expect(draft.view.context.submittedHeader).toBeNull()
+  })
+
+  it('Should redirect the view of a notification that does not exist to the notification list', async () => {
+    const response = await get(journeyRequest('GBN-0000-0000-0000'), stubH())
+
+    expect(response).toEqual({ redirect: SET_BASE })
   })
 
   it('Should offer the cancel-amend path only while amending, with no Cancel amend link in the journey strip', async () => {
@@ -529,12 +558,12 @@ describe('Check your answers lateness', () => {
     expect(submitted.captured.view.context.buttonsAfterPrimary).toEqual([])
   })
 
-  it('Should show a draft review as editable with the Draft status and the delete button', async () => {
+  it('Should show a draft review as editable with the Draft status and no submitted header', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 
     expect(result.view.context).toMatchObject({
       readOnly: false,
-      deleteButton: deleteButtonTo(result.journeyId)
+      submittedHeader: null
     })
     expect(result.view.context.journeyStrip).toEqual({
       reference: result.journeyId,

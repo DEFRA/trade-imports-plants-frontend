@@ -19,6 +19,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { commodityTypePage } from '../commodity-type/page.js'
 import { notificationViewPage } from '../check-answers/page.js'
+import { notificationActionSlugs } from '../../flow/notification-action-slugs.js'
 import { dashboardPage } from './page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
@@ -164,7 +165,7 @@ export const routes = [
   },
   {
     method: 'POST',
-    path: pageRoutePath('amend'),
+    path: pageRoutePath(notificationActionSlugs.amend),
     options: kit.routeOptions,
     handler: amendPost
   },
