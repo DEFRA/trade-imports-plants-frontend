@@ -4,11 +4,11 @@ import * as countries from '../../../../../../../services/countries/index.js'
 import * as ports from '../../../../../../../services/ports/index.js'
 import { lineFieldsFor } from '../../../../../services/commodities/index.js'
 import { detailsPath } from '../../commodities/links.js'
-import { addressText } from '../../address-book-picker/address-lines.js'
+import { addressParts } from '../../address-book-picker/address-lines.js'
 import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
 import { row, readOnlyRow } from './rows/summary-row.js'
-import { errorRow } from './rows/error-row.js'
+import { errorRow, errorLinesRow } from './rows/error-row.js'
 import { changeAction, editableActions } from './rows/change-link.js'
 import { dateText } from './rows/value-text.js'
 import { anchorOf } from './incomplete-cards.js'
@@ -30,11 +30,6 @@ const copy = copyFor({ en, cy })
 const arrivalCopy = copyFor({ en: arrivalEn, cy: arrivalCy })
 const destinationCopy = copyFor({ en: destinationEn, cy: destinationCy })
 
-/**
- * Potatoes are never asked whether the consignment has arrived, so no arrival
- * status in scope selects the potato state. An unanswered status selects the
- * pre-arrival state for both the date label and destination heading.
- */
 const arrivalStateOf = (answers, scope) => {
   if (!scope.has(ARRIVAL_STATUS)) {
     return POTATO_ARRIVAL
@@ -76,17 +71,6 @@ const partyActions = ({
   return actions
 }
 
-/** The copy's fields that each card row shows, so a field's error lands on the
- * row that holds it. */
-const ADDRESS_FIELDS = [
-  'addressLine1',
-  'addressLine2',
-  'townOrCity',
-  'county',
-  'postcode',
-  'countryCode'
-]
-
 const partyCard = (
   { field, id },
   title,
@@ -99,6 +83,15 @@ const partyCard = (
     readOnly
   }
 ) => {
+  const nameAndContactFields = ['name', 'phone', 'email']
+  const addressFields = [
+    'addressLine1',
+    'addressLine2',
+    'townOrCity',
+    'county',
+    'postcode',
+    'countryCode'
+  ]
   const partyDisplayValues = partyDisplayValuesById[field]
   const fieldErrors = partyFieldErrorsById[field] ?? {}
   const messagesFor = (fields) =>
@@ -121,28 +114,16 @@ const partyCard = (
       errorRow(
         copy.labels.name,
         partyDisplayValues?.name,
-        messagesFor(['name'])
+        messagesFor(nameAndContactFields)
       ),
-      errorRow(
+      errorLinesRow(
         copy.labels.address,
         partyDisplayValues &&
           [
-            addressText(partyDisplayValues.address),
+            ...addressParts(partyDisplayValues.address),
             partyDisplayValues.address?.country
-          ]
-            .filter(Boolean)
-            .join(', '),
-        messagesFor(ADDRESS_FIELDS)
-      ),
-      errorRow(
-        copy.labels.phone,
-        partyDisplayValues?.address?.phone,
-        messagesFor(['phone'])
-      ),
-      errorRow(
-        copy.labels.email,
-        partyDisplayValues?.address?.email,
-        messagesFor(['email'])
+          ].filter(Boolean),
+        messagesFor(addressFields)
       )
     ]
   }

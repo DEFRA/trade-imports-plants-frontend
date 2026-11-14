@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { addressText, detailLines } from './address-lines.js'
+import { addressParts, addressText, detailLines } from './address-lines.js'
 import { addressRecord } from './test-support.js'
 
 const LINE_1 = '18 Dockside Road'
@@ -51,5 +51,24 @@ describe('#detailLines', () => {
       '01632 960123',
       'trade@example.com'
     ])
+  })
+})
+
+describe('#addressParts', () => {
+  it('Should list each part the record holds, in reading order, leaving the country out', () => {
+    expect(
+      addressParts({
+        addressLine1: LINE_1,
+        addressLine2: LINE_2,
+        townOrCity: TOWN,
+        county: COUNTY,
+        postcode: POSTCODE,
+        country: COUNTRY
+      })
+    ).toEqual([LINE_1, LINE_2, TOWN, COUNTY, POSTCODE])
+  })
+
+  it('Should answer no parts for a record with no address at all', () => {
+    expect(addressParts()).toEqual([])
   })
 })

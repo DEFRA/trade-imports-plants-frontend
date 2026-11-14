@@ -20,19 +20,20 @@ import { copy } from './copy/copy.en.js'
 
 const HUB_URL = setUrl('/notifications/[^/]+$')
 const CONSIGNMENT_GROUP_ID = 'about-the-consignment'
-const ARRIVAL_GROUP_ID = 'arrival-and-destination'
 const RENDERED_GROUP_IDS = [
   CONSIGNMENT_GROUP_ID,
-  ARRIVAL_GROUP_ID,
+  'arrival-and-destination',
   'consignment-parties',
   'check-and-submit'
 ]
-const RENDERED_GROUP_COUNT = RENDERED_GROUP_IDS.length
 
 const taskRow = (page, title) =>
   page
     .getByRole('listitem')
     .filter({ has: page.getByRole('link', { name: title }) })
+
+const taskListRegion = (page) =>
+  page.getByRole('region', { name: copy.taskListRegionLabel, exact: true })
 
 const blockedRowByTitle = (page, title) =>
   page
@@ -117,8 +118,8 @@ test.describe('overview hub feature', () => {
     await expect(
       page.getByText(copy.groups[CONSIGNMENT_GROUP_ID], { exact: true })
     ).toBeVisible()
-    await expect(page.locator('.govuk-task-list')).toHaveCount(
-      RENDERED_GROUP_COUNT
+    await expect(taskListRegion(page).getByRole('region')).toHaveCount(
+      RENDERED_GROUP_IDS.length
     )
     await expect(
       page.getByRole('link', { name: copy.rows.commodities.title })
@@ -130,22 +131,28 @@ test.describe('overview hub feature', () => {
       copy.statuses.inProgress
     )
     await expect(
-      taskRow(page, copy.rows.commodities.title).locator(
-        '.govuk-task-list__hint'
-      )
-    ).toHaveCount(0)
+      taskRow(page, copy.rows.commodities.title).getByRole('link', {
+        name: copy.rows.commodities.title
+      })
+    ).toHaveAccessibleDescription(copy.statuses.inProgress)
   })
 
-  test('renders no group that has landed no task row', async ({ page }) => {
+  test('the groups sit in one task list region, each a region named by its heading and holding one task list, under no other section heading', async ({
+    page
+  }) => {
     await startNotificationAtOverview(page)
 
-    const emptyGroupCaptions = Object.entries(copy.groups)
-      .filter(([id]) => !RENDERED_GROUP_IDS.includes(id))
-      .map(([, caption]) => caption)
-
-    for (const caption of emptyGroupCaptions) {
-      await expect(page.getByText(caption, { exact: true })).toHaveCount(0)
+    const captions = RENDERED_GROUP_IDS.map((id) => copy.groups[id])
+    const taskList = taskListRegion(page)
+    await expect(taskList.getByRole('region')).toHaveCount(captions.length)
+    for (const caption of captions) {
+      const group = taskList.getByRole('region', { name: caption, exact: true })
+      await expect(group.getByRole('heading', { level: 2 })).toHaveText(caption)
+      await expect(group.getByRole('list')).toHaveCount(1)
     }
+    await expect(
+      page.getByRole('main').getByRole('heading', { level: 2 })
+    ).toHaveText(captions)
   })
 
   test('has no serious or critical axe violations on the initial render', async ({

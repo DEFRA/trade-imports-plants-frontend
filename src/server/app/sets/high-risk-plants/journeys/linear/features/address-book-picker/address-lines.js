@@ -1,4 +1,3 @@
-/** The parts of a stored address, in the order they are read out. */
 const ADDRESS_PARTS = [
   'addressLine1',
   'addressLine2',
@@ -7,20 +6,35 @@ const ADDRESS_PARTS = [
   'postcode'
 ]
 
-/** The address as one line for the results table. The country has its own
- * column, so it is left out here. */
-export const addressText = (address = {}) =>
-  ADDRESS_PARTS.map((part) => address[part])
-    .filter(Boolean)
-    .join(', ')
+/**
+ * Every filled part of a stored address, one per entry, without the country.
+ *
+ * @param {object} [address] - the stored address.
+ * @returns {string[]} the parts in reading order.
+ */
+export const addressParts = (address = {}) =>
+  ADDRESS_PARTS.map((part) => address[part]).filter(Boolean)
 
-/** Everything the record holds, one line each, for the row's View details
- * disclosure — including the contact details the table has no column for. */
+/**
+ * The address parts as one comma-separated line, without the country.
+ *
+ * @param {object} [address] - the stored address.
+ * @returns {string} the line.
+ */
+export const addressText = (address) => addressParts(address).join(', ')
+
+/**
+ * Everything the record holds, one line each: name, address parts, country,
+ * telephone and email.
+ *
+ * @param {object} record - the stored record.
+ * @returns {string[]} the lines.
+ */
 export const detailLines = (record) => {
   const address = record.address ?? {}
   return [
     record.name,
-    ...ADDRESS_PARTS.map((part) => address[part]),
+    ...addressParts(address),
     address.country,
     address.phone,
     address.email

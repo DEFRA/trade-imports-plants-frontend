@@ -1,6 +1,7 @@
 // MACHINE-DRAFT Welsh — not reviewed by a translator. Do not ship user-facing without Welsh Language Standards sign-off.
 export const copy = {
   title: 'Trosolwg',
+  taskListRegionLabel: 'Rhestr dasgau’r hysbysiad',
   returnToDashboard: 'Dychwelyd i’r dangosfwrdd',
   statuses: {
     completed: 'Wedi’i gwblhau',

@@ -1,12 +1,6 @@
-/**
- * The overview hub — the navigation root of a notification.
- *
- * `groups` holds one caption per numbered task-list group; `rows` holds the
- * title and hint of each task row, and each section's first page increment
- * adds its own row here.
- */
 export const copy = {
   title: 'Overview',
+  taskListRegionLabel: 'Notification tasklist',
   returnToDashboard: 'Return to dashboard',
   statuses: {
     completed: 'Completed',
