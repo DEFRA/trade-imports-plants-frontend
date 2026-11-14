@@ -98,12 +98,18 @@ the enforceable detail. Read them when a copy test fails.
   primary and "Save and return to overview" side by side, then "Cancel and
   return to overview" on its own line below them, so a trader can stop and
   leave from where the overview sent them.
+- A page can pass `buttonsAfterPrimary`, a list of buttons shown straight after
+  the primary and before "Save and return to overview". Check your answers uses
+  it: a draft ends with "Continue", a red "Delete notification" and "Save and
+  return to overview", with "Cancel and return to overview" below; an amendment
+  ends with "Continue", a secondary "Cancel amend" and "Save and return to
+  overview", with "Cancel and return to overview" below and no delete.
 - The two return controls name the page they lead to, which is headed
   "Overview". "Hub" is the internal name for it and never appears on screen.
 - A page reached from another page ends with the primary alone
   (`showReturnControls: false`), and the trader leaves the way they came in.
-- While a notification is being amended, a page ends exactly as it does on a
-  draft: Save and continue, then Save and return to overview, then Cancel and
+- While a notification is being amended, every page except check your answers
+  ends exactly as it does on a draft: Save and continue, then Save and return to overview, then Cancel and
   return to overview wherever the draft page shows it. Save and continue goes on
   through the journey to check your answers, Save and return to overview goes to
   the Overview, and Cancel and return to overview goes to the Overview without

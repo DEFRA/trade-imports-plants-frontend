@@ -437,48 +437,104 @@ describe('Check your answers lateness', () => {
     }
   )
 
-  it('Should offer Cancel amendment only while amending, and the banner only after cancelling', async () => {
+  const submittedJourneyId = async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
     await store.submit(journeyId)
+    return journeyId
+  }
+
+  const deleteButtonTo = (journeyId) => ({
+    text: 'Delete notification',
+    href: `${SET_BASE}/notifications/${journeyId}/delete`,
+    classes: 'govuk-button--warning'
+  })
+
+  it('Should offer the delete path when the notification is submitted', async () => {
+    const journeyId = await submittedJourneyId()
     const submitted = stubH()
+
     await get(journeyRequest(journeyId), submitted)
+
     expect(submitted.captured.view.context).toMatchObject({
       readOnly: true,
-      deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`,
-      amendmentCancelled: false
+      deleteButton: deleteButtonTo(journeyId)
     })
+  })
+
+  it('Should offer the cancel-amend path only while amending, with no Cancel amend link in the journey strip', async () => {
+    const journeyId = await submittedJourneyId()
+    await recordsStub.amend(journeyId)
+    const amending = stubH()
+
+    await get(journeyRequest(journeyId), amending)
+
+    expect(amending.captured.view.context.buttonsAfterPrimary).toEqual([
+      expect.objectContaining({
+        href: `${SET_BASE}/notifications/${journeyId}/cancel-amend`
+      })
+    ])
     expect(
-      submitted.captured.view.context.journeyStrip.cancelAmend
+      amending.captured.view.context.journeyStrip.cancelAmend
     ).toBeUndefined()
+  })
+
+  it('Should show the amendment-cancelled banner only after cancelling', async () => {
+    const journeyId = await submittedJourneyId()
+    const opened = stubH()
     const cancelled = stubH()
+    await get(journeyRequest(journeyId), opened)
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),
       cancelled
     )
-    expect(cancelled.captured.view.context.amendmentCancelled).toBe(true)
     await recordsStub.amend(journeyId)
     const amending = stubH()
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),
       amending
     )
-    expect(amending.captured.view.context).toMatchObject({
-      readOnly: false,
-      deleteHref: null,
-      amendmentCancelled: false
-    })
-    expect(amending.captured.view.context.journeyStrip.cancelAmend.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/cancel-amend`
-    )
+
+    expect(opened.captured.view.context.amendmentCancelled).toBe(false)
+    expect(cancelled.captured.view.context.amendmentCancelled).toBe(true)
+    expect(amending.captured.view.context.amendmentCancelled).toBe(false)
   })
 
-  it('Should show a draft review as editable with the Draft status and no Delete or Cancel amendment link', async () => {
+  it('Should follow Continue on a draft with a warning Delete button', async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+
+    expect(result.view.context.buttonsAfterPrimary).toEqual([
+      deleteButtonTo(result.journeyId)
+    ])
+  })
+
+  it('Should follow Continue on an amendment with a secondary Cancel amend button and no Delete', async () => {
+    const result = await driveHandler(get, { amend: true })
+
+    expect(result.view.context.buttonsAfterPrimary).toEqual([
+      {
+        text: 'Cancel amend',
+        href: `${SET_BASE}/notifications/${result.journeyId}/cancel-amend`,
+        classes: 'govuk-button--secondary'
+      }
+    ])
+  })
+
+  it('Should follow Continue on a submitted review with no buttons', async () => {
+    const journeyId = await submittedJourneyId()
+    const submitted = stubH()
+
+    await get(journeyRequest(journeyId), submitted)
+
+    expect(submitted.captured.view.context.buttonsAfterPrimary).toEqual([])
+  })
+
+  it('Should show a draft review as editable with the Draft status and the delete button', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 
     expect(result.view.context).toMatchObject({
       readOnly: false,
-      deleteHref: null
+      deleteButton: deleteButtonTo(result.journeyId)
     })
     expect(result.view.context.journeyStrip).toEqual({
       reference: result.journeyId,

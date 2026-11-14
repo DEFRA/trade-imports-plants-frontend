@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { nunjucksConfig } from '../../../config/nunjucks/nunjucks.js'
+import {
+  documentOf,
+  trimmedTextOf
+} from '../../common/test-helpers/document-of.js'
 import { copy as sharedEn } from './copy.en.js'
 
 const environment = nunjucksConfig.options.compileOptions.environment
@@ -74,6 +78,30 @@ describe('#saveActions', () => {
     expect(html).not.toContain(sharedEn.saveActions.saveAndContinue)
     expect(html).not.toContain(sharedEn.saveActions.saveAndReturnToHub)
     expect(html).not.toContain(sharedEn.saveActions.cancelAndReturnToHub)
+  })
+
+  it('Should put the buttons it is given straight after the primary, inside the group, before Save and return to overview', () => {
+    const group = documentOf(
+      renderActions(
+        '{ hubHref: hubHref, buttonsAfterPrimary: [{ text: "Extra one", href: "/one", classes: "govuk-button--secondary" }, { text: "Extra two", href: "/two", classes: "govuk-button--warning" }], copy: copy }'
+      )
+    ).querySelector('.govuk-button-group')
+    const controls = [...group.children]
+
+    expect(controls.map(trimmedTextOf)).toEqual([
+      sharedEn.saveActions.saveAndContinue,
+      'Extra one',
+      'Extra two',
+      sharedEn.saveActions.saveAndReturnToHub
+    ])
+    expect(controls[1].tagName).toBe('A')
+    expect(controls[1].getAttribute('href')).toBe('/one')
+    expect(controls[1].classList.contains('govuk-button')).toBe(true)
+    expect(controls[1].classList.contains('govuk-button--secondary')).toBe(true)
+    expect(controls[2].tagName).toBe('A')
+    expect(controls[2].getAttribute('href')).toBe('/two')
+    expect(controls[2].classList.contains('govuk-button')).toBe(true)
+    expect(controls[2].classList.contains('govuk-button--warning')).toBe(true)
   })
 
   it('Should keep the return controls when a hub-linked page names its own primary', () => {

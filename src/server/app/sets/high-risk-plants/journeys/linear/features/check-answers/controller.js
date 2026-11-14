@@ -10,6 +10,7 @@ import { copyFor } from '../../../../../../shared/copy.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
 import { declarationPage } from '../declaration/page.js'
+import { deleteNotificationPage } from '../delete-notification/page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
@@ -95,6 +96,26 @@ const backLinkFor = (request, journey) =>
         : hubPath(journey.journeyId)
   })
 
+const deleteButtonFor = (journey) => ({
+  text: copy.delete,
+  href: pagePath(journey.journeyId, deleteNotificationPage.slug),
+  classes: 'govuk-button--warning'
+})
+
+const buttonsAfterPrimaryFor = (journey) => {
+  const cancelAmendHref = kit.cancelAmendHref(journey)
+  if (cancelAmendHref) {
+    return [
+      {
+        text: kit.sharedCopy.journeyStrip.cancelAmend,
+        href: cancelAmendHref,
+        classes: 'govuk-button--secondary'
+      }
+    ]
+  }
+  return journey.status === state.DRAFT ? [deleteButtonFor(journey)] : []
+}
+
 const render = async (
   request,
   h,
@@ -111,7 +132,8 @@ const render = async (
     ...kit.base(copy.title, {
       journey: current.journey,
       page,
-      backLink: backLinkFor(request, current.journey)
+      backLink: backLinkFor(request, current.journey),
+      offerCancelAmend: false
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
@@ -138,7 +160,8 @@ const render = async (
       href: summaryHrefFor(current, { changeLinkTrail, reviewPageTrail }),
       disableAutoFocus: !continueRefused
     }),
-    deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
+    deleteButton: deleteButtonFor(current.journey),
+    buttonsAfterPrimary: buttonsAfterPrimaryFor(current.journey),
     amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }

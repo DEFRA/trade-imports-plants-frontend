@@ -16,6 +16,7 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy } from './copy/copy.en.js'
+import { copy as deleteCopy } from '../delete-notification/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
 import { TECH_IMPORTS_ADDRESS_LINES } from '../../../../../../../../../fit/address-read-back.js'
 
@@ -100,7 +101,27 @@ test('renders saved answers, scoped cards and accessible Change links that open 
   )
 })
 
-test('offers Back to the contact page, Save and return, and Cancel to Overview', async ({
+const deleteButton = (page) =>
+  page.getByRole('button', { name: copy.delete, exact: true })
+
+test('a draft check answers ends with Continue, a warning Delete notification button linking to the delete page and Save and return in one button group', async ({
+  page
+}) => {
+  const reference = await completePotatoNotification(page)
+  const hub = `${BASE}/notifications/${reference}`
+  const endingGroup = page.locator('form[novalidate] .govuk-button-group > *')
+  await expect(endingGroup).toHaveText([
+    copy.continue,
+    copy.delete,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
+  await expect(deleteButton(page)).toHaveAttribute('href', `${hub}/delete`)
+  await expect(deleteButton(page)).toHaveClass(/govuk-button--warning/)
+  await saveAndReturnToHub(page).click()
+  await expect(page).toHaveURL(new RegExp(`${hub}$`))
+})
+
+test('a draft check answers offers Cancel and return to overview below the group and Back to the contact page', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
@@ -114,8 +135,18 @@ test('offers Back to the contact page, Save and return, and Cancel to Overview',
       exact: true
     })
   ).toHaveAttribute('href', hub)
-  await saveAndReturnToHub(page).click()
-  await expect(page).toHaveURL(new RegExp(`${hub}$`))
+})
+
+test('Delete notification on a draft opens the delete page', async ({
+  page
+}) => {
+  await completePotatoNotification(page)
+
+  await deleteButton(page).click()
+
+  await expect(
+    page.getByRole('heading', { name: deleteCopy.title, level: 1 })
+  ).toBeVisible()
 })
 
 test('rechecks a saved origin after a commodity change and exposes an accessible correction link', async ({

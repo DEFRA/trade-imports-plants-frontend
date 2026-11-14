@@ -67,7 +67,7 @@
     {% endfor %}
   {% endfor %}
   {% if readOnly %}
-    {{ govukButton({ text: copy.delete, href: deleteHref, classes: "govuk-button--warning" }) }}
+    {{ govukButton(deleteButton) }}
   {% else %}
     {% if lateWarning %}
       {{ govukWarningText({ text: copy.late.warning(lateRule), iconFallbackText: copy.late.icon }) }}
@@ -77,7 +77,7 @@
     <form method="post" novalidate>
       <input type="hidden" name="crumb" value="{{ crumb }}" />
       <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
-      {{ saveActions({ hubHref: hubHref, primary: { text: copy.continue }, copy: sharedCopy.saveActions }) }}
+      {{ saveActions({ hubHref: hubHref, primary: { text: copy.continue }, buttonsAfterPrimary: buttonsAfterPrimary, copy: sharedCopy.saveActions }) }}
     </form>
   {% endif %}
 {% endblock %}

@@ -126,17 +126,52 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
   await expect(strip(page).locator(TAG)).toHaveText(
     sharedCopy.journeyStrip.amend
   )
-  await expect(cancelAmendLink(page)).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: sharedCopy.journeyStrip.cancelAmend })
+  ).toBeVisible()
 })
 
-test('Overview and review offer Cancel amend while amending', async ({
+test('Overview offers Cancel amend in its status strip while amending', async ({
   page
 }) => {
   const reference = journeyIdFromPage(page)
-  for (const path of ['', '/notification-view']) {
-    await page.goto(`${BASE}/notifications/${reference}${path}`)
-    await expect(cancelAmendLink(page)).toBeVisible()
-  }
+  await page.goto(`${BASE}/notifications/${reference}`)
+  await expect(cancelAmendLink(page)).toBeVisible()
+})
+
+test('The amendment review ends with Continue, a secondary Cancel amend and Save and return in one group, offers no Delete notification, and Cancel amend opens the confirmation', async ({
+  page
+}) => {
+  const reference = journeyIdFromPage(page)
+  await page.goto(`${BASE}/notifications/${reference}/notification-view`)
+  const cancelAmendButton = page
+    .getByRole('main')
+    .getByRole('button', { name: sharedCopy.journeyStrip.cancelAmend })
+
+  await expect(
+    page.locator('form[novalidate] .govuk-button-group > *')
+  ).toHaveText([
+    copy.continue,
+    sharedCopy.journeyStrip.cancelAmend,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
+  await expect(cancelAmendButton).toHaveAttribute('href', CANCEL_AMEND_URL)
+  await expect(cancelAmendButton).toHaveClass(/govuk-button--secondary/)
+  await expect(
+    page
+      .getByRole('button', { name: sharedCopy.journeyStrip.cancelAmend })
+      .or(page.getByRole('link', { name: sharedCopy.journeyStrip.cancelAmend }))
+  ).toHaveCount(1)
+  await expect(
+    page.getByRole('button', { name: copy.delete, exact: true })
+  ).toHaveCount(0)
+
+  await cancelAmendButton.click()
+
+  await expect(page).toHaveURL(CANCEL_AMEND_URL)
+  await expect(
+    page.getByRole('heading', { name: cancelCopy.title, level: 1 })
+  ).toBeVisible()
 })
 
 test('Continue on an incomplete amendment shows There is a problem, naming the outstanding task', async ({

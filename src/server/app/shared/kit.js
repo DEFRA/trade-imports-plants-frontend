@@ -72,13 +72,21 @@ export const CYA_SLUG = 'notification-view'
 
 export const CANCEL_AMEND_SLUG = 'cancel-amend'
 
-const cancelAmendControl = (journey) =>
+/**
+ * The path of the Cancel amend confirmation for a journey being amended.
+ *
+ * @param {object} journey - the journey.
+ * @returns {string|null} the path while the journey is being amended, else null.
+ */
+export const cancelAmendHref = (journey) =>
   journey.status === AMEND
-    ? {
-        href: pagePath(journey.journeyId, CANCEL_AMEND_SLUG),
-        text: sharedCopy.journeyStrip.cancelAmend
-      }
-    : undefined
+    ? pagePath(journey.journeyId, CANCEL_AMEND_SLUG)
+    : null
+
+const cancelAmendControl = (journey) => {
+  const href = cancelAmendHref(journey)
+  return href ? { href, text: sharedCopy.journeyStrip.cancelAmend } : undefined
+}
 
 /**
  * The status strip shown above a journey page's caption and heading.

@@ -7,6 +7,7 @@
     hubHref                (string)  where Cancel and return to overview goes
     copy                   (object)  the shared save-actions copy
     primary                (object)  optional govukButton params for the primary button
+    buttonsAfterPrimary    (array)   optional govukButton params, shown straight after the primary button
     showReturnControls     (boolean) offer the return controls; default true
 #}
 {% macro saveActions(params) %}
@@ -15,6 +16,9 @@
   {% set showReturnControls = params.showReturnControls if params.showReturnControls is defined else true %}
   <div class="govuk-button-group">
     {{ govukButton(primary or { text: copy.saveAndContinue }) }}
+    {% for button in params.buttonsAfterPrimary %}
+      {{ govukButton(button) }}
+    {% endfor %}
     {% if showReturnControls %}
       {{ govukButton({
         text: copy.saveAndReturnToHub,
