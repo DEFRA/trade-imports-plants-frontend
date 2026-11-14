@@ -292,9 +292,9 @@ this one) is the workspace stack in
 
 ```bash
 # from the workspace root
-./scripts/stack/run-stack.sh              # full stack from published images
-./scripts/stack/run-stack.sh -d           # built from local source under repos/
-./scripts/stack/run-stack.sh -e plants-frontend  # everything except this service (run it via npm run dev)
+tim docker up                     # full stack from published images
+tim docker dev                    # built from local source under repos/
+tim docker up -e plants-frontend  # everything except this service (run it via npm run dev)
 ```
 
 A cross-repo change must use the **same branch name** in every repository it
