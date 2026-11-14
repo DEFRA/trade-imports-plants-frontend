@@ -16,6 +16,8 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy } from './copy/copy.en.js'
+import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
+import { TECH_IMPORTS_ADDRESS_LINES } from '../../../../../../../../../fit/address-read-back.js'
 
 const NOTIFICATION_VIEW = 'notification-view'
 
@@ -37,9 +39,25 @@ test('renders saved answers, scoped cards and accessible Change links that open 
     page.getByRole('heading', { name: copy.cards.consignor, exact: true })
   ).toHaveCount(0)
   await expect(page.getByText(POTATO_VARIETY, { exact: true })).toBeVisible()
-  await expect(
-    page.getByText('tech-imports-ltd@example.com', { exact: true })
-  ).toHaveCount(2)
+  const addressValueIn = (cardTitle) =>
+    page
+      .locator('.govuk-summary-card', {
+        has: page.getByRole('heading', { name: cardTitle, exact: true })
+      })
+      .locator('.govuk-summary-list__row', {
+        has: page.getByRole('term').getByText(copy.labels.address, {
+          exact: true
+        })
+      })
+      .getByRole('definition')
+  const expectedAddress = TECH_IMPORTS_ADDRESS_LINES.join('\n')
+  await expect(addressValueIn(destinationCopy.headings.potatoes)).toHaveText(
+    expectedAddress,
+    { useInnerText: true }
+  )
+  await expect(addressValueIn(copy.cards.contact)).toHaveText(expectedAddress, {
+    useInnerText: true
+  })
   await expectNoSeriousOrCriticalViolations(page, 'Check answers')
   await page
     .getByRole('link', {

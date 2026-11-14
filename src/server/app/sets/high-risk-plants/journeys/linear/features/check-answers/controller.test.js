@@ -18,6 +18,7 @@ import * as ports from '../../../../../../services/ports/index.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import {
   COMPLETE_NOTIFICATION,
+  COMPLETE_PLANTS_NOTIFICATION,
   itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney,
   TECH_IMPORTS_COPY
@@ -30,11 +31,16 @@ import { meta, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
+import { copy as partyEditCopy } from '../party-edit/copy/copy.en.js'
 import { changeHref } from './view-model/rows/change-link.js'
+import { TECH_IMPORTS_ADDRESS_LINES } from '../../../../../../../../../fit/address-read-back.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const NOT_YET_ARRIVED = 'not-yet-arrived'
 const DESTINATION_CARD = '#place-of-destination'
+const ADDRESS_READ_BACK = TECH_IMPORTS_ADDRESS_LINES.join('<br>')
+const ERROR_PREFIX_HTML =
+  '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> '
 
 const get = routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf({ routes })
@@ -47,6 +53,9 @@ const invalidDestinationErrors = (result) => [
   }
 ]
 const INVALID_EMAIL = 'not-an-email'
+const OVERLONG_PHONE = '0'.repeat(21)
+const TELEPHONE_ERROR = partyEditCopy.errors.phone.maxLength(20)
+const COUNTRY_REQUIRED_ERROR = partyEditCopy.errors.countryCode.required
 const invalidDestination = {
   ...COMPLETE_NOTIFICATION,
   placeOfDestination: {
@@ -99,11 +108,13 @@ describe('Check your answers', () => {
       'Planting'
     ])
     const contact = cards.find(({ title }) => title === copy.cards.contact)
-    expect(contact.rows.map(({ value }) => value.text)).toEqual([
-      'Tech Imports Ltd',
-      '18 Dockside Road, London, E14 9GE, United Kingdom',
-      '01632 960000',
-      'tech-imports-ltd@example.com'
+    expect(contact.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
+    expect(contact.rows.map(({ value }) => value)).toEqual([
+      { text: 'Tech Imports Ltd' },
+      { html: ADDRESS_READ_BACK }
     ])
     expect(result.after).toEqual(COMPLETE_NOTIFICATION)
   })
@@ -729,7 +740,7 @@ describe('Check your answers — copied addresses', () => {
     })
   })
 
-  it('Should mark the row holding each field that breaks the rules, still showing the copy', async () => {
+  it('Should show the country error above the unchanged address lines and the email error above the name, on the place of destination card', async () => {
     const seed = {
       ...COMPLETE_NOTIFICATION,
       placeOfDestination: {
@@ -748,36 +759,119 @@ describe('Check your answers — copied addresses', () => {
     const rowFor = (label) =>
       destination.rows.find(({ key }) => key.text === label)
 
+    expect(destination.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
     expect(rowFor(copy.labels.address).value.html).toBe(
-      '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
-        '18 Dockside Road, London, E14 9GE, United Kingdom'
+      `${ERROR_PREFIX_HTML}Enter a valid country</p>${ADDRESS_READ_BACK}`
     )
-    expect(rowFor(copy.labels.email).value.html).toContain(
-      'Enter an email address in the correct format</p>not-an-email'
+    expect(rowFor(copy.labels.name).value.html).toBe(
+      `${ERROR_PREFIX_HTML}Enter an email address in the correct format</p>Tech Imports Ltd`
     )
-    expect(rowFor(copy.labels.name).value).toEqual({
-      text: 'Tech Imports Ltd'
-    })
-    expect(rowFor(copy.labels.phone).value).toEqual({
-      text: '01632 960000'
-    })
   })
 
-  it('Should escape a copied value shown under its error', async () => {
+  it('Should escape each address line shown in the address row', async () => {
     const seed = {
       ...COMPLETE_NOTIFICATION,
       contactAddress: {
         ...COMPLETE_NOTIFICATION.contactAddress,
-        email: '<b>x</b>'
+        address: {
+          ...COMPLETE_NOTIFICATION.contactAddress.address,
+          addressLine1: '<b>x</b>'
+        }
       }
     }
     const result = await driveHandler(get, { seed })
     const contact = cardsOf(result).find(
       ({ title }) => title === copy.cards.contact
     )
-    const email = contact.rows.find(({ key }) => key.text === copy.labels.email)
+    const address = contact.rows.find(
+      ({ key }) => key.text === copy.labels.address
+    )
 
-    expect(email.value.html).toContain('&lt;b&gt;x&lt;/b&gt;')
-    expect(email.value.html).not.toContain('<b>')
+    expect(address.value.html).toBe(
+      `&lt;b&gt;x&lt;/b&gt;<br>${TECH_IMPORTS_ADDRESS_LINES.slice(1).join('<br>')}`
+    )
+  })
+})
+
+describe('Check your answers — party card rows', () => {
+  const destinationWith = (changes) => ({
+    ...COMPLETE_NOTIFICATION,
+    placeOfDestination: {
+      ...COMPLETE_NOTIFICATION.placeOfDestination,
+      ...changes
+    }
+  })
+
+  const rowOf = async (seed, cardTitle, label) => {
+    const result = await driveHandler(get, { seed })
+    const card = cardsOf(result).find(({ title }) => title === cardTitle)
+    return card.rows.find(({ key }) => key.text === label)
+  }
+
+  const destinationRowOf = (seed, label) =>
+    rowOf(seed, destinationCopy.headings.potatoes, label)
+
+  it('Should show the telephone error above the name on a copy with an invalid telephone number', async () => {
+    const name = await destinationRowOf(
+      destinationWith({ phone: OVERLONG_PHONE }),
+      copy.labels.name
+    )
+
+    expect(name.value.html).toBe(
+      `${ERROR_PREFIX_HTML}${TELEPHONE_ERROR}</p>Tech Imports Ltd`
+    )
+  })
+
+  it('Should render a copy with no country code, showing its address lines joined by line breaks under the country error with no trailing blank line', async () => {
+    const address = await destinationRowOf(
+      destinationWith({
+        address: Object.fromEntries(
+          Object.entries(
+            COMPLETE_NOTIFICATION.placeOfDestination.address
+          ).filter(([field]) => field !== 'countryCode')
+        )
+      }),
+      copy.labels.address
+    )
+
+    expect(address.value.html).toBe(
+      `${ERROR_PREFIX_HTML}${COUNTRY_REQUIRED_ERROR}</p>${TECH_IMPORTS_ADDRESS_LINES.slice(0, -1).join('<br>')}`
+    )
+  })
+
+  it('Should read not provided on the Address row of a copy with no address lines', async () => {
+    const address = await destinationRowOf(
+      destinationWith({ address: {} }),
+      copy.labels.address
+    )
+
+    expect(address.value.html).toBe(
+      [
+        'Enter address line 1',
+        'Enter a town or city',
+        'Enter a postcode',
+        'Enter a country'
+      ]
+        .map((message) => `${ERROR_PREFIX_HTML}${message}</p>`)
+        .join('') + copy.notProvided
+    )
+  })
+
+  it('Should show the consignor card with a Name row and a multi-line Address row', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_PLANTS_NOTIFICATION
+    })
+    const consignor = cardsOf(result).find(
+      ({ title }) => title === copy.cards.consignor
+    )
+
+    expect(consignor.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
+    expect(consignor.rows[1].value).toEqual({ html: ADDRESS_READ_BACK })
   })
 })

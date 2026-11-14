@@ -66,8 +66,6 @@ export const copy = {
     proposedPlaceOfLanding: 'Place of landing',
     name: 'Name',
     address: 'Address',
-    phone: 'Telephone number',
-    email: 'Email address',
     genus: 'Genus',
     species: 'Species',
     commodityCode: 'Commodity code',
