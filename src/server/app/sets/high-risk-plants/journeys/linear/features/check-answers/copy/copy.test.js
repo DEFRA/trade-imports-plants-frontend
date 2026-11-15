@@ -16,8 +16,14 @@ describe('checkAnswers copy module', () => {
     expect(copy.late.plantsAndWood(9)).toContain('9 days after')
   })
 
+  it('Should write the date created line with the supplied date', () => {
+    expect(copy.viewHeader.dateCreated('22 July 2026')).toBe(
+      'Date created: 22 July 2026'
+    )
+  })
+
   it('Should write the date submitted line with the supplied date', () => {
-    expect(copy.submittedHeader.dateSubmitted('22 July 2026')).toBe(
+    expect(copy.viewHeader.dateSubmitted('22 July 2026')).toBe(
       'Date submitted: 22 July 2026'
     )
   })
@@ -44,7 +50,7 @@ describe('GET checkAnswers — copy reaches the view', () => {
     ).handler
     const result = await driveHandler(get)
     expect(result.view.context.copy).toBe(copy)
-    expect(result.view.context.pageTitle).toBe(copy.title)
+    expect(result.view.context.pageTitle).toBe(result.journeyId)
     expect(result.view.context.sharedCopy.saveActions.saveAndContinue).toBe(
       'Save and continue'
     )

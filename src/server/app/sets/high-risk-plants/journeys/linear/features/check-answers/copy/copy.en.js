@@ -83,8 +83,9 @@ export const copy = {
     consignmentNumber: 'Consignment number (optional)'
   },
   delete: 'Delete notification',
-  submittedHeader: {
+  viewHeader: {
     amend: 'Amend this notification',
+    dateCreated: (date) => `Date created: ${date}`,
     dateSubmitted: (date) => `Date submitted: ${date}`
   },
   importReferences: {

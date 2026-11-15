@@ -632,6 +632,29 @@ export const startNotification = async (page) => {
   return journeyIdFromPage(page)
 }
 
+export const notificationReferenceHeading = (page) =>
+  page.getByRole('heading', {
+    level: 1,
+    name: journeyIdFromPage(page),
+    exact: true
+  })
+
+export const expectDraftReviewFoot = (page) =>
+  expect(
+    page.getByRole('main').locator('form[novalidate] .govuk-button-group > *')
+  ).toHaveText([
+    checkAnswersCopy.continue,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
+
+export const expectDraftReview = async (page) => {
+  await expect(notificationReferenceHeading(page)).toBeVisible()
+  await expect(
+    page.getByRole('main').locator('.govuk-tag', { hasText: 'Draft' })
+  ).toHaveText('Draft')
+  await expectDraftReviewFoot(page)
+}
+
 /**
  * Starts a notification, saves potatoes as its commodity type and opens its
  * Overview.

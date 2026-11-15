@@ -83,8 +83,9 @@ export const copy = {
     consignmentNumber: 'Rhif y llwyth (dewisol)'
   },
   delete: 'Dileu’r hysbysiad',
-  submittedHeader: {
+  viewHeader: {
     amend: 'Diwygio’r hysbysiad hwn',
+    dateCreated: (date) => `Dyddiad creu: ${date}`,
     dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}`
   },
   importReferences: {

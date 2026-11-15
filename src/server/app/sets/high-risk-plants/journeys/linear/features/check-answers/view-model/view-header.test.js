@@ -1,0 +1,124 @@
+import { describe, expect, it } from 'vitest'
+
+import { SET_BASE } from '../../../../../set.js'
+import { AMEND, DRAFT, SUBMITTED } from '../../../../../../../engine/index.js'
+import { viewHeader } from './view-header.js'
+
+const LATE_EVENING_INSTANT = '2026-07-21T23:30:00Z'
+const REFERENCE = 'GBN-2026-0001-0001'
+const DELETE_BUTTON = {
+  text: 'Delete notification',
+  href: `${SET_BASE}/notifications/${REFERENCE}/delete`,
+  classes: 'govuk-button--warning'
+}
+
+const submittedJourney = (overrides = {}) => ({
+  journeyId: REFERENCE,
+  status: SUBMITTED,
+  submittedAt: LATE_EVENING_INSTANT,
+  ...overrides
+})
+
+describe('#viewHeader', () => {
+  it('Should name the notification by its reference with a green Submitted tag', () => {
+    const header = viewHeader(submittedJourney())
+
+    expect(header.reference).toBe(REFERENCE)
+    expect(header.status).toEqual({
+      text: 'Submitted',
+      classes: 'govuk-tag--green'
+    })
+  })
+
+  it('Should date the notification on the London day it was submitted, with the month in full', () => {
+    expect(viewHeader(submittedJourney()).dateLine).toBe(
+      'Date submitted: 22 July 2026'
+    )
+  })
+
+  it('Should date a late-evening British Summer Time submission on the next London day', () => {
+    expect(
+      viewHeader(submittedJourney({ submittedAt: '2026-07-11T23:30:00Z' }))
+        .dateLine
+    ).toBe('Date submitted: 12 July 2026')
+  })
+
+  it('Should show no date line when the journey has no stored submission instant', () => {
+    expect(
+      viewHeader(submittedJourney({ submittedAt: null })).dateLine
+    ).toBeNull()
+  })
+
+  it('Should point Amend at the amend action and Delete notification at the delete page', () => {
+    expect(viewHeader(submittedJourney()).actions).toEqual({
+      amend: {
+        text: 'Amend this notification',
+        formAction: `${SET_BASE}/notifications/${REFERENCE}/amend`
+      },
+      delete: DELETE_BUTTON
+    })
+  })
+
+  it('Should show the notification reference as the only import reference number', () => {
+    expect(viewHeader(submittedJourney()).importReferences).toEqual({
+      heading: 'Import reference numbers',
+      warning: {
+        text: 'You must use the correct reference and code on the customs declaration or your consignment will be delayed.',
+        iconFallbackText: 'Warning'
+      },
+      rows: [
+        {
+          key: { text: 'Notification reference' },
+          value: { text: REFERENCE }
+        }
+      ]
+    })
+  })
+})
+
+describe('#viewHeader for a draft', () => {
+  const draftJourney = (overrides = {}) => ({
+    journeyId: REFERENCE,
+    status: DRAFT,
+    createdAt: LATE_EVENING_INSTANT,
+    ...overrides
+  })
+
+  it('Should name the notification by its reference with a blue Draft tag', () => {
+    const header = viewHeader(draftJourney())
+
+    expect(header.reference).toBe(REFERENCE)
+    expect(header.status).toEqual({ text: 'Draft', classes: 'govuk-tag--blue' })
+  })
+
+  it('Should date a late-evening British Summer Time creation on the next London day', () => {
+    expect(viewHeader(draftJourney()).dateLine).toBe(
+      'Date created: 22 July 2026'
+    )
+  })
+
+  it('Should show no date line when the journey has no stored creation instant', () => {
+    expect(viewHeader(draftJourney({ createdAt: null })).dateLine).toBeNull()
+  })
+
+  it('Should offer Delete notification and no Amend', () => {
+    expect(viewHeader(draftJourney()).actions).toEqual({
+      amend: null,
+      delete: DELETE_BUTTON
+    })
+  })
+
+  it('Should show the notification reference as the only import reference number', () => {
+    expect(
+      viewHeader(draftJourney()).importReferences.rows.map(
+        (row) => row.value.text
+      )
+    ).toEqual([REFERENCE])
+  })
+})
+
+describe('#viewHeader for an amendment', () => {
+  it('Should give no header', () => {
+    expect(viewHeader({ journeyId: REFERENCE, status: AMEND })).toBeNull()
+  })
+})

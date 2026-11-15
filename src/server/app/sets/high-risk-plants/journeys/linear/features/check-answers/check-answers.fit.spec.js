@@ -7,7 +7,9 @@ import {
   POTATO_VARIETY,
   REVIEW_URL_WITHOUT_TRAIL,
   completePotatoNotification,
+  expectDraftReviewFoot,
   expectNoSeriousOrCriticalViolations,
+  notificationReferenceHeading,
   saveAndReturnToHub,
   continueFromChangedCommodityLine,
   saveAndContinue,
@@ -25,15 +27,33 @@ import { TECH_IMPORTS_ADDRESS_LINES } from '../../../../../../../../../fit/addre
 
 const NOTIFICATION_VIEW = 'notification-view'
 
+const main = (page) => page.getByRole('main')
+
+const headerTag = (page) => main(page).locator('.govuk-tag')
+
+const headerButtonGroup = (page) =>
+  main(page).locator('.govuk-button-group').first()
+
+const importReferences = (page) =>
+  page.getByRole('region', { name: copy.importReferences.heading })
+
+const summaryValues = (section) => section.locator('.govuk-summary-list__value')
+
+const expectNotificationReferenceOnly = async (section, reference) => {
+  await expect(section.getByText(copy.importReferences.warning)).toBeVisible()
+  await expect(section.locator('.govuk-summary-list__key')).toHaveText([
+    copy.importReferences.notificationReference
+  ])
+  await expect(summaryValues(section)).toHaveText([reference])
+}
+
 test.beforeEach(async ({ page }) => signIn(page))
 
 test('renders saved answers, scoped cards and accessible Change links that open their page on the review trail and go on with Save and continue', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
-  await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
-  ).toBeVisible()
+  await expect(notificationReferenceHeading(page)).toBeVisible()
   for (const heading of Object.values(copy.sections)) {
     await expect(
       page.getByRole('heading', { name: heading, level: 2 })
@@ -107,17 +127,12 @@ test('renders saved answers, scoped cards and accessible Change links that open 
 const deleteButton = (page) =>
   page.getByRole('button', { name: copy.delete, exact: true })
 
-test('a draft check answers ends with Continue, a warning Delete notification button linking to the delete page and Save and return in one button group', async ({
+test('a draft check answers ends with Continue and Save and return in one button group, with its warning Delete notification button in the header', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
   const hub = `${BASE}/notifications/${reference}`
-  const endingGroup = page.locator('form[novalidate] .govuk-button-group > *')
-  await expect(endingGroup).toHaveText([
-    copy.continue,
-    copy.delete,
-    sharedCopy.saveActions.saveAndReturnToHub
-  ])
+  await expectDraftReviewFoot(page)
   await expect(deleteButton(page)).toHaveAttribute('href', `${hub}/delete`)
   await expect(deleteButton(page)).toHaveClass(/govuk-button--warning/)
   await saveAndReturnToHub(page).click()
@@ -145,7 +160,9 @@ test('Delete notification on a draft opens the delete page', async ({
 }) => {
   await completePotatoNotification(page)
 
-  await deleteButton(page).click()
+  await headerButtonGroup(page)
+    .getByRole('button', { name: copy.delete, exact: true })
+    .click()
 
   await expect(
     page.getByRole('heading', { name: deleteCopy.title, level: 1 })
@@ -202,12 +219,79 @@ test('rechecks a saved origin after a commodity change and exposes an accessible
   )
 })
 
+test.describe('a draft notification', () => {
+  let reference
+  let createdBefore
+  let createdAfter
+
+  test.beforeEach(async ({ page }) => {
+    createdBefore = Date.now()
+    reference = await completePotatoNotification(page)
+    createdAfter = Date.now()
+  })
+
+  test('is headed by its reference with a blue Draft tag beside it, no status bar and a title naming the reference', async ({
+    page
+  }) => {
+    await expect(notificationReferenceHeading(page)).toBeVisible()
+    await expect(headerTag(page)).toHaveText(sharedCopy.journeyStrip.draft)
+    await expect(headerTag(page)).toHaveClass(/govuk-tag--blue/)
+    await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+    await expect(page).toHaveTitle(
+      `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
+    )
+  })
+
+  test('dates the notification by its creation under its header', async ({
+    page
+  }) => {
+    const createdLines = new Set(
+      [createdBefore, createdAfter].map((instant) =>
+        copy.viewHeader.dateCreated(notificationDateText(instant))
+      )
+    )
+    const alternatives = [...createdLines].map(RegExp.escape).join('|')
+
+    await expect(page.getByText(/^Date created: /)).toHaveText(
+      new RegExp(`^(${alternatives})$`)
+    )
+  })
+
+  test('offers only a warning Delete notification in its header, with no Copy as new and no Amend this notification', async ({
+    page
+  }) => {
+    const controls = headerButtonGroup(page).locator('> *')
+
+    await expect(controls).toHaveText([copy.delete])
+    await expect(controls.first()).toHaveClass(/govuk-button--warning/)
+  })
+
+  test('shows the import reference numbers with the warning and the notification reference only', async ({
+    page
+  }) => {
+    await expectNotificationReferenceOnly(importReferences(page), reference)
+  })
+
+  test('keeps its Change links on the cards and ends with Continue', async ({
+    page
+  }) => {
+    const cards = page.locator('.govuk-summary-card')
+    const cardsWithChangeLink = cards.filter({
+      has: page.getByRole('link', { name: new RegExp(`^${copy.change}`) })
+    })
+
+    await expect(cards).not.toHaveCount(0)
+    await expect(cardsWithChangeLink).toHaveCount(await cards.count())
+    await expectDraftReviewFoot(page)
+  })
+
+  test('has no serious or critical axe violations', async ({ page }) => {
+    await expectNoSeriousOrCriticalViolations(page, 'Draft check answers')
+  })
+})
+
 test.describe('a submitted notification', () => {
   let reference
-
-  const main = (page) => page.getByRole('main')
-  const importReferences = (page) =>
-    page.getByRole('region', { name: copy.importReferences.heading })
 
   let submittedBefore
   let submittedAfter
@@ -218,20 +302,14 @@ test.describe('a submitted notification', () => {
     await submitDeclarationFromCheckAnswers(page, reference)
     submittedAfter = Date.now()
     await page.goto(`${BASE}/notifications/${reference}/notification-view`)
-    await expect(
-      page.getByRole('heading', { level: 1, name: reference, exact: true })
-    ).toBeVisible()
+    await expect(notificationReferenceHeading(page)).toBeVisible()
   })
 
   test('is headed by its reference with a green Submitted tag beside it, no status bar and a title naming the reference', async ({
     page
   }) => {
-    await expect(main(page).locator('.govuk-tag')).toHaveText(
-      sharedCopy.journeyStrip.submitted
-    )
-    await expect(main(page).locator('.govuk-tag')).toHaveClass(
-      /govuk-tag--green/
-    )
+    await expect(headerTag(page)).toHaveText(sharedCopy.journeyStrip.submitted)
+    await expect(headerTag(page)).toHaveClass(/govuk-tag--green/)
     await expect(page.locator('.app-journey-strip')).toHaveCount(0)
     await expect(page).toHaveTitle(
       `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
@@ -241,7 +319,7 @@ test.describe('a submitted notification', () => {
   test('dates the notification under its header', async ({ page }) => {
     const submittedLines = new Set(
       [submittedBefore, submittedAfter].map((instant) =>
-        copy.submittedHeader.dateSubmitted(notificationDateText(instant))
+        copy.viewHeader.dateSubmitted(notificationDateText(instant))
       )
     )
     const alternatives = [...submittedLines].map(RegExp.escape).join('|')
@@ -254,12 +332,9 @@ test.describe('a submitted notification', () => {
   test('offers Amend this notification and a warning Delete notification in its header, and Delete notification nowhere else', async ({
     page
   }) => {
-    const controls = main(page)
-      .locator('.govuk-button-group')
-      .first()
-      .locator('> *')
+    const controls = headerButtonGroup(page).locator('> *')
 
-    await expect(controls).toHaveText([copy.submittedHeader.amend, copy.delete])
+    await expect(controls).toHaveText([copy.viewHeader.amend, copy.delete])
     await expect(controls.nth(1)).toHaveClass(/govuk-button--warning/)
     await expect(deleteButton(page)).toHaveCount(1)
   })
@@ -267,7 +342,7 @@ test.describe('a submitted notification', () => {
   test('Amend this notification opens the amendment review', async ({
     page
   }) => {
-    await page.getByRole('button', { name: copy.submittedHeader.amend }).click()
+    await page.getByRole('button', { name: copy.viewHeader.amend }).click()
 
     await expect(page.locator('.app-journey-strip .govuk-tag')).toHaveText(
       sharedCopy.journeyStrip.amend
@@ -277,15 +352,7 @@ test.describe('a submitted notification', () => {
   test('shows the import reference numbers with the warning and the notification reference, and no customs document code', async ({
     page
   }) => {
-    const section = importReferences(page)
-
-    await expect(section.getByText(copy.importReferences.warning)).toBeVisible()
-    await expect(section.locator('.govuk-summary-list__key')).toHaveText([
-      copy.importReferences.notificationReference
-    ])
-    await expect(section.locator('.govuk-summary-list__value')).toHaveText([
-      reference
-    ])
+    await expectNotificationReferenceOnly(importReferences(page), reference)
   })
 
   test('shows the import reference numbers as text with no button when JavaScript is off', async ({
@@ -298,9 +365,7 @@ test.describe('a submitted notification', () => {
       await expect(
         section.getByText(copy.importReferences.warning)
       ).toBeVisible()
-      await expect(section.locator('.govuk-summary-list__value')).toHaveText([
-        reference
-      ])
+      await expect(summaryValues(section)).toHaveText([reference])
       await expect(section.getByRole('button')).toHaveCount(0)
     })
   })

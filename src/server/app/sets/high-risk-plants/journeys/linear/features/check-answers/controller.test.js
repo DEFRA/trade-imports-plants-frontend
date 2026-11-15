@@ -77,7 +77,7 @@ describe('Check your answers', () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(meta.collects).toEqual([])
     expect(result.view.context).toMatchObject({
-      pageTitle: copy.title,
+      pageTitle: result.journeyId,
       readOnly: false,
       backLink: `${SET_BASE}/notifications/${result.journeyId}`,
       copy
@@ -457,9 +457,9 @@ describe('Check your answers lateness', () => {
     await get(journeyRequest(journeyId), submitted)
 
     expect(submitted.captured.view.context.readOnly).toBe(true)
-    expect(
-      submitted.captured.view.context.submittedHeader.actions.delete
-    ).toEqual(deleteButtonTo(journeyId))
+    expect(submitted.captured.view.context.viewHeader.actions.delete).toEqual(
+      deleteButtonTo(journeyId)
+    )
   })
 
   it('Should head a submitted view with its reference, a header and no strip', async () => {
@@ -469,20 +469,30 @@ describe('Check your answers lateness', () => {
 
     expect(submitted.captured.view.context.pageTitle).toBe(journeyId)
     expect(submitted.captured.view.context.journeyStrip).toBeNull()
-    expect(submitted.captured.view.context.submittedHeader.reference).toBe(
-      journeyId
-    )
-    expect(submitted.captured.view.context.submittedHeader.status.text).toBe(
+    expect(submitted.captured.view.context.viewHeader.reference).toBe(journeyId)
+    expect(submitted.captured.view.context.viewHeader.status.text).toBe(
       'Submitted'
     )
   })
 
-  it('Should head a draft with its title and the strip, and no submitted header', async () => {
+  it('Should head a draft with its reference and a Draft tag in the header, and no strip', async () => {
     const draft = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 
-    expect(draft.view.context.pageTitle).toBe(copy.title)
-    expect(draft.view.context.journeyStrip.status.text).toBe('Draft')
-    expect(draft.view.context.submittedHeader).toBeNull()
+    expect(draft.view.context.pageTitle).toBe(draft.journeyId)
+    expect(draft.view.context.journeyStrip).toBeNull()
+    expect(draft.view.context.viewHeader.reference).toBe(draft.journeyId)
+    expect(draft.view.context.viewHeader.status).toEqual({
+      text: 'Draft',
+      classes: 'govuk-tag--blue'
+    })
+  })
+
+  it('Should head an amendment with its title and the strip, and no header', async () => {
+    const amendment = await driveHandler(get, { amend: true })
+
+    expect(amendment.view.context.pageTitle).toBe(copy.title)
+    expect(amendment.view.context.journeyStrip.status.text).toBe('Amend')
+    expect(amendment.view.context.viewHeader).toBeNull()
   })
 
   it('Should redirect the view of a notification that does not exist to the notification list', async () => {
@@ -529,12 +539,13 @@ describe('Check your answers lateness', () => {
     expect(amending.captured.view.context.amendmentCancelled).toBe(false)
   })
 
-  it('Should follow Continue on a draft with a warning Delete button', async () => {
+  it('Should follow Continue on a draft with no buttons, its Delete sitting in the header', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 
-    expect(result.view.context.buttonsAfterPrimary).toEqual([
+    expect(result.view.context.buttonsAfterPrimary).toEqual([])
+    expect(result.view.context.viewHeader.actions.delete).toEqual(
       deleteButtonTo(result.journeyId)
-    ])
+    )
   })
 
   it('Should follow Continue on an amendment with a secondary Cancel amend button and no Delete', async () => {
@@ -558,17 +569,16 @@ describe('Check your answers lateness', () => {
     expect(submitted.captured.view.context.buttonsAfterPrimary).toEqual([])
   })
 
-  it('Should show a draft review as editable with the Draft status and no submitted header', async () => {
+  it('Should show a draft review as editable, headed by its reference with the Draft tag and no Amend', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 
-    expect(result.view.context).toMatchObject({
-      readOnly: false,
-      submittedHeader: null
-    })
-    expect(result.view.context.journeyStrip).toEqual({
+    expect(result.view.context.readOnly).toBe(false)
+    expect(result.view.context.viewHeader).toMatchObject({
       reference: result.journeyId,
-      status: { text: 'Draft', classes: 'govuk-tag--blue' }
+      status: { text: 'Draft', classes: 'govuk-tag--blue' },
+      actions: { amend: null }
     })
+    expect(result.view.context.journeyStrip).toBeNull()
   })
 
   it('Should show no error summary on opening an incomplete amend review', async () => {

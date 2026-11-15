@@ -8,6 +8,7 @@ import {
   backLink,
   describeAddressPicker,
   describeSubmittedSearchPicker,
+  expectDraftReview,
   expectThreeSaveControls,
   saveAndContinue,
   selectedAddressInset,
@@ -222,9 +223,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(REVIEW_URL)
-    await expect(
-      page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
-    ).toBeVisible()
+    await expectDraftReview(page)
     await expect(
       errorSummaryLinks(page, checkAnswersCopy.errors.cards.arrivalDetails)
     ).toBeVisible()

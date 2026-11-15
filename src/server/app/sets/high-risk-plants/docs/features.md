@@ -99,11 +99,10 @@ the enforceable detail. Read them when a copy test fails.
   return to overview" on its own line below them, so a trader can stop and
   leave from where the overview sent them.
 - A page can pass `buttonsAfterPrimary`, a list of buttons shown straight after
-  the primary and before "Save and return to overview". Check your answers uses
-  it: a draft ends with "Continue", a red "Delete notification" and "Save and
-  return to overview", with "Cancel and return to overview" below; an amendment
-  ends with "Continue", a secondary "Cancel amend" and "Save and return to
-  overview", with "Cancel and return to overview" below and no delete.
+  the primary and before "Save and return to overview". An amendment's check
+  answers uses it for its secondary "Cancel amend" button. A draft passes none
+  and ends with "Continue" and "Save and return to overview", with "Cancel and
+  return to overview" below.
 - The two return controls name the page they lead to, which is headed
   "Overview". "Hub" is the internal name for it and never appears on screen.
 - A page reached from another page ends with the primary alone
@@ -170,6 +169,9 @@ links, copy and validation. See
 
 ## Check answers and lateness
 
+- A draft and a submitted notification show the view header (status tag,
+  reference as heading, date line, Delete, Import reference numbers) in place of
+  the status strip, and only the submitted view offers Amend.
 - Check your answers' Back link goes to where the trader came from: the last
   journey page, the Overview or the dashboard, on a draft, an amendment and a
   submitted notification alike. Reached any other way it goes to the Overview on a

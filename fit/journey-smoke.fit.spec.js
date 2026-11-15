@@ -12,12 +12,12 @@ import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/j
 import { copy as arrivalCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-details/copy/copy.en.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as idsCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/identification-numbers/copy/copy.en.js'
-import { copy as checkAnswersCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/check-answers/copy/copy.en.js'
 import { copy as confirmationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/confirmation/copy/copy.en.js'
 import {
   backLink,
   chooseCountryOfOrigin,
   chooseTypeAheadOption,
+  expectDraftReview,
   expectNoSeriousOrCriticalViolations,
   POTATO_WALK,
   saveAndContinue,
@@ -127,9 +127,7 @@ for (const [name, shape] of Object.entries(happyPaths)) {
     await expect(page).toHaveURL(
       pageUrlWithTrail(`/notifications/${reference}/notification-view`, walked)
     )
-    await expect(
-      page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
-    ).toBeVisible()
+    await expectDraftReview(page)
     await submitDeclarationFromCheckAnswers(page, reference)
     await expect(
       page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
