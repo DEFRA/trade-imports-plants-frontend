@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
 import {
+  authenticatedCredentials,
   driveHandler,
+  expectOneLogged,
   journeyRequest,
   stubH
 } from '../../../../../../engine/test-support.js'
@@ -121,14 +123,24 @@ describe('confirmation', () => {
   })
 
   it.each([state.DRAFT, state.AMEND])(
-    'Should return %s to check answers without claiming submission',
+    'Should send %s to its declaration, log the refusal and leave the status unchanged',
     async (status) => {
-      const { journeyId, response } = await driveHandler(get, {
+      const { journeyId, response, logger } = await driveHandler(get, {
         seed: COMPLETE_NOTIFICATION,
         amend: status === state.AMEND
       })
       expect(response).toEqual({
-        redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
+        redirect: `${SET_BASE}/notifications/${journeyId}/declaration`
+      })
+      expectOneLogged(logger, {
+        level: 'info',
+        fields: {
+          journeyId,
+          status,
+          organisationId: authenticatedCredentials.organisationId,
+          refusal: 'not-submitted'
+        },
+        message: 'Confirmation refused'
       })
       expect((await store.get(journeyId)).status).toBe(status)
     }
