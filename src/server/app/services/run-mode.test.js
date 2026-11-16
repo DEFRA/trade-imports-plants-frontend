@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-const originalMode = process.env.STUB_MODE
+import { resetModulesStubModeAndStubbedGlobals } from '../../common/test-helpers/reset-modules-stub-mode-and-globals.js'
 
 const okResponse = (body) => ({ ok: true, json: async () => body })
 
@@ -13,18 +13,7 @@ const okOnlyForBlock = (block, body) => async (url) => {
   return okResponse(body)
 }
 
-beforeEach(() => {
-  vi.resetModules()
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-  if (originalMode === undefined) {
-    delete process.env.STUB_MODE
-  } else {
-    process.env.STUB_MODE = originalMode
-  }
-})
+resetModulesStubModeAndStubbedGlobals()
 
 describe('countries client', () => {
   it('Should parse a fetched [{code,name}] payload', async () => {

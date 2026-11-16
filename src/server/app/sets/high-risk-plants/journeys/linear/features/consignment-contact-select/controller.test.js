@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { hubPath } from '../../../../../../shared/paths.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
+  TECH_IMPORTS_ID,
+  TECH_IMPORTS_NAME,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import {
@@ -20,8 +22,6 @@ const get = contact.routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf(contact)
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
-const TECH_IMPORTS = 'tech-imports-ltd'
-const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
 
 const plants = (answers = {}) => ({
   commodityType: PLANTS_FOR_PLANTING,
@@ -66,7 +66,12 @@ describeAddressBookPickerController({
   fieldName: 'contactAddress',
   slug: 'consignment/contact/select',
   nextSlug: 'notification-view',
-  errorText: copy.errors.contactAddress
+  errorText: copy.errors.contactAddress,
+  wholeCount: 14,
+  denmarkMatches: ['copenhagen-exports-aps', 'aarhus-trading-aps'],
+  primaryId: TECH_IMPORTS_ID,
+  primaryName: TECH_IMPORTS_NAME,
+  secondId: 'import-co-uk'
 })
 
 describe('POST contact — what it commits', () => {
@@ -75,11 +80,11 @@ describe('POST contact — what it commits', () => {
   it('Should commit the chosen record’s name, contact details and address', async () => {
     const result = await driveHandler(post, {
       seed: plants(),
-      payload: { action: 'save', contactAddress: TECH_IMPORTS }
+      payload: { action: 'save', contactAddress: TECH_IMPORTS_ID }
     })
 
     expect(result.after.contactAddress).toEqual({
-      pickedFromId: TECH_IMPORTS,
+      pickedFromId: TECH_IMPORTS_ID,
       name: TECH_IMPORTS_NAME,
       phone: '01632 960000',
       email: 'tech-imports-ltd@example.com',
@@ -98,7 +103,7 @@ describe('GET contact — the address this notification holds', () => {
 
   it('Should show the copy held with a link to edit its details', async () => {
     const result = await driveHandler(get, {
-      seed: plants({ contactAddress: copied(TECH_IMPORTS) })
+      seed: plants({ contactAddress: copied(TECH_IMPORTS_ID) })
     })
 
     expect(result.view.context.heldCopy).toMatchObject({

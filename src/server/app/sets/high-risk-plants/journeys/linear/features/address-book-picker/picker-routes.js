@@ -9,30 +9,24 @@ import { answerForPickedParty } from '../../parties/picked-party.js'
 import { renderPicker } from './render.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 
-const FIRST_PAGE = 1
 const SEARCH_ACTION = 'search'
-
-const parsePageNumber = (value) => {
-  const number = Number.parseInt(value, 10)
-  return Number.isNaN(number) ? FIRST_PAGE : number
-}
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
 const logOutOfScope = (request, fieldName) =>
   kit.logRefusal(request, { reason: `${fieldName}-out-of-scope` })
 
-const postedPageState = (payload, extra) => ({
+const postedPickerState = (payload, extra) => ({
   query: payload.q ?? '',
-  page: parsePageNumber(payload.page),
   ...extra
 })
 
-const renderPickerPage = (picker, request, h, current, pageState) =>
-  renderPicker(request, h, current, pageState, {
+const renderPickerPage = (picker, request, h, current, pickerState) =>
+  renderPicker(request, h, current, pickerState, {
     page: picker.page,
     copy: picker.copy,
     fieldName: picker.fieldName,
+    role: picker.role,
     pickerViewModel: picker.pickerViewModel,
     heading: picker.heading(current),
     description: picker.description(current)
@@ -50,7 +44,7 @@ const renderNotInBook = async (picker, request, h, current, payload) =>
       request,
       h,
       current,
-      postedPageState(payload, {
+      postedPickerState(payload, {
         selectedId: '',
         error: picker.copy.errors[picker.fieldName]
       })
@@ -71,7 +65,7 @@ const renderSaveFailure = async (
       request,
       h,
       current,
-      postedPageState(payload, {
+      postedPickerState(payload, {
         selectedId: chosen.id,
         recoverableError: true
       })
@@ -108,7 +102,6 @@ const getPicker = async (picker, request, h) => {
   }
   return renderPickerPage(picker, request, h, current, {
     query: request.query.q ?? '',
-    page: parsePageNumber(request.query.page),
     selectedId:
       request.query.selected ?? current.answers[picker.fieldName]?.pickedFromId
   })
@@ -147,7 +140,6 @@ const postPicker = async (picker, request, h) => {
   if (isSearch(payload)) {
     return renderPickerPage(picker, request, h, current, {
       query: payload.q ?? '',
-      page: FIRST_PAGE,
       selectedId
     })
   }
@@ -160,6 +152,7 @@ const postPicker = async (picker, request, h) => {
  * @param {object} picker
  * @param {object} picker.page - the page's id and slug.
  * @param {string} picker.fieldName - the answer name the page collects.
+ * @param {string} [picker.role] - the address-book role the page asks for.
  * @param {object} picker.copy - the page's resolved copy bundle.
  * @param {Function} picker.pickerViewModel - the page's bound view model.
  * @param {Function} picker.heading - gives the question, as this page asks it, from the journey state.

@@ -26,11 +26,14 @@ import { rowStatus, taskRows } from './flow/task-rows.js'
 import { entryGuardTarget, insTypeQuestionUrl } from './flow/entry-guard.js'
 import { sectionCaptionOf } from './flow/section-captions/index.js'
 
-/** The copy of the stub book's `tech-imports-ltd` record, valid by the
- * address-book rules. */
+export const TECH_IMPORTS_ID = 'tech-imports-ltd'
+export const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
+
+/** The copy of the stub book's `tech-imports-ltd` record, which carries the
+ * place of destination role. */
 export const TECH_IMPORTS_COPY = Object.freeze({
-  pickedFromId: 'tech-imports-ltd',
-  name: 'Tech Imports Ltd',
+  pickedFromId: TECH_IMPORTS_ID,
+  name: TECH_IMPORTS_NAME,
   phone: '01632 960000',
   email: 'tech-imports-ltd@example.com',
   address: Object.freeze({

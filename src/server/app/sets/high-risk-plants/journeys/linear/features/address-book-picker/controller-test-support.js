@@ -16,11 +16,7 @@ import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
 } from '../../../../../../lib/http-status.js'
-import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
-import {
-  STUB_BOOK,
-  STUB_BOOK_SIZE
-} from '../../../../../../services/address-book/stub/index.js'
+import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import {
   itSendsBackToWhereTheTraderCameFrom,
@@ -31,10 +27,7 @@ import { pickerTableRows } from './table-rows.js'
 import {
   addressResponseForABookHoldingADeletedRecord,
   DELETED_ID,
-  IMPORT_CO,
-  NOT_IN_THE_BOOK,
-  TECH_IMPORTS_ID,
-  TECH_IMPORTS_NAME
+  NOT_IN_THE_BOOK
 } from './test-support.js'
 
 const redirectAfterSave = ({ nextSlug, slug }, savePayload, journeyId) =>
@@ -46,11 +39,8 @@ const SAVE_CONTROLS = [
   ['Save and continue', { action: 'save' }],
   ['Save and return to overview', { exit: 'hub' }]
 ]
-const LAST_PAGE = 3
 const DENMARK = 'Denmark'
-const DENMARK_ROWS = ['copenhagen-exports-aps', 'aarhus-trading-aps']
 const MATCHES_NOTHING = 'nothing matches this'
-const ALPINE = 'alpine-supplies-gmbh'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const MARKUP_IN_A_NAME = '</span><a href="https://evil.example">x</a><span>'
 const MARKUP_LINK = '<a href="https://evil.example"'
@@ -63,7 +53,10 @@ const rowIds = (result) => result.view.context.picker.rows.map((row) => row.id)
 export const checkedId = (result) =>
   result.view.context.picker.rows.find((row) => row.checked)?.id
 
-const pickedFrom = (id) => ({ ...copied(TECH_IMPORTS_ID), pickedFromId: id })
+const pickedFrom = (primaryId, id) => ({
+  ...copied(primaryId),
+  pickedFromId: id
+})
 
 const savedWithFor =
   ({ post, seed }) =>
@@ -77,7 +70,14 @@ const renderPageFor = (template) => (context) =>
     ...context
   })
 
-const describePageServed = ({ pickerName, get, seed, previousPage }) => {
+const describePageServed = ({
+  pickerName,
+  get,
+  seed,
+  previousPage,
+  wholeCount,
+  denmarkMatches
+}) => {
   describe(`GET ${pickerName} — the page it serves`, () => {
     useStubbedHighRiskPlantsJourney()
 
@@ -98,14 +98,13 @@ const describePageServed = ({ pickerName, get, seed, previousPage }) => {
       previousPage: previousPage.slug
     })
 
-    it('Should show the first page of the organisation book, counted against the whole', async () => {
+    it('Should list every address for the role, and the role-less address, on one page', async () => {
       const result = await driveHandler(get, { seed: seed() })
 
-      expect(result.view.context.picker.rows).toHaveLength(PAGE_SIZE)
+      expect(result.view.context.picker.rows).toHaveLength(wholeCount)
       expect(result.view.context.picker.resultsCount).toBe(
-        pickerCopy.resultsCount(PAGE_SIZE, STUB_BOOK_SIZE)
+        pickerCopy.resultsCount(wholeCount, wholeCount)
       )
-      expect(result.view.context.picker.page).toBe(1)
     })
 
     it('Should narrow the rows to the search term in the query string', async () => {
@@ -114,28 +113,17 @@ const describePageServed = ({ pickerName, get, seed, previousPage }) => {
         query: { q: DENMARK }
       })
 
-      expect(rowIds(result)).toEqual(DENMARK_ROWS)
+      expect(rowIds(result)).toEqual(denmarkMatches)
       expect(result.view.context.picker.query).toBe(DENMARK)
     })
 
-    it('Should show the page the query string asks for', async () => {
-      const result = await driveHandler(get, {
-        seed: seed(),
-        query: { page: String(LAST_PAGE) }
-      })
-
-      expect(result.view.context.picker.page).toBe(LAST_PAGE)
-      expect(rowIds(result)).toContain(ALPINE)
-    })
-
-    it('Should list no rows and no paging when nothing matches', async () => {
+    it('Should list no rows when nothing matches', async () => {
       const result = await driveHandler(get, {
         seed: seed(),
         query: { q: MATCHES_NOTHING }
       })
 
       expect(result.view.context.picker.rows).toEqual([])
-      expect(result.view.context.picker.pagination).toBeNull()
     })
   })
 }
@@ -145,7 +133,10 @@ const describeSelectionShown = ({
   template,
   get,
   seed,
-  fieldName
+  fieldName,
+  primaryId,
+  primaryName,
+  secondId
 }) => {
   const renderPage = renderPageFor(template)
 
@@ -154,27 +145,25 @@ const describeSelectionShown = ({
 
     it('Should tick the record the copy was picked from', async () => {
       const result = await driveHandler(get, {
-        seed: seed({ [fieldName]: copied(TECH_IMPORTS_ID) })
+        seed: seed({ [fieldName]: copied(primaryId) })
       })
 
-      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
-      expect(result.view.context.picker.tickedRecord.name).toBe(
-        TECH_IMPORTS_NAME
-      )
+      expect(checkedId(result)).toBe(primaryId)
+      expect(result.view.context.picker.tickedRecord.name).toBe(primaryName)
     })
 
     it('Should carry a selection the query string names over the stored one', async () => {
       const result = await driveHandler(get, {
-        seed: seed({ [fieldName]: copied(TECH_IMPORTS_ID) }),
-        query: { selected: IMPORT_CO }
+        seed: seed({ [fieldName]: copied(primaryId) }),
+        query: { selected: secondId }
       })
 
-      expect(checkedId(result)).toBe(IMPORT_CO)
+      expect(checkedId(result)).toBe(secondId)
     })
 
     it('Should show no selection for a record the book no longer holds', async () => {
       const result = await driveHandler(get, {
-        seed: seed({ [fieldName]: pickedFrom(NOT_IN_THE_BOOK) })
+        seed: seed({ [fieldName]: pickedFrom(primaryId, NOT_IN_THE_BOOK) })
       })
 
       expect(result.view.context.picker.tickedRecord).toBeUndefined()
@@ -202,7 +191,7 @@ const describeSelectionShown = ({
 }
 
 const describeSearching = (picker) => {
-  const { pickerName, fieldName } = picker
+  const { pickerName, fieldName, primaryId, denmarkMatches } = picker
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — searching`, () => {
@@ -211,35 +200,33 @@ const describeSearching = (picker) => {
     it('Should re-render the narrowed results without committing anything', async () => {
       const result = await savedWith({ action: 'search', q: DENMARK })
 
-      expect(rowIds(result)).toEqual(DENMARK_ROWS)
+      expect(rowIds(result)).toEqual(denmarkMatches)
       expect(result.after[fieldName]).toBeUndefined()
       expect(result.view.context.errorSummary).toBeNull()
     })
 
-    it('Should start a new search at the first page', async () => {
-      const result = await savedWith({
-        action: 'search',
-        q: '',
-        page: String(LAST_PAGE)
-      })
+    it('Should keep the search text in the box and save nothing', async () => {
+      const result = await savedWith({ action: 'search', q: '' })
 
-      expect(result.view.context.picker.page).toBe(1)
+      expect(result.view.context.picker.query).toBe('')
+      expect(result.after[fieldName]).toBeUndefined()
     })
 
     it('Should keep a row already ticked while the results change', async () => {
+      const primaryRecord = STUB_BOOK.find((record) => record.id === primaryId)
       const result = await savedWith({
         action: 'search',
-        q: 'Imports',
-        selected: TECH_IMPORTS_ID
+        q: primaryRecord.name,
+        selected: primaryId
       })
 
-      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
+      expect(checkedId(result)).toBe(primaryId)
     })
   })
 }
 
 const describeNothingChosen = (picker) => {
-  const { pickerName, fieldName } = picker
+  const { pickerName, fieldName, primaryId } = picker
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — a save with nothing chosen`, () => {
@@ -259,7 +246,7 @@ const describeNothingChosen = (picker) => {
     )
 
     it('Should keep a copy already held, edited since it was picked', async () => {
-      const edited = { ...copied(TECH_IMPORTS_ID), name: EDITED_NAME }
+      const edited = { ...copied(primaryId), name: EDITED_NAME }
       delete edited.pickedFromId
 
       const result = await savedWith(
@@ -280,7 +267,7 @@ const describeNothingChosen = (picker) => {
 }
 
 const describeAddressNotInTheBook = (pickerConfig) => {
-  const { pickerName, template, fieldName, errorText } = pickerConfig
+  const { pickerName, template, fieldName, errorText, primaryId } = pickerConfig
   const renderPage = renderPageFor(template)
   const savedWith = savedWithFor(pickerConfig)
 
@@ -321,7 +308,7 @@ const describeAddressNotInTheBook = (pickerConfig) => {
     it('Should refuse a source record id posted back once the book no longer holds it, committing nothing', async () => {
       const result = await savedWith(
         { action: 'save', [fieldName]: 'gone' },
-        { answers: { [fieldName]: pickedFrom('gone') } }
+        { answers: { [fieldName]: pickedFrom(primaryId, 'gone') } }
       )
 
       expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
@@ -332,10 +319,10 @@ const describeAddressNotInTheBook = (pickerConfig) => {
 }
 
 const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
-  const { pickerName, fieldName, errorText } = pickerConfig
+  const { pickerName, fieldName, errorText, denmarkMatches } = pickerConfig
   const savedWith = savedWithFor(pickerConfig)
 
-  describe(`POST ${pickerName} — a refused save keeps the search and page`, () => {
+  describe(`POST ${pickerName} — a refused save keeps the search`, () => {
     useStubbedHighRiskPlantsJourney()
 
     it.each(SAVE_CONTROLS)(
@@ -348,7 +335,7 @@ const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
         })
 
         expect(result.view.context.picker.query).toBe(DENMARK)
-        expect(rowIds(result)).toEqual(DENMARK_ROWS)
+        expect(rowIds(result)).toEqual(denmarkMatches)
       }
     )
 
@@ -363,26 +350,11 @@ const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
         { text: errorText, href: '#q' }
       ])
     })
-
-    it('Should re-render the page the refusal was made on and link it to that page’s first row', async () => {
-      const result = await savedWith({
-        action: 'save',
-        page: String(LAST_PAGE),
-        [fieldName]: NOT_IN_THE_BOOK
-      })
-
-      const { picker, errorSummary } = result.view.context
-      expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
-      expect(picker.page).toBe(LAST_PAGE)
-      expect(rowIds(result)).toContain(ALPINE)
-      expect(picker.rows[0].idPrefix).toBe(fieldName)
-      expect(errorSummary.errorList[0].href).toBe(`#${picker.rows[0].idPrefix}`)
-    })
   })
 }
 
 const describeDeletedRecord = (picker) => {
-  const { pickerName, get, seed, fieldName, errorText } = picker
+  const { pickerName, get, seed, fieldName, errorText, primaryId } = picker
   const savedWith = savedWithFor(picker)
 
   describe(`${pickerName} — a record the organisation has deleted`, () => {
@@ -395,7 +367,7 @@ const describeDeletedRecord = (picker) => {
 
     it('Should show no selection for a record deleted since it was chosen', async () => {
       const result = await driveHandler(get, {
-        seed: seed({ [fieldName]: pickedFrom(DELETED_ID) })
+        seed: seed({ [fieldName]: pickedFrom(primaryId, DELETED_ID) })
       })
 
       expect(result.view.context.picker.tickedRecord).toBeUndefined()
@@ -418,7 +390,7 @@ const describeDeletedRecord = (picker) => {
 }
 
 const describeAcceptedAnswers = (picker) => {
-  const { pickerName, get, fieldName } = picker
+  const { pickerName, get, fieldName, primaryId, secondId } = picker
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — accepted answers`, () => {
@@ -427,7 +399,7 @@ const describeAcceptedAnswers = (picker) => {
     it('Should commit a copy of the chosen record and move on to the next page that applies', async () => {
       const result = await savedWith({
         action: 'save',
-        [fieldName]: TECH_IMPORTS_ID
+        [fieldName]: primaryId
       })
 
       expect(result.response).toEqual({
@@ -437,49 +409,49 @@ const describeAcceptedAnswers = (picker) => {
           result.journeyId
         )
       })
-      expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS_ID))
+      expect(result.after[fieldName]).toEqual(copied(primaryId))
     })
 
     it('Should accept the row carried in the hidden field when no radio is posted', async () => {
-      const result = await savedWith({ action: 'save', selected: ALPINE })
+      const result = await savedWith({ action: 'save', selected: secondId })
 
-      expect(result.after[fieldName]).toEqual(copied(ALPINE))
+      expect(result.after[fieldName]).toEqual(copied(secondId))
     })
 
     it('Should honour Save and return to overview', async () => {
       const result = await savedWith({
-        [fieldName]: TECH_IMPORTS_ID,
+        [fieldName]: primaryId,
         exit: 'hub'
       })
 
       expect(result.response).toEqual({ redirect: hubPath(result.journeyId) })
-      expect(result.after[fieldName]).toEqual(copied(TECH_IMPORTS_ID))
+      expect(result.after[fieldName]).toEqual(copied(primaryId))
     })
 
     it('Should replace a copy already held rather than keeping both', async () => {
       const result = await savedWith(
-        { action: 'save', [fieldName]: IMPORT_CO },
-        { answers: { [fieldName]: copied(TECH_IMPORTS_ID) } }
+        { action: 'save', [fieldName]: secondId },
+        { answers: { [fieldName]: copied(primaryId) } }
       )
 
-      expect(result.after[fieldName]).toEqual(copied(IMPORT_CO))
+      expect(result.after[fieldName]).toEqual(copied(secondId))
     })
 
     it('Should tick the committed copy on the next GET', async () => {
       const saved = await savedWith({
         action: 'save',
-        [fieldName]: TECH_IMPORTS_ID
+        [fieldName]: primaryId
       })
 
       const result = await driveHandler(get, { seed: saved.after })
 
-      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
+      expect(checkedId(result)).toBe(primaryId)
     })
   })
 }
 
 const describeSaveFailures = (picker) => {
-  const { pickerName, fieldName } = picker
+  const { pickerName, fieldName, primaryId } = picker
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — save failures`, () => {
@@ -489,13 +461,13 @@ const describeSaveFailures = (picker) => {
       const failure = unavailableBackendError('save answers')
 
       const result = await savedWith(
-        { action: 'save', [fieldName]: TECH_IMPORTS_ID },
+        { action: 'save', [fieldName]: primaryId },
         { saveFailure: failure }
       )
 
       expect(result.response.statusCode).toBe(HTTP_STATUS_INTERNAL_SERVER_ERROR)
       expect(result.view.context.recoverableError).toBe(true)
-      expect(checkedId(result)).toBe(TECH_IMPORTS_ID)
+      expect(checkedId(result)).toBe(primaryId)
       expectOneSaveFallbackLogged(result.logger, {
         journeyId: result.journeyId,
         err: failure
@@ -505,7 +477,7 @@ const describeSaveFailures = (picker) => {
     it('Should rethrow a programming error rather than re-rendering the page', async () => {
       await expect(
         savedWith(
-          { action: 'save', [fieldName]: TECH_IMPORTS_ID },
+          { action: 'save', [fieldName]: primaryId },
           { saveFailure: new TypeError('programming failure') }
         )
       ).rejects.toThrow(new TypeError('programming failure'))
@@ -529,6 +501,11 @@ const describeSaveFailures = (picker) => {
  * @param {object} picker.previousPage - the page Back opens
  * @param {string} picker.previousPage.slug - that page's slug
  * @param {object} picker.previousPage.seed - answers that make that page apply
+ * @param {number} picker.wholeCount - how many stub records carry this picker's role, or none
+ * @param {string[]} picker.denmarkMatches - the stub record ids a "Denmark" search lists on this picker
+ * @param {string} picker.primaryId - a stub record id carrying this picker's role
+ * @param {string} picker.primaryName - that record's name
+ * @param {string} picker.secondId - a second stub record id carrying this picker's role
  */
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)

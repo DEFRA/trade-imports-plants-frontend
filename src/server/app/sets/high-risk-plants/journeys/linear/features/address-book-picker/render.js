@@ -48,7 +48,6 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {object} current - the journey state the engine has resolved.
  * @param {object} state - what to render.
  * @param {string} state.query - the search term to run.
- * @param {number} state.page - the page of results to show.
  * @param {string} state.selectedId - the address-book id currently ticked.
  * @param {string} [state.error] - the refusal to render with the results.
  * @param {boolean} [state.recoverableError] - whether a save has just failed.
@@ -56,6 +55,7 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {object} binding.page - the page's id and slug.
  * @param {object} binding.copy - the page's resolved copy bundle.
  * @param {string} binding.fieldName - the answer name the page collects.
+ * @param {string} [binding.role] - the address-book role the page asks for.
  * @param {Function} binding.pickerViewModel - the page's bound view model.
  * @param {string} binding.heading - the question, as this page asks it.
  * @param {string} binding.description - the text under the question.
@@ -65,11 +65,11 @@ export const renderPicker = async (
   request,
   h,
   current,
-  { query, page: pageNumber, selectedId, error, recoverableError = false },
-  { page, copy, fieldName, pickerViewModel, heading, description }
+  { query, selectedId, error, recoverableError = false },
+  { page, copy, fieldName, role, pickerViewModel, heading, description }
 ) => {
   const orgId = organisationIdOf(request)
-  const found = await addressBook.search(orgId, { query, page: pageNumber })
+  const found = await addressBook.addresses(orgId, { query, role })
   const tickedRecord = await chosenFor(orgId, selectedId)
   const effectiveSelectedId = tickedRecord ? selectedId : ''
 
@@ -88,10 +88,9 @@ export const renderPicker = async (
     description,
     heldCopy: await heldCopyOf(request, current, fieldName),
     errorSummary: kit.errorSummary(error ? { [fieldName]: error } : undefined, {
-      href: () => (found.results.length > 0 ? `#${fieldName}` : '#q')
+      href: () => (found.length > 0 ? `#${fieldName}` : '#q')
     }),
     picker: pickerViewModel(
-      current.journey.journeyId,
       { query, selectedId: effectiveSelectedId, error, found, tickedRecord },
       pickerCopy
     )

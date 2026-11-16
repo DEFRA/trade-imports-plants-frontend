@@ -1,6 +1,9 @@
 import {
   errorSummaryLinks,
+  AARHUS,
   ADDRESS_BOOK_PARTY,
+  NORTHGATE,
+  WESTBROOK,
   WOOD_LINE_FIELDS,
   addCommodityLine,
   addressRowRadio,
@@ -71,14 +74,21 @@ const startAtConsignor = async (page) => {
   return reference
 }
 
-const saveTheAddressBookParty = async (page) => {
+const saveTheConsignorAddress = async (page) => {
+  await addressRowRadio(page, NORTHGATE).check()
+  await saveAndContinue(page).click()
+}
+
+const saveTheDestinationAddress = async (page) => {
   await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
   await saveAndContinue(page).click()
 }
 
 describeSubmittedSearchPicker({
   pickerName: 'consignor',
-  openPicker: startAtConsignor
+  openPicker: startAtConsignor,
+  roleAddress: NORTHGATE,
+  denmarkMatch: AARHUS
 })
 
 describeAddressPicker({
@@ -90,7 +100,13 @@ describeAddressPicker({
   hubUrl: HUB_URL,
   pageUrl: PAGE_URL,
   afterSaveUrl: IDENTIFICATION_NUMBERS_URL,
-  firstRowRadio: FIRST_ROW_RADIO
+  firstRowRadio: FIRST_ROW_RADIO,
+  roleAddress: NORTHGATE,
+  secondRoleAddress: WESTBROOK,
+  rolelessAddress: 'Unlisted Traders Ltd',
+  otherRoleAddress: 'Tech Imports Ltd',
+  denmarkMatch: AARHUS,
+  wholeCount: 8
 })
 
 test.describe('consignor-select feature', () => {
@@ -137,7 +153,7 @@ test.describe('consignor-select feature', () => {
     await page.getByRole('link', { name: hubCopy.rows.consignor.title }).click()
     await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+    await addressRowRadio(page, NORTHGATE).check()
     await saveAndReturnToHub(page).click()
 
     await expect(page).toHaveURL(HUB_URL)
@@ -174,7 +190,7 @@ test.describe('consignor-select feature', () => {
     page
   }) => {
     await startWoodNotificationAtPlaceOfDestination(page)
-    await saveTheAddressBookParty(page)
+    await saveTheDestinationAddress(page)
     await expect(page).toHaveURL(AFTER_DESTINATION_PAGE_URL)
 
     await expect(backLink(page)).toHaveAttribute(
@@ -225,7 +241,7 @@ test.describe('consignor scope and invalid selections', () => {
     page
   }) => {
     const reference = await startAtConsignor(page)
-    await saveTheAddressBookParty(page)
+    await saveTheConsignorAddress(page)
     await changeCommodityType(page, reference, POTATOES)
     await page.goto(`${BASE}/notifications/${reference}`)
     await expect(
@@ -239,11 +255,11 @@ test.describe('consignor scope and invalid selections', () => {
     page
   }) => {
     const reference = await startAtConsignor(page)
-    await saveTheAddressBookParty(page)
+    await saveTheConsignorAddress(page)
     await changeCommodityType(page, reference, POTATOES)
     await changeCommodityType(page, reference, WOOD_AND_CUT_TREES)
     await page.goto(consignorPathOf(reference))
     await expect(page).toHaveURL(PAGE_URL)
-    await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
+    await expect(addressRowRadio(page, NORTHGATE)).not.toBeChecked()
   })
 })

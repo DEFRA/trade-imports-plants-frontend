@@ -3,14 +3,13 @@ import {
   ADDRESS_BOOK_PARTY,
   REVIEW_URL_FROM_POTATO_WALK,
   COPENHAGEN,
-  SECOND_PAGE_LINK,
+  IMPORT_CO,
   addressRowRadio,
   backLink,
   describeAddressPicker,
   describeSubmittedSearchPicker,
   expectThreeSaveControls,
   saveAndContinue,
-  selectedAddressInset,
   startPotatoNotificationAtContact,
   saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
@@ -80,7 +79,9 @@ const startCompleteNotificationAtContact = async (page) => {
 
 describeSubmittedSearchPicker({
   pickerName: 'consignment contact',
-  openPicker: startAtContact
+  openPicker: startAtContact,
+  roleAddress: ADDRESS_BOOK_PARTY,
+  denmarkMatch: COPENHAGEN
 })
 
 describeAddressPicker({
@@ -93,6 +94,11 @@ describeAddressPicker({
   pageUrl: PAGE_URL,
   afterSaveUrl: REVIEW_URL,
   firstRowRadio: '#contactAddress',
+  roleAddress: ADDRESS_BOOK_PARTY,
+  secondRoleAddress: IMPORT_CO,
+  rolelessAddress: 'Unlisted Traders Ltd',
+  denmarkMatch: COPENHAGEN,
+  wholeCount: 14,
   landingAlerts: [
     `${sharedCopy.errorSummary.title} ${checkAnswersCopy.errors.cards.contact}`
   ]
@@ -171,13 +177,10 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
   })
 
-  test('a row ticked on the second page saves, and re-entering shows it as the selected address', async ({
+  test('a row ticked saves, and re-entering shows it checked', async ({
     page
   }) => {
     const reference = await startAtContact(page)
-    await page
-      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-      .click()
     await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
 
     await addressRowRadio(page, COPENHAGEN).check()
@@ -187,8 +190,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
 
     await page.goto(contactPathOf(reference))
-    await expect(selectedAddressInset(page, COPENHAGEN)).toBeVisible()
-    await expect(addressRowRadio(page, COPENHAGEN)).toHaveCount(0)
+    await expect(addressRowRadio(page, COPENHAGEN)).toBeChecked()
   })
 
   test('Cancel and return to overview leaves the contact row not yet started', async ({
@@ -241,9 +243,6 @@ test.describe('consignment-contact-select — a blank save', () => {
     await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
 
     await page.goto(contactPathOf(reference))
-    await expect(
-      page.getByText(new RegExp(`^${pickerCopy.selectedAddressPrefix}`))
-    ).toHaveCount(0)
     await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
   }
 

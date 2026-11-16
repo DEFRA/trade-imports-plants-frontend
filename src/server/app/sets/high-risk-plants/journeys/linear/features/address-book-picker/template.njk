@@ -1,5 +1,4 @@
 {% from "submitted-search/macro.njk" import appSubmittedSearch %}
-{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "high-risk-plants/journeys/linear/features/address-book-picker/results.njk" import addressBookPickerResults %}
 {% from "shared/save-actions.njk" import saveActions %}
 {% from "shared/section-caption.njk" import sectionCaption %}
@@ -14,10 +13,9 @@
 
   {% include "high-risk-plants/journeys/linear/features/address-book-picker/held-copy.njk" %}
 
-  <form method="post" novalidate data-module="app-address-book-picker">
+  <form method="post" novalidate>
     <input type="hidden" name="crumb" value="{{ crumb }}" />
     <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
-    <input type="hidden" name="page" value="{{ picker.page }}" />
     {% if picker.tickedRecord %}
       <input type="hidden" name="selected" value="{{ picker.tickedRecord.id }}" />
     {% endif %}
@@ -31,10 +29,6 @@
       button: { text: pickerCopy.search.button },
       wrapperClasses: "govuk-!-width-one-half"
     }) }}
-
-    {% if picker.tickedRecord %}
-      {{ govukInsetText({ text: pickerCopy.selectedAddressPrefix + " " + picker.tickedRecord.name }) }}
-    {% endif %}
 
     {{ addressBookPickerResults(fieldName, picker, pickerCopy) }}
 

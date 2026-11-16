@@ -1,5 +1,6 @@
 import { copyFor } from '../../../../../../shared/copy.js'
 import { pickerRoutes } from '../address-book-picker/picker-routes.js'
+import { partyOf } from '../../parties/index.js'
 import {
   ALREADY_ARRIVED,
   ARRIVAL_STATUS,
@@ -27,6 +28,7 @@ const destinationStateOf = ({ answers, scope }) => {
 export const routes = pickerRoutes({
   page,
   fieldName: PLACE_OF_DESTINATION,
+  role: partyOf(PLACE_OF_DESTINATION).addressBookRole,
   copy,
   pickerViewModel,
   heading: (current) => copy.headings[destinationStateOf(current)],
