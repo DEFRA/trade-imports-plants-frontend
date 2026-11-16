@@ -16,14 +16,17 @@ const deleteButtonFor = (journey) => ({
 })
 
 const dateLine = (journey) => {
-  const { dateText, instant } =
+  const { datedLineFor, instant } =
     journey.status === SUBMITTED
       ? {
-          dateText: copy.viewHeader.dateSubmitted,
+          datedLineFor: copy.viewHeader.dateSubmitted,
           instant: journey.submittedAt
         }
-      : { dateText: copy.viewHeader.dateCreated, instant: journey.createdAt }
-  return instant ? dateText(notificationDateText(instant)) : null
+      : {
+          datedLineFor: copy.viewHeader.dateCreated,
+          instant: journey.createdAt
+        }
+  return instant ? datedLineFor(notificationDateText(instant)) : null
 }
 
 const amendAction = (journey) =>

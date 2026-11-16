@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { SET_BASE } from '../../../../../set.js'
+import { deleteNotificationButton } from '../../../test-support.js'
 import { AMEND, DRAFT, SUBMITTED } from '../../../../../../../engine/index.js'
 import { viewHeader } from './view-header.js'
 
 const LATE_EVENING_INSTANT = '2026-07-21T23:30:00Z'
 const REFERENCE = 'GBN-2026-0001-0001'
-const DELETE_BUTTON = {
-  text: 'Delete notification',
-  href: `${SET_BASE}/notifications/${REFERENCE}/delete`,
-  classes: 'govuk-button--warning'
-}
 
 const submittedJourney = (overrides = {}) => ({
   journeyId: REFERENCE,
@@ -55,7 +51,7 @@ describe('#viewHeader', () => {
         text: 'Amend this notification',
         formAction: `${SET_BASE}/notifications/${REFERENCE}/amend`
       },
-      delete: DELETE_BUTTON
+      delete: deleteNotificationButton(REFERENCE)
     })
   })
 
@@ -104,7 +100,7 @@ describe('#viewHeader for a draft', () => {
   it('Should offer Delete notification and no Amend', () => {
     expect(viewHeader(draftJourney()).actions).toEqual({
       amend: null,
-      delete: DELETE_BUTTON
+      delete: deleteNotificationButton(REFERENCE)
     })
   })
 

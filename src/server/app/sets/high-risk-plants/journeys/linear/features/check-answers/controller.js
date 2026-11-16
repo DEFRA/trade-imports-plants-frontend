@@ -98,15 +98,9 @@ const backLinkFor = (request, journey) =>
   })
 
 const buttonsAfterPrimaryFor = (journey) => {
-  const cancelAmendHref = kit.cancelAmendHref(journey)
-  return cancelAmendHref
-    ? [
-        {
-          text: kit.sharedCopy.journeyStrip.cancelAmend,
-          href: cancelAmendHref,
-          classes: 'govuk-button--secondary'
-        }
-      ]
+  const cancelAmend = kit.cancelAmendControl(journey)
+  return cancelAmend
+    ? [{ ...cancelAmend, classes: 'govuk-button--secondary' }]
     : []
 }
 

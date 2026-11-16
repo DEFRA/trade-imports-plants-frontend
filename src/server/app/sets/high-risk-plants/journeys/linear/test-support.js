@@ -41,6 +41,19 @@ export const TECH_IMPORTS_COPY = Object.freeze({
   })
 })
 
+export const TECH_IMPORTS_ADDRESS_LINES = Object.freeze([
+  TECH_IMPORTS_COPY.address.addressLine1,
+  TECH_IMPORTS_COPY.address.townOrCity,
+  TECH_IMPORTS_COPY.address.postcode,
+  'United Kingdom'
+])
+
+export const deleteNotificationButton = (journeyId) => ({
+  text: 'Delete notification',
+  href: `${SET_BASE}/notifications/${journeyId}/delete`,
+  classes: 'govuk-button--warning'
+})
+
 const POTATOES = 'potatoes'
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 

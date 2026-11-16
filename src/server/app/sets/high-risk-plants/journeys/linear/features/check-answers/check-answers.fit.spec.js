@@ -23,7 +23,7 @@ import { notificationDateText } from '../review/notification-date.js'
 import { copy } from './copy/copy.en.js'
 import { copy as deleteCopy } from '../delete-notification/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
-import { TECH_IMPORTS_ADDRESS_LINES } from '../../../../../../../../../fit/address-read-back.js'
+import { TECH_IMPORTS_ADDRESS_LINES } from '../../test-support.js'
 
 const NOTIFICATION_VIEW = 'notification-view'
 

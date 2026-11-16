@@ -21,6 +21,8 @@ import {
   COMPLETE_PLANTS_NOTIFICATION,
   itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney,
+  deleteNotificationButton,
+  TECH_IMPORTS_ADDRESS_LINES,
   TECH_IMPORTS_COPY
 } from '../../test-support.js'
 import { sectionEntry } from '../../../../../../flow/navigation.js'
@@ -33,7 +35,6 @@ import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
 import { copy as partyEditCopy } from '../party-edit/copy/copy.en.js'
 import { changeHref } from './view-model/rows/change-link.js'
-import { TECH_IMPORTS_ADDRESS_LINES } from '../../../../../../../../../fit/address-read-back.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const NOT_YET_ARRIVED = 'not-yet-arrived'
@@ -444,12 +445,6 @@ describe('Check your answers lateness', () => {
     return journeyId
   }
 
-  const deleteButtonTo = (journeyId) => ({
-    text: 'Delete notification',
-    href: `${SET_BASE}/notifications/${journeyId}/delete`,
-    classes: 'govuk-button--warning'
-  })
-
   it('Should offer the delete path in the header when the notification is submitted', async () => {
     const journeyId = await submittedJourneyId()
     const submitted = stubH()
@@ -458,7 +453,7 @@ describe('Check your answers lateness', () => {
 
     expect(submitted.captured.view.context.readOnly).toBe(true)
     expect(submitted.captured.view.context.viewHeader.actions.delete).toEqual(
-      deleteButtonTo(journeyId)
+      deleteNotificationButton(journeyId)
     )
   })
 
@@ -544,7 +539,7 @@ describe('Check your answers lateness', () => {
 
     expect(result.view.context.buttonsAfterPrimary).toEqual([])
     expect(result.view.context.viewHeader.actions.delete).toEqual(
-      deleteButtonTo(result.journeyId)
+      deleteNotificationButton(result.journeyId)
     )
   })
 
