@@ -93,7 +93,8 @@ export const copy = {
     warning:
       'Rhaid i chi ddefnyddio’r cyfeirnod a’r cod cywir ar y datganiad tollau neu bydd oedi i’ch llwyth.',
     warningIcon: 'Rhybudd',
-    notificationReference: 'Cyfeirnod yr hysbysiad'
+    notificationReference: 'Cyfeirnod yr hysbysiad',
+    customsDocumentCode: 'Cod dogfen tollau'
   },
   typeLabels: {
     potatoes: 'Tatws (hadyd neu fwyd)',

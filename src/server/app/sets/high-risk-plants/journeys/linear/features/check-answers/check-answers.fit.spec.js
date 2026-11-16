@@ -39,12 +39,13 @@ const importReferences = (page) =>
 
 const summaryValues = (section) => section.locator('.govuk-summary-list__value')
 
-const expectNotificationReferenceOnly = async (section, reference) => {
+const expectReferenceAndCustomsDocumentCode = async (section, reference) => {
   await expect(section.getByText(copy.importReferences.warning)).toBeVisible()
   await expect(section.locator('.govuk-summary-list__key')).toHaveText([
-    copy.importReferences.notificationReference
+    copy.importReferences.notificationReference,
+    copy.importReferences.customsDocumentCode
   ])
-  await expect(summaryValues(section)).toHaveText([reference])
+  await expect(summaryValues(section)).toHaveText([reference, 'C085'])
 }
 
 test.beforeEach(async ({ page }) => signIn(page))
@@ -266,10 +267,13 @@ test.describe('a draft notification', () => {
     await expect(controls.first()).toHaveClass(/govuk-button--warning/)
   })
 
-  test('shows the import reference numbers with the warning and the notification reference only', async ({
+  test("shows a draft's import reference numbers with the warning, the notification reference and the customs document code C085", async ({
     page
   }) => {
-    await expectNotificationReferenceOnly(importReferences(page), reference)
+    await expectReferenceAndCustomsDocumentCode(
+      importReferences(page),
+      reference
+    )
   })
 
   test('keeps its Change links on the cards and ends with Continue', async ({
@@ -349,10 +353,13 @@ test.describe('a submitted notification', () => {
     )
   })
 
-  test('shows the import reference numbers with the warning and the notification reference, and no customs document code', async ({
+  test("shows a submitted notification's import reference numbers with the warning, the notification reference and the customs document code C085", async ({
     page
   }) => {
-    await expectNotificationReferenceOnly(importReferences(page), reference)
+    await expectReferenceAndCustomsDocumentCode(
+      importReferences(page),
+      reference
+    )
   })
 
   test('shows the import reference numbers as text with no button when JavaScript is off', async ({
@@ -362,10 +369,7 @@ test.describe('a submitted notification', () => {
     await withoutJavaScript(page, browser, async (noJs) => {
       const section = importReferences(noJs)
 
-      await expect(
-        section.getByText(copy.importReferences.warning)
-      ).toBeVisible()
-      await expect(summaryValues(section)).toHaveText([reference])
+      await expectReferenceAndCustomsDocumentCode(section, reference)
       await expect(section.getByRole('button')).toHaveCount(0)
     })
   })

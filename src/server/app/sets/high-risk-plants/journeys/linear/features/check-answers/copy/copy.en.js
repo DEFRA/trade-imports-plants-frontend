@@ -93,7 +93,8 @@ export const copy = {
     warning:
       'You must use the correct reference and code on the customs declaration or your consignment will be delayed.',
     warningIcon: 'Warning',
-    notificationReference: 'Notification reference'
+    notificationReference: 'Notification reference',
+    customsDocumentCode: 'Customs document code'
   },
   typeLabels: {
     potatoes: 'Potatoes (seed or ware)',

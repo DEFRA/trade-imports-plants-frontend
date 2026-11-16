@@ -37,19 +37,26 @@ const amendAction = (journey) =>
       }
     : null
 
-const importReferences = ({ journeyId }) => ({
-  heading: copy.importReferences.heading,
-  warning: {
-    text: copy.importReferences.warning,
-    iconFallbackText: copy.importReferences.warningIcon
-  },
-  rows: [
-    {
-      key: { text: copy.importReferences.notificationReference },
-      value: { text: journeyId }
-    }
-  ]
-})
+const importReferences = ({ journeyId }) => {
+  const customsDocumentCode = 'C085'
+  return {
+    heading: copy.importReferences.heading,
+    warning: {
+      text: copy.importReferences.warning,
+      iconFallbackText: copy.importReferences.warningIcon
+    },
+    rows: [
+      {
+        key: { text: copy.importReferences.notificationReference },
+        value: { text: journeyId }
+      },
+      {
+        key: { text: copy.importReferences.customsDocumentCode },
+        value: { text: customsDocumentCode }
+      }
+    ]
+  }
+}
 
 /**
  * The header of a notification's view, for a draft and for a submitted

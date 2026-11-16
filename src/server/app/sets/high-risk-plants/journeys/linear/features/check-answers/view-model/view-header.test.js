@@ -55,7 +55,7 @@ describe('#viewHeader', () => {
     })
   })
 
-  it('Should show the notification reference as the only import reference number', () => {
+  it("Should show a submitted notification's reference and the customs document code C085 as import reference numbers", () => {
     expect(viewHeader(submittedJourney()).importReferences).toEqual({
       heading: 'Import reference numbers',
       warning: {
@@ -66,6 +66,10 @@ describe('#viewHeader', () => {
         {
           key: { text: 'Notification reference' },
           value: { text: REFERENCE }
+        },
+        {
+          key: { text: 'Customs document code' },
+          value: { text: 'C085' }
         }
       ]
     })
@@ -104,12 +108,11 @@ describe('#viewHeader for a draft', () => {
     })
   })
 
-  it('Should show the notification reference as the only import reference number', () => {
-    expect(
-      viewHeader(draftJourney()).importReferences.rows.map(
-        (row) => row.value.text
-      )
-    ).toEqual([REFERENCE])
+  it("Should show a draft's reference and the customs document code C085 as import reference numbers", () => {
+    expect(viewHeader(draftJourney()).importReferences.rows).toEqual([
+      { key: { text: 'Notification reference' }, value: { text: REFERENCE } },
+      { key: { text: 'Customs document code' }, value: { text: 'C085' } }
+    ])
   })
 })
 
