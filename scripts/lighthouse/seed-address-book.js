@@ -3,11 +3,9 @@ import { PARTIES } from '../../src/server/app/sets/high-risk-plants/journeys/lin
 /**
  * Lighthouse walks party pickers by scraping the first `party` radio. Those
  * radios only render when the signed-in org has an address in the real
- * address-book service (stack) carrying the role that picker filters by,
- * and the address-book keeps every address to one role group, so a
- * CONSIGNOR address can never also answer PLACE_OF_DESTINATION. Create
- * whichever of those addresses are missing via the API — same approach as
- * the tests-repo e2e globalSetup, but one record per role.
+ * address-book service (stack) carrying the role that picker filters by.
+ * Create whichever of those addresses are missing via the API — same
+ * approach as the tests-repo e2e globalSetup, but one record per role.
  */
 const ORGANISATION_ID = '5900001'
 const ORGANISATION_ID_HEADER = 'Trade-Imports-Organisation-Id'
@@ -25,8 +23,11 @@ const headers = () => ({
   [ORGANISATION_ID_HEADER]: ORGANISATION_ID
 })
 
-const addressCountMatching = async (query) => {
-  const listed = await fetch(addressesUrl(query), { headers: headers() })
+const addressCountMatching = async (role) => {
+  const listed = await fetch(
+    addressesUrl(`?role=${encodeURIComponent(role)}&page=1`),
+    { headers: headers() }
+  )
   if (listed.status !== HTTP_OK) {
     throw new Error(
       `Could not list address book for Lighthouse seed (${listed.status})`
@@ -63,9 +64,7 @@ export const ensureAddressBookHasAnAddressForEachRole = async () => {
     ...new Set(PARTIES.map((party) => party.addressBookRole).filter(Boolean))
   ]
   for (const role of rolesPickersFilterBy) {
-    const existing = await addressCountMatching(
-      `?role=${encodeURIComponent(role)}&page=1`
-    )
+    const existing = await addressCountMatching(role)
     if (existing === 0) {
       await createAddressWithRole(role)
     }
