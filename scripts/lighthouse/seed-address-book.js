@@ -1,8 +1,11 @@
+import { PARTIES } from '../../src/server/app/sets/high-risk-plants/journeys/linear/parties/index.js'
+
 /**
  * Lighthouse walks party pickers by scraping the first `party` radio. Those
  * radios only render when the signed-in org has at least one address in the
- * real address-book service (stack). Create one via the API when the book is
- * empty — same approach as the tests-repo e2e globalSetup, but one record only.
+ * real address-book service (stack) carrying the role that picker filters
+ * by. Create one via the API, with every such role, when the book is empty
+ * — same approach as the tests-repo e2e globalSetup, but one record only.
  */
 const ORGANISATION_ID = '5900001'
 const ORGANISATION_ID_HEADER = 'Trade-Imports-Organisation-Id'
@@ -43,7 +46,7 @@ export const ensureAddressBookHasAnAddress = async () => {
       countryCode: 'GB',
       phone: '01632 960000',
       email: 'lighthouse@example.com',
-      roles: ['PLACE_OF_ORIGIN']
+      roles: PARTIES.map((party) => party.addressBookRole).filter(Boolean)
     })
   })
   if (created.status !== HTTP_CREATED && created.status !== HTTP_OK) {
