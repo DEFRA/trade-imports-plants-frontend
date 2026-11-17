@@ -1,4 +1,4 @@
-import { addressText, detailLines } from './address-lines.js'
+import { contactLines, pickerAddressLines } from './address-lines.js'
 import { pickerTableRows } from './table-rows.js'
 
 const idPrefixFor = (fieldName) => (index) =>
@@ -8,9 +8,9 @@ const resultRow = (idPrefix, selectedId) => (record, index) => ({
   id: record.id,
   idPrefix: idPrefix(index),
   name: record.name,
-  addressText: addressText(record.address),
+  addressLines: pickerAddressLines(record.address),
   country: record.address?.country,
-  detailLines: detailLines(record),
+  contactLines: contactLines(record.address),
   checked: record.id === selectedId
 })
 

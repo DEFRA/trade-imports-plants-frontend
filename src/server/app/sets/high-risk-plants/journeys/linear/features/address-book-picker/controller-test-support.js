@@ -76,7 +76,8 @@ const describePageServed = ({
   seed,
   previousPage,
   wholeCount,
-  denmarkMatches
+  denmarkMatches,
+  primaryId
 }) => {
   describe(`GET ${pickerName} — the page it serves`, () => {
     useStubbedHighRiskPlantsJourney()
@@ -105,6 +106,23 @@ const describePageServed = ({
       expect(result.view.context.picker.resultsCount).toBe(
         pickerCopy.resultsCount(wholeCount, wholeCount)
       )
+    })
+
+    it("Should carry each row's address lines and contact lines from the record it lists", async () => {
+      const result = await driveHandler(get, { seed: seed() })
+      const primaryRecord = STUB_BOOK.find((record) => record.id === primaryId)
+      const primaryRow = result.view.context.picker.rows.find(
+        (row) => row.id === primaryId
+      )
+
+      expect(primaryRow.addressLines).toEqual([
+        primaryRecord.address.addressLine1,
+        `${primaryRecord.address.townOrCity}, ${primaryRecord.address.postcode}`
+      ])
+      expect(primaryRow.contactLines).toEqual([
+        primaryRecord.address.phone,
+        primaryRecord.address.email
+      ])
     })
 
     it('Should narrow the rows to the search term in the query string', async () => {

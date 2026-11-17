@@ -11,6 +11,7 @@ import {
 import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
+import { STUB_BOOK } from '../src/server/app/services/address-book/stub/index.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
 import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
@@ -1087,10 +1088,7 @@ export const postAnIdNotInTheBookAfterAnEmptySearch = async (
 }
 
 /**
- * Declares the tests every single-address picker shares: listing and counting
- * its role's addresses on one page, searching, saving and leaving the page,
- * moving on with no address chosen and refusing an address not in the book,
- * which also gives the radios' form group the GOV.UK error border.
+ * Declares the tests every single-address picker shares.
  *
  * @param {object} options
  * @param {string} options.pickerName - names the picker in the test group titles
@@ -1205,6 +1203,48 @@ export const describeAddressPicker = ({
       await expect(addressRowRadio(page, roleAddress)).toHaveCount(0)
       await searchAddressBook(page, '')
       await expect(addressRowRadio(page, roleAddress)).toBeChecked()
+    })
+  })
+
+  test.describe(`${pickerName} — the row's address lines and disclosure`, () => {
+    const roleAddressRow = (page) =>
+      page.getByRole('row').filter({ has: addressRowRadio(page, roleAddress) })
+    const roleAddressRecord = STUB_BOOK.find(
+      (record) => record.name === roleAddress
+    )
+
+    test.beforeEach(async ({ page }) => {
+      await signIn(page)
+    })
+
+    test("reads the role's listed address as its street line then its town and postcode on one line, not one joined line", async ({
+      page
+    }) => {
+      await openPicker(page)
+      const { address } = roleAddressRecord
+      const addressCell = roleAddressRow(page).getByRole('cell').nth(2)
+
+      await expect
+        .poll(() => addressCell.evaluate((cell) => cell.innerText))
+        .toBe(
+          `${address.addressLine1}\n${address.townOrCity}, ${address.postcode}`
+        )
+    })
+
+    test('opens the row\'s "View details" disclosure in place and shows exactly that address\'s telephone number and email address', async ({
+      page
+    }) => {
+      await openPicker(page)
+      const { address } = roleAddressRecord
+      const urlBeforeOpening = page.url()
+
+      await roleAddressRow(page).getByText(pickerCopy.viewDetails).click()
+
+      expect(page.url()).toBe(urlBeforeOpening)
+      await expect(roleAddressRow(page).getByRole('listitem')).toHaveText([
+        address.phone,
+        address.email
+      ])
     })
   })
 

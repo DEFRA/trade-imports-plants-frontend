@@ -8,7 +8,6 @@ export const IMPORT_CO = 'import-co-uk'
 const LINE_1 = '18 Dockside Road'
 const POSTCODE = 'E14 9GE'
 const COUNTRY = 'United Kingdom'
-const ONE_LINE = `${LINE_1}, Unit 4, London, Greater London, ${POSTCODE}`
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
 export const DELETED_ID = 'closed-depot-ltd'
@@ -103,12 +102,16 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
       },
       {
         title:
-          'Should carry the country as its own column and leave it out of the line',
+          'Should carry the country as its own column and leave it out of the address lines',
         check: () => {
           const picker = viewModelFor(found)
 
           expect(picker.rows[0].country).toBe(COUNTRY)
-          expect(picker.rows[0].addressText).toBe(ONE_LINE)
+          expect(picker.rows[0].addressLines).toEqual([
+            LINE_1,
+            'Unit 4',
+            `London, Greater London, ${POSTCODE}`
+          ])
         }
       }
     ]
