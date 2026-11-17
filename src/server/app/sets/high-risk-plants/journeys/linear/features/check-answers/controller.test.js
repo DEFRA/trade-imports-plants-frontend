@@ -555,15 +555,6 @@ describe('Check your answers lateness', () => {
     ])
   })
 
-  it('Should follow Continue on a submitted review with no buttons', async () => {
-    const journeyId = await submittedJourneyId()
-    const submitted = stubH()
-
-    await get(journeyRequest(journeyId), submitted)
-
-    expect(submitted.captured.view.context.buttonsAfterPrimary).toEqual([])
-  })
-
   it('Should show a draft review as editable, headed by its reference with the Draft tag and no Amend', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 

@@ -10,6 +10,7 @@ import {
   expectDraftReviewFoot,
   expectNoSeriousOrCriticalViolations,
   notificationReferenceHeading,
+  viewHeaderTag,
   saveAndReturnToHub,
   continueFromChangedCommodityLine,
   saveAndContinue,
@@ -19,7 +20,7 @@ import {
 import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
-import { notificationDateText } from '../review/notification-date.js'
+import { formatMomentAsLongDay } from '../../../../../../lib/validate/index.js'
 import { copy } from './copy/copy.en.js'
 import { copy as deleteCopy } from '../delete-notification/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
@@ -28,8 +29,6 @@ import { TECH_IMPORTS_ADDRESS_LINES } from '../../test-support.js'
 const NOTIFICATION_VIEW = 'notification-view'
 
 const main = (page) => page.getByRole('main')
-
-const headerTag = (page) => main(page).locator('.govuk-tag')
 
 const headerButtonGroup = (page) =>
   main(page).locator('.govuk-button-group').first()
@@ -235,8 +234,8 @@ test.describe('a draft notification', () => {
     page
   }) => {
     await expect(notificationReferenceHeading(page)).toBeVisible()
-    await expect(headerTag(page)).toHaveText(sharedCopy.journeyStrip.draft)
-    await expect(headerTag(page)).toHaveClass(/govuk-tag--blue/)
+    await expect(viewHeaderTag(page)).toHaveText(sharedCopy.journeyStrip.draft)
+    await expect(viewHeaderTag(page)).toHaveClass(/govuk-tag--blue/)
     await expect(page.locator('.app-journey-strip')).toHaveCount(0)
     await expect(page).toHaveTitle(
       `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
@@ -248,7 +247,7 @@ test.describe('a draft notification', () => {
   }) => {
     const createdLines = new Set(
       [createdBefore, createdAfter].map((instant) =>
-        copy.viewHeader.dateCreated(notificationDateText(instant))
+        copy.viewHeader.dateCreated(formatMomentAsLongDay(new Date(instant)))
       )
     )
     const alternatives = [...createdLines].map(RegExp.escape).join('|')
@@ -312,8 +311,10 @@ test.describe('a submitted notification', () => {
   test('is headed by its reference with a green Submitted tag beside it, no status bar and a title naming the reference', async ({
     page
   }) => {
-    await expect(headerTag(page)).toHaveText(sharedCopy.journeyStrip.submitted)
-    await expect(headerTag(page)).toHaveClass(/govuk-tag--green/)
+    await expect(viewHeaderTag(page)).toHaveText(
+      sharedCopy.journeyStrip.submitted
+    )
+    await expect(viewHeaderTag(page)).toHaveClass(/govuk-tag--green/)
     await expect(page.locator('.app-journey-strip')).toHaveCount(0)
     await expect(page).toHaveTitle(
       `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
@@ -323,7 +324,7 @@ test.describe('a submitted notification', () => {
   test('dates the notification under its header', async ({ page }) => {
     const submittedLines = new Set(
       [submittedBefore, submittedAfter].map((instant) =>
-        copy.viewHeader.dateSubmitted(notificationDateText(instant))
+        copy.viewHeader.dateSubmitted(formatMomentAsLongDay(new Date(instant)))
       )
     )
     const alternatives = [...submittedLines].map(RegExp.escape).join('|')

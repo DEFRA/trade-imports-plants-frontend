@@ -3,6 +3,7 @@ import {
   errorSummaryLinks,
   completePotatoNotification,
   expectNoSeriousOrCriticalViolations,
+  notificationReferenceHeading,
   openDeclaration,
   submitDeclarationFromCheckAnswers
 } from '../../../../../../../../../fit/high-risk-plants-journey.js'
@@ -158,9 +159,7 @@ test('submits an on-time notification without a late banner', async ({
     page.getByRole('heading', { name: confirmationCopy.title, level: 1 })
   ).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/notification-view`)
-  await expect(
-    page.getByRole('heading', { name: reference, level: 1, exact: true })
-  ).toBeVisible()
+  await expect(notificationReferenceHeading(page)).toBeVisible()
   await expect(
     page.getByRole('heading', { name: checkAnswersCopy.late.heading })
   ).toHaveCount(0)

@@ -199,7 +199,7 @@ links, copy and validation. See
   the notification is first submitted and never worked out again. The stored
   value is `late` or `on-time`, so the dashboard row narrows it to a boolean.
 - Dates are shown as the Europe/London calendar day, through
-  `review/notification-date.js`. The arrival date of a consignment that has
+  `formatMomentAsLongDay` in `lib/validate/calendar.js`. The arrival date of a consignment that has
   already arrived is capped at today in Europe/London (regulation 26(2)(a));
   no other bound applies, because a late notification is accepted and flagged.
 

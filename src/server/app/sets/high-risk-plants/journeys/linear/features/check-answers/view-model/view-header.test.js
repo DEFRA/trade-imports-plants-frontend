@@ -49,7 +49,7 @@ describe('#viewHeader', () => {
     expect(viewHeader(submittedJourney()).actions).toEqual({
       amend: {
         text: 'Amend this notification',
-        formAction: `${SET_BASE}/notifications/${REFERENCE}/amend`
+        postAction: `${SET_BASE}/notifications/${REFERENCE}/amend`
       },
       delete: deleteNotificationButton(REFERENCE)
     })

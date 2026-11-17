@@ -7,6 +7,7 @@ import {
 } from '../../../../../../../../../fit/set-base.js'
 import {
   errorSummary,
+  viewHeaderTag,
   changeCommodityType,
   completePotatoNotification,
   REVIEW_URL_WITHOUT_TRAIL,
@@ -25,7 +26,6 @@ import { copy as declarationCopy } from '../declaration/copy/copy.en.js'
 
 const TAG = '.govuk-tag'
 const strip = (page) => page.locator('.app-journey-strip')
-const viewHeaderTag = (page) => page.locator(`main ${TAG}`)
 const cancelAmendLink = (page) =>
   strip(page).getByRole('link', {
     name: sharedCopy.journeyStrip.cancelAmend,

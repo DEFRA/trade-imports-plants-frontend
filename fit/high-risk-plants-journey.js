@@ -639,6 +639,9 @@ export const notificationReferenceHeading = (page) =>
     exact: true
   })
 
+export const viewHeaderTag = (page) =>
+  page.getByRole('main').locator('.govuk-tag')
+
 export const expectDraftReviewFoot = (page) =>
   expect(
     page.getByRole('main').locator('form[novalidate] .govuk-button-group > *')
@@ -650,9 +653,7 @@ export const expectDraftReviewFoot = (page) =>
 export const expectDraftReview = async (page) => {
   await expect(notificationReferenceHeading(page)).toBeVisible()
   await expect(
-    page.getByRole('main').locator('.govuk-tag', {
-      hasText: sharedCopy.journeyStrip.draft
-    })
+    viewHeaderTag(page).filter({ hasText: sharedCopy.journeyStrip.draft })
   ).toHaveText(sharedCopy.journeyStrip.draft)
   await expectDraftReviewFoot(page)
 }

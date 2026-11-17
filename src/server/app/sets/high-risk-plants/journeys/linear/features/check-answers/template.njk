@@ -44,7 +44,7 @@
       </div>
     {% endset %}
     {% if viewHeader.actions.amend %}
-      <form method="post" action="{{ viewHeader.actions.amend.formAction }}">
+      <form method="post" action="{{ viewHeader.actions.amend.postAction }}">
         <input type="hidden" name="crumb" value="{{ crumb }}" />
         {{ headerButtons | safe }}
       </form>
