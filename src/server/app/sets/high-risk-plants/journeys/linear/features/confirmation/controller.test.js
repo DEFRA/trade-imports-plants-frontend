@@ -1,7 +1,9 @@
-import { SET_BASE } from '../../../../set.js'
+import { SET_BASE, SET_ID } from '../../../../set.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
+import { configureRecords } from '../../../../../../engine/persistence/records.js'
+import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import {
   authenticatedCredentials,
   driveHandler,
@@ -105,6 +107,28 @@ describe('confirmation', () => {
         expect(h.captured.view.context.notificationDate).toBe(shown)
       }
     )
+  })
+
+  describe('a submitted notification holding no submission instant', () => {
+    afterEach(() => configureRecords(SET_ID, recordsStub))
+
+    it('Should give a null notification date when the submitted journey holds no submission instant', async () => {
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+      await store.submit(journeyId)
+      configureRecords(SET_ID, {
+        ...recordsStub,
+        load: async (...args) => ({
+          ...(await recordsStub.load(...args)),
+          submittedAt: null
+        })
+      })
+      const h = stubH()
+
+      await get(journeyRequest(journeyId), h)
+
+      expect(h.captured.view.context.notificationDate).toBeNull()
+    })
   })
 
   it('Should quote the plants and wood window for a plants consignment', async () => {

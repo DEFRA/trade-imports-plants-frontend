@@ -4,7 +4,7 @@
  */
 export const copy = {
   sections: {
-    addresses: 'Addresses',
+    consignmentParties: 'Addresses',
     dashboard: 'Dashboard',
     aboutTheConsignment: 'About the consignment',
     arrival: 'Arrival',

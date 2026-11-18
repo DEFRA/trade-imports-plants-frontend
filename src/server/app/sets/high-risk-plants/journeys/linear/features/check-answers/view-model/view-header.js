@@ -4,6 +4,7 @@ import { journeyStrip } from '../../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../../shared/copy.js'
 import { notificationActionSlugs } from '../../../flow/notification-action-slugs.js'
 import { formatMomentAsLongDay } from '../../../../../../../lib/validate/index.js'
+import { submittedDayText } from './submitted-day-text.js'
 import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
 
@@ -16,17 +17,15 @@ const deleteButtonFor = (journey) => ({
 })
 
 const dateLine = (journey) => {
-  const { datedLineFor, instant } =
-    journey.status === SUBMITTED
-      ? {
-          datedLineFor: copy.viewHeader.dateSubmitted,
-          instant: journey.submittedAt
-        }
-      : {
-          datedLineFor: copy.viewHeader.dateCreated,
-          instant: journey.createdAt
-        }
-  return instant ? datedLineFor(formatMomentAsLongDay(new Date(instant))) : null
+  if (journey.status === SUBMITTED) {
+    const submittedDay = submittedDayText(journey)
+    return submittedDay ? copy.viewHeader.dateSubmitted(submittedDay) : null
+  }
+  return journey.createdAt
+    ? copy.viewHeader.dateCreated(
+        formatMomentAsLongDay(new Date(journey.createdAt))
+      )
+    : null
 }
 
 const amendAction = (journey) =>

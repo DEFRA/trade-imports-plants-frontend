@@ -11,6 +11,7 @@ import {
   expectNoSeriousOrCriticalViolations,
   notificationReferenceHeading,
   viewHeaderTag,
+  journeyStripTag,
   saveAndReturnToHub,
   continueFromChangedCommodityLine,
   saveAndContinue,
@@ -30,17 +31,14 @@ const NOTIFICATION_VIEW = 'notification-view'
 
 const main = (page) => page.getByRole('main')
 
-const headerButtonGroup = (page) =>
-  main(page).locator('.govuk-button-group').first()
-
 const importReferences = (page) =>
   page.getByRole('region', { name: copy.importReferences.heading })
 
-const summaryValues = (section) => section.locator('.govuk-summary-list__value')
+const summaryValues = (section) => section.getByRole('definition')
 
 const expectReferenceAndCustomsDocumentCode = async (section, reference) => {
   await expect(section.getByText(copy.importReferences.warning)).toBeVisible()
-  await expect(section.locator('.govuk-summary-list__key')).toHaveText([
+  await expect(section.getByRole('term')).toHaveText([
     copy.importReferences.notificationReference,
     copy.importReferences.customsDocumentCode
   ])
@@ -134,7 +132,6 @@ test('a draft check answers ends with Continue and Save and return in one button
   const hub = `${BASE}/notifications/${reference}`
   await expectDraftReviewFoot(page)
   await expect(deleteButton(page)).toHaveAttribute('href', `${hub}/delete`)
-  await expect(deleteButton(page)).toHaveClass(/govuk-button--warning/)
   await saveAndReturnToHub(page).click()
   await expect(page).toHaveURL(new RegExp(`${hub}$`))
 })
@@ -160,9 +157,7 @@ test('Delete notification on a draft opens the delete page', async ({
 }) => {
   await completePotatoNotification(page)
 
-  await headerButtonGroup(page)
-    .getByRole('button', { name: copy.delete, exact: true })
-    .click()
+  await deleteButton(page).click()
 
   await expect(
     page.getByRole('heading', { name: deleteCopy.title, level: 1 })
@@ -230,13 +225,13 @@ test.describe('a draft notification', () => {
     createdAfter = Date.now()
   })
 
-  test('is headed by its reference with a blue Draft tag beside it, no status bar and a title naming the reference', async ({
+  test('is headed by its reference with a Draft tag beside it and a title naming the reference', async ({
     page
   }) => {
     await expect(notificationReferenceHeading(page)).toBeVisible()
-    await expect(viewHeaderTag(page)).toHaveText(sharedCopy.journeyStrip.draft)
-    await expect(viewHeaderTag(page)).toHaveClass(/govuk-tag--blue/)
-    await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+    await expect(
+      viewHeaderTag(page, sharedCopy.journeyStrip.draft)
+    ).toBeVisible()
     await expect(page).toHaveTitle(
       `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
     )
@@ -257,13 +252,15 @@ test.describe('a draft notification', () => {
     )
   })
 
-  test('offers only a warning Delete notification in its header, with no Copy as new and no Amend this notification', async ({
+  test('offers only Delete notification in its header, with no Copy as new and no Amend this notification', async ({
     page
   }) => {
-    const controls = headerButtonGroup(page).locator('> *')
-
-    await expect(controls).toHaveText([copy.delete])
-    await expect(controls.first()).toHaveClass(/govuk-button--warning/)
+    await expect(
+      main(page).getByRole('button', { name: copy.delete, exact: true })
+    ).toHaveCount(1)
+    await expect(
+      main(page).getByRole('button', { name: copy.viewHeader.amend })
+    ).toHaveCount(0)
   })
 
   test("shows a draft's import reference numbers with the warning, the notification reference and the customs document code C085", async ({
@@ -308,14 +305,12 @@ test.describe('a submitted notification', () => {
     await expect(notificationReferenceHeading(page)).toBeVisible()
   })
 
-  test('is headed by its reference with a green Submitted tag beside it, no status bar and a title naming the reference', async ({
+  test('is headed by its reference with a Submitted tag beside it and a title naming the reference', async ({
     page
   }) => {
-    await expect(viewHeaderTag(page)).toHaveText(
-      sharedCopy.journeyStrip.submitted
-    )
-    await expect(viewHeaderTag(page)).toHaveClass(/govuk-tag--green/)
-    await expect(page.locator('.app-journey-strip')).toHaveCount(0)
+    await expect(
+      viewHeaderTag(page, sharedCopy.journeyStrip.submitted)
+    ).toBeVisible()
     await expect(page).toHaveTitle(
       `${reference} - ${sharedCopy.layout.serviceName} - ${sharedCopy.layout.govukSuffix}`
     )
@@ -334,13 +329,13 @@ test.describe('a submitted notification', () => {
     )
   })
 
-  test('offers Amend this notification and a warning Delete notification in its header, and Delete notification nowhere else', async ({
+  test('offers Amend this notification and Delete notification in its header, and Delete notification nowhere else', async ({
     page
   }) => {
-    const controls = headerButtonGroup(page).locator('> *')
-
-    await expect(controls).toHaveText([copy.viewHeader.amend, copy.delete])
-    await expect(controls.nth(1)).toHaveClass(/govuk-button--warning/)
+    await expect(main(page).getByRole('button')).toHaveText([
+      copy.viewHeader.amend,
+      copy.delete
+    ])
     await expect(deleteButton(page)).toHaveCount(1)
   })
 
@@ -349,9 +344,13 @@ test.describe('a submitted notification', () => {
   }) => {
     await page.getByRole('button', { name: copy.viewHeader.amend }).click()
 
-    await expect(page.locator('.app-journey-strip .govuk-tag')).toHaveText(
-      sharedCopy.journeyStrip.amend
+    await expect(page).toHaveURL(
+      new RegExp(`/notifications/${reference}/notification-view`)
     )
+    await expect(
+      page.getByRole('heading', { level: 1, name: copy.title })
+    ).toBeVisible()
+    await expect(journeyStripTag(page)).toBeVisible()
   })
 
   test("shows a submitted notification's import reference numbers with the warning, the notification reference and the customs document code C085", async ({

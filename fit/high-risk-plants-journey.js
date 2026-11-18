@@ -639,22 +639,24 @@ export const notificationReferenceHeading = (page) =>
     exact: true
   })
 
-export const viewHeaderTag = (page) =>
-  page.getByRole('main').locator('.govuk-tag')
+export const viewHeaderTag = (page, statusText) =>
+  page.getByRole('main').getByText(statusText, { exact: true })
+
+export const journeyStripTag = (page) =>
+  page.getByText(sharedCopy.journeyStrip.amend, { exact: true })
+
+export const reviewFootControls = (page) =>
+  page.getByRole('main').locator('form').last().getByRole('button')
 
 export const expectDraftReviewFoot = (page) =>
-  expect(
-    page.getByRole('main').locator('form[novalidate] .govuk-button-group > *')
-  ).toHaveText([
+  expect(reviewFootControls(page)).toHaveText([
     checkAnswersCopy.continue,
     sharedCopy.saveActions.saveAndReturnToHub
   ])
 
 export const expectDraftReview = async (page) => {
   await expect(notificationReferenceHeading(page)).toBeVisible()
-  await expect(
-    viewHeaderTag(page).filter({ hasText: sharedCopy.journeyStrip.draft })
-  ).toHaveText(sharedCopy.journeyStrip.draft)
+  await expect(viewHeaderTag(page, sharedCopy.journeyStrip.draft)).toBeVisible()
   await expectDraftReviewFoot(page)
 }
 

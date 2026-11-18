@@ -43,7 +43,7 @@ export const captionSections = [
   { id: 'arrival', pages: [arrivalStatusPage, arrivalDetailsPage] },
   { id: 'destination', pages: [placeOfDestinationPage] },
   {
-    id: 'addresses',
+    id: 'consignmentParties',
     pages: [consignorPage, identificationNumbersPage]
   }
 ]
