@@ -20,7 +20,7 @@ describe('section-caption copy modules', () => {
       aboutTheConsignment: 'About the consignment',
       arrival: 'Arrival',
       destination: 'Destination',
-      consignmentParties: 'Consignment parties'
+      addresses: 'Addresses'
     })
   })
 
@@ -30,7 +30,7 @@ describe('section-caption copy modules', () => {
       aboutTheConsignment: 'Am y llwyth',
       arrival: 'Cyrraedd',
       destination: 'Cyrchfan',
-      consignmentParties: 'Partïon y llwyth'
+      addresses: 'Cyfeiriadau'
     })
   })
 })

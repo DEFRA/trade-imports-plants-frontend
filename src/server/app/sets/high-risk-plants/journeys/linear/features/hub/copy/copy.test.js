@@ -17,7 +17,7 @@ describe('#copy', () => {
     expect(Object.values(copy.groups)).toEqual([
       '1. About the consignment',
       '2. Arrival and destination',
-      '3. Consignment parties',
+      '3. Addresses',
       '4. Check and submit'
     ])
   })
@@ -26,7 +26,7 @@ describe('#copy', () => {
     expect(Object.values(cy.groups)).toEqual([
       '1. Am y llwyth',
       '2. Cyrraedd a chyrchfan',
-      '3. Partïon y llwyth',
+      '3. Cyfeiriadau',
       '4. Gwirio a chyflwyno'
     ])
   })

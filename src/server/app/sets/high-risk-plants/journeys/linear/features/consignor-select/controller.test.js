@@ -42,12 +42,12 @@ describe('#meta', () => {
 describe('GET consignor-select — the question it asks', () => {
   useStubbedHighRiskPlantsJourney()
 
-  it('Should title and head the page Consignor and caption the consignment parties section', async () => {
+  it('Should title and head the page Consignor and caption the addresses section', async () => {
     const result = await driveHandler(get, { seed: plants() })
 
     expect(result.view.context.pageTitle).toBe('Consignor')
     expect(result.view.context.heading).toBe('Consignor')
-    expect(result.view.context.caption).toBe('Consignment parties')
+    expect(result.view.context.caption).toBe('Addresses')
   })
 })
 

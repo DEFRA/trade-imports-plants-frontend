@@ -49,7 +49,7 @@ export const copy = {
   sections: {
     consignment: '1. Am y llwyth',
     arrival: '2. Cyrraedd a chyrchfan',
-    parties: '3. Partïon y llwyth'
+    addresses: '3. Cyfeiriadau'
   },
   cards: {
     import: 'Manylion mewnforio',

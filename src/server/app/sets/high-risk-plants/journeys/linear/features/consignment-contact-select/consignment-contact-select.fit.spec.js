@@ -113,7 +113,7 @@ test.describe('consignment-contact-select feature', () => {
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
     await expect(
-      page.getByText(captionCopy.sections.consignmentParties, { exact: true })
+      page.getByText(captionCopy.sections.addresses, { exact: true })
     ).toHaveCount(0)
     await expect(
       page.getByText(copy.description, { exact: true })

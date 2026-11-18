@@ -284,8 +284,8 @@ const arrivalSection = (context) => ({
   ]
 })
 
-const partiesSection = (context) => ({
-  heading: copy.sections.parties,
+const addressesSection = (context) => ({
+  heading: copy.sections.addresses,
   cards: [
     ...(context.scope.has('consignor')
       ? [
@@ -327,6 +327,6 @@ export const buildSections = async (
   return [
     consignmentSection(context),
     arrivalSection(context),
-    partiesSection(context)
+    addressesSection(context)
   ]
 }

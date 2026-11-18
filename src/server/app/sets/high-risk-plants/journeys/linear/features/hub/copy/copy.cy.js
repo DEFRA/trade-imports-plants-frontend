@@ -13,7 +13,7 @@ export const copy = {
   groups: {
     'about-the-consignment': '1. Am y llwyth',
     'arrival-and-destination': '2. Cyrraedd a chyrchfan',
-    'consignment-parties': '3. Partïon y llwyth',
+    'consignment-parties': '3. Cyfeiriadau',
     'check-and-submit': '4. Gwirio a chyflwyno'
   },
   rows: {

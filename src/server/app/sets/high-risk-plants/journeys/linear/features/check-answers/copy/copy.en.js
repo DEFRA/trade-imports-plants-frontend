@@ -47,7 +47,7 @@ export const copy = {
   sections: {
     consignment: '1. About the consignment',
     arrival: '2. Arrival and destination',
-    parties: '3. Consignment parties'
+    addresses: '3. Addresses'
   },
   cards: {
     import: 'Import details',

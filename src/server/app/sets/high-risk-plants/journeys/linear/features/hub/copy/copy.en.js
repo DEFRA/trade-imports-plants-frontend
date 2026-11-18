@@ -12,7 +12,7 @@ export const copy = {
   groups: {
     'about-the-consignment': '1. About the consignment',
     'arrival-and-destination': '2. Arrival and destination',
-    'consignment-parties': '3. Consignment parties',
+    'consignment-parties': '3. Addresses',
     'check-and-submit': '4. Check and submit'
   },
   rows: {

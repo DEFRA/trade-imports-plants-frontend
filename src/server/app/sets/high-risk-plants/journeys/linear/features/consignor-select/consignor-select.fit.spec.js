@@ -104,7 +104,7 @@ test.describe('consignor-select feature', () => {
     await startAtConsignor(page)
 
     await expect(
-      page.getByText(captionsCopy.sections.consignmentParties, { exact: true })
+      page.getByText(captionsCopy.sections.addresses, { exact: true })
     ).toBeVisible()
     await expect(
       page.getByRole('heading', { name: copy.title, level: 1 })
