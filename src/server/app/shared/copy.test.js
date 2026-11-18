@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { copyFor } from './copy.js'
-import { leaves } from './copy-leaves.js'
+import { itHoldsCopyAtEveryLeaf } from '../engine/test-support.js'
 import { copy as sharedEn } from './copy.en.js'
 import { copy as sharedCy } from './copy.cy.js'
 
@@ -120,12 +120,5 @@ describe('save-actions copy', () => {
 })
 
 describe('shared copy module', () => {
-  it('Should have a non-empty string at every leaf', () => {
-    for (const { path, value } of leaves(sharedEn)) {
-      expect(typeof value, `${path} must be a string`).toBe('string')
-      expect(value.trim().length, `${path} must not be empty`).toBeGreaterThan(
-        0
-      )
-    }
-  })
+  itHoldsCopyAtEveryLeaf(sharedEn, sharedCy)
 })

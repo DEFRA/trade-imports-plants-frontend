@@ -2,7 +2,7 @@
 export const copy = {
   title: 'Cyfeiriad cyswllt ar gyfer y llwyth',
   description:
-    "Mae dewis cyswllt yn copïo eu henw a'u cyfeiriad i'r hysbysiad hwn.",
+    'Dyma gyfeiriad cyswllt y person sy’n gyfrifol am y llwyth o’r adeg y mae’n cyrraedd Prydain Fawr hyd nes bod yr awdurdodau wedi cwblhau eu gwiriadau.',
   errors: {
     contactAddress: 'Dewiswch gyfeiriad cyswllt o’r rhestr'
   }

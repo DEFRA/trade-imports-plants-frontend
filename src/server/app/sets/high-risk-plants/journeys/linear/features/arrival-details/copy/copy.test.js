@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
+import { itHoldsCopyAtEveryLeaf } from '../../../../../../../engine/test-support.js'
 import { DATE_STATES } from '../fields.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
@@ -8,15 +8,7 @@ import { copy as cy } from './copy.cy.js'
 const LOCALES = { en: copy, cy }
 
 describe('#copy', () => {
-  it('Should hold a non-empty string or copy function at every leaf of both locales', () => {
-    const offenders = Object.entries(LOCALES).flatMap(([locale, bundle]) =>
-      leaves(bundle)
-        .filter(({ value }) => !isCopyLeaf(value))
-        .map(({ path }) => `${locale}: ${path}`)
-    )
-
-    expect(offenders).toEqual([])
-  })
+  itHoldsCopyAtEveryLeaf(copy, cy)
 
   it('Should label and hint exactly the date states the page can ask in, in both locales', () => {
     const states = [...DATE_STATES].toSorted()
