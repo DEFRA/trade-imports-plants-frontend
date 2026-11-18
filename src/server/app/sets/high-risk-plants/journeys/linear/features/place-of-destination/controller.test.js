@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { hubPath } from '../../../../../../shared/paths.js'
+import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_NOTIFICATION,
   plants,
@@ -46,6 +47,12 @@ describe('GET place-of-destination — the question it asks', () => {
 
     expect(result.view.context.pageTitle).toBe('Place of destination')
     expect(result.view.context.caption).toBe('Destination')
+  })
+
+  it('Should carry the shared save-actions copy, both return controls included', async () => {
+    const result = await driveHandler(get, { seed: potatoes() })
+
+    expect(result.view.context.saveActionsCopy).toEqual(sharedCopy.saveActions)
   })
 
   it('Should ask potatoes for the place of destination', async () => {

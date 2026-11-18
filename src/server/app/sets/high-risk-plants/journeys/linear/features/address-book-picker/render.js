@@ -59,6 +59,7 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {Function} binding.pickerViewModel - the page's bound view model.
  * @param {string} binding.heading - the question, as this page asks it.
  * @param {string} binding.description - the text under the question.
+ * @param {object} [binding.saveActionsCopy] - the page's own words for its save-and-return and cancel controls, defaulting to the shared copy.
  * @returns {Promise<object>} the Hapi view response.
  */
 export const renderPicker = async (
@@ -66,7 +67,16 @@ export const renderPicker = async (
   h,
   current,
   { query, selectedId, error, recoverableError = false },
-  { page, copy, fieldName, role, pickerViewModel, heading, description }
+  {
+    page,
+    copy,
+    fieldName,
+    role,
+    pickerViewModel,
+    heading,
+    description,
+    saveActionsCopy
+  }
 ) => {
   const orgId = organisationIdOf(request)
   const found = await addressBook.addresses(orgId, { query, role })
@@ -86,6 +96,7 @@ export const renderPicker = async (
     pickerCopy,
     heading,
     description,
+    saveActionsCopy: { ...kit.sharedCopy.saveActions, ...saveActionsCopy },
     heldCopy: await heldCopyOf(request, current, fieldName),
     errorSummary: kit.errorSummary(error ? { [fieldName]: error } : undefined, {
       href: () => (found.length > 0 ? `#${fieldName}` : '#q')

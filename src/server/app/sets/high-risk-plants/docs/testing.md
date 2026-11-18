@@ -64,10 +64,13 @@ holds the steps more than one spec takes: `startNotification`,
 `chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
 `startPotatoNotificationAtContact`, `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which finds the save controls by
-role inside the journey form. It fails unless Save and continue, Save and return to overview and
-Cancel and return to overview appear in that order. The two buttons must be the only buttons in one
-button group, and the link must sit below that group,
-`saveAndReturnToHub`, which finds the Save and return to overview button,
+role inside the journey form. It fails unless Save and continue, then the page's own
+save-and-return control and cancel link, appear in that order, defaulting to the
+shared "Save and return to overview" and "Cancel and return to overview" wording.
+The two buttons must be the only buttons in one button group, and the link must
+sit below that group,
+`saveAndReturnToHub`, which finds the page's save-and-return button, defaulting
+to the shared "Save and return to overview" wording,
 `startNotificationAtOverview`, which starts a notification, saves potatoes as its commodity type and opens its Overview,
 `startWoodNotificationAtPlaceOfDestination`, which starts a cut coniferous trees notification and walks it through arrival to the place of destination page,
 `submitDeclarationFromCheckAnswers`, which submits the declaration from the review,
@@ -95,7 +98,9 @@ address picker page by the address's name, and `searchBox`, which
 finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
 one single-address picker, given the role's addresses to list, a second
-role address to replace the first with, and the role's whole count, among them the test that the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border (each read from a reference element at run time), the test that the role's listed address reads its Address cell as separate lines rather than one joined line, and the test that the row's "View details" disclosure opens in place and holds exactly that address's telephone number and email address; `postAnIdNotInTheBook`, which posts a picker with an id the
+role address to replace the first with, the role's whole count, and the
+picker's own words for its save-and-return control and its cancel link,
+defaulting to the shared copy, among them the test that the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border (each read from a reference element at run time), the test that the role's listed address reads its Address cell as separate lines rather than one joined line, and the test that the row's "View details" disclosure opens in place and holds exactly that address's telephone number and email address; `postAnIdNotInTheBook`, which posts a picker with an id the
 book does not hold, appended as a hidden input under the first radio's name,
 through the save control its `saveControlOf` option names (Save and continue by default);
 `postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;

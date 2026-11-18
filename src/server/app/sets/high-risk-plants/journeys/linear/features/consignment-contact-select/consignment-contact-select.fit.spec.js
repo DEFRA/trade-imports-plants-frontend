@@ -6,6 +6,7 @@ import {
   IMPORT_CO,
   addressRowRadio,
   backLink,
+  cancelAndReturnToHub,
   describeAddressPicker,
   describeSubmittedSearchPicker,
   expectThreeSaveControls,
@@ -101,7 +102,9 @@ describeAddressPicker({
   wholeCount: 14,
   landingAlerts: [
     `${sharedCopy.errorSummary.title} ${checkAnswersCopy.errors.cards.contact}`
-  ]
+  ],
+  saveAndReturnToHubLabel: copy.saveActions.saveAndReturnToHub,
+  cancelAndReturnToHubLabel: copy.saveActions.cancelAndReturnToHub
 })
 
 test.describe('consignment-contact-select feature', () => {
@@ -142,10 +145,15 @@ test.describe('consignment-contact-select feature', () => {
     await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
-  test('offers the three save controls', async ({ page }) => {
+  test('offers Save and continue, Save and return to hub and Cancel and return to hub in that order', async ({
+    page
+  }) => {
     await startAtContact(page)
 
-    await expectThreeSaveControls(page)
+    await expectThreeSaveControls(page, {
+      saveAndReturnToHubLabel: copy.saveActions.saveAndReturnToHub,
+      cancelAndReturnToHubLabel: copy.saveActions.cancelAndReturnToHub
+    })
   })
 
   test('sends Back to the overview', async ({ page }) => {
@@ -171,7 +179,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndReturnToHub(page).click()
+    await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
@@ -184,7 +192,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
 
     await addressRowRadio(page, COPENHAGEN).check()
-    await saveAndReturnToHub(page).click()
+    await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
@@ -193,17 +201,16 @@ test.describe('consignment-contact-select — the overview task row', () => {
     await expect(addressRowRadio(page, COPENHAGEN)).toBeChecked()
   })
 
-  test('Cancel and return to overview leaves the contact row not yet started', async ({
+  test('Cancel and return to hub leaves the contact row not yet started', async ({
     page
   }) => {
     await startAtContact(page)
 
     await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await page
-      .getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-      .click()
+    await cancelAndReturnToHub(
+      page,
+      copy.saveActions.cancelAndReturnToHub
+    ).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
@@ -257,12 +264,12 @@ test.describe('consignment-contact-select — a blank save', () => {
     await expectTaskNotYetStarted(page, reference)
   })
 
-  test('blank contact Save and return to overview opens Overview and leaves the task not yet started', async ({
+  test('blank contact Save and return to hub opens Overview and leaves the task not yet started', async ({
     page
   }) => {
     const reference = await startAtContact(page)
 
-    await saveAndReturnToHub(page).click()
+    await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expectTaskNotYetStarted(page, reference)

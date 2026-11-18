@@ -29,7 +29,8 @@ const renderPickerPage = (picker, request, h, current, pickerState) =>
     role: picker.role,
     pickerViewModel: picker.pickerViewModel,
     heading: picker.heading(current),
-    description: picker.description(current)
+    description: picker.description(current),
+    saveActionsCopy: picker.saveActionsCopy
   })
 
 const redirectOutOfScope = (picker, request, h, current) => {
@@ -157,6 +158,7 @@ const postPicker = async (picker, request, h) => {
  * @param {Function} picker.pickerViewModel - the page's bound view model.
  * @param {Function} picker.heading - gives the question, as this page asks it, from the journey state.
  * @param {Function} picker.description - gives the text under the question from the journey state.
+ * @param {object} [picker.saveActionsCopy] - the page's own words for its save-and-return and cancel controls, defaulting to the shared copy.
  * @param {Function} [picker.inScope] - tells from the journey state whether the page applies; out of scope it redirects to the overview.
  * @returns {object[]} the Hapi routes.
  */

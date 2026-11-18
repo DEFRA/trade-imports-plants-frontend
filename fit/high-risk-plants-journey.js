@@ -71,15 +71,21 @@ export const saveAndContinue = (page) =>
     exact: true
   })
 
-export const saveAndReturnToHub = (page) =>
+export const saveAndReturnToHub = (
+  page,
+  label = sharedCopy.saveActions.saveAndReturnToHub
+) =>
   page.getByRole('button', {
-    name: sharedCopy.saveActions.saveAndReturnToHub,
+    name: label,
     exact: true
   })
 
-const cancelAndReturnToHub = (page) =>
+export const cancelAndReturnToHub = (
+  page,
+  label = sharedCopy.saveActions.cancelAndReturnToHub
+) =>
   page.getByRole('link', {
-    name: sharedCopy.saveActions.cancelAndReturnToHub
+    name: label
   })
 
 const documentTop = (locator) =>
@@ -514,30 +520,39 @@ export const describeDatePickerLook = ({
   })
 }
 
+const returnControlLabelsOf = ({
+  saveAndReturnToHubLabel = sharedCopy.saveActions.saveAndReturnToHub,
+  cancelAndReturnToHubLabel = sharedCopy.saveActions.cancelAndReturnToHub
+}) => ({ saveAndReturnToHubLabel, cancelAndReturnToHubLabel })
+
 /**
- * Fails unless the journey form offers Save and continue, Save and return to
- * overview and Cancel and return to overview in that order, with Save and
- * return to overview as the form's last button.
- * Save and continue and Save and return to overview must be the only buttons
+ * Fails unless the journey form offers Save and continue, the page's
+ * save-and-return control and its cancel link in that order, with the
+ * save-and-return control as the form's last button.
+ * Save and continue and the save-and-return control must be the only buttons
  * in one button group.
- * Cancel and return to overview must sit below that group.
+ * The cancel link must sit below that group.
  *
  * @param {import('@playwright/test').Page} page
+ * @param {{ saveAndReturnToHubLabel?: string, cancelAndReturnToHubLabel?: string }} [labels] -
+ *   the page's own words for the two return controls, defaulting to the shared copy.
  */
-export const expectThreeSaveControls = async (page) => {
+export const expectThreeSaveControls = async (page, labels = {}) => {
+  const { saveAndReturnToHubLabel, cancelAndReturnToHubLabel } =
+    returnControlLabelsOf(labels)
   const form = journeyFormOf(page)
   const saveControls = form
     .locator(saveAndContinue(page))
-    .or(form.locator(saveAndReturnToHub(page)))
-    .or(form.locator(cancelAndReturnToHub(page)))
+    .or(form.locator(saveAndReturnToHub(page, saveAndReturnToHubLabel)))
+    .or(form.locator(cancelAndReturnToHub(page, cancelAndReturnToHubLabel)))
 
   await expect(saveControls).toHaveText([
     sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub,
-    sharedCopy.saveActions.cancelAndReturnToHub
+    saveAndReturnToHubLabel,
+    cancelAndReturnToHubLabel
   ])
   await expect(form.getByRole('button').last()).toHaveText(
-    sharedCopy.saveActions.saveAndReturnToHub
+    saveAndReturnToHubLabel
   )
 
   const buttonGroup = form.locator('.govuk-button-group', {
@@ -545,11 +560,11 @@ export const expectThreeSaveControls = async (page) => {
   })
   await expect(buttonGroup.getByRole('button')).toHaveText([
     sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub
+    saveAndReturnToHubLabel
   ])
-  expect(await documentTop(cancelAndReturnToHub(page))).toBeGreaterThanOrEqual(
-    await documentBottom(buttonGroup)
-  )
+  expect(
+    await documentTop(cancelAndReturnToHub(page, cancelAndReturnToHubLabel))
+  ).toBeGreaterThanOrEqual(await documentBottom(buttonGroup))
 }
 
 /**
@@ -1108,25 +1123,30 @@ export const postAnIdNotInTheBookAfterAnEmptySearch = async (
  * @param {string} options.denmarkMatch - a stub address this picker lists for a "Denmark" search
  * @param {number} options.wholeCount - how many stub addresses carry this picker's role, or none
  * @param {string[]} [options.landingAlerts] - the text of each alert on the page Save and continue goes to with nothing chosen; none by default
+ * @param {string} [options.saveAndReturnToHubLabel] - the picker's own words for the save-and-return control, defaulting to the shared copy
+ * @param {string} [options.cancelAndReturnToHubLabel] - the picker's own words for the cancel link, defaulting to the shared copy
  */
-export const describeAddressPicker = ({
-  pickerName,
-  openPicker,
-  pathOf,
-  notInBookError,
-  hubRowTitle,
-  hubUrl,
-  pageUrl,
-  afterSaveUrl,
-  firstRowRadio,
-  roleAddress,
-  secondRoleAddress,
-  rolelessAddress,
-  otherRoleAddress,
-  denmarkMatch,
-  wholeCount,
-  landingAlerts = []
-}) => {
+export const describeAddressPicker = (picker) => {
+  const {
+    pickerName,
+    openPicker,
+    pathOf,
+    notInBookError,
+    hubRowTitle,
+    hubUrl,
+    pageUrl,
+    afterSaveUrl,
+    firstRowRadio,
+    roleAddress,
+    secondRoleAddress,
+    rolelessAddress,
+    otherRoleAddress,
+    denmarkMatch,
+    wholeCount,
+    landingAlerts = []
+  } = picker
+  const { saveAndReturnToHubLabel, cancelAndReturnToHubLabel } =
+    returnControlLabelsOf(picker)
   const notInBookLink = (page) => errorSummaryLinks(page, notInBookError)
   const notYetStartedStatusOnOverviewRow = (page) =>
     page
@@ -1288,13 +1308,13 @@ export const describeAddressPicker = ({
       await expect(addressRowRadio(page, roleAddress)).not.toBeChecked()
     })
 
-    test('Save and return to overview saves the address and reaches the overview', async ({
+    test(`${saveAndReturnToHubLabel} saves the address and reaches the overview`, async ({
       page
     }) => {
       const reference = await openPicker(page)
 
       await addressRowRadio(page, roleAddress).check()
-      await saveAndReturnToHub(page).click()
+      await saveAndReturnToHub(page, saveAndReturnToHubLabel).click()
 
       await expect(page).toHaveURL(hubUrl)
 
@@ -1302,12 +1322,12 @@ export const describeAddressPicker = ({
       await expect(addressRowRadio(page, roleAddress)).toBeChecked()
     })
 
-    test('Save and return to overview with nothing chosen reaches the overview without an error', async ({
+    test(`${saveAndReturnToHubLabel} with nothing chosen reaches the overview without an error`, async ({
       page
     }) => {
       const reference = await openPicker(page)
 
-      await saveAndReturnToHub(page).click()
+      await saveAndReturnToHub(page, saveAndReturnToHubLabel).click()
 
       await expect(page).toHaveURL(hubUrl)
 
@@ -1316,13 +1336,13 @@ export const describeAddressPicker = ({
       await expect(errorSummary(page)).toHaveCount(0)
     })
 
-    test('Cancel and return to overview reaches the overview without saving', async ({
+    test(`${cancelAndReturnToHubLabel} reaches the overview without saving`, async ({
       page
     }) => {
       const reference = await openPicker(page)
 
       await addressRowRadio(page, roleAddress).check()
-      await cancelAndReturnToHub(page).click()
+      await cancelAndReturnToHub(page, cancelAndReturnToHubLabel).click()
 
       await expect(page).toHaveURL(hubUrl)
 
@@ -1407,13 +1427,16 @@ export const describeAddressPicker = ({
       )
     })
 
-    test('an address not in the book is refused on Save and return to overview, staying on the page and keeping the search', async ({
+    test(`an address not in the book is refused on ${saveAndReturnToHubLabel}, staying on the page and keeping the search`, async ({
       page
     }) => {
       await openPicker(page)
       await searchBox(page).fill(DENMARK)
 
-      await postAnIdNotInTheBook(page, { saveControlOf: saveAndReturnToHub })
+      await postAnIdNotInTheBook(page, {
+        saveControlOf: (page) =>
+          saveAndReturnToHub(page, saveAndReturnToHubLabel)
+      })
 
       await expect(page).toHaveURL(pageUrl)
       await expect(notInBookLink(page)).toBeVisible()

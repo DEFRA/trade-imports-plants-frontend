@@ -8,6 +8,7 @@ import {
   reviewChangeLinkQuery
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
   plants,
@@ -48,6 +49,12 @@ describe('GET consignor-select — the question it asks', () => {
     expect(result.view.context.pageTitle).toBe('Consignor')
     expect(result.view.context.heading).toBe('Consignor')
     expect(result.view.context.caption).toBe('Consignment parties')
+  })
+
+  it('Should carry the shared save-actions copy, both return controls included', async () => {
+    const result = await driveHandler(get, { seed: plants() })
+
+    expect(result.view.context.saveActionsCopy).toEqual(sharedCopy.saveActions)
   })
 })
 

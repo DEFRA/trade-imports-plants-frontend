@@ -11,7 +11,11 @@ import {
   unavailableBackendError
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
-import { SURFACES, withTrail } from '../../../../../../shared/kit.js'
+import {
+  sharedCopy,
+  SURFACES,
+  withTrail
+} from '../../../../../../shared/kit.js'
 import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR
@@ -35,9 +39,13 @@ const redirectAfterSave = ({ nextSlug, slug }, savePayload, journeyId) =>
     ? hubPath(journeyId)
     : withTrail(pagePath(journeyId, nextSlug), [slug])
 
-const SAVE_CONTROLS = [
+const saveAndReturnToHubLabelOf = ({
+  saveAndReturnToHubLabel = sharedCopy.saveActions.saveAndReturnToHub
+}) => saveAndReturnToHubLabel
+
+const saveControlsFor = (picker) => [
   ['Save and continue', { action: 'save' }],
-  ['Save and return to overview', { exit: 'hub' }]
+  [saveAndReturnToHubLabelOf(picker), { exit: 'hub' }]
 ]
 const DENMARK = 'Denmark'
 const MATCHES_NOTHING = 'nothing matches this'
@@ -250,7 +258,7 @@ const describeNothingChosen = (picker) => {
   describe(`POST ${pickerName} — a save with nothing chosen`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it.each(SAVE_CONTROLS)(
+    it.each(saveControlsFor(picker))(
       'Should move on from %s, committing nothing and raising no error',
       async (_label, savePayload) => {
         const result = await savedWith(savePayload)
@@ -292,7 +300,7 @@ const describeAddressNotInTheBook = (pickerConfig) => {
   describe(`POST ${pickerName} — an address the book does not hold`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it.each(SAVE_CONTROLS)(
+    it.each(saveControlsFor(pickerConfig))(
       'Should refuse the id on %s, linking the error to the first row and describing the group by it',
       async (_label, savePayload) => {
         const result = await savedWith({
@@ -343,7 +351,7 @@ const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
   describe(`POST ${pickerName} — a refused save keeps the search`, () => {
     useStubbedHighRiskPlantsJourney()
 
-    it.each(SAVE_CONTROLS)(
+    it.each(saveControlsFor(pickerConfig))(
       'Should keep the search term and its results when %s is refused',
       async (_label, savePayload) => {
         const result = await savedWith({
@@ -409,6 +417,7 @@ const describeDeletedRecord = (picker) => {
 
 const describeAcceptedAnswers = (picker) => {
   const { pickerName, get, fieldName, primaryId, secondId } = picker
+  const saveAndReturnToHubLabel = saveAndReturnToHubLabelOf(picker)
   const savedWith = savedWithFor(picker)
 
   describe(`POST ${pickerName} — accepted answers`, () => {
@@ -436,7 +445,7 @@ const describeAcceptedAnswers = (picker) => {
       expect(result.after[fieldName]).toEqual(copied(secondId))
     })
 
-    it('Should honour Save and return to overview', async () => {
+    it(`Should honour ${saveAndReturnToHubLabel}`, async () => {
       const result = await savedWith({
         [fieldName]: primaryId,
         exit: 'hub'
@@ -524,6 +533,7 @@ const describeSaveFailures = (picker) => {
  * @param {string} picker.primaryId - a stub record id carrying this picker's role
  * @param {string} picker.primaryName - that record's name
  * @param {string} picker.secondId - a second stub record id carrying this picker's role
+ * @param {string} [picker.saveAndReturnToHubLabel] - the picker's own words for the save-and-return control, defaulting to the shared copy
  */
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)

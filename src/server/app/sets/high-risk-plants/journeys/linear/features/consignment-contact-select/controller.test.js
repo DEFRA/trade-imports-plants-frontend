@@ -50,6 +50,20 @@ describe('GET contact — the question it asks', () => {
     expect(result.view.context.description).toBe(copy.description)
     expect(result.view.context.caption).toBeUndefined()
   })
+
+  it('Should carry a save-actions copy whose primary reads the shared wording and whose two return controls read the page’s own words', async () => {
+    const result = await driveHandler(get, { seed: plants() })
+
+    expect(result.view.context.saveActionsCopy.saveAndContinue).toBe(
+      'Save and continue'
+    )
+    expect(result.view.context.saveActionsCopy.saveAndReturnToHub).toBe(
+      copy.saveActions.saveAndReturnToHub
+    )
+    expect(result.view.context.saveActionsCopy.cancelAndReturnToHub).toBe(
+      copy.saveActions.cancelAndReturnToHub
+    )
+  })
 })
 
 describeAddressBookPickerController({
@@ -71,7 +85,8 @@ describeAddressBookPickerController({
   denmarkMatches: ['copenhagen-exports-aps', 'aarhus-trading-aps'],
   primaryId: TECH_IMPORTS_ID,
   primaryName: TECH_IMPORTS_NAME,
-  secondId: 'import-co-uk'
+  secondId: 'import-co-uk',
+  saveAndReturnToHubLabel: copy.saveActions.saveAndReturnToHub
 })
 
 describe('POST contact — what it commits', () => {

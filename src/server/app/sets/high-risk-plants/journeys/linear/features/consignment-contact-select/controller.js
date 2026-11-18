@@ -16,5 +16,6 @@ export const routes = pickerRoutes({
   copy,
   pickerViewModel,
   heading: () => copy.title,
-  description: () => copy.description
+  description: () => copy.description,
+  saveActionsCopy: copy.saveActions
 })

@@ -31,6 +31,19 @@ describe('#copy', () => {
       'Dewiswch gyfeiriad cyswllt o’r rhestr'
     )
   })
+
+  it('Should hold the two return-control words as the design source sets them, with a Welsh draft that differs', () => {
+    expect(copy.saveActions.saveAndReturnToHub).toBe('Save and return to hub')
+    expect(copy.saveActions.cancelAndReturnToHub).toBe(
+      'Cancel and return to hub'
+    )
+    expect(cy.saveActions.saveAndReturnToHub).not.toBe(
+      copy.saveActions.saveAndReturnToHub
+    )
+    expect(cy.saveActions.cancelAndReturnToHub).not.toBe(
+      copy.saveActions.cancelAndReturnToHub
+    )
+  })
 })
 
 describe('GET contact — copy reaches the view', () => {
