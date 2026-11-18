@@ -5,8 +5,8 @@ import { createLogger } from '../logging/logger.js'
 
 const logger = createLogger()
 
-const BACKEND_CALLS_METRIC = 'BackendCalls'
-const SESSION_RESOLUTIONS_METRIC = 'SessionResolutions'
+const BACKEND_CALLS_METRIC = 'page.request.backend.calls'
+const SESSION_RESOLUTIONS_METRIC = 'page.request.session.resolutions'
 const COUNT = 'Count'
 
 /**
@@ -20,7 +20,7 @@ export const recordPageRequest = async ({
   sessionResolutions
 }) => {
   const metricsLogger = new Metrics(logger).getMetricsLogger({
-    RequestKind: 'page'
+    'request.kind': 'page'
   })
   metricsLogger.setNamespace(config.get('metrics.namespace'))
   metricsLogger.putMetric(BACKEND_CALLS_METRIC, backendCalls, COUNT)

@@ -44,14 +44,20 @@ describe('page request metrics', () => {
     const [document] = documents
     const directive = document._aws.CloudWatchMetrics[0]
     expect(directive.Namespace).toBe(TEST_NAMESPACE)
-    expect(directive.Dimensions).toEqual([['RequestKind']])
+    expect(directive.Dimensions).toEqual([['request.kind']])
     expect(directive.Metrics).toEqual([
-      expect.objectContaining({ Name: 'BackendCalls', Unit: 'Count' }),
-      expect.objectContaining({ Name: 'SessionResolutions', Unit: 'Count' })
+      expect.objectContaining({
+        Name: 'page.request.backend.calls',
+        Unit: 'Count'
+      }),
+      expect.objectContaining({
+        Name: 'page.request.session.resolutions',
+        Unit: 'Count'
+      })
     ])
-    expect(document.RequestKind).toBe('page')
-    expect(document.BackendCalls).toBe(3)
-    expect(document.SessionResolutions).toBe(2)
+    expect(document['request.kind']).toBe('page')
+    expect(document['page.request.backend.calls']).toBe(3)
+    expect(document['page.request.session.resolutions']).toBe(2)
   })
 
   test('recording in the background emits the same document', async () => {
@@ -62,10 +68,10 @@ describe('page request metrics', () => {
     const [document] = readEmfDocuments(logSpy)
     const directive = document._aws.CloudWatchMetrics[0]
     expect(directive.Namespace).toBe(TEST_NAMESPACE)
-    expect(directive.Dimensions).toEqual([['RequestKind']])
-    expect(document.RequestKind).toBe('page')
-    expect(document.BackendCalls).toBe(1)
-    expect(document.SessionResolutions).toBe(1)
+    expect(directive.Dimensions).toEqual([['request.kind']])
+    expect(document['request.kind']).toBe('page')
+    expect(document['page.request.backend.calls']).toBe(1)
+    expect(document['page.request.session.resolutions']).toBe(1)
   })
 
   test('recording in the background logs a warning with the error when the flush rejects', async () => {
