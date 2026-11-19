@@ -8,7 +8,8 @@ import {
 import {
   errorSummary,
   viewHeaderTag,
-  journeyStripTag,
+  journeyStrip,
+  journeyStripStatus,
   reviewFootControls,
   changeCommodityType,
   completePotatoNotification,
@@ -99,7 +100,9 @@ test('No preserves the amendment and its changes after reload', async ({
   await page.getByRole('button', { name: cancelCopy.noLink }).click()
   await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page.reload()
-  await expect(journeyStripTag(page)).toHaveText(sharedCopy.journeyStrip.amend)
+  await expect(
+    journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+  ).toBeVisible()
   await expect(page.getByText('DiscardMe99', { exact: true })).toBeVisible()
 })
 
@@ -108,8 +111,10 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
 }) => {
   const reference = journeyIdFromPage(page)
   await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
-  await expect(journeyStripTag(page)).toHaveText(sharedCopy.journeyStrip.amend)
-  await expect(page.getByText(reference, { exact: true }).first()).toBeVisible()
+  await expect(
+    journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+  ).toBeVisible()
+  await expect(journeyStrip(page)).toContainText(reference)
 
   await cancelAmendLink(page).click()
 
@@ -121,7 +126,9 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
 
   await page.getByRole('button', { name: cancelCopy.noLink }).click()
   await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
-  await expect(journeyStripTag(page)).toHaveText(sharedCopy.journeyStrip.amend)
+  await expect(
+    journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+  ).toBeVisible()
   await expect(
     page.getByRole('button', { name: sharedCopy.journeyStrip.cancelAmend })
   ).toBeVisible()
@@ -188,7 +195,9 @@ test('Continue on an incomplete amendment shows There is a problem, naming the o
       exact: true
     })
   ).toBeVisible()
-  await expect(journeyStripTag(page)).toHaveText(sharedCopy.journeyStrip.amend)
+  await expect(
+    journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+  ).toBeVisible()
 })
 
 test('The commodities list ends as it does on a draft while amending, and Save and continue opens origin', async ({
@@ -225,7 +234,9 @@ test('Cancel and return to overview while amending opens Overview without saving
     .click()
 
   await expect(page).toHaveURL(setUrl(`/notifications/${reference}$`))
-  await expect(journeyStripTag(page)).toHaveText(sharedCopy.journeyStrip.amend)
+  await expect(
+    journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+  ).toBeVisible()
   await expect(cancelAmendLink(page)).toBeVisible()
   await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
   await expect(

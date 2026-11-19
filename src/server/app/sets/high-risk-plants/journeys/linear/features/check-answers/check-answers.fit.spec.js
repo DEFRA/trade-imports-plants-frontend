@@ -9,9 +9,10 @@ import {
   completePotatoNotification,
   expectDraftReviewFoot,
   expectNoSeriousOrCriticalViolations,
+  formSubmittedBy,
   notificationReferenceHeading,
   viewHeaderTag,
-  journeyStripTag,
+  journeyStripStatus,
   saveAndReturnToHub,
   continueFromChangedCommodityLine,
   saveAndContinue,
@@ -30,6 +31,9 @@ import { TECH_IMPORTS_ADDRESS_LINES } from '../../test-support.js'
 const NOTIFICATION_VIEW = 'notification-view'
 
 const main = (page) => page.getByRole('main')
+
+const viewHeaderButtons = (page) =>
+  main(page).locator('.govuk-button-group').first()
 
 const importReferences = (page) =>
   page.getByRole('region', { name: copy.importReferences.heading })
@@ -131,12 +135,17 @@ test('a draft check answers ends with Continue and Save and return in one button
   const reference = await completePotatoNotification(page)
   const hub = `${BASE}/notifications/${reference}`
   await expectDraftReviewFoot(page)
-  await expect(deleteButton(page)).toHaveAttribute('href', `${hub}/delete`)
+  const headerDelete = viewHeaderButtons(page).getByRole('button', {
+    name: copy.delete,
+    exact: true
+  })
+  await expect(headerDelete).toHaveAttribute('href', `${hub}/delete`)
+  await expect(headerDelete).toHaveClass(/govuk-button--warning/)
   await saveAndReturnToHub(page).click()
   await expect(page).toHaveURL(new RegExp(`${hub}$`))
 })
 
-test('a draft check answers offers Cancel and return to overview below the group and Back to the contact page', async ({
+test('a draft check answers offers Cancel and return to overview and Back to the contact page', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
@@ -255,12 +264,9 @@ test.describe('a draft notification', () => {
   test('offers only Delete notification in its header, with no Copy as new and no Amend this notification', async ({
     page
   }) => {
-    await expect(
-      main(page).getByRole('button', { name: copy.delete, exact: true })
-    ).toHaveCount(1)
-    await expect(
-      main(page).getByRole('button', { name: copy.viewHeader.amend })
-    ).toHaveCount(0)
+    await expect(viewHeaderButtons(page).getByRole('button')).toHaveText([
+      copy.delete
+    ])
   })
 
   test("shows a draft's import reference numbers with the warning, the notification reference and the customs document code C085", async ({
@@ -342,27 +348,20 @@ test.describe('a submitted notification', () => {
   test('posts Amend this notification from a form holding only the crumb, with Delete notification a link outside it', async ({
     page
   }) => {
-    const amendForm = main(page)
-      .locator('form')
-      .filter({
-        has: page.getByRole('button', { name: copy.viewHeader.amend })
+    const { form: amendForm, submitButtons } = await formSubmittedBy(
+      viewHeaderButtons(page).getByRole('button', {
+        name: copy.viewHeader.amend
       })
+    )
 
     await expect(amendForm).toHaveAttribute('action', /\/amend$/)
-    await expect(amendForm).toHaveClass(/app-form-inline/)
-    await expect(
-      main(page).locator('.govuk-button-group > form.app-form-inline')
-    ).toHaveCount(1)
     expect(
       await amendForm
         .locator('input')
         .evaluateAll((inputs) => inputs.map(({ name }) => name))
     ).toEqual(['crumb'])
-    await expect(amendForm.getByRole('button')).toHaveCount(1)
+    await expect(submitButtons).toHaveText([copy.viewHeader.amend])
     await expect(deleteButton(page)).toHaveAttribute('href', /\/delete$/)
-    await expect(
-      amendForm.getByRole('button', { name: copy.delete })
-    ).toHaveCount(0)
   })
 
   test('Amend this notification opens the amendment when JavaScript is off', async ({
@@ -372,7 +371,9 @@ test.describe('a submitted notification', () => {
     await withoutJavaScript(page, browser, async (noJs) => {
       await noJs.getByRole('button', { name: copy.viewHeader.amend }).click()
 
-      await expect(journeyStripTag(noJs)).toBeVisible()
+      await expect(
+        journeyStripStatus(noJs, sharedCopy.journeyStrip.amend)
+      ).toBeVisible()
     })
   })
 
@@ -400,7 +401,9 @@ test.describe('a submitted notification', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: copy.title })
     ).toBeVisible()
-    await expect(journeyStripTag(page)).toBeVisible()
+    await expect(
+      journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+    ).toBeVisible()
   })
 
   test("shows a submitted notification's import reference numbers with the warning, the notification reference and the customs document code C085", async ({

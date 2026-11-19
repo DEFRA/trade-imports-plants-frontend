@@ -12,7 +12,7 @@ import { declarationPage } from '../declaration/page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { lateRuleText } from '../review/late-rule.js'
-import { submittedDayText } from '../check-answers/view-model/submitted-day-text.js'
+import { notificationDayText } from '../review/notification-day-text.js'
 import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 
 export const meta = { ...page, collects: [] }
@@ -36,7 +36,7 @@ const get = async (request, h) => {
     ...kit.base(copy.title, { journey, page }),
     copy,
     reference: journey.journeyId,
-    notificationDate: submittedDayText(journey),
+    notificationDate: notificationDayText(journey.submittedAt),
     late: answers.lateNotificationIndicator === 'late',
     lateRule: lateRuleText(answers.commodityType, copy.late),
     notificationHref: pagePath(journey.journeyId, kit.CYA_SLUG),

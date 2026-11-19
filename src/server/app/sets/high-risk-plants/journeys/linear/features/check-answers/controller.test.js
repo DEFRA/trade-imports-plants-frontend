@@ -498,6 +498,11 @@ describe('Check your answers lateness', () => {
 
   it('Should offer the cancel-amend path only while amending, with no Cancel amend link in the journey strip', async () => {
     const journeyId = await submittedJourneyId()
+    const submitted = stubH()
+    await get(journeyRequest(journeyId), submitted)
+    expect(submitted.captured.view.context.buttonsAfterPrimary).toEqual([])
+    const draft = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    expect(draft.view.context.buttonsAfterPrimary).toEqual([])
     await recordsStub.amend(journeyId)
     const amending = stubH()
 

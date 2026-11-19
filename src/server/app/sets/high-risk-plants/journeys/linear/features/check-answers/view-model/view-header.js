@@ -3,8 +3,7 @@ import { pagePath } from '../../../../../../../shared/paths.js'
 import { journeyStrip } from '../../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../../shared/copy.js'
 import { notificationActionSlugs } from '../../../flow/notification-action-slugs.js'
-import { formatMomentAsLongDay } from '../../../../../../../lib/validate/index.js'
-import { submittedDayText } from './submitted-day-text.js'
+import { notificationDayText } from '../../review/notification-day-text.js'
 import { copy as en } from '../copy/copy.en.js'
 import { copy as cy } from '../copy/copy.cy.js'
 
@@ -18,14 +17,11 @@ const deleteButtonFor = (journey) => ({
 
 const dateLine = (journey) => {
   if (journey.status === SUBMITTED) {
-    const submittedDay = submittedDayText(journey)
+    const submittedDay = notificationDayText(journey.submittedAt)
     return submittedDay ? copy.viewHeader.dateSubmitted(submittedDay) : null
   }
-  return journey.createdAt
-    ? copy.viewHeader.dateCreated(
-        formatMomentAsLongDay(new Date(journey.createdAt))
-      )
-    : null
+  const createdDay = notificationDayText(journey.createdAt)
+  return createdDay ? copy.viewHeader.dateCreated(createdDay) : null
 }
 
 const amendAction = (journey) =>
@@ -62,12 +58,10 @@ const importReferences = ({ journeyId }) => {
  * notification.
  *
  * @param {object} journey - the journey being viewed.
- * @returns {object|null} null unless the journey is a draft or submitted.
- * Otherwise the reference, the
- * status tag, the date line (Date created for a draft, Date submitted for a
- * submitted notification, null without the stored instant), the Amend action
- * (null for a draft) and Delete button, and the import reference numbers
- * section.
+ * @returns {object|null} null unless the journey is a draft or submitted;
+ * otherwise { reference, status, dateLine, actions: { amend, delete }, importReferences }
+ *
+ * dateLine is 'Date created' for a draft and 'Date submitted' for a submitted notification, and null without the stored instant.
  */
 export const viewHeader = (journey) => {
   if (journey.status !== DRAFT && journey.status !== SUBMITTED) {
