@@ -1,23 +1,15 @@
-import { renderMacro } from '../../../../../../shared/render-macro.js'
+import { templateMacros } from '../../../../../../shared/render-macro.js'
 
 const CELLS_TEMPLATE =
   'high-risk-plants/journeys/linear/features/address-book-picker/_cells.njk'
 
-export const pickerTableRows = (fieldName, rows, pickerCopy) =>
-  rows.map((row) => [
-    {
-      html: renderMacro(
-        CELLS_TEMPLATE,
-        'pickerSelectCell',
-        fieldName,
-        row,
-        pickerCopy
-      )
-    },
+export const pickerTableRows = (fieldName, rows, pickerCopy) => {
+  const cells = templateMacros(CELLS_TEMPLATE)
+  return rows.map((row) => [
+    { html: cells.pickerSelectCell(fieldName, row, pickerCopy) },
     { text: row.name },
-    { html: renderMacro(CELLS_TEMPLATE, 'pickerAddressCell', row) },
+    { html: cells.pickerAddressCell(row) },
     { text: row.country },
-    {
-      html: renderMacro(CELLS_TEMPLATE, 'pickerDetailsCell', row, pickerCopy)
-    }
+    { html: cells.pickerDetailsCell(row, pickerCopy) }
   ])
+}

@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { renderMacro } from './render-macro.js'
+import { templateMacros } from './render-macro.js'
 
-describe('#renderMacro', () => {
+describe('#templateMacros', () => {
   it('Should render a macro of a template with the arguments it is given, escaping their text', () => {
-    expect(
-      renderMacro(
-        'shared/section-caption.njk',
-        'sectionCaption',
-        'Origin & route'
-      )
-    ).toContain('Origin &amp; route')
+    const { sectionCaption } = templateMacros('shared/section-caption.njk')
+
+    expect(sectionCaption('Origin & route')).toBe(
+      '<span class="govuk-caption-l">Origin &amp; route</span>'
+    )
   })
 })
