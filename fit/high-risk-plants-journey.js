@@ -1441,6 +1441,8 @@ export const describeAddressPicker = (picker) => {
       await expect(page).toHaveURL(pageUrl)
       await expect(notInBookLink(page)).toBeVisible()
       await expect(searchBox(page)).toHaveValue(DENMARK)
+      await notInBookLink(page).click()
+      await expect(page.locator(firstRowRadio)).toBeFocused()
     })
 
     test('an address not in the book after a search that found nothing is refused, focusing the search box, which keeps the term', async ({
