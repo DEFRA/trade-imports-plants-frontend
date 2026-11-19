@@ -10,9 +10,6 @@ const addressBookUrl =
 
 const tracingHeader = process.env.TRACING_HEADER ?? 'x-cdp-request-id'
 
-/** The page size the address book serves when the request names none. */
-export const API_PAGE_SIZE = 25
-
 const addressesUrl = (orgId, addressId) => {
   if (!orgId) {
     throw new Error(
@@ -35,6 +32,7 @@ const toRecord = async (operator) => ({
   id: operator.id,
   name: operator.name,
   deleted: Boolean(operator.deleted),
+  roles: operator.roles,
   address: {
     addressLine1: operator.addressLine1,
     addressLine2: operator.addressLine2,
@@ -48,10 +46,19 @@ const toRecord = async (operator) => ({
   }
 })
 
+/** The largest page size the address book serves. */
+export const MAX_API_PAGE_SIZE = 100
+
 /** One page of the organisation's live addresses with its paging numbers. */
-export const listAddresses = async (orgId, { page = 1, query } = {}) => {
+export const listAddresses = async (
+  orgId,
+  { page = 1, pageSize, query } = {}
+) => {
   const url = new URL(addressesUrl(orgId))
   url.searchParams.set('page', String(page))
+  if (pageSize) {
+    url.searchParams.set('pageSize', String(pageSize))
+  }
   if (query) {
     url.searchParams.set('q', query)
   }

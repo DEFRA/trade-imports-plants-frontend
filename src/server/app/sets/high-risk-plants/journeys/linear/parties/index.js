@@ -18,12 +18,14 @@ const partyCopy = copyFor({ en, cy }).parties
 export const PARTIES = Object.freeze([
   {
     id: CONSIGNOR,
+    addressBookRole: 'CONSIGNOR',
     slug: consignorPage.slug,
     editSlug: 'consignors/edit',
     ...partyCopy.consignor
   },
   {
     id: PLACE_OF_DESTINATION,
+    addressBookRole: 'PLACE_OF_DESTINATION',
     slug: placeOfDestinationPage.slug,
     editSlug: 'destinations/edit',
     ...partyCopy.placeOfDestination

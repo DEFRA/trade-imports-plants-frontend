@@ -1,7 +1,8 @@
 {#
   addressBookPickerResults — the results block of an address-book picker: the
-  heading, the count, one fieldset holding the error and the table, and the
-  paging. With no rows the no-matches message takes the place of the count.
+  heading, the count, and one fieldset holding the error and the table, every
+  address it offers on the one page. With no rows the no-matches message
+  takes the place of the count.
 
   Params:
     fieldName  (string)  the answer name: the radios' name, and the prefix of the
@@ -15,7 +16,6 @@
 #}
 {% from "govuk/components/table/macro.njk" import govukTable %}
 {% from "govuk/components/fieldset/macro.njk" import govukFieldset %}
-{% from "govuk/components/pagination/macro.njk" import govukPagination %}
 
 {% macro pickerError(errorId, picker, pickerCopy) %}
   <p id="{{ errorId }}" class="govuk-error-message">
@@ -54,10 +54,6 @@
         html: fieldsetContent
       }) }}
     </div>
-
-    {% if picker.pagination %}
-      {{ govukPagination(picker.pagination) }}
-    {% endif %}
   {% else %}
     <p class="govuk-body">{{ pickerCopy.noMatches }}</p>
     {% if picker.error %}

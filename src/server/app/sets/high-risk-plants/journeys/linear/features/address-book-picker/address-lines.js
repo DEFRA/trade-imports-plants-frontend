@@ -1,42 +1,19 @@
-const ADDRESS_PARTS = [
-  'addressLine1',
-  'addressLine2',
-  'townOrCity',
-  'county',
-  'postcode'
-]
+const STREET_PARTS = ['addressLine1', 'addressLine2']
+const LOCALITY_PARTS = ['townOrCity', 'county', 'postcode']
+const ADDRESS_PARTS = [...STREET_PARTS, ...LOCALITY_PARTS]
 
-/**
- * Every filled part of a stored address, one per entry, without the country.
- *
- * @param {object} [address] - the stored address.
- * @returns {string[]} the parts in reading order.
- */
 export const addressParts = (address = {}) =>
   ADDRESS_PARTS.map((part) => address[part]).filter(Boolean)
 
-/**
- * The address parts as one comma-separated line, without the country.
- *
- * @param {object} [address] - the stored address.
- * @returns {string} the line.
- */
 export const addressText = (address) => addressParts(address).join(', ')
 
-/**
- * Everything the record holds, one line each: name, address parts, country,
- * telephone and email.
- *
- * @param {object} record - the stored record.
- * @returns {string[]} the lines.
- */
-export const detailLines = (record) => {
-  const address = record.address ?? {}
-  return [
-    record.name,
-    ...addressParts(address),
-    address.country,
-    address.phone,
-    address.email
+export const pickerAddressLines = (address = {}) =>
+  [
+    ...STREET_PARTS.map((part) => address[part]),
+    LOCALITY_PARTS.map((part) => address[part])
+      .filter(Boolean)
+      .join(', ')
   ].filter(Boolean)
-}
+
+export const contactLines = (address = {}) =>
+  [address.phone, address.email].filter(Boolean)

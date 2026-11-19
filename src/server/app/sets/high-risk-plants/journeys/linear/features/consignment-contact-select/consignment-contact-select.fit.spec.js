@@ -1,17 +1,17 @@
 import {
   errorSummaryLinks,
-  ADDRESS_BOOK_PARTY,
+  TECH_IMPORTS_NAME,
   REVIEW_URL_FROM_POTATO_WALK,
   COPENHAGEN,
-  SECOND_PAGE_LINK,
+  IMPORT_CO,
   addressRowRadio,
   backLink,
+  cancelAndReturnToHub,
   describeAddressPicker,
   describeSubmittedSearchPicker,
   expectDraftReview,
   expectThreeSaveControls,
   saveAndContinue,
-  selectedAddressInset,
   startPotatoNotificationAtContact,
   saveAndReturnToHub,
   startWoodNotificationWithOriginSaved
@@ -81,7 +81,9 @@ const startCompleteNotificationAtContact = async (page) => {
 
 describeSubmittedSearchPicker({
   pickerName: 'consignment contact',
-  openPicker: startAtContact
+  openPicker: startAtContact,
+  roleAddress: TECH_IMPORTS_NAME,
+  denmarkMatch: COPENHAGEN
 })
 
 describeAddressPicker({
@@ -94,9 +96,16 @@ describeAddressPicker({
   pageUrl: PAGE_URL,
   afterSaveUrl: REVIEW_URL,
   firstRowRadio: '#contactAddress',
+  roleAddress: TECH_IMPORTS_NAME,
+  secondRoleAddress: IMPORT_CO,
+  rolelessAddress: 'Unlisted Traders Ltd',
+  denmarkMatch: COPENHAGEN,
+  wholeCount: 14,
   landingAlerts: [
     `${sharedCopy.errorSummary.title} ${checkAnswersCopy.errors.cards.contact}`
-  ]
+  ],
+  saveAndReturnToHubLabel: copy.saveActions.saveAndReturnToHub,
+  cancelAndReturnToHubLabel: copy.saveActions.cancelAndReturnToHub
 })
 
 test.describe('consignment-contact-select feature', () => {
@@ -137,10 +146,15 @@ test.describe('consignment-contact-select feature', () => {
     await expect(page).toHaveURL(OVERVIEW_PAGE_URL)
   })
 
-  test('offers the three save controls', async ({ page }) => {
+  test('offers Save and continue, Save and return to hub and Cancel and return to hub in that order', async ({
+    page
+  }) => {
     await startAtContact(page)
 
-    await expectThreeSaveControls(page)
+    await expectThreeSaveControls(page, {
+      saveAndReturnToHubLabel: copy.saveActions.saveAndReturnToHub,
+      cancelAndReturnToHubLabel: copy.saveActions.cancelAndReturnToHub
+    })
   })
 
   test('sends Back to the overview', async ({ page }) => {
@@ -165,44 +179,39 @@ test.describe('consignment-contact-select — the overview task row', () => {
   }) => {
     await startAtContact(page)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await saveAndReturnToHub(page).click()
+    await addressRowRadio(page, TECH_IMPORTS_NAME).check()
+    await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
   })
 
-  test('a row ticked on the second page saves, and re-entering shows it as the selected address', async ({
+  test('a row ticked saves, and re-entering shows it checked', async ({
     page
   }) => {
     const reference = await startAtContact(page)
-    await page
-      .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-      .click()
     await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
 
     await addressRowRadio(page, COPENHAGEN).check()
-    await saveAndReturnToHub(page).click()
+    await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.completed)
 
     await page.goto(contactPathOf(reference))
-    await expect(selectedAddressInset(page, COPENHAGEN)).toBeVisible()
-    await expect(addressRowRadio(page, COPENHAGEN)).toHaveCount(0)
+    await expect(addressRowRadio(page, COPENHAGEN)).toBeChecked()
   })
 
-  test('Cancel and return to overview leaves the contact row not yet started', async ({
+  test('Cancel and return to hub leaves the contact row not yet started', async ({
     page
   }) => {
     await startAtContact(page)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-    await page
-      .getByRole('link', {
-        name: sharedCopy.saveActions.cancelAndReturnToHub
-      })
-      .click()
+    await addressRowRadio(page, TECH_IMPORTS_NAME).check()
+    await cancelAndReturnToHub(
+      page,
+      copy.saveActions.cancelAndReturnToHub
+    ).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
@@ -219,7 +228,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
   }) => {
     await startWoodNotificationAtContact(page)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+    await addressRowRadio(page, TECH_IMPORTS_NAME).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(REVIEW_URL)
@@ -240,9 +249,6 @@ test.describe('consignment-contact-select — a blank save', () => {
     await expect(contactRow(page)).toContainText(hubCopy.statuses.notYetStarted)
 
     await page.goto(contactPathOf(reference))
-    await expect(
-      page.getByText(new RegExp(`^${pickerCopy.selectedAddressPrefix}`))
-    ).toHaveCount(0)
     await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
   }
 
@@ -257,12 +263,12 @@ test.describe('consignment-contact-select — a blank save', () => {
     await expectTaskNotYetStarted(page, reference)
   })
 
-  test('blank contact Save and return to overview opens Overview and leaves the task not yet started', async ({
+  test('blank contact Save and return to hub opens Overview and leaves the task not yet started', async ({
     page
   }) => {
     const reference = await startAtContact(page)
 
-    await saveAndReturnToHub(page).click()
+    await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
     await expectTaskNotYetStarted(page, reference)

@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import { expect, test } from '@playwright/test'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
+import { STUB_BOOK } from '../src/server/app/services/address-book/stub/index.js'
 const happyPaths = createRequire(import.meta.url)(
   '../src/server/app/sets/high-risk-plants/journeys/linear/flow/fixtures/happy-path.json'
 )
@@ -28,6 +29,11 @@ import {
 
 const chooseRadio = (page, name) =>
   page.getByRole('radio', { name, exact: true }).check()
+
+const stubNameById = new Map(STUB_BOOK.map(({ id, name }) => [id, name]))
+
+const choosePickedAddress = (page, addressId) =>
+  chooseRadio(page, `Select ${stubNameById.get(addressId)}`)
 
 const fillCommodity = async (page, fields) => {
   if (fields.index === undefined) {
@@ -75,10 +81,10 @@ const fillSteps = {
   'arrival-status': (page, fields) =>
     chooseRadio(page, statusCopy.statusLabels[fields.arrivalStatus]),
   'arrival-details': fillArrival,
-  'destinations/select': (page, fields, shape) =>
-    chooseRadio(page, `Select ${shape.partyName}`),
-  'consignors/select': (page, fields, shape) =>
-    chooseRadio(page, `Select ${shape.partyName}`),
+  'destinations/select': (page, fields) =>
+    choosePickedAddress(page, fields.placeOfDestination),
+  'consignors/select': (page, fields) =>
+    choosePickedAddress(page, fields.consignor),
   'identification-numbers': async (page, fields) => {
     for (const [field, value] of Object.entries(fields)) {
       await page
@@ -86,8 +92,8 @@ const fillSteps = {
         .fill(value)
     }
   },
-  'consignment/contact/select': (page, fields, shape) =>
-    chooseRadio(page, `Select ${shape.partyName}`)
+  'consignment/contact/select': (page, fields) =>
+    choosePickedAddress(page, fields.contactAddress)
 }
 
 const answerStepAndContinue = async (page, step, shape) => {

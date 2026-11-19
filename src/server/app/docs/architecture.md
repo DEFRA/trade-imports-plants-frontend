@@ -185,7 +185,9 @@ success, or to the page a refusal names. A POST that fails validation
 re-renders the page with status 400 and does not redirect. The address-book
 pickers (place of destination, consignor, consignment contact) render from a
 POST on purpose: Search posts the form with `action=search` and the page
-re-renders with the results, keeping the trader's choice.
+re-renders with the results, keeping the trader's choice. Each picker lists
+only its own role's addresses — the consignment contact picker asks for no
+role, so it lists every address — every one of them on one page.
 
 ### Page title
 

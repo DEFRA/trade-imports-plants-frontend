@@ -11,10 +11,10 @@ import {
 import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
+import { STUB_BOOK } from '../src/server/app/services/address-book/stub/index.js'
+import { TECH_IMPORTS_NAME } from '../src/server/app/sets/high-risk-plants/journeys/linear/test-support.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
-import { PAGE_SIZE } from '../src/server/app/services/address-book/index.js'
-import { STUB_BOOK_SIZE } from '../src/server/app/services/address-book/stub/index.js'
 import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
 import { copy as commodityTypeCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodity-type/copy/copy.en.js'
 import { copy as commodityCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/commodities/copy/copy.en.js'
@@ -26,8 +26,9 @@ import { copy as hubCopy } from '../src/server/app/sets/high-risk-plants/journey
 import { copy as originCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/copy/copy.en.js'
 import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
 
+export { TECH_IMPORTS_NAME }
+
 export const POTATO_VARIETY = 'Maris Piper'
-export const ADDRESS_BOOK_PARTY = 'Tech Imports Ltd'
 export const POTATO_WALK = [
   'commodity-type',
   'commodities',
@@ -72,15 +73,21 @@ export const saveAndContinue = (page) =>
     exact: true
   })
 
-export const saveAndReturnToHub = (page) =>
+export const saveAndReturnToHub = (
+  page,
+  label = sharedCopy.saveActions.saveAndReturnToHub
+) =>
   page.getByRole('button', {
-    name: sharedCopy.saveActions.saveAndReturnToHub,
+    name: label,
     exact: true
   })
 
-const cancelAndReturnToHub = (page) =>
+export const cancelAndReturnToHub = (
+  page,
+  label = sharedCopy.saveActions.cancelAndReturnToHub
+) =>
   page.getByRole('link', {
-    name: sharedCopy.saveActions.cancelAndReturnToHub
+    name: label
   })
 
 const documentTop = (locator) =>
@@ -303,10 +310,9 @@ export const DENMARK = 'Denmark'
 export const COPENHAGEN = 'Copenhagen Exports ApS'
 export const MATCHES_NOTHING = 'nothing matches this'
 export const IMPORT_CO = 'Import Co UK'
-export const ALPINE = 'Alpine Supplies GmbH'
-export { STUB_BOOK_SIZE }
-export const SECOND_PAGE_LINK = 'Page 2'
-export const THIRD_PAGE_LINK = 'Page 3'
+export const NORTHGATE = 'Northgate Trading AG'
+export const WESTBROOK = 'Westbrook Supplies Ltd'
+export const AARHUS = 'Aarhus Trading ApS'
 
 /**
  * The back link of a journey page.
@@ -361,8 +367,15 @@ export const withoutJavaScript = async (page, browser, use) => {
  * @param {string} options.pickerName - names the picker in the test titles
  * @param {(page: import('@playwright/test').Page) => Promise<unknown>} options.openPicker
  *   - opens the picker page for a signed-in page
+ * @param {string} options.roleAddress - a stub address carrying this picker's role
+ * @param {string} options.denmarkMatch - a stub address this picker lists for a "Denmark" search
  */
-export const describeSubmittedSearchPicker = ({ pickerName, openPicker }) => {
+export const describeSubmittedSearchPicker = ({
+  pickerName,
+  openPicker,
+  roleAddress,
+  denmarkMatch
+}) => {
   test.describe(`${pickerName} submitted search`, () => {
     test.beforeEach(async ({ page }) => {
       await signIn(page)
@@ -426,10 +439,8 @@ export const describeSubmittedSearchPicker = ({ pickerName, openPicker }) => {
         term: DENMARK
       })
 
-      await expect(addressRowRadio(plainPage, COPENHAGEN)).toBeVisible()
-      await expect(addressRowRadio(plainPage, ADDRESS_BOOK_PARTY)).toHaveCount(
-        0
-      )
+      await expect(addressRowRadio(plainPage, denmarkMatch)).toBeVisible()
+      await expect(addressRowRadio(plainPage, roleAddress)).toHaveCount(0)
     })
   })
 }
@@ -510,30 +521,39 @@ export const describeDatePickerLook = ({
   })
 }
 
+const returnControlLabelsOf = ({
+  saveAndReturnToHubLabel = sharedCopy.saveActions.saveAndReturnToHub,
+  cancelAndReturnToHubLabel = sharedCopy.saveActions.cancelAndReturnToHub
+}) => ({ saveAndReturnToHubLabel, cancelAndReturnToHubLabel })
+
 /**
- * Fails unless the journey form offers Save and continue, Save and return to
- * overview and Cancel and return to overview in that order, with Save and
- * return to overview as the form's last button.
- * Save and continue and Save and return to overview must be the only buttons
+ * Fails unless the journey form offers Save and continue, the page's
+ * save-and-return control and its cancel link in that order, with the
+ * save-and-return control as the form's last button.
+ * Save and continue and the save-and-return control must be the only buttons
  * in one button group.
- * Cancel and return to overview must sit below that group.
+ * The cancel link must sit below that group.
  *
  * @param {import('@playwright/test').Page} page
+ * @param {{ saveAndReturnToHubLabel?: string, cancelAndReturnToHubLabel?: string }} [labels] -
+ *   the page's own words for the two return controls, defaulting to the shared copy.
  */
-export const expectThreeSaveControls = async (page) => {
+export const expectThreeSaveControls = async (page, labels = {}) => {
+  const { saveAndReturnToHubLabel, cancelAndReturnToHubLabel } =
+    returnControlLabelsOf(labels)
   const form = journeyFormOf(page)
   const saveControls = form
     .locator(saveAndContinue(page))
-    .or(form.locator(saveAndReturnToHub(page)))
-    .or(form.locator(cancelAndReturnToHub(page)))
+    .or(form.locator(saveAndReturnToHub(page, saveAndReturnToHubLabel)))
+    .or(form.locator(cancelAndReturnToHub(page, cancelAndReturnToHubLabel)))
 
   await expect(saveControls).toHaveText([
     sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub,
-    sharedCopy.saveActions.cancelAndReturnToHub
+    saveAndReturnToHubLabel,
+    cancelAndReturnToHubLabel
   ])
   await expect(form.getByRole('button').last()).toHaveText(
-    sharedCopy.saveActions.saveAndReturnToHub
+    saveAndReturnToHubLabel
   )
 
   const buttonGroup = form.locator('.govuk-button-group', {
@@ -541,11 +561,11 @@ export const expectThreeSaveControls = async (page) => {
   })
   await expect(buttonGroup.getByRole('button')).toHaveText([
     sharedCopy.saveActions.saveAndContinue,
-    sharedCopy.saveActions.saveAndReturnToHub
+    saveAndReturnToHubLabel
   ])
-  expect(await documentTop(cancelAndReturnToHub(page))).toBeGreaterThanOrEqual(
-    await documentBottom(buttonGroup)
-  )
+  expect(
+    await documentTop(cancelAndReturnToHub(page, cancelAndReturnToHubLabel))
+  ).toBeGreaterThanOrEqual(await documentBottom(buttonGroup))
 }
 
 /**
@@ -846,7 +866,7 @@ export const startWoodNotificationAtPlaceOfDestination = async (page) => {
 
 const pickAddressBookParty = async (page) => {
   await page
-    .getByRole('radio', { name: `Select ${ADDRESS_BOOK_PARTY}`, exact: true })
+    .getByRole('radio', { name: `Select ${TECH_IMPORTS_NAME}`, exact: true })
     .check()
   await saveAndContinue(page).click()
 }
@@ -1003,17 +1023,6 @@ export const addressRowRadio = (page, name) =>
     exact: true
   })
 
-/**
- * The inset that names the address already chosen on an address picker page.
- *
- * @param {import('@playwright/test').Page} page
- * @param {string} name - the address's name
- */
-export const selectedAddressInset = (page, name) =>
-  page.getByText(`${pickerCopy.selectedAddressPrefix} ${name}`, {
-    exact: true
-  })
-
 const searchAddressBook = async (page, term) => {
   await searchBox(page).fill(term)
   await page.getByRole('button', { name: pickerCopy.search.button }).click()
@@ -1034,19 +1043,20 @@ export const pickerResultsSummary = (page) =>
  * Fails unless an address picker page shows the results heading with the
  * count straight under it, offers its radios as one group named by that
  * heading, whose legend is hidden from sight as a GOV.UK visually-hidden
- * element is, and has only a paragraph with no link between the page heading
- * and the form.
+ * element is, lists every row on the one page with no page links, and has
+ * only a paragraph with no link between the page heading and the form.
  *
  * @param {import('@playwright/test').Page} page
- * @param {string} count - the count the first page reads
+ * @param {string} count - the count the page reads
+ * @param {number} rowCount - how many rows the page renders
  */
-export const expectPickerResultsLayout = async (page, count) => {
+export const expectPickerResultsLayout = async (page, count, rowCount) => {
   await expect(pickerResultsSummary(page)).toHaveText(count)
   await expect(
     page
       .getByRole('group', { name: pickerCopy.resultsHeading })
       .getByRole('radio')
-  ).toHaveCount(PAGE_SIZE)
+  ).toHaveCount(rowCount)
   await expectStyle(
     page
       .getByRole('group', { name: pickerCopy.resultsHeading })
@@ -1057,7 +1067,8 @@ export const expectPickerResultsLayout = async (page, count) => {
       properties: ['position', 'overflow', 'clip-path']
     })
   )
-  await expect(page.getByRole('radio')).toHaveCount(PAGE_SIZE)
+  await expect(page.getByRole('radio')).toHaveCount(rowCount)
+  await expect(page.getByRole('link', { name: /^Page \d/ })).toHaveCount(0)
 
   const heading = page.getByRole('heading', { level: 1 })
   const beforeTheForm = 'following-sibling::*[following-sibling::form]'
@@ -1121,23 +1132,7 @@ export const postAnIdNotInTheBookAfterAnEmptySearch = async (
 }
 
 /**
- * Follows the second page link and fails unless the address ticked on the
- * first page is still named as the selected address, and no longer listed.
- *
- * @param {import('@playwright/test').Page} page
- */
-export const expectSelectedAddressCarriedToSecondPage = async (page) => {
-  await page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true }).click()
-
-  await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
-  await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toHaveCount(0)
-}
-
-/**
- * Declares the tests every single-address picker shares: listing and counting
- * the address book, searching and paging it, saving and leaving the page,
- * moving on with no address chosen and refusing an address not in the book,
- * which also gives the radios' form group the GOV.UK error border.
+ * Declares the tests every single-address picker shares.
  *
  * @param {object} options
  * @param {string} options.pickerName - names the picker in the test group titles
@@ -1150,20 +1145,37 @@ export const expectSelectedAddressCarriedToSecondPage = async (page) => {
  * @param {RegExp | string} options.pageUrl - the picker page's address
  * @param {RegExp | string} options.afterSaveUrl - where Save and continue goes
  * @param {string} options.firstRowRadio - selector of the first address in the list
+ * @param {string} options.roleAddress - a stub address carrying this picker's role
+ * @param {string} options.secondRoleAddress - a second stub address carrying this picker's role
+ * @param {string} options.rolelessAddress - a stub address carrying no role, listed on every picker
+ * @param {string} [options.otherRoleAddress] - a stub address carrying only another picker's role, not this one's
+ * @param {string} options.denmarkMatch - a stub address this picker lists for a "Denmark" search
+ * @param {number} options.wholeCount - how many stub addresses carry this picker's role, or none
  * @param {string[]} [options.landingAlerts] - the text of each alert on the page Save and continue goes to with nothing chosen; none by default
+ * @param {string} [options.saveAndReturnToHubLabel] - the picker's own words for the save-and-return control, defaulting to the shared copy
+ * @param {string} [options.cancelAndReturnToHubLabel] - the picker's own words for the cancel link, defaulting to the shared copy
  */
-export const describeAddressPicker = ({
-  pickerName,
-  openPicker,
-  pathOf,
-  notInBookError,
-  hubRowTitle,
-  hubUrl,
-  pageUrl,
-  afterSaveUrl,
-  firstRowRadio,
-  landingAlerts = []
-}) => {
+export const describeAddressPicker = (picker) => {
+  const {
+    pickerName,
+    openPicker,
+    pathOf,
+    notInBookError,
+    hubRowTitle,
+    hubUrl,
+    pageUrl,
+    afterSaveUrl,
+    firstRowRadio,
+    roleAddress,
+    secondRoleAddress,
+    rolelessAddress,
+    otherRoleAddress,
+    denmarkMatch,
+    wholeCount,
+    landingAlerts = []
+  } = picker
+  const { saveAndReturnToHubLabel, cancelAndReturnToHubLabel } =
+    returnControlLabelsOf(picker)
   const notInBookLink = (page) => errorSummaryLinks(page, notInBookError)
   const notYetStartedStatusOnOverviewRow = (page) =>
     page
@@ -1171,22 +1183,26 @@ export const describeAddressPicker = ({
       .filter({ has: page.getByRole('link', { name: hubRowTitle }) })
       .getByText(hubCopy.statuses.notYetStarted, { exact: true })
 
-  test.describe(`${pickerName} — listing, searching and paging`, () => {
+  test.describe(`${pickerName} — listing and searching`, () => {
     test.beforeEach(async ({ page }) => {
       await signIn(page)
     })
 
-    test('shows the first page of the organisation address book with its count', async ({
+    test('lists every address for the role, and the role-less address, on one page', async ({
       page
     }) => {
       await openPicker(page)
 
       await expectPickerResultsLayout(
         page,
-        pickerCopy.resultsCount(PAGE_SIZE, STUB_BOOK_SIZE)
+        pickerCopy.resultsCount(wholeCount, wholeCount),
+        wholeCount
       )
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeVisible()
-      await expect(addressRowRadio(page, ALPINE)).toHaveCount(0)
+      await expect(addressRowRadio(page, roleAddress)).toBeVisible()
+      await expect(addressRowRadio(page, rolelessAddress)).toBeVisible()
+      if (otherRoleAddress) {
+        await expect(addressRowRadio(page, otherRoleAddress)).toHaveCount(0)
+      }
     })
 
     test('narrows the results to the search term', async ({ page }) => {
@@ -1194,8 +1210,8 @@ export const describeAddressPicker = ({
 
       await searchAddressBook(page, DENMARK)
 
-      await expect(addressRowRadio(page, COPENHAGEN)).toBeVisible()
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toHaveCount(0)
+      await expect(addressRowRadio(page, denmarkMatch)).toBeVisible()
+      await expect(addressRowRadio(page, roleAddress)).toHaveCount(0)
     })
 
     test('says so rather than showing an empty table when nothing matches', async ({
@@ -1208,74 +1224,76 @@ export const describeAddressPicker = ({
       await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
     })
 
-    test('clearing the search and searching with nothing entered lists the whole book, showing the first page and a link to the second', async ({
+    test('clearing the search and searching with nothing entered lists every address for the role again, on one page', async ({
       page
     }) => {
       await openPicker(page)
       await searchAddressBook(page, DENMARK)
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toHaveCount(0)
+      await expect(addressRowRadio(page, roleAddress)).toHaveCount(0)
 
       await searchAddressBook(page, '')
 
       await expectPickerResultsLayout(
         page,
-        pickerCopy.resultsCount(PAGE_SIZE, STUB_BOOK_SIZE)
+        pickerCopy.resultsCount(wholeCount, wholeCount),
+        wholeCount
       )
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeVisible()
-      await expect(
-        page.getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-      ).toBeVisible()
+      await expect(addressRowRadio(page, roleAddress)).toBeVisible()
     })
 
-    test('keeps a ticked row while the search narrows the results', async ({
+    test('keeps a ticked row checked while the search narrows the results', async ({
       page
     }) => {
       await openPicker(page)
 
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-      await searchAddressBook(page, DENMARK)
+      await addressRowRadio(page, roleAddress).check()
+      await searchAddressBook(page, denmarkMatch)
 
-      await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
+      await expect(addressRowRadio(page, roleAddress)).toHaveCount(0)
+      await searchAddressBook(page, '')
+      await expect(addressRowRadio(page, roleAddress)).toBeChecked()
+    })
+  })
+
+  test.describe(`${pickerName} — the row's address lines and disclosure`, () => {
+    const roleAddressRow = (page) =>
+      page.getByRole('row').filter({ has: addressRowRadio(page, roleAddress) })
+    const roleAddressRecord = STUB_BOOK.find(
+      (record) => record.name === roleAddress
+    )
+
+    test.beforeEach(async ({ page }) => {
+      await signIn(page)
     })
 
-    test('carries a newly ticked address through the paging links', async ({
+    test("reads the role's listed address as its street line then its town and postcode on one line, not one joined line", async ({
       page
     }) => {
       await openPicker(page)
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+      const { address } = roleAddressRecord
+      const addressCell = roleAddressRow(page).getByRole('cell').nth(2)
 
-      await expectSelectedAddressCarriedToSecondPage(page)
+      await expect
+        .poll(() => addressCell.evaluate((cell) => cell.innerText))
+        .toBe(
+          `${address.addressLine1}\n${address.townOrCity}, ${address.postcode}`
+        )
     })
 
-    test('carries a saved address through the paging links', async ({
+    test('opens the row\'s "View details" disclosure in place and shows exactly that address\'s telephone number and email address', async ({
       page
     }) => {
-      const reference = await openPicker(page)
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-      await saveAndContinue(page).click()
-      await page.goto(pathOf(reference))
+      await openPicker(page)
+      const { address } = roleAddressRecord
+      const urlBeforeOpening = page.url()
 
-      await expectSelectedAddressCarriedToSecondPage(page)
-    })
+      await roleAddressRow(page).getByText(pickerCopy.viewDetails).click()
 
-    test('an address chosen on a later page is saved, and reopening names it although its row is not on the first page', async ({
-      page
-    }) => {
-      const reference = await openPicker(page)
-      await page
-        .getByRole('link', { name: SECOND_PAGE_LINK, exact: true })
-        .click()
-      await page
-        .getByRole('link', { name: THIRD_PAGE_LINK, exact: true })
-        .click()
-      await addressRowRadio(page, ALPINE).check()
-
-      await saveAndContinue(page).click()
-      await expect(page).toHaveURL(afterSaveUrl)
-      await page.goto(pathOf(reference))
-
-      await expect(selectedAddressInset(page, ALPINE)).toBeVisible()
-      await expect(addressRowRadio(page, ALPINE)).toHaveCount(0)
+      expect(page.url()).toBe(urlBeforeOpening)
+      await expect(roleAddressRow(page).getByRole('listitem')).toHaveText([
+        address.phone,
+        address.email
+      ])
     })
   })
 
@@ -1284,77 +1302,81 @@ export const describeAddressPicker = ({
       await signIn(page)
     })
 
-    test('saves the chosen address, continues to the next page and shows it again on return', async ({
+    test('saves the chosen address, continues to the next page and shows it checked on return, with nothing between the search box and the results heading', async ({
       page
     }) => {
       const reference = await openPicker(page)
 
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+      await addressRowRadio(page, roleAddress).check()
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)
 
       await page.goto(pathOf(reference))
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeChecked()
-      await expect(selectedAddressInset(page, ADDRESS_BOOK_PARTY)).toBeVisible()
+      await expect(addressRowRadio(page, roleAddress)).toBeChecked()
+      await expect(
+        page
+          .getByRole('heading', { name: pickerCopy.resultsHeading, level: 2 })
+          .locator('xpath=preceding-sibling::*[1]')
+      ).toHaveClass(/govuk-form-group/)
     })
 
     test('replaces the address already saved rather than keeping both', async ({
       page
     }) => {
       const reference = await openPicker(page)
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+      await addressRowRadio(page, roleAddress).check()
       await saveAndContinue(page).click()
       await page.goto(pathOf(reference))
 
-      await addressRowRadio(page, IMPORT_CO).check()
+      await addressRowRadio(page, secondRoleAddress).check()
       await saveAndContinue(page).click()
       await page.goto(pathOf(reference))
 
-      await expect(addressRowRadio(page, IMPORT_CO)).toBeChecked()
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
+      await expect(addressRowRadio(page, secondRoleAddress)).toBeChecked()
+      await expect(addressRowRadio(page, roleAddress)).not.toBeChecked()
     })
 
-    test('Save and return to overview saves the address and reaches the overview', async ({
+    test(`${saveAndReturnToHubLabel} saves the address and reaches the overview`, async ({
       page
     }) => {
       const reference = await openPicker(page)
 
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-      await saveAndReturnToHub(page).click()
+      await addressRowRadio(page, roleAddress).check()
+      await saveAndReturnToHub(page, saveAndReturnToHubLabel).click()
 
       await expect(page).toHaveURL(hubUrl)
 
       await page.goto(pathOf(reference))
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).toBeChecked()
+      await expect(addressRowRadio(page, roleAddress)).toBeChecked()
     })
 
-    test('Save and return to overview with nothing chosen reaches the overview without an error', async ({
+    test(`${saveAndReturnToHubLabel} with nothing chosen reaches the overview without an error`, async ({
       page
     }) => {
       const reference = await openPicker(page)
 
-      await saveAndReturnToHub(page).click()
+      await saveAndReturnToHub(page, saveAndReturnToHubLabel).click()
 
       await expect(page).toHaveURL(hubUrl)
 
       await page.goto(pathOf(reference))
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
+      await expect(addressRowRadio(page, roleAddress)).not.toBeChecked()
       await expect(errorSummary(page)).toHaveCount(0)
     })
 
-    test('Cancel and return to overview reaches the overview without saving', async ({
+    test(`${cancelAndReturnToHubLabel} reaches the overview without saving`, async ({
       page
     }) => {
       const reference = await openPicker(page)
 
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
-      await cancelAndReturnToHub(page).click()
+      await addressRowRadio(page, roleAddress).check()
+      await cancelAndReturnToHub(page, cancelAndReturnToHubLabel).click()
 
       await expect(page).toHaveURL(hubUrl)
 
       await page.goto(pathOf(reference))
-      await expect(addressRowRadio(page, ADDRESS_BOOK_PARTY)).not.toBeChecked()
+      await expect(addressRowRadio(page, roleAddress)).not.toBeChecked()
     })
   })
 
@@ -1434,17 +1456,22 @@ export const describeAddressPicker = ({
       )
     })
 
-    test('an address not in the book is refused on Save and return to overview, staying on the page and keeping the search', async ({
+    test(`an address not in the book is refused on ${saveAndReturnToHubLabel}, staying on the page and keeping the search`, async ({
       page
     }) => {
       await openPicker(page)
       await searchBox(page).fill(DENMARK)
 
-      await postAnIdNotInTheBook(page, { saveControlOf: saveAndReturnToHub })
+      await postAnIdNotInTheBook(page, {
+        saveControlOf: (page) =>
+          saveAndReturnToHub(page, saveAndReturnToHubLabel)
+      })
 
       await expect(page).toHaveURL(pageUrl)
       await expect(notInBookLink(page)).toBeVisible()
       await expect(searchBox(page)).toHaveValue(DENMARK)
+      await notInBookLink(page).click()
+      await expect(page.locator(firstRowRadio)).toBeFocused()
     })
 
     test('an address not in the book after a search that found nothing is refused, focusing the search box, which keeps the term', async ({
@@ -1468,7 +1495,7 @@ export const describeAddressPicker = ({
       await postAnIdNotInTheBook(page)
       await expect(notInBookLink(page)).toBeVisible()
 
-      await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+      await addressRowRadio(page, roleAddress).check()
       await saveAndContinue(page).click()
 
       await expect(page).toHaveURL(afterSaveUrl)

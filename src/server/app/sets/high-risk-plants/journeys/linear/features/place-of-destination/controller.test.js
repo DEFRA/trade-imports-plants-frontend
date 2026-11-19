@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { hubPath } from '../../../../../../shared/paths.js'
+import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_NOTIFICATION,
   plants,
   potatoes,
+  TECH_IMPORTS_ID,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import {
@@ -25,7 +27,6 @@ const get = placeOfDestination.routes.find(
 const post = postHandlerOf(placeOfDestination)
 
 const PLACE_OF_DESTINATION_SELECT = 'place-of-destination'
-const TECH_IMPORTS = 'tech-imports-ltd'
 
 describe('#meta', () => {
   it('Should own the place-of-destination obligation at its own slug', () => {
@@ -46,6 +47,12 @@ describe('GET place-of-destination — the question it asks', () => {
 
     expect(result.view.context.pageTitle).toBe('Place of destination')
     expect(result.view.context.caption).toBe('Destination')
+  })
+
+  it('Should carry the shared save-actions copy, both return controls included', async () => {
+    const result = await driveHandler(get, { seed: potatoes() })
+
+    expect(result.view.context.saveActionsCopy).toEqual(sharedCopy.saveActions)
   })
 
   it('Should ask potatoes for the place of destination', async () => {
@@ -92,7 +99,13 @@ describeAddressBookPickerController({
   fieldName: 'placeOfDestination',
   slug: 'destinations/select',
   nextSlug: 'identification-numbers',
-  errorText: copy.errors.placeOfDestination
+  errorText: copy.errors.placeOfDestination,
+  wholeCount: 6,
+  denmarkMatches: ['copenhagen-exports-aps'],
+  primaryId: TECH_IMPORTS_ID,
+  primaryName: 'Tech Imports Ltd',
+  secondId: 'import-co-uk',
+  wrongRoleId: 'northgate-trading-ag'
 })
 
 describe('GET place-of-destination — the address this notification holds', () => {
@@ -100,7 +113,7 @@ describe('GET place-of-destination — the address this notification holds', () 
 
   it('Should show the copy with a link to edit its details', async () => {
     const result = await driveHandler(get, {
-      seed: potatoes({ placeOfDestination: copied(TECH_IMPORTS) })
+      seed: potatoes({ placeOfDestination: copied(TECH_IMPORTS_ID) })
     })
 
     expect(result.view.context.heldCopy).toMatchObject({

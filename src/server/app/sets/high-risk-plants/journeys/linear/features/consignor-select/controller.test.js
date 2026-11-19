@@ -8,9 +8,11 @@ import {
   reviewChangeLinkQuery
 } from '../../../../../../engine/test-support.js'
 import { hubPath } from '../../../../../../shared/paths.js'
+import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import {
   COMPLETE_PLANTS_NOTIFICATION,
   plants,
+  TECH_IMPORTS_ID,
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import {
@@ -25,7 +27,6 @@ const post = postHandlerOf(consignor)
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const CONSIGNOR_SELECT = 'consignor-select'
-const TECH_IMPORTS = 'tech-imports-ltd'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 
 describe('#meta', () => {
@@ -49,6 +50,12 @@ describe('GET consignor-select — the question it asks', () => {
     expect(result.view.context.heading).toBe('Consignor')
     expect(result.view.context.caption).toBe('Addresses')
   })
+
+  it('Should carry the shared save-actions copy, both return controls included', async () => {
+    const result = await driveHandler(get, { seed: plants() })
+
+    expect(result.view.context.saveActionsCopy).toEqual(sharedCopy.saveActions)
+  })
 })
 
 describeAddressBookPickerController({
@@ -65,14 +72,20 @@ describeAddressBookPickerController({
   fieldName: 'consignor',
   slug: 'consignors/select',
   nextSlug: 'identification-numbers',
-  errorText: copy.errors.consignor
+  errorText: copy.errors.consignor,
+  wholeCount: 8,
+  denmarkMatches: ['aarhus-trading-aps'],
+  primaryId: 'northgate-trading-ag',
+  primaryName: 'Northgate Trading AG',
+  secondId: 'westbrook-supplies-ltd',
+  wrongRoleId: TECH_IMPORTS_ID
 })
 
 describe('GET consignor-select — the address this notification holds', () => {
   useStubbedHighRiskPlantsJourney()
 
   it('Should show the copy, as edited, with a link to edit its details', async () => {
-    const edited = { ...copied(TECH_IMPORTS), name: EDITED_NAME }
+    const edited = { ...copied(TECH_IMPORTS_ID), name: EDITED_NAME }
 
     const result = await driveHandler(get, {
       seed: plants({ consignor: edited }),
@@ -100,7 +113,7 @@ describe('consignor scope', () => {
 
   it('Should purge the reference on switching to potatoes and not restore it on switching back', async () => {
     const changed = await driveHandler(postHandlerOf(commodityTypeController), {
-      seed: plants({ consignor: copied(TECH_IMPORTS) }),
+      seed: plants({ consignor: copied(TECH_IMPORTS_ID) }),
       payload: { commodityType: 'potatoes' }
     })
     expect(changed.after.consignor).toBeUndefined()
@@ -120,7 +133,7 @@ describe('consignor scope', () => {
     expect(rendered.response.redirect).toBe(hubPath(rendered.journeyId))
     const saved = await driveHandler(post, {
       seed,
-      payload: { consignor: TECH_IMPORTS }
+      payload: { consignor: TECH_IMPORTS_ID }
     })
     expect(saved.after.consignor).toBeUndefined()
     expect(saved.response.redirect).toBe(hubPath(saved.journeyId))
@@ -128,7 +141,7 @@ describe('consignor scope', () => {
 
   it.each([
     ['GET', get, undefined],
-    ['POST', post, { consignor: TECH_IMPORTS }]
+    ['POST', post, { consignor: TECH_IMPORTS_ID }]
   ])(
     'Should log the redirect once with the journey id and reason on a potato notification %s',
     async (_method, handler, payload) => {

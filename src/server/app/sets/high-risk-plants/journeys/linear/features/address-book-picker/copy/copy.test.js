@@ -12,19 +12,17 @@ describe('#copy', () => {
     expect(cy.editDetails).toBe('Golygu manylion')
   })
 
-  it('Should carry the search box and the selected address prefix in both languages', () => {
+  it('Should carry the search box in both languages', () => {
     expect(copy.search).toEqual({
       label: 'Search',
       hint: 'Name, address or country',
       button: 'Search'
     })
-    expect(copy.selectedAddressPrefix).toBe('Selected address:')
     expect(cy.search).toEqual({
       label: 'Chwilio',
       hint: 'Enw, cyfeiriad neu wlad',
       button: 'Chwilio'
     })
-    expect(cy.selectedAddressPrefix).toBe('Cyfeiriad a ddewiswyd:')
   })
 
   it('Should word the results heading and count the rows shown against the rows found', () => {
@@ -50,11 +48,6 @@ describe('#copy', () => {
     expect(copy.selectRowPrefix).toBe('Select')
     expect(cy.selectRowPrefix).toBe('Dewis')
     expect(cy.table.selectHidden).toBe('Dewis')
-  })
-
-  it('Should name the paging links rather than leave them in English', () => {
-    expect(copy.pagination).toEqual({ previous: 'Previous', next: 'Next' })
-    expect(cy.pagination).toEqual({ previous: 'Blaenorol', next: 'Nesaf' })
   })
 
   it('Should name every party in both languages', () => {
