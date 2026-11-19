@@ -64,10 +64,13 @@ holds the steps more than one spec takes: `startNotification`,
 `chooseTypeAheadOption`, `visitOverviewThenOpen`, `saveAndContinue`, `startPotatoNotification`,
 `startPotatoNotificationAtContact`, `completePotatoNotification`, `openDeclaration`,
 `expectNoSeriousOrCriticalViolations`, `expectThreeSaveControls`, which finds the save controls by
-role inside the journey form. It fails unless Save and continue, Save and return to overview and
-Cancel and return to overview appear in that order. The two buttons must be the only buttons in one
-button group, and the link must sit below that group,
-`saveAndReturnToHub`, which finds the Save and return to overview button,
+role inside the journey form. It fails unless Save and continue, then the page's own
+save-and-return control and cancel link, appear in that order, defaulting to the
+shared "Save and return to overview" and "Cancel and return to overview" wording.
+The two buttons must be the only buttons in one button group, and the link must
+sit below that group,
+`saveAndReturnToHub`, which finds the page's save-and-return button, defaulting
+to the shared "Save and return to overview" wording,
 `startNotificationAtOverview`, which starts a notification, saves potatoes as its commodity type and opens its Overview,
 `startWoodNotificationAtPlaceOfDestination`, which starts a cut coniferous trees notification and walks it through arrival to the place of destination page,
 `submitDeclarationFromCheckAnswers`, which submits the declaration from the review,
@@ -84,27 +87,28 @@ button group, and the link must sit below that group,
 and keyboard-focus tests for one date field, and
 `describeSubmittedSearchPicker`, which registers the hint, width and joined
 button, search button colour, no-JavaScript Enter search and three-state axe tests for one address
-picker's submitted search box. It also holds `startWoodNotificationWithOriginSaved`,
+picker's submitted search box, given the picker's own role address and a Denmark-search match. It also holds `startWoodNotificationWithOriginSaved`,
 `POTATO_VARIETY`, `REVIEW_URL_FROM_POTATO_WALK` and `WOOD_LINE_FIELDS`; the form-group
 reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
 form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; `errorSummary`, which finds the page's error summary by its alert role; `errorSummaryLinks`, which finds the error summary's links, narrowed to the one named when a name is given, and matching the whole accessible name when given `{ exact: true }`; the address-book
-values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `STUB_BOOK_SIZE`,
-`SECOND_PAGE_LINK`, `THIRD_PAGE_LINK`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
+values `TECH_IMPORTS_NAME`, `IMPORT_CO`, `NORTHGATE`, `WESTBROOK`,
+`AARHUS`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
 `NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
-address picker page by the address's name, `selectedAddressInset`, which
-finds the selected-address inset by the address's name, and `searchBox`, which
+address picker page by the address's name, and `searchBox`, which
 finds the picker's search box; `describeAddressPicker`,
 which registers the listing, searching, saving, moving-on and refusal tests for
-one single-address picker, among them the test that the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border (each read from a reference element at run time); `postAnIdNotInTheBook`, which posts a picker with an id the
+one single-address picker, given the role's addresses to list, a second
+role address to replace the first with, the role's whole count, and the
+picker's own words for its save-and-return control and its cancel link,
+defaulting to the shared copy, among them the test that the radios' form group has the GOV.UK form-group border and spacing until an address not in the book is refused, then the GOV.UK error border (each read from a reference element at run time), the test that the role's listed address reads its Address cell as separate lines rather than one joined line, and the test that the row's "View details" disclosure opens in place and holds exactly that address's telephone number and email address; `postAnIdNotInTheBook`, which posts a picker with an id the
 book does not hold, appended as a hidden input under the first radio's name,
 through the save control its `saveControlOf` option names (Save and continue by default);
 `postAnIdNotInTheBookAfterAnEmptySearch`, which does the same after a search nothing matches;
-`expectSelectedAddressCarriedToSecondPage`, which follows the second page link and fails unless the ticked address is still the selected address;
 `withoutJavaScript`, which reopens the page in a context with JavaScript switched off;
 `pickerResultsSummary`, which finds the paragraph straight after the results
 heading (the count, or the no-matches message), and
 `expectPickerResultsLayout`, which fails unless the count sits straight under the results heading, the page's radios form the one radio group
-named "Select an address", that group's legend is hidden from sight (its position, overflow and clip-path match a GOV.UK visually-hidden reference element read at run time) and the only content between the page heading and the form is one link-free paragraph.
+named "Select an address" holding exactly the given row count with no page link, that group's legend is hidden from sight (its position, overflow and clip-path match a GOV.UK visually-hidden reference element read at run time) and the only content between the page heading and the form is one link-free paragraph.
 The type-ahead style tests (typography, focus indicator, error border, the search button's blue square and white magnifying glass, and the
 no-JavaScript label size) compare the enhanced input or the label with a GOV.UK
 reference element read at run time.
@@ -139,10 +143,16 @@ Things that are easy to get wrong:
   the list does not offer, write it into the hidden select and leave the
   combobox alone — the autocomplete rewrites the select from the combobox text
   when the combobox loses focus.
-- The stub address book holds 13 records. Tech Imports Ltd is on the first page
-  of results, Copenhagen Exports ApS on the second and Alpine Supplies GmbH on
-  the last, so paging tests assert on what is on screen, not only on the link.
-- `govukPagination` names each number link "Page N", not the bare number.
+- The stub address book holds 14 records, one of them (Unlisted Traders Ltd)
+  with no role at all, so every picker lists it alongside its own role's
+  records. It carries none because the real address book refuses to create a
+  record with an empty roles list — this is the only way to exercise that
+  pre-roles state. The consignor picker's records (Northgate Trading AG, Westbrook
+  Supplies Ltd, Aarhus Trading ApS and others) carry the consignor role; the
+  place of destination picker's (Tech Imports Ltd, Copenhagen Exports ApS and
+  others) carry the place of destination role. The happy-path fixture ticks
+  Northgate Trading AG on the consignor step and Tech Imports Ltd on the
+  destination and contact steps.
 - `evaluateAll` does not wait. Assert the expected count first, then read the
   values.
 - The test process does not set `STUB_MODE`, so a spec that needs the origin

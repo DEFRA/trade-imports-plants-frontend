@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { addressText, detailLines } from './address-lines.js'
+import {
+  addressText,
+  contactLines,
+  pickerAddressLines
+} from './address-lines.js'
 import { addressRecord } from './test-support.js'
 
 const LINE_1 = '18 Dockside Road'
@@ -36,20 +40,37 @@ describe('#addressText', () => {
   })
 })
 
-describe('#detailLines', () => {
-  it('Should read out the name, the whole address and the contact details', () => {
+describe('#pickerAddressLines', () => {
+  it('Should give each street line its own line, then town or city, county and postcode on one line, without the country', () => {
     expect(
-      detailLines(addressRecord('tech-imports-ltd', 'Tech Imports Ltd'))
-    ).toEqual([
-      'Tech Imports Ltd',
-      LINE_1,
-      LINE_2,
-      TOWN,
-      COUNTY,
-      POSTCODE,
-      COUNTRY,
-      '01632 960123',
-      'trade@example.com'
-    ])
+      pickerAddressLines({
+        addressLine1: LINE_1,
+        addressLine2: LINE_2,
+        townOrCity: TOWN,
+        county: COUNTY,
+        postcode: POSTCODE,
+        country: COUNTRY
+      })
+    ).toEqual([LINE_1, LINE_2, `${TOWN}, ${COUNTY}, ${POSTCODE}`])
+  })
+
+  it('Should give only the filled street line, then town or city and postcode on one line, with no blank line', () => {
+    expect(
+      pickerAddressLines({
+        addressLine1: LINE_1,
+        townOrCity: TOWN,
+        postcode: POSTCODE
+      })
+    ).toEqual([LINE_1, `${TOWN}, ${POSTCODE}`])
+  })
+})
+
+describe('#contactLines', () => {
+  it('Should read out the telephone number then the email address, and nothing else', () => {
+    expect(
+      contactLines(
+        addressRecord('tech-imports-ltd', 'Tech Imports Ltd').address
+      )
+    ).toEqual(['01632 960123', 'trade@example.com'])
   })
 })

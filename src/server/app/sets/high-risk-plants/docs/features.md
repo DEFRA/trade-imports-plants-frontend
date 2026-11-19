@@ -95,18 +95,22 @@ the enforceable detail. Read them when a copy test fails.
 `shared/save-actions.njk` owns a page's ending.
 
 - A page the overview links to directly ends with all three controls: the
-  primary and "Save and return to overview" side by side, then "Cancel and
-  return to overview" on its own line below them, so a trader can stop and
-  leave from where the overview sent them.
+  primary and its save-and-return control side by side, then its cancel link
+  on its own line below them, so a trader can stop and leave from where the
+  overview sent them. Every one of these pages reads "Save and return to
+  overview" and "Cancel and return to overview" except the consignment
+  contact page, which reads "Save and return to hub" and "Cancel and return
+  to hub".
 - The two return controls name the page they lead to, which is headed
-  "Overview". "Hub" is the internal name for it and never appears on screen.
+  "Overview". "Hub" is the internal name for it and reaches the screen only
+  on the consignment contact page.
 - A page reached from another page ends with the primary alone
   (`showReturnControls: false`), and the trader leaves the way they came in.
 - While a notification is being amended, a page ends exactly as it does on a
-  draft: Save and continue, then Save and return to overview, then Cancel and
-  return to overview wherever the draft page shows it. Save and continue goes on
-  through the journey to check your answers, Save and return to overview goes to
-  the Overview, and Cancel and return to overview goes to the Overview without
+  draft: Save and continue, then its own save-and-return control, then its own
+  cancel link, wherever the draft page shows them. Save and continue goes on
+  through the journey to check your answers, the save-and-return control goes to
+  the Overview, and the cancel link goes to the Overview without
   saving the page. The status strip shows the Amend status and its Cancel amend
   link.
 

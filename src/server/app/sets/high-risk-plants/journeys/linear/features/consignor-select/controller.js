@@ -1,5 +1,6 @@
 import { copyFor } from '../../../../../../shared/copy.js'
 import { pickerRoutes } from '../address-book-picker/picker-routes.js'
+import { partyOf } from '../../parties/index.js'
 import { consignorPage as page } from './page.js'
 import { CONSIGNOR } from './fields.js'
 import { pickerViewModel } from './view-model/index.js'
@@ -13,6 +14,7 @@ const copy = copyFor({ en, cy })
 export const routes = pickerRoutes({
   page,
   fieldName: CONSIGNOR,
+  role: partyOf(CONSIGNOR).addressBookRole,
   copy,
   pickerViewModel,
   heading: () => copy.title,

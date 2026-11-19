@@ -5,15 +5,10 @@ export const copy = {
     hint: 'Name, address or country',
     button: 'Search'
   },
-  selectedAddressPrefix: 'Selected address:',
   resultsHeading: 'Select an address',
   resultsCount: (shown, total) => `Showing ${shown} out of ${total} results`,
   errorPrefix: 'Error:',
   noMatches: 'No addresses match your search.',
-  pagination: {
-    previous: 'Previous',
-    next: 'Next'
-  },
   table: {
     selectHidden: 'Select',
     name: 'Name',

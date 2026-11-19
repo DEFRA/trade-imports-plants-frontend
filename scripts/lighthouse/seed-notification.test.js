@@ -35,7 +35,7 @@ describe('shared journey seeds', () => {
         'csrf-token'
       ]
     ])
-    expect(step.fields.consignor).toBe('tech-imports-ltd')
+    expect(step.fields.consignor).toBe('northgate-trading-ag')
   })
 
   it('uses the browser fixture for Lighthouse without a second set of shapes', () => {

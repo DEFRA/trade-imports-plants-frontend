@@ -9,33 +9,28 @@ import { answerForPickedParty } from '../../parties/picked-party.js'
 import { renderPicker } from './render.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 
-const FIRST_PAGE = 1
 const SEARCH_ACTION = 'search'
-
-const parsePageNumber = (value) => {
-  const number = Number.parseInt(value, 10)
-  return Number.isNaN(number) ? FIRST_PAGE : number
-}
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
 const logOutOfScope = (request, fieldName) =>
   kit.logRefusal(request, { reason: `${fieldName}-out-of-scope` })
 
-const postedPageState = (payload, extra) => ({
+const postedPickerState = (payload, extra) => ({
   query: payload.q ?? '',
-  page: parsePageNumber(payload.page),
   ...extra
 })
 
-const renderPickerPage = (picker, request, h, current, pageState) =>
-  renderPicker(request, h, current, pageState, {
+const renderPickerPage = (picker, request, h, current, pickerState) =>
+  renderPicker(request, h, current, pickerState, {
     page: picker.page,
     copy: picker.copy,
     fieldName: picker.fieldName,
+    role: picker.role,
     pickerViewModel: picker.pickerViewModel,
     heading: picker.heading(current),
-    description: picker.description(current)
+    description: picker.description(current),
+    saveActionsCopy: picker.saveActionsCopy
   })
 
 const redirectOutOfScope = (picker, request, h, current) => {
@@ -50,7 +45,7 @@ const renderNotInBook = async (picker, request, h, current, payload) =>
       request,
       h,
       current,
-      postedPageState(payload, {
+      postedPickerState(payload, {
         selectedId: '',
         error: picker.copy.errors[picker.fieldName]
       })
@@ -71,7 +66,7 @@ const renderSaveFailure = async (
       request,
       h,
       current,
-      postedPageState(payload, {
+      postedPickerState(payload, {
         selectedId: chosen.id,
         recoverableError: true
       })
@@ -108,7 +103,6 @@ const getPicker = async (picker, request, h) => {
   }
   return renderPickerPage(picker, request, h, current, {
     query: request.query.q ?? '',
-    page: parsePageNumber(request.query.page),
     selectedId:
       request.query.selected ?? current.answers[picker.fieldName]?.pickedFromId
   })
@@ -125,7 +119,8 @@ const saveSelection = async (
   const selection = await resolveSelectionOnSave(request, {
     fieldName: picker.fieldName,
     selectedId,
-    notInBookMessage: picker.copy.errors[picker.fieldName]
+    notInBookMessage: picker.copy.errors[picker.fieldName],
+    role: picker.role
   })
   if (selection.outcome === SELECTION.nothingChosen) {
     return h.redirect(kit.nextTarget(request, picker.page, current.scope))
@@ -147,7 +142,6 @@ const postPicker = async (picker, request, h) => {
   if (isSearch(payload)) {
     return renderPickerPage(picker, request, h, current, {
       query: payload.q ?? '',
-      page: FIRST_PAGE,
       selectedId
     })
   }
@@ -160,10 +154,12 @@ const postPicker = async (picker, request, h) => {
  * @param {object} picker
  * @param {object} picker.page - the page's id and slug.
  * @param {string} picker.fieldName - the answer name the page collects.
+ * @param {string} [picker.role] - the address-book role the page asks for.
  * @param {object} picker.copy - the page's resolved copy bundle.
  * @param {Function} picker.pickerViewModel - the page's bound view model.
  * @param {Function} picker.heading - gives the question, as this page asks it, from the journey state.
  * @param {Function} picker.description - gives the text under the question from the journey state.
+ * @param {object} [picker.saveActionsCopy] - the page's own words for its save-and-return and cancel controls, defaulting to the shared copy.
  * @param {Function} [picker.inScope] - tells from the journey state whether the page applies; out of scope it redirects to the overview.
  * @returns {object[]} the Hapi routes.
  */
