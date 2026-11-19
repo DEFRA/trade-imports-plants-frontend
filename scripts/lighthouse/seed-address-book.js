@@ -1,11 +1,9 @@
 import { PARTIES } from '../../src/server/app/sets/high-risk-plants/journeys/linear/parties/index.js'
 
 /**
- * Lighthouse walks party pickers by scraping the first `party` radio. Those
- * radios only render when the signed-in org has an address in the real
- * address-book service (stack) carrying the role that picker filters by.
- * Create whichever of those addresses are missing via the API — same
- * approach as the tests-repo e2e globalSetup, but one record per role.
+ * Lighthouse walks party pickers by scraping the first `party` radio.
+ * Create whichever of the addresses the registry's roles are missing via
+ * the API, one record per role the registry names.
  */
 const ORGANISATION_ID = '5900001'
 const ORGANISATION_ID_HEADER = 'Trade-Imports-Organisation-Id'

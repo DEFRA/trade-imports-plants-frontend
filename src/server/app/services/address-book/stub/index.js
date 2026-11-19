@@ -6,13 +6,10 @@ import { fromRow } from './from-row.js'
  * The parties are deliberately domain-neutral: the journey's real trading
  * parties are not yet agreed, and nothing here should imply an industry.
  *
- * Each record carries a role from one group only, so it is a record the
- * address book would accept, except `unlisted-traders-ltd`, which carries no
- * role at all — the address book refuses to create a record with an empty
- * roles list, so this is the only way to exercise the pre-roles state every
- * picker must still list. Country is the display name `client.js` would
- * resolve from a record's `countryCode` (or the literal "United Kingdom" a
- * record stores as-is). */
+ * Each record carries a role from one group only, except
+ * `unlisted-traders-ltd`, which carries none. Country is the display name
+ * `client.js` would resolve from a record's `countryCode` (or the literal
+ * "United Kingdom" a record stores as-is). */
 export const STUB_BOOK = [
   'northgate-trading-ag|Northgate Trading AG|43 East Hague Extension|Bern|30055|Switzerland|CH|CONSIGNOR',
   'tech-imports-ltd|Tech Imports Ltd|18 Dockside Road|London|E14 9GE|United Kingdom|GB|PLACE_OF_DESTINATION',

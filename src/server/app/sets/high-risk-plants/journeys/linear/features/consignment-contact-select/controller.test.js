@@ -66,6 +66,18 @@ describe('GET contact — the question it asks', () => {
   })
 })
 
+describe('GET contact — the picker filters by no role', () => {
+  useStubbedHighRiskPlantsJourney()
+
+  it('Should list a record carrying only the branch-address role, since this picker is configured with no role', async () => {
+    const result = await driveHandler(get, { seed: plants() })
+
+    expect(result.view.context.picker.rows.map((row) => row.id)).toContain(
+      'national-inspection-authority'
+    )
+  })
+})
+
 describeAddressBookPickerController({
   pickerName: 'contact',
   template:

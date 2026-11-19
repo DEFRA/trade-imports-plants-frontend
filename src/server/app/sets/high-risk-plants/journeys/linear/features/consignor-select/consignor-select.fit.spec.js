@@ -1,7 +1,7 @@
 import {
   errorSummaryLinks,
   AARHUS,
-  ADDRESS_BOOK_PARTY,
+  TECH_IMPORTS_NAME,
   NORTHGATE,
   WESTBROOK,
   WOOD_LINE_FIELDS,
@@ -80,7 +80,7 @@ const saveTheConsignorAddress = async (page) => {
 }
 
 const saveTheDestinationAddress = async (page) => {
-  await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+  await addressRowRadio(page, TECH_IMPORTS_NAME).check()
   await saveAndContinue(page).click()
 }
 

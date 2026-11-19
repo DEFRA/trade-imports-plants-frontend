@@ -119,7 +119,8 @@ const saveSelection = async (
   const selection = await resolveSelectionOnSave(request, {
     fieldName: picker.fieldName,
     selectedId,
-    notInBookMessage: picker.copy.errors[picker.fieldName]
+    notInBookMessage: picker.copy.errors[picker.fieldName],
+    role: picker.role
   })
   if (selection.outcome === SELECTION.nothingChosen) {
     return h.redirect(kit.nextTarget(request, picker.page, current.scope))

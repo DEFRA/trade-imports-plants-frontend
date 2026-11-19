@@ -12,6 +12,7 @@ import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
 import { STUB_BOOK } from '../src/server/app/services/address-book/stub/index.js'
+import { TECH_IMPORTS_NAME } from '../src/server/app/sets/high-risk-plants/journeys/linear/test-support.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
 import { copy as dashboardCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/dashboard/copy/copy.en.js'
@@ -25,8 +26,9 @@ import { copy as hubCopy } from '../src/server/app/sets/high-risk-plants/journey
 import { copy as originCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/copy/copy.en.js'
 import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
 
+export { TECH_IMPORTS_NAME }
+
 export const POTATO_VARIETY = 'Maris Piper'
-export const ADDRESS_BOOK_PARTY = 'Tech Imports Ltd'
 export const POTATO_WALK = [
   'commodity-type',
   'commodities',
@@ -308,7 +310,6 @@ export const DENMARK = 'Denmark'
 export const COPENHAGEN = 'Copenhagen Exports ApS'
 export const MATCHES_NOTHING = 'nothing matches this'
 export const IMPORT_CO = 'Import Co UK'
-export const ALPINE = 'Alpine Supplies GmbH'
 export const NORTHGATE = 'Northgate Trading AG'
 export const WESTBROOK = 'Westbrook Supplies Ltd'
 export const AARHUS = 'Aarhus Trading ApS'
@@ -837,7 +838,7 @@ export const startWoodNotificationAtPlaceOfDestination = async (page) => {
 
 const pickAddressBookParty = async (page) => {
   await page
-    .getByRole('radio', { name: `Select ${ADDRESS_BOOK_PARTY}`, exact: true })
+    .getByRole('radio', { name: `Select ${TECH_IMPORTS_NAME}`, exact: true })
     .check()
   await saveAndContinue(page).click()
 }

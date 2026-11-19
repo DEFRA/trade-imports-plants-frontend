@@ -18,13 +18,15 @@ import { TECH_IMPORTS_ID } from '../../test-support.js'
 
 const JOURNEY_ID = 'HRP-0001'
 const FIELD_NAME = 'consignor'
+const FIELD_ROLE = 'CONSIGNOR'
 const NOT_IN_BOOK_MESSAGE = 'Select a consignor from the address book'
 
 const save = (request, selectedId) =>
   resolveSelectionOnSave(request, {
     fieldName: FIELD_NAME,
     selectedId,
-    notInBookMessage: NOT_IN_BOOK_MESSAGE
+    notInBookMessage: NOT_IN_BOOK_MESSAGE,
+    role: FIELD_ROLE
   })
 
 describe('#resolveSelectionOnSave', () => {
@@ -57,13 +59,27 @@ describe('#resolveSelectionOnSave', () => {
     })
   })
 
-  it('Should give the record the posted id names, logging nothing', async () => {
+  it('Should refuse a record that does not carry the role asked for, logging the refused id', async () => {
     const selection = await save(request, TECH_IMPORTS_ID)
 
-    expect(selection.outcome).toBe(SELECTION.chosen)
-    expect(selection.record).toEqual(
-      STUB_BOOK.find((record) => record.id === TECH_IMPORTS_ID)
+    expect(selection).toEqual({ outcome: SELECTION.notInBook })
+    expectOneRefusalLogged(request.logger, {
+      journeyId: JOURNEY_ID,
+      errorCodes: [FIELD_NAME],
+      reason: 'not-in-address-book',
+      addressId: TECH_IMPORTS_ID
+    })
+  })
+
+  it('Should give the record the posted id names when it carries the role asked for, logging nothing', async () => {
+    const consignorRecord = STUB_BOOK.find((record) =>
+      record.roles.includes(FIELD_ROLE)
     )
+
+    const selection = await save(request, consignorRecord.id)
+
+    expect(selection.outcome).toBe(SELECTION.chosen)
+    expect(selection.record).toEqual(consignorRecord)
     expect(request.logger.entries).toEqual([])
   })
 

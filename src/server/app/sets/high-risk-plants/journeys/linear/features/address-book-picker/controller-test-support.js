@@ -344,6 +344,42 @@ const describeAddressNotInTheBook = (pickerConfig) => {
   })
 }
 
+const describeAddressOfAnotherRole = (pickerConfig) => {
+  const { pickerName, fieldName, errorText, wrongRoleId, get, seed } =
+    pickerConfig
+  const savedWith = savedWithFor(pickerConfig)
+
+  describe(`${pickerName} — an address held for another picker's role`, () => {
+    useStubbedHighRiskPlantsJourney()
+
+    it("Should refuse a save naming a record that does not carry this picker's role, committing nothing", async () => {
+      const result = await savedWith({
+        action: 'save',
+        [fieldName]: wrongRoleId
+      })
+
+      expect(result.response.statusCode).toBe(HTTP_STATUS_BAD_REQUEST)
+      expect(result.view.context.picker.error).toBe(errorText)
+      expect(result.after[fieldName]).toBeUndefined()
+      expectOneRefusalLogged(result.logger, {
+        journeyId: result.journeyId,
+        errorCodes: [fieldName],
+        reason: 'not-in-address-book',
+        addressId: wrongRoleId
+      })
+    })
+
+    it('Should show no selection for a stored answer picked from a record of another role', async () => {
+      const result = await driveHandler(get, {
+        seed: seed({ [fieldName]: copied(wrongRoleId) })
+      })
+
+      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(checkedId(result)).toBeUndefined()
+    })
+  })
+}
+
 const describeRefusalKeepsSearchAndPage = (pickerConfig) => {
   const { pickerName, fieldName, errorText, denmarkMatches } = pickerConfig
   const savedWith = savedWithFor(pickerConfig)
@@ -533,6 +569,7 @@ const describeSaveFailures = (picker) => {
  * @param {string} picker.primaryId - a stub record id carrying this picker's role
  * @param {string} picker.primaryName - that record's name
  * @param {string} picker.secondId - a second stub record id carrying this picker's role
+ * @param {string} [picker.wrongRoleId] - a stub record id carrying only another picker's role; when given, the picker must refuse it
  * @param {string} [picker.saveAndReturnToHubLabel] - the picker's own words for the save-and-return control, defaulting to the shared copy
  */
 export const describeAddressBookPickerController = (picker) => {
@@ -545,4 +582,7 @@ export const describeAddressBookPickerController = (picker) => {
   describeDeletedRecord(picker)
   describeAcceptedAnswers(picker)
   describeSaveFailures(picker)
+  if (picker.wrongRoleId) {
+    describeAddressOfAnotherRole(picker)
+  }
 }

@@ -5,6 +5,7 @@ import * as state from './engine/index.js'
 import { journeyRequest, stubH } from './engine/test-support.js'
 import * as checkAnswers from './sets/high-risk-plants/journeys/linear/features/check-answers/controller.js'
 const ADDRESS_ID = 'tech-imports-ltd'
+const CONSIGNOR_ADDRESS_ID = 'northgate-trading-ag'
 import * as contact from './sets/high-risk-plants/journeys/linear/features/consignment-contact-select/controller.js'
 import * as identificationNumbers from './sets/high-risk-plants/journeys/linear/features/identification-numbers/controller.js'
 import * as consignor from './sets/high-risk-plants/journeys/linear/features/consignor-select/controller.js'
@@ -121,7 +122,7 @@ const cases = [
     collects: consignor.meta.collects,
     handler: postHandlerOf(consignor),
     seed: { commodityType: PLANTS_FOR_PLANTING },
-    payload: { consignor: ADDRESS_ID }
+    payload: { consignor: CONSIGNOR_ADDRESS_ID }
   },
   {
     id: 'commodity-type',

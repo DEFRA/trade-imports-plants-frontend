@@ -378,7 +378,11 @@ describe('writes', () => {
     // maintaining addresses belongs to the INS frontend.
     const book = await addressBook()
 
-    expect(Object.keys(book).sort()).toEqual(['addresses', 'party'])
+    expect(Object.keys(book).sort()).toEqual([
+      'addresses',
+      'offeredForRole',
+      'party'
+    ])
   })
 })
 
@@ -420,7 +424,7 @@ describe('in stub mode', () => {
     expect(found.some((record) => record.id === 'tech-imports-ltd')).toBe(false)
   })
 
-  test('Should filter identically to real mode: every record returned carries the role asked for, or carries none', async () => {
+  test('Should return only records carrying the role asked for, or carrying none', async () => {
     process.env.STUB_MODE = 'true'
 
     const { addresses } = await addressBook()

@@ -77,7 +77,8 @@ describeAddressBookPickerController({
   denmarkMatches: ['aarhus-trading-aps'],
   primaryId: 'northgate-trading-ag',
   primaryName: 'Northgate Trading AG',
-  secondId: 'westbrook-supplies-ltd'
+  secondId: 'westbrook-supplies-ltd',
+  wrongRoleId: TECH_IMPORTS_ID
 })
 
 describe('GET consignor-select — the address this notification holds', () => {

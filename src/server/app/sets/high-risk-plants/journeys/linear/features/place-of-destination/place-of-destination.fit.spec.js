@@ -1,6 +1,6 @@
 import {
   errorSummaryLinks,
-  ADDRESS_BOOK_PARTY,
+  TECH_IMPORTS_NAME,
   COPENHAGEN,
   IMPORT_CO,
   WOOD_LINE_FIELDS,
@@ -95,7 +95,7 @@ const startAtDestinationAlreadyArrived = async (page) => {
 describeSubmittedSearchPicker({
   pickerName: 'place of destination',
   openPicker: startAtDestination,
-  roleAddress: ADDRESS_BOOK_PARTY,
+  roleAddress: TECH_IMPORTS_NAME,
   denmarkMatch: COPENHAGEN
 })
 
@@ -109,7 +109,7 @@ describeAddressPicker({
   pageUrl: PAGE_URL,
   afterSaveUrl: IDENTIFICATION_NUMBERS_URL,
   firstRowRadio: FIRST_ROW_RADIO,
-  roleAddress: ADDRESS_BOOK_PARTY,
+  roleAddress: TECH_IMPORTS_NAME,
   secondRoleAddress: IMPORT_CO,
   rolelessAddress: 'Unlisted Traders Ltd',
   otherRoleAddress: 'Northgate Trading AG',

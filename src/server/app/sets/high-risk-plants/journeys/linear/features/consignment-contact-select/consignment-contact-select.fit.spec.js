@@ -1,6 +1,6 @@
 import {
   errorSummaryLinks,
-  ADDRESS_BOOK_PARTY,
+  TECH_IMPORTS_NAME,
   REVIEW_URL_FROM_POTATO_WALK,
   COPENHAGEN,
   IMPORT_CO,
@@ -81,7 +81,7 @@ const startCompleteNotificationAtContact = async (page) => {
 describeSubmittedSearchPicker({
   pickerName: 'consignment contact',
   openPicker: startAtContact,
-  roleAddress: ADDRESS_BOOK_PARTY,
+  roleAddress: TECH_IMPORTS_NAME,
   denmarkMatch: COPENHAGEN
 })
 
@@ -95,7 +95,7 @@ describeAddressPicker({
   pageUrl: PAGE_URL,
   afterSaveUrl: REVIEW_URL,
   firstRowRadio: '#contactAddress',
-  roleAddress: ADDRESS_BOOK_PARTY,
+  roleAddress: TECH_IMPORTS_NAME,
   secondRoleAddress: IMPORT_CO,
   rolelessAddress: 'Unlisted Traders Ltd',
   denmarkMatch: COPENHAGEN,
@@ -178,7 +178,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
   }) => {
     await startAtContact(page)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+    await addressRowRadio(page, TECH_IMPORTS_NAME).check()
     await saveAndReturnToHub(page, copy.saveActions.saveAndReturnToHub).click()
 
     await expect(page).toHaveURL(HUB_URL)
@@ -206,7 +206,7 @@ test.describe('consignment-contact-select — the overview task row', () => {
   }) => {
     await startAtContact(page)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+    await addressRowRadio(page, TECH_IMPORTS_NAME).check()
     await cancelAndReturnToHub(
       page,
       copy.saveActions.cancelAndReturnToHub
@@ -227,7 +227,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
   }) => {
     await startWoodNotificationAtContact(page)
 
-    await addressRowRadio(page, ADDRESS_BOOK_PARTY).check()
+    await addressRowRadio(page, TECH_IMPORTS_NAME).check()
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(REVIEW_URL)

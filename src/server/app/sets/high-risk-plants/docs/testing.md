@@ -91,7 +91,7 @@ picker's submitted search box, given the picker's own role address and a Denmark
 `POTATO_VARIETY`, `REVIEW_URL_FROM_POTATO_WALK` and `WOOD_LINE_FIELDS`; the form-group
 reader `FORM_GROUP_ANCESTOR_XPATH`; `journeyFormOf`, which finds the page's journey
 form, and the `JOURNEY_FORM_SELECTOR` it uses; `backLink`; `errorSummary`, which finds the page's error summary by its alert role; `errorSummaryLinks`, which finds the error summary's links, narrowed to the one named when a name is given, and matching the whole accessible name when given `{ exact: true }`; the address-book
-values `ADDRESS_BOOK_PARTY`, `IMPORT_CO`, `ALPINE`, `NORTHGATE`, `WESTBROOK`,
+values `TECH_IMPORTS_NAME`, `IMPORT_CO`, `NORTHGATE`, `WESTBROOK`,
 `AARHUS`, `DENMARK`, `COPENHAGEN`, `MATCHES_NOTHING` and
 `NOT_IN_THE_BOOK`; `addressRowRadio`, which finds one address's radio on an
 address picker page by the address's name, and `searchBox`, which
@@ -145,7 +145,9 @@ Things that are easy to get wrong:
   when the combobox loses focus.
 - The stub address book holds 14 records, one of them (Unlisted Traders Ltd)
   with no role at all, so every picker lists it alongside its own role's
-  records. The consignor picker's records (Northgate Trading AG, Westbrook
+  records. It carries none because the real address book refuses to create a
+  record with an empty roles list — this is the only way to exercise that
+  pre-roles state. The consignor picker's records (Northgate Trading AG, Westbrook
   Supplies Ltd, Aarhus Trading ApS and others) carry the consignor role; the
   place of destination picker's (Tech Imports Ltd, Copenhagen Exports ApS and
   others) carry the place of destination role. The happy-path fixture ticks

@@ -104,7 +104,8 @@ describeAddressBookPickerController({
   denmarkMatches: ['copenhagen-exports-aps'],
   primaryId: TECH_IMPORTS_ID,
   primaryName: 'Tech Imports Ltd',
-  secondId: 'import-co-uk'
+  secondId: 'import-co-uk',
+  wrongRoleId: 'northgate-trading-ag'
 })
 
 describe('GET place-of-destination — the address this notification holds', () => {

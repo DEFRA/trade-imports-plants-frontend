@@ -80,7 +80,7 @@ export const renderPicker = async (
 ) => {
   const orgId = organisationIdOf(request)
   const found = await addressBook.addresses(orgId, { query, role })
-  const tickedRecord = await chosenFor(orgId, selectedId)
+  const tickedRecord = await chosenFor(orgId, selectedId, role)
   const effectiveSelectedId = tickedRecord ? selectedId : ''
 
   return h.view(view, {
