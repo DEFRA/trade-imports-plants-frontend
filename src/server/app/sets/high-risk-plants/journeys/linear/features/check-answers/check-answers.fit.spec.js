@@ -339,6 +339,56 @@ test.describe('a submitted notification', () => {
     await expect(deleteButton(page)).toHaveCount(1)
   })
 
+  test('posts Amend this notification from a form holding only the crumb, with Delete notification a link outside it', async ({
+    page
+  }) => {
+    const amendForm = main(page)
+      .locator('form')
+      .filter({
+        has: page.getByRole('button', { name: copy.viewHeader.amend })
+      })
+
+    await expect(amendForm).toHaveAttribute('action', /\/amend$/)
+    await expect(amendForm).toHaveClass(/app-form-inline/)
+    await expect(
+      main(page).locator('.govuk-button-group > form.app-form-inline')
+    ).toHaveCount(1)
+    expect(
+      await amendForm
+        .locator('input')
+        .evaluateAll((inputs) => inputs.map(({ name }) => name))
+    ).toEqual(['crumb'])
+    await expect(amendForm.getByRole('button')).toHaveCount(1)
+    await expect(deleteButton(page)).toHaveAttribute('href', /\/delete$/)
+    await expect(
+      amendForm.getByRole('button', { name: copy.delete })
+    ).toHaveCount(0)
+  })
+
+  test('Amend this notification opens the amendment when JavaScript is off', async ({
+    page,
+    browser
+  }) => {
+    await withoutJavaScript(page, browser, async (noJs) => {
+      await noJs.getByRole('button', { name: copy.viewHeader.amend }).click()
+
+      await expect(journeyStripTag(noJs)).toBeVisible()
+    })
+  })
+
+  test('Delete notification opens the delete page when JavaScript is off', async ({
+    page,
+    browser
+  }) => {
+    await withoutJavaScript(page, browser, async (noJs) => {
+      await deleteButton(noJs).click()
+
+      await expect(
+        noJs.getByRole('heading', { level: 1, name: deleteCopy.title })
+      ).toBeVisible()
+    })
+  })
+
   test('Amend this notification opens the amendment review', async ({
     page
   }) => {
@@ -375,10 +425,16 @@ test.describe('a submitted notification', () => {
   })
 })
 
-test('opening the view of a notification that does not exist goes to the notification list', async ({
+test('opening the view of a notification that does not exist shows the standard page not found with status 404', async ({
   page
 }) => {
-  await page.goto(`${BASE}/notifications/GBN-0000-0000-0000/notification-view`)
+  const response = await page.goto(
+    `${BASE}/notifications/GBN-0000-0000-0000/notification-view`
+  )
 
-  await expect(page).toHaveURL(BASE)
+  expect(response.status()).toBe(404)
+  await expect(
+    page.getByRole('heading', { level: 1, name: '404', exact: true })
+  ).toBeVisible()
+  await expect(page.getByText('Page not found')).toBeVisible()
 })

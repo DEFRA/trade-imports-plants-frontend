@@ -6,7 +6,7 @@ import {
   setBase
 } from '../../../../../shared/paths.js'
 import { isAnswered } from '../../../../../lib/answered.js'
-import { get, isJourneyNotFound } from '../../../../../engine/index.js'
+import { get } from '../../../../../engine/index.js'
 import { notificationActionSlugs } from './notification-action-slugs.js'
 import {
   obligationByName,
@@ -52,26 +52,11 @@ export const leaveJourneyLink = (journey, answers) =>
 export const insTypeQuestionUrl = () =>
   buildInsFrontendUrl('/notification-type')
 
-const findNotification = async (request, h) => {
-  try {
-    return await get(request, h)
-  } catch (error) {
-    if (isJourneyNotFound(error)) {
-      return undefined
-    }
-    throw error
-  }
-}
-
 export const entryGuardTarget = async (request, h) => {
   if (!guardedJourneyPath(request.path)) {
     return null
   }
-  const notification = await findNotification(request, h)
-  if (!notification) {
-    return null
-  }
-  const { journey, answers } = notification
+  const { journey, answers } = await get(request, h)
   if (hasCommittedNotificationAnswers(answers)) {
     return null
   }

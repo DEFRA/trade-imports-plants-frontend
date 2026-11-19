@@ -200,9 +200,10 @@ the call — and redirects on any target it returns. The guard:
   draft with nothing saved, whether the request is for Overview, the review,
   the declaration or the confirmation page — to the entry page, logging the
   journey id and the requested path once
-- admits a request for a notification that cannot be found, for its page to
-  answer: the review sends it to the notification list, and every other page
-  answers not found
+- answers a request for a notification that cannot be found with the service's
+  standard page not found (404), on every page, the review included, before any
+  page runs, and sends nothing to the entry page or the notification list; an
+  exempt path's own page answers not found the same way
 
 `hasCommittedNotificationAnswers` counts only answers that resolve to a manifest
 obligation and are not `SYSTEM_POPULATED`, so a journey holding nothing but a

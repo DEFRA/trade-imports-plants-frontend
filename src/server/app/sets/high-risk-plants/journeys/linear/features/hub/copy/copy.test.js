@@ -41,9 +41,9 @@ describe('#copy', () => {
     ])
   })
 
-  it('Should name the task list region in both locales', () => {
-    expect(copy.taskListRegionLabel).toBe('Notification tasklist')
-    expect(cy.taskListRegionLabel).toBe('Rhestr dasgau’r hysbysiad')
+  it('Should head the task list in both locales', () => {
+    expect(copy.taskListHeading).toBe('Notification task list')
+    expect(cy.taskListHeading).toBe('Rhestr dasgau’r hysbysiad')
   })
 
   it('Should title the commodities row in both locales', () => {

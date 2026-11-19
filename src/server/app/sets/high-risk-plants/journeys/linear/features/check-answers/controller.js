@@ -10,7 +10,6 @@ import { copyFor } from '../../../../../../shared/copy.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import { notificationViewPage as page } from './page.js'
 import { declarationPage } from '../declaration/page.js'
-import { organisationIdOf } from '../../../../../../../common/helpers/organisation-id.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
@@ -156,28 +155,8 @@ const render = async (
   })
 }
 
-const redirectToNotificationList = (request, h) => {
-  request.logger.info(
-    {
-      journeyId: request.params.journeyId,
-      path: request.path,
-      organisationId: organisationIdOf(request)
-    },
-    'Notification not found, sent to the notification list'
-  )
-  return h.redirect(dashboardPath())
-}
-
-const get = async (request, h) => {
-  try {
-    return await render(request, h, await state.get(request, h))
-  } catch (error) {
-    if (state.isJourneyNotFound(error)) {
-      return redirectToNotificationList(request, h)
-    }
-    throw error
-  }
-}
+const get = async (request, h) =>
+  render(request, h, await state.get(request, h))
 
 const post = async (request, h) => {
   const current = await state.get(request, h)

@@ -5,10 +5,12 @@
 {% block journeyContent %}
   <h1 class="govuk-heading-xl">{{ heading }}</h1>
 
-  <section aria-label="{{ copy.taskListRegionLabel }}">
+  <section aria-labelledby="task-list-heading">
+    <h2 class="govuk-heading-l" id="task-list-heading">{{ copy.taskListHeading }}</h2>
+
     {% for group in groups %}
       <section aria-labelledby="{{ group.id }}-heading">
-        <h2 class="govuk-heading-m" id="{{ group.id }}-heading">{{ group.caption }}</h2>
+        <h3 class="govuk-heading-m" id="{{ group.id }}-heading">{{ group.caption }}</h3>
         {{ govukTaskList({
           idPrefix: group.id,
           items: group.items,

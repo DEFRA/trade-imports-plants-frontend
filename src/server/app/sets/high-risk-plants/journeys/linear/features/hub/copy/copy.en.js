@@ -1,6 +1,6 @@
 export const copy = {
   title: 'Overview',
-  taskListRegionLabel: 'Notification tasklist',
+  taskListHeading: 'Notification task list',
   returnToDashboard: 'Return to dashboard',
   statuses: {
     completed: 'Completed',

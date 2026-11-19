@@ -35,22 +35,15 @@
     <h1 class="govuk-heading-l govuk-!-display-inline-block govuk-!-margin-right-3">{{ viewHeader.reference }}</h1>
     {{ govukTag({ text: viewHeader.status.text, classes: viewHeader.status.classes }) }}
 
-    {% set headerButtons %}
-      <div class="govuk-button-group">
-        {% if viewHeader.actions.amend %}
+    <div class="govuk-button-group">
+      {% if viewHeader.actions.amend %}
+        <form method="post" action="{{ viewHeader.actions.amend.postAction }}" class="app-form-inline">
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
           {{ govukButton({ text: viewHeader.actions.amend.text }) }}
-        {% endif %}
-        {{ govukButton(viewHeader.actions.delete) }}
-      </div>
-    {% endset %}
-    {% if viewHeader.actions.amend %}
-      <form method="post" action="{{ viewHeader.actions.amend.postAction }}">
-        <input type="hidden" name="crumb" value="{{ crumb }}" />
-        {{ headerButtons | safe }}
-      </form>
-    {% else %}
-      {{ headerButtons | safe }}
-    {% endif %}
+        </form>
+      {% endif %}
+      {{ govukButton(viewHeader.actions.delete) }}
+    </div>
 
     {% if viewHeader.dateLine %}
       <p class="govuk-body">{{ viewHeader.dateLine }}</p>

@@ -33,7 +33,7 @@ const taskRow = (page, title) =>
     .filter({ has: page.getByRole('link', { name: title }) })
 
 const taskListRegion = (page) =>
-  page.getByRole('region', { name: copy.taskListRegionLabel, exact: true })
+  page.getByRole('region', { name: copy.taskListHeading, exact: true })
 
 const blockedRowByTitle = (page, title) =>
   page
@@ -137,22 +137,25 @@ test.describe('overview hub feature', () => {
     ).toHaveAccessibleDescription(copy.statuses.inProgress)
   })
 
-  test('the groups sit in one task list region, each a region named by its heading and holding one task list, under no other section heading', async ({
+  test('the task list is a region named by its visible heading, holding one region per group, each named by its third-level heading and holding one task list', async ({
     page
   }) => {
     await startNotificationAtOverview(page)
 
     const captions = RENDERED_GROUP_IDS.map((id) => copy.groups[id])
     const taskList = taskListRegion(page)
+    await expect(
+      taskList.getByRole('heading', { level: 2, name: copy.taskListHeading })
+    ).toBeVisible()
     await expect(taskList.getByRole('region')).toHaveCount(captions.length)
     for (const caption of captions) {
       const group = taskList.getByRole('region', { name: caption, exact: true })
-      await expect(group.getByRole('heading', { level: 2 })).toHaveText(caption)
+      await expect(group.getByRole('heading', { level: 3 })).toHaveText(caption)
       await expect(group.getByRole('list')).toHaveCount(1)
     }
     await expect(
       page.getByRole('main').getByRole('heading', { level: 2 })
-    ).toHaveText(captions)
+    ).toHaveText([copy.taskListHeading])
   })
 
   test('has no serious or critical axe violations on the initial render', async ({

@@ -490,10 +490,10 @@ describe('Check your answers lateness', () => {
     expect(amendment.view.context.viewHeader).toBeNull()
   })
 
-  it('Should redirect the view of a notification that does not exist to the notification list', async () => {
-    const response = await get(journeyRequest('GBN-0000-0000-0000'), stubH())
-
-    expect(response).toEqual({ redirect: SET_BASE })
+  it('Should reject the view of a notification that does not exist with not found', async () => {
+    await expect(
+      get(journeyRequest('GBN-0000-0000-0000'), stubH())
+    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 404 } })
   })
 
   it('Should offer the cancel-amend path only while amending, with no Cancel amend link in the journey strip', async () => {
