@@ -1,25 +1,13 @@
 import { expect } from 'vitest'
 
-import { SET_BASE } from '../../../../set.js'
-import { PAGE_SIZE } from '../../../../../../services/address-book/index.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
+import { TECH_IMPORTS_ID, TECH_IMPORTS_NAME } from '../../test-support.js'
 
-const JOURNEY_ID = 'HRP-0001'
-const LABELS = pickerCopy.pagination
-const PAGES_IN_A_SHORT_BOOK = 3
-const FIRST_THREE_PAGES = Array.from(
-  { length: PAGES_IN_A_SHORT_BOOK },
-  (_, index) => index + 1
-)
 export const IMPORT_CO = 'import-co-uk'
 
 const LINE_1 = '18 Dockside Road'
 const POSTCODE = 'E14 9GE'
 const COUNTRY = 'United Kingdom'
-const ONE_LINE = `${LINE_1}, Unit 4, London, Greater London, ${POSTCODE}`
-
-export const TECH_IMPORTS_ID = 'tech-imports-ltd'
-export const TECH_IMPORTS_NAME = 'Tech Imports Ltd'
 
 export const NOT_IN_THE_BOOK = 'no-such-address'
 export const DELETED_ID = 'closed-depot-ltd'
@@ -34,6 +22,7 @@ const apiRecord = (id, overrides = {}) => ({
   postcode: 'TE5 7ER',
   countryCode: 'CH',
   deleted: false,
+  roles: [],
   ...overrides
 })
 
@@ -71,198 +60,23 @@ export const addressRecord = (id, name, address = {}) => ({
   }
 })
 
-const found = (results, { page = 1, total = results.length } = {}) => ({
-  results,
-  total,
-  page,
-  totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-  pageSize: PAGE_SIZE
-})
-
-const pagePathFor = (slug) => `${SET_BASE}/notifications/${JOURNEY_ID}/${slug}`
-
-const resultsHrefCases = ({ resultsHref, slug }) => ({
-  name: '#resultsHref',
-  cases: [
-    {
-      title: 'Should carry the search term, the page and the ticked row',
-      check: () => {
-        expect(
-          resultsHref(JOURNEY_ID, {
-            query: 'imports',
-            page: 3,
-            selectedId: TECH_IMPORTS_ID
-          })
-        ).toBe(
-          `${pagePathFor(slug)}?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
-        )
-      }
-    },
-    {
-      title: 'Should leave out a search term and a selection it does not have',
-      check: () => {
-        expect(
-          resultsHref(JOURNEY_ID, { query: '', page: 2, selectedId: '' })
-        ).toBe(`${pagePathFor(slug)}?page=2`)
-      }
-    }
-  ]
-})
-
-const pagingState = (overrides) => ({
-  query: '',
-  page: 1,
-  totalPages: 3,
-  selectedId: '',
-  labels: LABELS,
-  ...overrides
-})
-
-const paginationCases = ({ pagination }) => ({
-  name: '#pagination',
-  cases: [
-    {
-      title: 'Should render nothing while one page holds every result',
-      check: () => {
-        expect(
-          pagination(JOURNEY_ID, pagingState({ totalPages: 1 }))
-        ).toBeNull()
-      }
-    },
-    {
-      title: 'Should offer next but no previous on the first page',
-      check: () => {
-        const paged = pagination(JOURNEY_ID, pagingState({}))
-
-        expect(paged.previous).toBeUndefined()
-        expect(paged.next.href).toContain('page=2')
-        expect(paged.next.text).toBe(LABELS.next)
-        expect(paged.items.map((item) => item.number)).toEqual(
-          FIRST_THREE_PAGES
-        )
-        expect(paged.items[0].current).toBe(true)
-      }
-    },
-    {
-      title: 'Should offer previous but no next on the last page',
-      check: () => {
-        const paged = pagination(JOURNEY_ID, pagingState({ page: 3 }))
-
-        expect(paged.previous.href).toContain('page=2')
-        expect(paged.previous.text).toBe(LABELS.previous)
-        expect(paged.next).toBeUndefined()
-      }
-    },
-    {
-      title: 'Should name the paging links in the language of the page',
-      check: () => {
-        const paged = pagination(
-          JOURNEY_ID,
-          pagingState({
-            page: 2,
-            labels: { previous: 'Blaenorol', next: 'Nesaf' }
-          })
-        )
-
-        expect(paged.previous.text).toBe('Blaenorol')
-        expect(paged.next.text).toBe('Nesaf')
-      }
-    }
-  ]
-})
-
-const pagingLinkCases = ({ pagination, slug }) => ({
-  name: '#pagination links',
-  cases: [
-    {
-      title:
-        'Should carry the search term and the ticked row into every paging link',
-      check: () => {
-        const paged = pagination(
-          JOURNEY_ID,
-          pagingState({
-            query: 'imports',
-            page: 2,
-            selectedId: TECH_IMPORTS_ID
-          })
-        )
-
-        const pagePath = pagePathFor(slug)
-
-        expect(paged.previous.href).toBe(
-          `${pagePath}?q=imports&page=1&selected=${TECH_IMPORTS_ID}`
-        )
-        expect(paged.next.href).toBe(
-          `${pagePath}?q=imports&page=3&selected=${TECH_IMPORTS_ID}`
-        )
-        expect(paged.items[0].href).toBe(
-          `${pagePath}?q=imports&page=1&selected=${TECH_IMPORTS_ID}`
-        )
-      }
-    },
-    {
-      title: 'Should elide the pages the window skips over',
-      check: () => {
-        const paged = pagination(
-          JOURNEY_ID,
-          pagingState({ page: 5, totalPages: 10 })
-        )
-
-        expect(paged.items).toEqual([
-          {
-            number: 1,
-            href: expect.stringContaining('page=1'),
-            current: false
-          },
-          { ellipsis: true },
-          {
-            number: 4,
-            href: expect.stringContaining('page=4'),
-            current: false
-          },
-          {
-            number: 5,
-            href: expect.stringContaining('page=5'),
-            current: true
-          },
-          {
-            number: 6,
-            href: expect.stringContaining('page=6'),
-            current: false
-          },
-          { ellipsis: true },
-          {
-            number: 10,
-            href: expect.stringContaining('page=10'),
-            current: false
-          }
-        ])
-      }
-    }
-  ]
-})
-
 const rowCases = ({ fieldName, pickerViewModel }) => {
-  const rows = [
+  const found = [
     addressRecord(TECH_IMPORTS_ID, TECH_IMPORTS_NAME),
     addressRecord(IMPORT_CO, 'Import Co UK')
   ]
 
-  const viewModelFor = (pagesFound, selectedId = '') =>
-    pickerViewModel(
-      JOURNEY_ID,
-      { query: '', selectedId, found: pagesFound },
-      pickerCopy
-    )
+  const viewModelFor = (records, selectedId = '') =>
+    pickerViewModel({ query: '', selectedId, found: records }, pickerCopy)
 
   return {
     name: '#pickerViewModel',
     cases: [
       {
         title:
-          'Should give the first row on the first page the bare field name so the error link focuses it',
+          'Should give the first row the bare field name so the error link focuses it',
         check: () => {
-          const picker = viewModelFor(found(rows))
+          const picker = viewModelFor(found)
 
           expect(picker.rows.map((row) => row.idPrefix)).toEqual([
             fieldName,
@@ -271,50 +85,33 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
         }
       },
       {
-        title:
-          'Should give the first row of every page the bare field name so the error link resolves',
-        check: () => {
-          const picker = viewModelFor(found(rows, { page: 2, total: 7 }))
-
-          expect(picker.rows.map((row) => row.idPrefix)).toEqual([
-            fieldName,
-            `${fieldName}-7`
-          ])
-        }
-      },
-      {
         title: 'Should tick the row the selection names, and only that one',
         check: () => {
-          const picker = viewModelFor(found(rows), IMPORT_CO)
+          const picker = viewModelFor(found, IMPORT_CO)
 
           expect(picker.rows.map((row) => row.checked)).toEqual([false, true])
         }
       },
       {
-        title: 'Should count the rows shown against the rows found',
+        title: 'Should count every row the picker is given, whatever the count',
         check: () => {
-          const picker = viewModelFor(found(rows, { total: 13 }))
+          const picker = viewModelFor(found)
 
-          expect(picker.resultsCount).toBe('Showing 2 out of 13 results')
-        }
-      },
-      {
-        title: 'Should label the paging links with the shared picker copy',
-        check: () => {
-          const picker = viewModelFor(found(rows, { page: 2, total: 13 }))
-
-          expect(picker.pagination.previous.text).toBe(LABELS.previous)
-          expect(picker.pagination.next.text).toBe(LABELS.next)
+          expect(picker.resultsCount).toBe('Showing 2 out of 2 results')
         }
       },
       {
         title:
-          'Should carry the country as its own column and leave it out of the line',
+          'Should carry the country as its own column and leave it out of the address lines',
         check: () => {
-          const picker = viewModelFor(found(rows))
+          const picker = viewModelFor(found)
 
           expect(picker.rows[0].country).toBe(COUNTRY)
-          expect(picker.rows[0].addressText).toBe(ONE_LINE)
+          expect(picker.rows[0].addressLines).toEqual([
+            LINE_1,
+            'Unit 4',
+            `London, Greater London, ${POSTCODE}`
+          ])
         }
       }
     ]
@@ -322,20 +119,11 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
 }
 
 /**
- * Builds the test cases every address picker's view model and pagination
- * share, grouped by the function they prove.
+ * Builds the test cases every address picker's view model shares.
  *
  * @param {object} picker
  * @param {string} picker.fieldName - the answer name the page collects
- * @param {string} picker.slug - the page's path under the notification
  * @param {Function} picker.pickerViewModel - the page's bound view model
- * @param {Function} picker.pagination - the page's bound pagination builder
- * @param {Function} picker.resultsHref - the page's bound results link builder
  * @returns {Array<{ name: string, cases: Array<{ title: string, check: Function }> }>}
  */
-export const pickerViewModelSuites = (picker) => [
-  resultsHrefCases(picker),
-  paginationCases(picker),
-  pagingLinkCases(picker),
-  rowCases(picker)
-]
+export const pickerViewModelSuites = (picker) => [rowCases(picker)]

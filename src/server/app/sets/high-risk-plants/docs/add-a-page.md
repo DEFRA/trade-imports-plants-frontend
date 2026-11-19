@@ -437,7 +437,7 @@ set-up in the test file:
   picker shares, and a picker's call names the page Save and continue was
   pressed on before it and the answers that make that page apply;
   [`address-book-picker/test-support.js`](../journeys/linear/features/address-book-picker/test-support.js)
-  — `pickerViewModelSuites` builds the view model and paging test cases, and
+  — `pickerViewModelSuites` builds the view model test cases, and
   `addressResponseForABookHoldingADeletedRecord` is the address response for a
   book holding a deleted record, served through `addressBookAnswering`, with
   `DELETED_ID` and `NOT_IN_THE_BOOK`

@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
+import { itHoldsCopyAtEveryLeaf } from '../../../../../../../engine/test-support.js'
 import { sections } from '../../../flow/flow.js'
 import { taskRows } from '../../../flow/task-rows.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
 
 describe('#copy', () => {
-  it('Should hold a non-empty string or copy function at every leaf', () => {
-    for (const { path, value } of leaves(copy)) {
-      expect(isCopyLeaf(value), `${path} must be copy`).toBe(true)
-    }
-  })
+  itHoldsCopyAtEveryLeaf(copy, cy)
 
   it('Should name the four numbered groups in the design order', () => {
     expect(Object.values(copy.groups)).toEqual([

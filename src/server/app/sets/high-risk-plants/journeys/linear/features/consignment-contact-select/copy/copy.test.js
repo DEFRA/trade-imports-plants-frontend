@@ -12,14 +12,14 @@ import { copy as cy } from './copy.cy.js'
 describe('#copy', () => {
   itHoldsCopyAtEveryLeaf(copy, cy)
 
-  it('Should carry the contact question and the copying sentence in both languages', () => {
+  it('Should carry the contact question and the intro sentence in both languages', () => {
     expect(copy.title).toBe('Contact address for consignment')
     expect(cy.title).toBe('Cyfeiriad cyswllt ar gyfer y llwyth')
     expect(copy.description).toBe(
-      'Selecting a contact copies their name and address into this notification.'
+      'This is the contact address of the person responsible for the consignment from when it enters Great Britain until authorities complete their checks.'
     )
     expect(cy.description).toBe(
-      "Mae dewis cyswllt yn copïo eu henw a'u cyfeiriad i'r hysbysiad hwn."
+      'Dyma gyfeiriad cyswllt y person sy’n gyfrifol am y llwyth o’r adeg y mae’n cyrraedd Prydain Fawr hyd nes bod yr awdurdodau wedi cwblhau eu gwiriadau.'
     )
   })
 
@@ -29,6 +29,19 @@ describe('#copy', () => {
     )
     expect(cy.errors.contactAddress).toBe(
       'Dewiswch gyfeiriad cyswllt o’r rhestr'
+    )
+  })
+
+  it('Should hold the two return-control words as the design source sets them, with a Welsh draft that differs', () => {
+    expect(copy.saveActions.saveAndReturnToHub).toBe('Save and return to hub')
+    expect(copy.saveActions.cancelAndReturnToHub).toBe(
+      'Cancel and return to hub'
+    )
+    expect(cy.saveActions.saveAndReturnToHub).not.toBe(
+      copy.saveActions.saveAndReturnToHub
+    )
+    expect(cy.saveActions.cancelAndReturnToHub).not.toBe(
+      copy.saveActions.cancelAndReturnToHub
     )
   })
 })

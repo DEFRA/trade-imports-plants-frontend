@@ -2,13 +2,15 @@ import { organisationIdOf } from '../../../../../../../common/helpers/organisati
 import * as kit from '../../../../../../shared/kit.js'
 import * as addressBook from '../../../../../../services/address-book/index.js'
 
-/** Resolves an address-book id to its record, or to undefined when the id is empty, missing or soft-deleted. */
-export const chosenFor = async (orgId, selectedId) => {
+/** Resolves an address-book id to its record, or to undefined when the id is empty, missing, soft-deleted or does not carry the given role. */
+export const chosenFor = async (orgId, selectedId, role) => {
   if (!selectedId) {
     return undefined
   }
   const record = await addressBook.party(orgId, selectedId)
-  return record && !record.deleted ? record : undefined
+  return record && !record.deleted && addressBook.offeredForRole(record, role)
+    ? record
+    : undefined
 }
 
 export const SELECTION = {
@@ -30,11 +32,12 @@ export const SELECTION = {
  * @param {string} selection.fieldName - the answer name the picker collects.
  * @param {string} selection.selectedId - the address-book id posted, or ''.
  * @param {string} selection.notInBookMessage - the message the page shows for an id not in the book.
+ * @param {string} [selection.role] - the address-book role the picker offers; a record not carrying it is treated as not in the book.
  * @returns {Promise<{ outcome: string, record?: object }>} the decision.
  */
 export const resolveSelectionOnSave = async (
   request,
-  { fieldName, selectedId, notInBookMessage }
+  { fieldName, selectedId, notInBookMessage, role }
 ) => {
   const { journeyId } = request.params
 
@@ -46,7 +49,7 @@ export const resolveSelectionOnSave = async (
     return { outcome: SELECTION.nothingChosen }
   }
 
-  const record = await chosenFor(organisationIdOf(request), selectedId)
+  const record = await chosenFor(organisationIdOf(request), selectedId, role)
   if (!record) {
     kit.logRefusal(request, {
       fieldErrors: { [fieldName]: notInBookMessage },

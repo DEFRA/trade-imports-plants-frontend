@@ -1,23 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
+import { itHoldsCopyAtEveryLeaf } from '../../../../../../../engine/test-support.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
 
 const MAX = 12
 
 describe('#copy', () => {
-  it.each([
-    ['en', copy],
-    ['cy', cy]
-  ])(
-    'Should hold a non-empty string or copy function at every %s leaf',
-    (locale, bundle) => {
-      for (const { path, value } of leaves(bundle)) {
-        expect(isCopyLeaf(value), `${locale}: ${path} must be copy`).toBe(true)
-      }
-    }
-  )
+  itHoldsCopyAtEveryLeaf(copy, cy, ['sample', 'sample', 'sample'])
 
   it('Should carry the INS address book field labels', () => {
     expect(copy.fields).toEqual({

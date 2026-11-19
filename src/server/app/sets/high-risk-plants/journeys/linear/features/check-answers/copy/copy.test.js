@@ -1,25 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
 import { useStubbedHighRiskPlantsJourney } from '../../../test-support.js'
-import { driveHandler } from '../../../../../../../engine/test-support.js'
+import {
+  driveHandler,
+  itHoldsCopyAtEveryLeaf
+} from '../../../../../../../engine/test-support.js'
 
 import * as checkAnswers from '../controller.js'
 import { REVIEW_CARDS } from '../view-model/incomplete-cards.js'
 import { copy } from './copy.en.js'
 import { copy as cy } from './copy.cy.js'
 
-import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
-
 describe('checkAnswers copy module', () => {
+  itHoldsCopyAtEveryLeaf(copy, cy)
+
   it('Should interpolate the supplied day count into both timing rules', () => {
     expect(copy.late.potatoes(9)).toContain('9 days before')
     expect(copy.late.plantsAndWood(9)).toContain('9 days after')
-  })
-
-  it('Should have a non-empty string or function at every leaf', () => {
-    for (const { path, value } of leaves(copy)) {
-      expect(isCopyLeaf(value), `${path} must be copy`).toBe(true)
-    }
   })
 
   it('Should name an unfinished-card error for every review card, and no other', () => {

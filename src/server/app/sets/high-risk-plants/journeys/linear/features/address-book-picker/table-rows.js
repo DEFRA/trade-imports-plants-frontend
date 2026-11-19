@@ -15,7 +15,7 @@ export const pickerTableRows = (fieldName, rows, pickerCopy) =>
       )
     },
     { text: row.name },
-    { text: row.addressText },
+    { html: renderMacro(CELLS_TEMPLATE, 'pickerAddressCell', row) },
     { text: row.country },
     {
       html: renderMacro(CELLS_TEMPLATE, 'pickerDetailsCell', row, pickerCopy)

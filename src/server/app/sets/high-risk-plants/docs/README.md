@@ -86,10 +86,12 @@ sorts and paginates notifications, and starts a notification through
 Each notification has a task-list hub at `/notifications/{journeyId}`. Its
 seven task rows cover commodities, origin, arrival, destination, consignor,
 identification numbers and consignment contact. The destination, consignor
-and consignment contact pages are all the same address-book picker — a search
-box over the organisation's book, five rows a page with a radio per row, and
-paging links — sharing its shell through
-`journeys/linear/features/address-book-picker/`. The three pickers alike store a
+and consignment contact pages share the same address-book picker shell
+through `journeys/linear/features/address-book-picker/` — a search box with a
+radio per address, every one of them on one page. The destination and
+consignor pickers each ask for their own role's addresses, together with any
+address saved with no role; the consignment contact picker asks for no role,
+so it lists every address. The three pickers alike store a
 copy of the record they pick and allow a blank save, and share their results
 partial and their save rule through that directory.
 

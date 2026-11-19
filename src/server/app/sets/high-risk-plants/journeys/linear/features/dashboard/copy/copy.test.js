@@ -5,23 +5,16 @@ import { dispatchPages } from '../../../../../../../../../../test/fixtures/index
 import { knownJourneysCookie } from '../../../../../../../engine/persistence/session.js'
 import {
   authenticatedCredentials,
-  useStubbedJourney
+  useStubbedJourney,
+  itHoldsCopyAtEveryLeaf
 } from '../../../../../../../engine/test-support.js'
-import { isCopyLeaf, leaves } from '../../../../../../../shared/copy-leaves.js'
 
 import { routes } from '../controller.js'
 import { copy } from './copy.en.js'
+import { copy as copyCy } from './copy.cy.js'
 
 describe('#copy', () => {
-  it('Should have a non-empty string (or string-returning function) at every leaf', () => {
-    for (const { path, value } of leaves(copy)) {
-      const text =
-        typeof value === 'function'
-          ? value('sample', 'sample', 'sample')
-          : value
-      expect(isCopyLeaf(text), `${path} must resolve to copy`).toBe(true)
-    }
-  })
+  itHoldsCopyAtEveryLeaf(copy, copyCy, ['sample', 'sample', 'sample'])
 
   it('Should render both multi-row results labels', () => {
     expect(copy.pagination.results.oneOf(21, 21)).toBe(
