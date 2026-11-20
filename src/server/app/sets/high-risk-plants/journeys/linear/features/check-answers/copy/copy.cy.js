@@ -49,7 +49,7 @@ export const copy = {
   sections: {
     consignment: '1. Am y llwyth',
     arrival: '2. Cyrraedd a chyrchfan',
-    parties: '3. Partïon y llwyth'
+    addresses: '3. Cyfeiriadau'
   },
   cards: {
     import: 'Manylion mewnforio',
@@ -68,8 +68,6 @@ export const copy = {
     proposedPlaceOfLanding: 'Man glanio',
     name: 'Enw',
     address: 'Cyfeiriad',
-    phone: 'Rhif ffôn',
-    email: 'Cyfeiriad e-bost',
     genus: 'Genws',
     species: 'Rhywogaeth',
     commodityCode: 'Cod nwyddau',
@@ -85,6 +83,19 @@ export const copy = {
     consignmentNumber: 'Rhif y llwyth (dewisol)'
   },
   delete: 'Dileu’r hysbysiad',
+  viewHeader: {
+    amend: 'Diwygio’r hysbysiad hwn',
+    dateCreated: (date) => `Dyddiad creu: ${date}`,
+    dateSubmitted: (date) => `Dyddiad cyflwyno: ${date}`
+  },
+  importReferences: {
+    heading: 'Cyfeirnodau mewnforio',
+    warning:
+      'Rhaid i chi ddefnyddio’r cyfeirnod a’r cod cywir ar y datganiad tollau neu bydd oedi i’ch llwyth.',
+    warningIcon: 'Rhybudd',
+    notificationReference: 'Cyfeirnod yr hysbysiad',
+    customsDocumentCode: 'Cod dogfen tollau'
+  },
   typeLabels: {
     potatoes: 'Tatws (hadyd neu fwyd)',
     'plants-for-planting': 'Planhigion i’w plannu',

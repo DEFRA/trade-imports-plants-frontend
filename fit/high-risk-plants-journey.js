@@ -652,6 +652,45 @@ export const startNotification = async (page) => {
   return journeyIdFromPage(page)
 }
 
+export const notificationReferenceHeading = (page) =>
+  page.getByRole('heading', {
+    level: 1,
+    name: journeyIdFromPage(page),
+    exact: true
+  })
+
+export const viewHeaderTag = (page, statusText) =>
+  page.getByRole('main').getByText(statusText, { exact: true })
+
+export const formSubmittedBy = async (button) => {
+  const formId = await button.getAttribute('form')
+  const page = button.page()
+  return {
+    form: page.locator(`form[id="${formId}"]`),
+    submitButtons: page.locator(`button[form="${formId}"]`)
+  }
+}
+
+export const journeyStrip = (page) => page.locator('.app-journey-strip')
+
+export const journeyStripStatus = (page, statusText) =>
+  journeyStrip(page).getByText(statusText, { exact: true })
+
+export const reviewFootControls = (page) =>
+  page.getByRole('main').locator('form').last().getByRole('button')
+
+export const expectDraftReviewFoot = (page) =>
+  expect(reviewFootControls(page)).toHaveText([
+    checkAnswersCopy.continue,
+    sharedCopy.saveActions.saveAndReturnToHub
+  ])
+
+export const expectDraftReview = async (page) => {
+  await expect(notificationReferenceHeading(page)).toBeVisible()
+  await expect(viewHeaderTag(page, sharedCopy.journeyStrip.draft)).toBeVisible()
+  await expectDraftReviewFoot(page)
+}
+
 /**
  * Starts a notification, saves potatoes as its commodity type and opens its
  * Overview.

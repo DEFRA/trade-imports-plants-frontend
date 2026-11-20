@@ -28,6 +28,7 @@ export {
   formatCalendarDate,
   formatDateText,
   formatMomentAsDay,
+  formatMomentAsLongDay,
   isRealDate,
   parseDateText,
   SERVICE_TIME_ZONE,

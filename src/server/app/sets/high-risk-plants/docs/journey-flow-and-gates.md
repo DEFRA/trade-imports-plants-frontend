@@ -24,6 +24,9 @@ the commodity details sub-page and origin), `arrival-and-destination` (the
 arrival-status question, the arrival details and the place of destination),
 `consignment-parties` (the consignor, the identification numbers and the consignment
 contact) and `review` (check your answers, the declaration and the confirmation page).
+
+The section id `consignment-parties` is a stable id that the journey spec and the prototype share. Its caption and group heading read "Addresses".
+
 A flow section is an Overview group:
 
 ```js
@@ -197,6 +200,10 @@ the call — and redirects on any target it returns. The guard:
   draft with nothing saved, whether the request is for Overview, the review,
   the declaration or the confirmation page — to the entry page, logging the
   journey id and the requested path once
+- answers a request for a notification that cannot be found with the service's
+  standard page not found (404), on every page, the review included, before any
+  page runs, and sends nothing to the entry page or the notification list; an
+  exempt path's own page answers not found the same way
 
 `hasCommittedNotificationAnswers` counts only answers that resolve to a manifest
 obligation and are not `SYSTEM_POPULATED`, so a journey holding nothing but a
@@ -241,7 +248,7 @@ section's name from the copy pair. Never a string chosen page by page. The
 sections are the dashboard; About the consignment over the commodity-type,
 commodities, commodity-details and origin pages; Arrival over the
 arrival-status question and the arrival details; Destination over the
-place-of-destination page; and consignment parties over the consignor-select
+place-of-destination page; and addresses over the consignor-select
 and identification-numbers pages. The overview hub, the contact page, check
 your answers, declaration and confirmation carry no caption.
 

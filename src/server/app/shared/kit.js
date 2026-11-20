@@ -72,7 +72,13 @@ export const CYA_SLUG = 'notification-view'
 
 export const CANCEL_AMEND_SLUG = 'cancel-amend'
 
-const cancelAmendControl = (journey) =>
+/**
+ * The Cancel amend link or button for a journey being amended.
+ *
+ * @param {object} journey - the journey.
+ * @returns {{href: string, text: string}|undefined} the control while the journey is being amended, else undefined.
+ */
+export const cancelAmendControl = (journey) =>
   journey.status === AMEND
     ? {
         href: pagePath(journey.journeyId, CANCEL_AMEND_SLUG),
@@ -86,7 +92,7 @@ const cancelAmendControl = (journey) =>
  * @param {object} [journey] - the journey, or none.
  * @param {object} [options]
  * @param {boolean} [options.offerCancelAmend] - offer Cancel amend while the
- * journey is being amended. False on the page Cancel amend leads to.
+ * journey is being amended. Defaults to true.
  * @returns {object|null} the strip view model, or null without a journey.
  */
 export const journeyStrip = (journey, { offerCancelAmend = true } = {}) =>

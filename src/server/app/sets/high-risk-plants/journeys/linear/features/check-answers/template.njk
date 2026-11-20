@@ -1,6 +1,7 @@
 {% extends "shared/layout.njk" %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
 {% from "shared/section-caption.njk" import sectionCaption %}
 {% from "shared/save-actions.njk" import saveActions %}
 
@@ -30,7 +31,39 @@
   {% endif %}
   {% include "shared/error-summary.njk" %}
   {{ sectionCaption(caption) }}
-  <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% if viewHeader %}
+    <h1 class="govuk-heading-l govuk-!-display-inline-block govuk-!-margin-right-3">{{ viewHeader.reference }}</h1>
+    {{ govukTag({ text: viewHeader.status.text, classes: viewHeader.status.classes }) }}
+
+    {% if viewHeader.actions.amend %}
+      <form id="view-header-amend" method="post" action="{{ viewHeader.actions.amend.postAction }}" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}" />
+      </form>
+    {% endif %}
+
+    <div class="govuk-button-group">
+      {% if viewHeader.actions.amend %}
+        {{ govukButton({
+          text: viewHeader.actions.amend.text,
+          attributes: { form: "view-header-amend" }
+        }) }}
+      {% endif %}
+      {{ govukButton(viewHeader.actions.delete) }}
+    </div>
+
+    {% if viewHeader.dateLine %}
+      <p class="govuk-body">{{ viewHeader.dateLine }}</p>
+    {% endif %}
+
+    <section aria-labelledby="import-reference-numbers-heading">
+      <h2 class="govuk-heading-m" id="import-reference-numbers-heading">{{ viewHeader.importReferences.heading }}</h2>
+      {{ govukWarningText(viewHeader.importReferences.warning) }}
+      {{ govukSummaryList({ rows: viewHeader.importReferences.rows }) }}
+    </section>
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+  {% else %}
+    <h1 class="govuk-heading-l">{{ copy.title }}</h1>
+  {% endif %}
   {% if lateNotification %}
     {% set lateBody %}
       <h2 class="govuk-notification-banner__heading">{{ copy.late.heading }}</h2>
@@ -66,9 +99,7 @@
       {% endif %}
     {% endfor %}
   {% endfor %}
-  {% if readOnly %}
-    {{ govukButton({ text: copy.delete, href: deleteHref, classes: "govuk-button--warning" }) }}
-  {% else %}
+  {% if not readOnly %}
     {% if lateWarning %}
       {{ govukWarningText({ text: copy.late.warning(lateRule), iconFallbackText: copy.late.icon }) }}
     {% endif %}
@@ -77,7 +108,7 @@
     <form method="post" novalidate>
       <input type="hidden" name="crumb" value="{{ crumb }}" />
       <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
-      {{ saveActions({ hubHref: hubHref, primary: { text: copy.continue }, copy: sharedCopy.saveActions }) }}
+      {{ saveActions({ hubHref: hubHref, primary: { text: copy.continue }, buttonsAfterPrimary: buttonsAfterPrimary, copy: sharedCopy.saveActions }) }}
     </form>
   {% endif %}
 {% endblock %}

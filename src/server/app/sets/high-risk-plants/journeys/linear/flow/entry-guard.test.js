@@ -112,6 +112,14 @@ describe('#entryGuardTarget', () => {
     ).resolves.toBeNull()
   })
 
+  it('Should reject with not found for a guarded path of a notification that does not exist', async () => {
+    await expect(
+      guardOn('GBN-0000-0000-0000', {
+        path: pagePath('GBN-0000-0000-0000', NOTIFICATION_VIEW_SLUG)
+      })
+    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 404 } })
+  })
+
   it('Should redirect a journey with no answers to the entry page', async () => {
     const journeyId = await freshJourney()
 

@@ -91,7 +91,7 @@ for (const [commodityType, fields] of branches) {
         page.getByRole('heading', { name: copy.title, level: 1 })
       ).toBeVisible()
       await expect(
-        page.getByText(captionsCopy.sections.consignmentParties, {
+        page.getByText(captionsCopy.sections.addresses, {
           exact: true
         })
       ).toBeVisible()

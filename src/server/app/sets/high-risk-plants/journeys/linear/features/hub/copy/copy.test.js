@@ -13,7 +13,7 @@ describe('#copy', () => {
     expect(Object.values(copy.groups)).toEqual([
       '1. About the consignment',
       '2. Arrival and destination',
-      '3. Consignment parties',
+      '3. Addresses',
       '4. Check and submit'
     ])
   })
@@ -22,7 +22,7 @@ describe('#copy', () => {
     expect(Object.values(cy.groups)).toEqual([
       '1. Am y llwyth',
       '2. Cyrraedd a chyrchfan',
-      '3. Partïon y llwyth',
+      '3. Cyfeiriadau',
       '4. Gwirio a chyflwyno'
     ])
   })
@@ -41,6 +41,11 @@ describe('#copy', () => {
     ])
   })
 
+  it('Should head the task list in both locales', () => {
+    expect(copy.taskListHeading).toBe('Notification task list')
+    expect(cy.taskListHeading).toBe('Rhestr dasgau’r hysbysiad')
+  })
+
   it('Should title the commodities row in both locales', () => {
     expect(copy.rows.commodities).toEqual({ title: 'What are you importing?' })
     expect(cy.rows.commodities).toEqual({
@@ -56,15 +61,11 @@ describe('#copy', () => {
   })
 
   it('Should title the arrival row in both locales', () => {
-    // The animals string for the same task, and the Welsh the spec gives the
-    // arrival-details page (journey-spec.json pages[arrival-details].titleCy).
     expect(copy.rows.arrival).toEqual({ title: 'Arrival details' })
     expect(cy.rows.arrival).toEqual({ title: 'Manylion cyrraedd' })
   })
 
   it('Should title the destination row in both locales', () => {
-    // The animals string for the same party, and the Welsh the spec gives the
-    // page (journey-spec.json pages[place-of-destination].titleCy).
     expect(copy.rows.destination).toEqual({ title: 'Place of destination' })
     expect(cy.rows.destination).toEqual({ title: 'Man cyrchfan' })
   })

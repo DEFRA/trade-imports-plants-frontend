@@ -7,13 +7,13 @@ import {
 } from '../../../../../../lib/http-status.js'
 import {
   compose,
+  formatMomentAsLongDay,
   requiredOneOf,
   validate
 } from '../../../../../../lib/validate/index.js'
 import * as kit from '../../../../../../shared/kit.js'
 import { copyFor } from '../../../../../../shared/copy.js'
 import { lateness, requestClock } from '../review/lateness.js'
-import { notificationDateText } from '../review/notification-date.js'
 import { isReviewRefused } from '../check-answers/refusal.js'
 import { declarationPage as page } from './page.js'
 import { copy as en } from './copy/copy.en.js'
@@ -43,7 +43,7 @@ const render = (
       recoverableError
     }),
     copy,
-    submissionDate: notificationDateText(requestClock(request)),
+    submissionDate: formatMomentAsLongDay(requestClock(request)),
     values,
     errors,
     errorSummary: kit.errorSummary(errors)

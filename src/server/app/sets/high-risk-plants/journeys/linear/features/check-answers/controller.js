@@ -13,6 +13,7 @@ import { declarationPage } from '../declaration/page.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { buildSections } from './view-model/index.js'
+import { viewHeader } from './view-model/view-header.js'
 import { changeHref } from './view-model/rows/change-link.js'
 import {
   cardAnchorHref,
@@ -95,6 +96,13 @@ const backLinkFor = (request, journey) =>
         : hubPath(journey.journeyId)
   })
 
+const buttonsAfterPrimaryFor = (journey) => {
+  const cancelAmend = kit.cancelAmendControl(journey)
+  return cancelAmend
+    ? [{ ...cancelAmend, classes: 'govuk-button--secondary' }]
+    : []
+}
+
 const render = async (
   request,
   h,
@@ -107,15 +115,19 @@ const render = async (
   const partyDisplayValuesById = await partyDisplayValuesFor(current)
   const reviewed = await shownReviewErrors(current, { continueRefused })
   const errors = reviewed ? summaryErrors(current, reviewed) : {}
+  const header = viewHeader(current.journey)
   return h.view(view, {
-    ...kit.base(copy.title, {
+    ...kit.base(header ? header.reference : copy.title, {
       journey: current.journey,
       page,
-      backLink: backLinkFor(request, current.journey)
+      backLink: backLinkFor(request, current.journey),
+      offerCancelAmend: false,
+      showJourneyStrip: !header
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
     readOnly,
+    viewHeader: header,
     lateWarning:
       current.journey.status === state.DRAFT &&
       lateness(
@@ -138,7 +150,7 @@ const render = async (
       href: summaryHrefFor(current, { changeLinkTrail, reviewPageTrail }),
       disableAutoFocus: !continueRefused
     }),
-    deleteHref: readOnly ? pagePath(current.journey.journeyId, 'delete') : null,
+    buttonsAfterPrimary: buttonsAfterPrimaryFor(current.journey),
     amendmentCancelled: readOnly && request.query.cancelled === '1'
   })
 }

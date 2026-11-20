@@ -47,7 +47,7 @@ export const copy = {
   sections: {
     consignment: '1. About the consignment',
     arrival: '2. Arrival and destination',
-    parties: '3. Consignment parties'
+    addresses: '3. Addresses'
   },
   cards: {
     import: 'Import details',
@@ -66,8 +66,6 @@ export const copy = {
     proposedPlaceOfLanding: 'Place of landing',
     name: 'Name',
     address: 'Address',
-    phone: 'Telephone number',
-    email: 'Email address',
     genus: 'Genus',
     species: 'Species',
     commodityCode: 'Commodity code',
@@ -85,6 +83,19 @@ export const copy = {
     consignmentNumber: 'Consignment number (optional)'
   },
   delete: 'Delete notification',
+  viewHeader: {
+    amend: 'Amend this notification',
+    dateCreated: (date) => `Date created: ${date}`,
+    dateSubmitted: (date) => `Date submitted: ${date}`
+  },
+  importReferences: {
+    heading: 'Import reference numbers',
+    warning:
+      'You must use the correct reference and code on the customs declaration or your consignment will be delayed.',
+    warningIcon: 'Warning',
+    notificationReference: 'Notification reference',
+    customsDocumentCode: 'Customs document code'
+  },
   typeLabels: {
     potatoes: 'Potatoes (seed or ware)',
     'plants-for-planting': 'Plants for planting',

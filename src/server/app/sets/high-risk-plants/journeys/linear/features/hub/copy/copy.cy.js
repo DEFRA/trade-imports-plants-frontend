@@ -1,6 +1,7 @@
 // MACHINE-DRAFT Welsh — not reviewed by a translator. Do not ship user-facing without Welsh Language Standards sign-off.
 export const copy = {
   title: 'Trosolwg',
+  taskListHeading: 'Rhestr dasgau’r hysbysiad',
   returnToDashboard: 'Dychwelyd i’r dangosfwrdd',
   statuses: {
     completed: 'Wedi’i gwblhau',
@@ -12,7 +13,7 @@ export const copy = {
   groups: {
     'about-the-consignment': '1. Am y llwyth',
     'arrival-and-destination': '2. Cyrraedd a chyrchfan',
-    'consignment-parties': '3. Partïon y llwyth',
+    'consignment-parties': '3. Cyfeiriadau',
     'check-and-submit': '4. Gwirio a chyflwyno'
   },
   rows: {

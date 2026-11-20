@@ -1,9 +1,13 @@
-import { SET_BASE } from '../../../../set.js'
+import { SET_BASE, SET_ID } from '../../../../set.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as state from '../../../../../../engine/index.js'
 import { store } from '../../../../../../engine/store.js'
+import { configureRecords } from '../../../../../../engine/persistence/records.js'
+import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import {
+  authenticatedCredentials,
   driveHandler,
+  expectOneLogged,
   journeyRequest,
   stubH
 } from '../../../../../../engine/test-support.js'
@@ -105,6 +109,28 @@ describe('confirmation', () => {
     )
   })
 
+  describe('a submitted notification holding no submission instant', () => {
+    afterEach(() => configureRecords(SET_ID, recordsStub))
+
+    it('Should give a null notification date when the submitted journey holds no submission instant', async () => {
+      const { journeyId } = await store.create()
+      await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
+      await store.submit(journeyId)
+      configureRecords(SET_ID, {
+        ...recordsStub,
+        load: async (...args) => ({
+          ...(await recordsStub.load(...args)),
+          submittedAt: null
+        })
+      })
+      const h = stubH()
+
+      await get(journeyRequest(journeyId), h)
+
+      expect(h.captured.view.context.notificationDate).toBeNull()
+    })
+  })
+
   it('Should quote the plants and wood window for a plants consignment', async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, {
@@ -121,14 +147,24 @@ describe('confirmation', () => {
   })
 
   it.each([state.DRAFT, state.AMEND])(
-    'Should return %s to check answers without claiming submission',
+    'Should send %s to its declaration, log the refusal and leave the status unchanged',
     async (status) => {
-      const { journeyId, response } = await driveHandler(get, {
+      const { journeyId, response, logger } = await driveHandler(get, {
         seed: COMPLETE_NOTIFICATION,
         amend: status === state.AMEND
       })
       expect(response).toEqual({
-        redirect: `${SET_BASE}/notifications/${journeyId}/notification-view`
+        redirect: `${SET_BASE}/notifications/${journeyId}/declaration`
+      })
+      expectOneLogged(logger, {
+        level: 'info',
+        fields: {
+          journeyId,
+          status,
+          organisationId: authenticatedCredentials.organisationId,
+          refusal: 'not-submitted'
+        },
+        message: 'Confirmation refused'
       })
       expect((await store.get(journeyId)).status).toBe(status)
     }

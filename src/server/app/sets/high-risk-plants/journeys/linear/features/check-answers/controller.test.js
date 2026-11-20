@@ -18,8 +18,11 @@ import * as ports from '../../../../../../services/ports/index.js'
 import { HTTP_STATUS_BAD_REQUEST } from '../../../../../../lib/http-status.js'
 import {
   COMPLETE_NOTIFICATION,
+  COMPLETE_PLANTS_NOTIFICATION,
   itSendsBackToWhereTheTraderCameFrom,
   useStubbedHighRiskPlantsJourney,
+  deleteNotificationButton,
+  TECH_IMPORTS_ADDRESS_LINES,
   TECH_IMPORTS_COPY
 } from '../../test-support.js'
 import { sectionEntry } from '../../../../../../flow/navigation.js'
@@ -30,11 +33,15 @@ import { meta, routes } from './controller.js'
 import { copy } from './copy/copy.en.js'
 import { copy as arrivalCopy } from '../arrival-details/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
+import { copy as partyEditCopy } from '../party-edit/copy/copy.en.js'
 import { changeHref } from './view-model/rows/change-link.js'
 
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 const NOT_YET_ARRIVED = 'not-yet-arrived'
 const DESTINATION_CARD = '#place-of-destination'
+const ADDRESS_READ_BACK = TECH_IMPORTS_ADDRESS_LINES.join('<br>')
+const ERROR_PREFIX_HTML =
+  '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> '
 
 const get = routes.find((route) => route.method === 'GET').handler
 const post = postHandlerOf({ routes })
@@ -47,6 +54,9 @@ const invalidDestinationErrors = (result) => [
   }
 ]
 const INVALID_EMAIL = 'not-an-email'
+const OVERLONG_PHONE = '0'.repeat(21)
+const TELEPHONE_ERROR = partyEditCopy.errors.phone.maxLength(20)
+const COUNTRY_REQUIRED_ERROR = partyEditCopy.errors.countryCode.required
 const invalidDestination = {
   ...COMPLETE_NOTIFICATION,
   placeOfDestination: {
@@ -68,7 +78,7 @@ describe('Check your answers', () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
     expect(meta.collects).toEqual([])
     expect(result.view.context).toMatchObject({
-      pageTitle: copy.title,
+      pageTitle: result.journeyId,
       readOnly: false,
       backLink: `${SET_BASE}/notifications/${result.journeyId}`,
       copy
@@ -99,11 +109,13 @@ describe('Check your answers', () => {
       'Planting'
     ])
     const contact = cards.find(({ title }) => title === copy.cards.contact)
-    expect(contact.rows.map(({ value }) => value.text)).toEqual([
-      'Tech Imports Ltd',
-      '18 Dockside Road, London, E14 9GE, United Kingdom',
-      '01632 960000',
-      'tech-imports-ltd@example.com'
+    expect(contact.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
+    expect(contact.rows.map(({ value }) => value)).toEqual([
+      { text: 'Tech Imports Ltd' },
+      { html: ADDRESS_READ_BACK }
     ])
     expect(result.after).toEqual(COMPLETE_NOTIFICATION)
   })
@@ -426,53 +438,138 @@ describe('Check your answers lateness', () => {
     }
   )
 
-  it('Should offer Cancel amendment only while amending, and the banner only after cancelling', async () => {
+  const submittedJourneyId = async () => {
     const { journeyId } = await store.create()
     await store.seedAnswers(journeyId, COMPLETE_NOTIFICATION)
     await store.submit(journeyId)
+    return journeyId
+  }
+
+  it('Should offer the delete path in the header when the notification is submitted', async () => {
+    const journeyId = await submittedJourneyId()
+    const submitted = stubH()
+
+    await get(journeyRequest(journeyId), submitted)
+
+    expect(submitted.captured.view.context.readOnly).toBe(true)
+    expect(submitted.captured.view.context.viewHeader.actions.delete).toEqual(
+      deleteNotificationButton(journeyId)
+    )
+  })
+
+  it('Should head a submitted view with its reference, a header and no strip', async () => {
+    const journeyId = await submittedJourneyId()
     const submitted = stubH()
     await get(journeyRequest(journeyId), submitted)
-    expect(submitted.captured.view.context).toMatchObject({
-      readOnly: true,
-      deleteHref: `${SET_BASE}/notifications/${journeyId}/delete`,
-      amendmentCancelled: false
+
+    expect(submitted.captured.view.context.pageTitle).toBe(journeyId)
+    expect(submitted.captured.view.context.journeyStrip).toBeNull()
+    expect(submitted.captured.view.context.viewHeader.reference).toBe(journeyId)
+    expect(submitted.captured.view.context.viewHeader.status.text).toBe(
+      'Submitted'
+    )
+  })
+
+  it('Should head a draft with its reference and a Draft tag in the header, and no strip', async () => {
+    const draft = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+
+    expect(draft.view.context.pageTitle).toBe(draft.journeyId)
+    expect(draft.view.context.journeyStrip).toBeNull()
+    expect(draft.view.context.viewHeader.reference).toBe(draft.journeyId)
+    expect(draft.view.context.viewHeader.status).toEqual({
+      text: 'Draft',
+      classes: 'govuk-tag--blue'
     })
+  })
+
+  it('Should head an amendment with its title and the strip, and no header', async () => {
+    const amendment = await driveHandler(get, { amend: true })
+
+    expect(amendment.view.context.pageTitle).toBe(copy.title)
+    expect(amendment.view.context.journeyStrip.status.text).toBe('Amend')
+    expect(amendment.view.context.viewHeader).toBeNull()
+  })
+
+  it('Should reject the view of a notification that does not exist with not found', async () => {
+    await expect(
+      get(journeyRequest('GBN-0000-0000-0000'), stubH())
+    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 404 } })
+  })
+
+  it('Should offer the cancel-amend path only while amending, with no Cancel amend link in the journey strip', async () => {
+    const journeyId = await submittedJourneyId()
+    const submitted = stubH()
+    await get(journeyRequest(journeyId), submitted)
+    expect(submitted.captured.view.context.buttonsAfterPrimary).toEqual([])
+    const draft = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+    expect(draft.view.context.buttonsAfterPrimary).toEqual([])
+    await recordsStub.amend(journeyId)
+    const amending = stubH()
+
+    await get(journeyRequest(journeyId), amending)
+
+    expect(amending.captured.view.context.buttonsAfterPrimary).toEqual([
+      expect.objectContaining({
+        href: `${SET_BASE}/notifications/${journeyId}/cancel-amend`
+      })
+    ])
     expect(
-      submitted.captured.view.context.journeyStrip.cancelAmend
+      amending.captured.view.context.journeyStrip.cancelAmend
     ).toBeUndefined()
+  })
+
+  it('Should show the amendment-cancelled banner only after cancelling', async () => {
+    const journeyId = await submittedJourneyId()
+    const opened = stubH()
     const cancelled = stubH()
+    await get(journeyRequest(journeyId), opened)
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),
       cancelled
     )
-    expect(cancelled.captured.view.context.amendmentCancelled).toBe(true)
     await recordsStub.amend(journeyId)
     const amending = stubH()
     await get(
       journeyRequest(journeyId, { query: { cancelled: '1' } }),
       amending
     )
-    expect(amending.captured.view.context).toMatchObject({
-      readOnly: false,
-      deleteHref: null,
-      amendmentCancelled: false
-    })
-    expect(amending.captured.view.context.journeyStrip.cancelAmend.href).toBe(
-      `${SET_BASE}/notifications/${journeyId}/cancel-amend`
+
+    expect(opened.captured.view.context.amendmentCancelled).toBe(false)
+    expect(cancelled.captured.view.context.amendmentCancelled).toBe(true)
+    expect(amending.captured.view.context.amendmentCancelled).toBe(false)
+  })
+
+  it('Should follow Continue on a draft with no buttons, its Delete sitting in the header', async () => {
+    const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
+
+    expect(result.view.context.buttonsAfterPrimary).toEqual([])
+    expect(result.view.context.viewHeader.actions.delete).toEqual(
+      deleteNotificationButton(result.journeyId)
     )
   })
 
-  it('Should show a draft review as editable with the Draft status and no Delete or Cancel amendment link', async () => {
+  it('Should follow Continue on an amendment with a secondary Cancel amend button and no Delete', async () => {
+    const result = await driveHandler(get, { amend: true })
+
+    expect(result.view.context.buttonsAfterPrimary).toEqual([
+      {
+        text: 'Cancel amend',
+        href: `${SET_BASE}/notifications/${result.journeyId}/cancel-amend`,
+        classes: 'govuk-button--secondary'
+      }
+    ])
+  })
+
+  it('Should show a draft review as editable, headed by its reference with the Draft tag and no Amend', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 
-    expect(result.view.context).toMatchObject({
-      readOnly: false,
-      deleteHref: null
-    })
-    expect(result.view.context.journeyStrip).toEqual({
+    expect(result.view.context.readOnly).toBe(false)
+    expect(result.view.context.viewHeader).toMatchObject({
       reference: result.journeyId,
-      status: { text: 'Draft', classes: 'govuk-tag--blue' }
+      status: { text: 'Draft', classes: 'govuk-tag--blue' },
+      actions: { amend: null }
     })
+    expect(result.view.context.journeyStrip).toBeNull()
   })
 
   it('Should show no error summary on opening an incomplete amend review', async () => {
@@ -729,7 +826,7 @@ describe('Check your answers — copied addresses', () => {
     })
   })
 
-  it('Should mark the row holding each field that breaks the rules, still showing the copy', async () => {
+  it('Should show the country error above the unchanged address lines and the email error above the name, on the place of destination card', async () => {
     const seed = {
       ...COMPLETE_NOTIFICATION,
       placeOfDestination: {
@@ -748,36 +845,119 @@ describe('Check your answers — copied addresses', () => {
     const rowFor = (label) =>
       destination.rows.find(({ key }) => key.text === label)
 
+    expect(destination.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
     expect(rowFor(copy.labels.address).value.html).toBe(
-      '<p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a valid country</p>' +
-        '18 Dockside Road, London, E14 9GE, United Kingdom'
+      `${ERROR_PREFIX_HTML}Enter a valid country</p>${ADDRESS_READ_BACK}`
     )
-    expect(rowFor(copy.labels.email).value.html).toContain(
-      'Enter an email address in the correct format</p>not-an-email'
+    expect(rowFor(copy.labels.name).value.html).toBe(
+      `${ERROR_PREFIX_HTML}Enter an email address in the correct format</p>Tech Imports Ltd`
     )
-    expect(rowFor(copy.labels.name).value).toEqual({
-      text: 'Tech Imports Ltd'
-    })
-    expect(rowFor(copy.labels.phone).value).toEqual({
-      text: '01632 960000'
-    })
   })
 
-  it('Should escape a copied value shown under its error', async () => {
+  it('Should escape each address line shown in the address row', async () => {
     const seed = {
       ...COMPLETE_NOTIFICATION,
       contactAddress: {
         ...COMPLETE_NOTIFICATION.contactAddress,
-        email: '<b>x</b>'
+        address: {
+          ...COMPLETE_NOTIFICATION.contactAddress.address,
+          addressLine1: '<b>x</b>'
+        }
       }
     }
     const result = await driveHandler(get, { seed })
     const contact = cardsOf(result).find(
       ({ title }) => title === copy.cards.contact
     )
-    const email = contact.rows.find(({ key }) => key.text === copy.labels.email)
+    const address = contact.rows.find(
+      ({ key }) => key.text === copy.labels.address
+    )
 
-    expect(email.value.html).toContain('&lt;b&gt;x&lt;/b&gt;')
-    expect(email.value.html).not.toContain('<b>')
+    expect(address.value.html).toBe(
+      `&lt;b&gt;x&lt;/b&gt;<br>${TECH_IMPORTS_ADDRESS_LINES.slice(1).join('<br>')}`
+    )
+  })
+})
+
+describe('Check your answers — party card rows', () => {
+  const destinationWith = (changes) => ({
+    ...COMPLETE_NOTIFICATION,
+    placeOfDestination: {
+      ...COMPLETE_NOTIFICATION.placeOfDestination,
+      ...changes
+    }
+  })
+
+  const rowOf = async (seed, cardTitle, label) => {
+    const result = await driveHandler(get, { seed })
+    const card = cardsOf(result).find(({ title }) => title === cardTitle)
+    return card.rows.find(({ key }) => key.text === label)
+  }
+
+  const destinationRowOf = (seed, label) =>
+    rowOf(seed, destinationCopy.headings.potatoes, label)
+
+  it('Should show the telephone error above the name on a copy with an invalid telephone number', async () => {
+    const name = await destinationRowOf(
+      destinationWith({ phone: OVERLONG_PHONE }),
+      copy.labels.name
+    )
+
+    expect(name.value.html).toBe(
+      `${ERROR_PREFIX_HTML}${TELEPHONE_ERROR}</p>Tech Imports Ltd`
+    )
+  })
+
+  it('Should render a copy with no country code, showing its address lines joined by line breaks under the country error with no trailing blank line', async () => {
+    const address = await destinationRowOf(
+      destinationWith({
+        address: Object.fromEntries(
+          Object.entries(
+            COMPLETE_NOTIFICATION.placeOfDestination.address
+          ).filter(([field]) => field !== 'countryCode')
+        )
+      }),
+      copy.labels.address
+    )
+
+    expect(address.value.html).toBe(
+      `${ERROR_PREFIX_HTML}${COUNTRY_REQUIRED_ERROR}</p>${TECH_IMPORTS_ADDRESS_LINES.slice(0, -1).join('<br>')}`
+    )
+  })
+
+  it('Should read not provided on the Address row of a copy with no address lines', async () => {
+    const address = await destinationRowOf(
+      destinationWith({ address: {} }),
+      copy.labels.address
+    )
+
+    expect(address.value.html).toBe(
+      [
+        'Enter address line 1',
+        'Enter a town or city',
+        'Enter a postcode',
+        'Enter a country'
+      ]
+        .map((message) => `${ERROR_PREFIX_HTML}${message}</p>`)
+        .join('') + copy.notProvided
+    )
+  })
+
+  it('Should show the consignor card with a Name row and a multi-line Address row', async () => {
+    const result = await driveHandler(get, {
+      seed: COMPLETE_PLANTS_NOTIFICATION
+    })
+    const consignor = cardsOf(result).find(
+      ({ title }) => title === copy.cards.consignor
+    )
+
+    expect(consignor.rows.map(({ key }) => key.text)).toEqual([
+      copy.labels.name,
+      copy.labels.address
+    ])
+    expect(consignor.rows[1].value).toEqual({ html: ADDRESS_READ_BACK })
   })
 })

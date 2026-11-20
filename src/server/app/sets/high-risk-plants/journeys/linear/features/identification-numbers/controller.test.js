@@ -59,7 +59,7 @@ describe('identification numbers', () => {
       expect(result.view.context.values).toEqual(payloadFor(fields))
       expect(result.view.context.fields).toEqual(fields)
       expect(result.view.context.pageTitle).toBe(copy.title)
-      expect(result.view.context.caption).toBe('Consignment parties')
+      expect(result.view.context.caption).toBe('Addresses')
       expect(result.view.context.backLink).toBe(hubPath(result.journeyId))
     }
   )

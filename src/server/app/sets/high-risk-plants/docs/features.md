@@ -101,16 +101,22 @@ the enforceable detail. Read them when a copy test fails.
   overview" and "Cancel and return to overview" except the consignment
   contact page, which reads "Save and return to hub" and "Cancel and return
   to hub".
+- A page can pass `buttonsAfterPrimary`, a list of buttons shown straight after
+  the primary and before its save-and-return control. An amendment's check
+  answers uses it for its secondary "Cancel amend" button. A draft passes none
+  and ends with "Continue" and "Save and return to overview", with "Cancel and
+  return to overview" below.
 - The two return controls name the page they lead to, which is headed
   "Overview". "Hub" is the internal name for it and reaches the screen only
   on the consignment contact page.
 - A page reached from another page ends with the primary alone
   (`showReturnControls: false`), and the trader leaves the way they came in.
-- While a notification is being amended, a page ends exactly as it does on a
-  draft: Save and continue, then its own save-and-return control, then its own
-  cancel link, wherever the draft page shows them. Save and continue goes on
-  through the journey to check your answers, the save-and-return control goes to
-  the Overview, and the cancel link goes to the Overview without
+- While a notification is being amended, every page except check your answers
+  ends exactly as it does on a draft: Save and continue, then its own
+  save-and-return control, then its own cancel link, wherever the draft page
+  shows them. Save and continue goes on through the journey to check your
+  answers, the save-and-return control goes to the Overview, and the cancel
+  link goes to the Overview without
   saving the page. The status strip shows the Amend status and its Cancel amend
   link.
 
@@ -168,6 +174,9 @@ links, copy and validation. See
 
 ## Check answers and lateness
 
+- A draft and a submitted notification show the view header (status tag,
+  reference as heading, date line, Delete, Import reference numbers) in place of
+  the status strip, and only the submitted view offers Amend.
 - Check your answers' Back link goes to where the trader came from: the last
   journey page, the Overview or the dashboard, on a draft, an amendment and a
   submitted notification alike. Reached any other way it goes to the Overview on a
@@ -195,7 +204,7 @@ links, copy and validation. See
   the notification is first submitted and never worked out again. The stored
   value is `late` or `on-time`, so the dashboard row narrows it to a boolean.
 - Dates are shown as the Europe/London calendar day, through
-  `review/notification-date.js`. The arrival date of a consignment that has
+  `formatMomentAsLongDay` in `lib/validate/calendar.js`. The arrival date of a consignment that has
   already arrived is capped at today in Europe/London (regulation 26(2)(a));
   no other bound applies, because a late notification is accepted and flagged.
 

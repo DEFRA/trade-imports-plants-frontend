@@ -8,7 +8,6 @@ import { expect, test } from '@playwright/test'
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
 import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { copy as dashboardCopy } from '../dashboard/copy/copy.en.js'
-import { copy } from '../check-answers/copy/copy.en.js'
 import { copy as declarationCopy } from '../declaration/copy/copy.en.js'
 import { copy as confirmationCopy } from './copy/copy.en.js'
 
@@ -64,15 +63,15 @@ test('shows an accessible submitted receipt, survives reload and links to the no
   ).toBeVisible()
 })
 
-test('returns a draft to check answers instead of showing a receipt', async ({
+test('sends a draft to its declaration instead of showing a receipt', async ({
   page
 }) => {
   const reference = await completePotatoNotification(page)
   await page.goto(`${BASE}/notifications/${reference}/confirmation`)
   await expect(page).toHaveURL(
-    new RegExp(`${BASE}/notifications/${reference}/notification-view$`)
+    new RegExp(`${BASE}/notifications/${reference}/declaration$`)
   )
   await expect(
-    page.getByRole('heading', { name: copy.title, level: 1 })
+    page.getByRole('heading', { name: declarationCopy.title, level: 1 })
   ).toBeVisible()
 })

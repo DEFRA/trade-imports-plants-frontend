@@ -9,6 +9,7 @@ import {
   cancelAndReturnToHub,
   describeAddressPicker,
   describeSubmittedSearchPicker,
+  expectDraftReview,
   expectThreeSaveControls,
   saveAndContinue,
   startPotatoNotificationAtContact,
@@ -121,7 +122,7 @@ test.describe('consignment-contact-select feature', () => {
       page.getByRole('heading', { name: copy.title, level: 1 })
     ).toBeVisible()
     await expect(
-      page.getByText(captionCopy.sections.consignmentParties, { exact: true })
+      page.getByText(captionCopy.sections.addresses, { exact: true })
     ).toHaveCount(0)
     await expect(
       page.getByText(copy.description, { exact: true })
@@ -231,9 +232,7 @@ test.describe('consignment-contact-select — the end of Save and continue', () 
     await saveAndContinue(page).click()
 
     await expect(page).toHaveURL(REVIEW_URL)
-    await expect(
-      page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
-    ).toBeVisible()
+    await expectDraftReview(page)
     await expect(
       errorSummaryLinks(page, checkAnswersCopy.errors.cards.arrivalDetails)
     ).toBeVisible()
