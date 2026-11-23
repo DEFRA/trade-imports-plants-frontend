@@ -1,32 +1,27 @@
 import { pagePath } from '../../../../../../shared/paths.js'
+import { withTrail } from '../../../../../../shared/kit.js'
 
-/** How many of a picker's addresses one page holds. */
+/** How many of the addresses a picker found one page holds. */
 export const ADDRESSES_A_PAGE = 8
 
-const FIRST_PAGE = 1
-const MINIMUM_PAGES_TO_PAGINATE = 2
-const PAGES_EITHER_SIDE_OF_CURRENT = 1
+export const FIRST_PAGE = 1
 
 export const pageCountOf = (addressesFound) =>
   Math.max(FIRST_PAGE, Math.ceil(addressesFound / ADDRESSES_A_PAGE))
 
-/** The page the picker serves for the one asked for: the last page when the
- * request is past it. */
 export const servedPageOf = (requestedPage, addressesFound) =>
   Math.min(requestedPage, pageCountOf(addressesFound))
 
-export const addressesBeforePage = (page) =>
-  (page - FIRST_PAGE) * ADDRESSES_A_PAGE
-
 export const addressesOnPage = (addresses, page) => {
-  const from = addressesBeforePage(page)
+  const from = (page - FIRST_PAGE) * ADDRESSES_A_PAGE
   return addresses.slice(from, from + ADDRESSES_A_PAGE)
 }
 
-/** The results link for one page of a picker: the search term, the page and
- * the row already ticked all travel in the query string, because paging is a
- * link and not a submit. */
-export const resultsHref = (journeyId, slug, { query, page, selectedId }) => {
+export const resultsHref = (
+  journeyId,
+  slug,
+  { query, page, selectedId, trail }
+) => {
   const params = new URLSearchParams()
   if (query) {
     params.set('q', query)
@@ -37,15 +32,16 @@ export const resultsHref = (journeyId, slug, { query, page, selectedId }) => {
   if (selectedId) {
     params.set('selected', selectedId)
   }
-  return `${pagePath(journeyId, slug)}?${params.toString()}`
+  return withTrail(`${pagePath(journeyId, slug)}?${params.toString()}`, trail)
 }
 
 const numbersToShow = (page, totalPages) => {
+  const eitherSideOfCurrent = 1
   const shown = [
     FIRST_PAGE,
-    page - PAGES_EITHER_SIDE_OF_CURRENT,
+    page - eitherSideOfCurrent,
     page,
-    page + PAGES_EITHER_SIDE_OF_CURRENT,
+    page + eitherSideOfCurrent,
     totalPages
   ].filter((number) => number >= FIRST_PAGE && number <= totalPages)
   return [...new Set(shown)].sort((left, right) => left - right)
@@ -59,17 +55,12 @@ const itemsWithEllipses = (numbers, page, hrefFor) =>
   })
 
 /** The `govukPagination` view model for a picker, or nothing when one page
- * holds every address it offers. */
-export const paginationLinks = (
-  journeyId,
-  slug,
-  { query, page, totalPages, selectedId, labels }
-) => {
-  if (totalPages < MINIMUM_PAGES_TO_PAGINATE) {
+ * holds every address it found. `hrefFor` gives the results link for a page. */
+export const paginationLinks = ({ page, totalPages, labels }, hrefFor) => {
+  const minimumPagesToPaginate = 2
+  if (totalPages < minimumPagesToPaginate) {
     return null
   }
-  const hrefFor = (number) =>
-    resultsHref(journeyId, slug, { query, page: number, selectedId })
   return {
     previous:
       page > FIRST_PAGE

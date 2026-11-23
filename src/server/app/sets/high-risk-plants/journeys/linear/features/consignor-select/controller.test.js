@@ -73,6 +73,7 @@ describeAddressBookPickerController({
   slug: 'consignors/select',
   nextSlug: 'identification-numbers',
   errorText: copy.errors.consignor,
+  role: 'CONSIGNOR',
   wholeCount: 8,
   denmarkMatches: ['aarhus-trading-aps'],
   primaryId: 'northgate-trading-ag',

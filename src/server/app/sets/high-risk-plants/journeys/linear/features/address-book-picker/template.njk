@@ -14,12 +14,12 @@
 
   {% include "high-risk-plants/journeys/linear/features/address-book-picker/held-copy.njk" %}
 
-  <form method="post" novalidate data-module="app-picker-paging-selection">
+  <form method="post" novalidate>
     <input type="hidden" name="crumb" value="{{ crumb }}" />
     <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
     <input type="hidden" name="page" value="{{ picker.page }}" />
-    {% if picker.tickedRecord %}
-      <input type="hidden" name="selected" value="{{ picker.tickedRecord.id }}" />
+    {% if picker.selected %}
+      <input type="hidden" name="selected" value="{{ picker.selected.id }}" />
     {% endif %}
 
     {{ appSubmittedSearch({
@@ -32,8 +32,8 @@
       wrapperClasses: "govuk-!-width-one-half"
     }) }}
 
-    {% if picker.tickedRecord %}
-      {{ govukInsetText({ text: pickerCopy.selectedAddress(picker.tickedRecord.name) }) }}
+    {% if picker.selected %}
+      {{ govukInsetText({ text: pickerCopy.selectedAddress(picker.selected.name) }) }}
     {% endif %}
 
     {{ addressBookPickerResults(fieldName, picker, pickerCopy) }}

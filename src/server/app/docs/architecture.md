@@ -191,7 +191,9 @@ POST on purpose: Search posts the form with `action=search` and the page
 re-renders with the results, keeping the trader's choice. Each picker lists
 only its own role's addresses — the consignment contact picker asks for no
 role, so it lists every address — eight a page, with GOV.UK pagination under
-the results where there are more than eight.
+the results where more than eight were found. A page link is a GET: it
+carries the search term, the page, the address held as chosen and the trail,
+so Back and the onward target still answer the page the trader came from.
 
 ### Page title
 

@@ -166,7 +166,7 @@ const describeSelectionShown = ({
       })
 
       expect(checkedId(result)).toBe(primaryId)
-      expect(result.view.context.picker.tickedRecord.name).toBe(primaryName)
+      expect(result.view.context.picker.selected.name).toBe(primaryName)
     })
 
     it('Should carry a selection the query string names over the stored one', async () => {
@@ -183,7 +183,7 @@ const describeSelectionShown = ({
         seed: seed({ [fieldName]: pickedFrom(primaryId, NOT_IN_THE_BOOK) })
       })
 
-      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(result.view.context.picker.selected).toBeUndefined()
       expect(checkedId(result)).toBeUndefined()
     })
 
@@ -365,7 +365,7 @@ const describeAddressOfAnotherRole = (pickerConfig) => {
         seed: seed({ [fieldName]: copied(wrongRoleId) })
       })
 
-      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(result.view.context.picker.selected).toBeUndefined()
       expect(checkedId(result)).toBeUndefined()
     })
   })
@@ -423,7 +423,7 @@ const describeDeletedRecord = (picker) => {
         seed: seed({ [fieldName]: pickedFrom(primaryId, DELETED_ID) })
       })
 
-      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(result.view.context.picker.selected).toBeUndefined()
       expect(checkedId(result)).toBeUndefined()
     })
 

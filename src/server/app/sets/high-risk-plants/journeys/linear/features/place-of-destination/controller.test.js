@@ -100,6 +100,7 @@ describeAddressBookPickerController({
   slug: 'destinations/select',
   nextSlug: 'identification-numbers',
   errorText: copy.errors.placeOfDestination,
+  role: 'PLACE_OF_DESTINATION',
   wholeCount: 6,
   denmarkMatches: ['copenhagen-exports-aps'],
   primaryId: TECH_IMPORTS_ID,

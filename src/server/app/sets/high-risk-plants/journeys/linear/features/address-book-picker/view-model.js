@@ -1,18 +1,18 @@
 import { contactLines, pickerAddressLines } from './address-lines.js'
 import {
-  addressesBeforePage,
   addressesOnPage,
   pageCountOf,
-  paginationLinks
+  paginationLinks,
+  resultsHref
 } from './pagination.js'
 import { pickerTableRows } from './table-rows.js'
 
-const idPrefixFor = (fieldName) => (from, index) =>
-  index === 0 ? fieldName : `${fieldName}-${from + index + 1}`
+const idPrefixFor = (fieldName) => (index) =>
+  index === 0 ? fieldName : `${fieldName}-${index + 1}`
 
-const resultRow = (idPrefix, from, selectedId) => (record, index) => ({
+const resultRow = (idPrefix, selectedId) => (record, index) => ({
   id: record.id,
-  idPrefix: idPrefix(from, index),
+  idPrefix: idPrefix(index),
   name: record.name,
   addressLines: pickerAddressLines(record.address),
   country: record.address?.country,
@@ -24,7 +24,7 @@ const resultRow = (idPrefix, from, selectedId) => (record, index) => ({
  * The picker's view model, bound to the field the page collects. The bound
  * function takes the notification reference, the page's slug, the page state
  * (`query`, `page`, `selectedId`, an optional `error`, `found`, an optional
- * `tickedRecord`) and the shared picker copy.
+ * `selected`, `trail`) and the shared picker copy.
  *
  * @param {object} binding
  * @param {string} binding.fieldName - the answer name the page collects.
@@ -36,29 +36,36 @@ export const pickerViewModelFor = ({ fieldName }) => {
   return (
     journeyId,
     slug,
-    { query, page, selectedId, error, found, tickedRecord },
+    { query, page, selectedId, error, found, selected, trail },
     pickerCopy
   ) => {
-    const from = addressesBeforePage(page)
+    const hrefForPage = (number) =>
+      resultsHref(journeyId, slug, {
+        query,
+        page: number,
+        selectedId,
+        trail
+      })
     const rows = addressesOnPage(found, page).map(
-      resultRow(idPrefix, from, selectedId)
+      resultRow(idPrefix, selectedId)
     )
 
     return {
       query,
       page,
       error,
-      tickedRecord,
+      selected,
       resultsCount: pickerCopy.resultsCount(rows.length, found.length),
       rows,
       tableRows: pickerTableRows(fieldName, rows, pickerCopy),
-      pagination: paginationLinks(journeyId, slug, {
-        query,
-        page,
-        totalPages: pageCountOf(found.length),
-        selectedId,
-        labels: pickerCopy.pagination
-      })
+      pagination: paginationLinks(
+        {
+          page,
+          totalPages: pageCountOf(found.length),
+          labels: pickerCopy.pagination
+        },
+        hrefForPage
+      )
     }
   }
 }

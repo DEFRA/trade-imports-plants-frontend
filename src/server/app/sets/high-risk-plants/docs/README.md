@@ -89,8 +89,8 @@ identification numbers and consignment contact. The destination, consignor
 and consignment contact pages share the same address-book picker shell
 through `journeys/linear/features/address-book-picker/` — a search box with a
 radio per address, eight a page, with GOV.UK pagination under the results
-where there are more than eight and an inset above them naming the address
-already chosen. The destination and
+where more than eight were found and an inset above them naming whichever
+address the picker holds as chosen. The destination and
 consignor pickers each ask for their own role's addresses, together with any
 address saved with no role; the consignment contact picker asks for no role,
 so it lists every address. The three pickers alike store a

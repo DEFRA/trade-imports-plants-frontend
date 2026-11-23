@@ -1,6 +1,7 @@
 import { expect } from 'vitest'
 
 import { copy as pickerCopy } from './copy/copy.en.js'
+import { ADDRESSES_A_PAGE, FIRST_PAGE } from './pagination.js'
 import { TECH_IMPORTS_ID, TECH_IMPORTS_NAME } from '../../test-support.js'
 
 export const IMPORT_CO = 'import-co-uk'
@@ -65,11 +66,11 @@ const GIVEN_SLUG = 'parties/select'
 
 const viewModelBoundFor =
   (pickerViewModel) =>
-  (records, selectedId = '', page = 1) =>
+  (records, selectedId = '', page = 1, query = '') =>
     pickerViewModel(
       JOURNEY_ID,
       GIVEN_SLUG,
-      { query: '', page, selectedId, found: records },
+      { query, page, selectedId, found: records, trail: [] },
       pickerCopy
     )
 
@@ -130,12 +131,13 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
   }
 }
 
-const ADDRESSES_A_PAGE = 8
 const OVER_A_PAGE = ADDRESSES_A_PAGE + 1
 const SECOND_PAGE = 2
 const LAST_OF_OVER_A_PAGE = `record-${OVER_A_PAGE}`
+const PAGES_FOR_AN_ELLIPSIS = 5
+const ENOUGH_FOR_AN_ELLIPSIS = ADDRESSES_A_PAGE * PAGES_FOR_AN_ELLIPSIS
 
-const pageOfAddresses = (count) =>
+const numberedAddresses = (count) =>
   Array.from({ length: count }, (_, index) =>
     addressRecord(`record-${index + 1}`, `Record ${index + 1}`)
   )
@@ -150,7 +152,7 @@ const pagingCases = ({ fieldName, pickerViewModel }) => {
         title:
           'Should hold eight addresses on the first page, counted against every one found, and offer a link to the next',
         check: () => {
-          const picker = viewModelFor(pageOfAddresses(OVER_A_PAGE))
+          const picker = viewModelFor(numberedAddresses(OVER_A_PAGE))
 
           expect(picker.rows).toHaveLength(ADDRESSES_A_PAGE)
           expect(picker.resultsCount).toBe(
@@ -166,7 +168,7 @@ const pagingCases = ({ fieldName, pickerViewModel }) => {
           'Should hold what is left on the page after the first, with a link back and none onward',
         check: () => {
           const picker = viewModelFor(
-            pageOfAddresses(OVER_A_PAGE),
+            numberedAddresses(OVER_A_PAGE),
             '',
             SECOND_PAGE
           )
@@ -186,28 +188,63 @@ const pagingCases = ({ fieldName, pickerViewModel }) => {
       {
         title: 'Should offer no paging while one page holds every address',
         check: () => {
-          const picker = viewModelFor(pageOfAddresses(ADDRESSES_A_PAGE))
+          const picker = viewModelFor(numberedAddresses(ADDRESSES_A_PAGE))
 
           expect(picker.rows).toHaveLength(ADDRESSES_A_PAGE)
           expect(picker.pagination).toBeNull()
         }
       },
       {
-        title: 'Should carry the ticked address through every paging link',
+        title:
+          'Should carry the search term and the ticked address through every paging link, the previous and next links included',
         check: () => {
-          const picker = viewModelFor(pageOfAddresses(OVER_A_PAGE), 'record-3')
+          const picker = viewModelFor(
+            numberedAddresses(ENOUGH_FOR_AN_ELLIPSIS),
+            'record-3',
+            SECOND_PAGE,
+            'record'
+          )
+          const everyLink = [
+            picker.pagination.previous,
+            picker.pagination.next,
+            ...picker.pagination.items.filter((item) => !item.ellipsis)
+          ]
 
-          for (const item of picker.pagination.items) {
-            expect(item.href).toContain('selected=record-3')
+          for (const link of everyLink) {
+            expect(link.href).toContain('q=record')
+            expect(link.href).toContain('selected=record-3')
           }
         }
       },
       {
         title:
-          'Should number the rows of the page after the first from where that page starts',
+          'Should stand an ellipsis in for the pages its numbers skip, as the address book list does',
         check: () => {
           const picker = viewModelFor(
-            pageOfAddresses(OVER_A_PAGE),
+            numberedAddresses(ENOUGH_FOR_AN_ELLIPSIS),
+            '',
+            SECOND_PAGE
+          )
+
+          expect(
+            picker.pagination.items.map((item) =>
+              item.ellipsis ? '…' : item.number
+            )
+          ).toEqual([
+            FIRST_PAGE,
+            SECOND_PAGE,
+            SECOND_PAGE + 1,
+            '…',
+            PAGES_FOR_AN_ELLIPSIS
+          ])
+        }
+      },
+      {
+        title:
+          'Should give the first row of every page the bare field name, so the error link focuses it',
+        check: () => {
+          const picker = viewModelFor(
+            numberedAddresses(OVER_A_PAGE),
             '',
             SECOND_PAGE
           )

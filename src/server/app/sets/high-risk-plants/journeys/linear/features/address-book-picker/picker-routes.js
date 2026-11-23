@@ -7,26 +7,38 @@ import * as kit from '../../../../../../shared/kit.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import { renderPicker } from './render.js'
+import { FIRST_PAGE } from './pagination.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 
-const FIRST_PAGE = 1
 const SEARCH_ACTION = 'search'
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
-const pageNumber = (value) => {
+const resultsPageAsked = (request, fieldName, value) => {
   const requested = Number.parseInt(value ?? '', 10)
-  return Number.isInteger(requested) && requested >= FIRST_PAGE
-    ? requested
-    : FIRST_PAGE
+  if (Number.isInteger(requested) && requested >= FIRST_PAGE) {
+    return requested
+  }
+  if (value !== undefined) {
+    request.logger.info(
+      {
+        journeyId: request.params.journeyId,
+        fieldName,
+        requestedPage: value,
+        servedPage: FIRST_PAGE
+      },
+      'Address picker page is not a page number, serving the first page'
+    )
+  }
+  return FIRST_PAGE
 }
 
 const logOutOfScope = (request, fieldName) =>
   kit.logRefusal(request, { reason: `${fieldName}-out-of-scope` })
 
-const postedPickerState = (payload, extra) => ({
+const postedPickerState = (request, fieldName, payload, extra) => ({
   query: payload.q ?? '',
-  page: pageNumber(payload.page),
+  resultsPage: resultsPageAsked(request, fieldName, payload.page),
   ...extra
 })
 
@@ -54,7 +66,7 @@ const renderNotInBook = async (picker, request, h, current, payload) =>
       request,
       h,
       current,
-      postedPickerState(payload, {
+      postedPickerState(request, picker.fieldName, payload, {
         selectedId: '',
         error: picker.copy.errors[picker.fieldName]
       })
@@ -75,7 +87,7 @@ const renderSaveFailure = async (
       request,
       h,
       current,
-      postedPickerState(payload, {
+      postedPickerState(request, picker.fieldName, payload, {
         selectedId: chosen.id,
         recoverableError: true
       })
@@ -112,7 +124,11 @@ const getPicker = async (picker, request, h) => {
   }
   return renderPickerPage(picker, request, h, current, {
     query: request.query.q ?? '',
-    page: pageNumber(request.query.page),
+    resultsPage: resultsPageAsked(
+      request,
+      picker.fieldName,
+      request.query.page
+    ),
     selectedId:
       request.query.selected ?? current.answers[picker.fieldName]?.pickedFromId
   })
@@ -152,7 +168,7 @@ const postPicker = async (picker, request, h) => {
   if (isSearch(payload)) {
     return renderPickerPage(picker, request, h, current, {
       query: payload.q ?? '',
-      page: FIRST_PAGE,
+      resultsPage: FIRST_PAGE,
       selectedId
     })
   }

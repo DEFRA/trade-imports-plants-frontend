@@ -49,7 +49,7 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {object} current - the journey state the engine has resolved.
  * @param {object} state - what to render.
  * @param {string} state.query - the search term to run.
- * @param {number} state.page - the page of results asked for.
+ * @param {number} state.resultsPage - the page of results asked for.
  * @param {string} state.selectedId - the address-book id currently ticked.
  * @param {string} [state.error] - the refusal to render with the results.
  * @param {boolean} [state.recoverableError] - whether a save has just failed.
@@ -68,7 +68,7 @@ export const renderPicker = async (
   request,
   h,
   current,
-  { query, page: requestedPage, selectedId, error, recoverableError = false },
+  { query, resultsPage, selectedId, error, recoverableError = false },
   {
     page,
     copy,
@@ -82,20 +82,20 @@ export const renderPicker = async (
 ) => {
   const orgId = organisationIdOf(request)
   const found = await addressBook.addresses(orgId, { query, role })
-  const servedPage = servedPageOf(requestedPage, found.length)
-  if (servedPage !== requestedPage) {
+  const servedPage = servedPageOf(resultsPage, found.length)
+  if (servedPage !== resultsPage) {
     request.logger.info(
       {
         journeyId: current.journey.journeyId,
         fieldName,
-        requestedPage,
+        requestedPage: resultsPage,
         servedPage
       },
       'Address picker page is past the last page, serving the last page'
     )
   }
-  const tickedRecord = await chosenFor(orgId, selectedId, role)
-  const effectiveSelectedId = tickedRecord ? selectedId : ''
+  const selected = await chosenFor(orgId, selectedId, role)
+  const effectiveSelectedId = selected ? selectedId : ''
 
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -124,7 +124,8 @@ export const renderPicker = async (
         selectedId: effectiveSelectedId,
         error,
         found,
-        tickedRecord
+        selected,
+        trail: kit.requestTrail(request)
       },
       pickerCopy
     )

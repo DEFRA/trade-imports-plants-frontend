@@ -1038,12 +1038,20 @@ export const addressRowRadio = (page, name) =>
 export const addressesOnFirstPage = (wholeCount) =>
   Math.min(wholeCount, ADDRESSES_A_PAGE)
 
-export const openLastPageOfPicker = async (page) => {
-  const pageLinks = page.locator('.govuk-pagination__item a')
-  const lastPage = (await pageLinks.count()) - 1
-  if (lastPage >= 0) {
-    await pageLinks.nth(lastPage).click()
+export const pickerPageLink = (page, number) =>
+  page.getByRole('link', { name: `Page ${number}`, exact: true })
+
+/** Opens each page of a picker's results in turn, from the one on screen,
+ * and gives what `readPage` returned for each. */
+export const acrossPickerPages = async (page, lastPage, readPage) => {
+  const read = []
+  for (let number = 1; number <= lastPage; number++) {
+    if (number > 1) {
+      await pickerPageLink(page, number).click()
+    }
+    read.push(await readPage(number))
   }
+  return read
 }
 
 const searchAddressBook = async (page, term) => {
@@ -1066,8 +1074,8 @@ export const pickerResultsSummary = (page) =>
  * Fails unless an address picker page shows the results heading with the
  * count straight under it, offers its radios as one group named by that
  * heading, whose legend is hidden from sight as a GOV.UK visually-hidden
- * element is, lists every row on the one page with no page links, and has
- * only a paragraph with no link between the page heading and the form.
+ * element is, holds the rows the page it is on holds, and has only a
+ * paragraph with no link between the page heading and the form.
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} count - the count the page reads
@@ -1210,7 +1218,7 @@ export const describeAddressPicker = (picker) => {
       await signIn(page)
     })
 
-    test("opens on a page of the role's addresses, counted against every one it holds, and lists the role-less address across its pages", async ({
+    test("opens on the first eight of the addresses it offers, counted against every one of them, and offers the role-less address on one of its pages and another role's on none", async ({
       page
     }) => {
       await openPicker(page)
@@ -1221,13 +1229,19 @@ export const describeAddressPicker = (picker) => {
         addressesOnFirstPage(wholeCount)
       )
       await expect(addressRowRadio(page, roleAddress)).toBeVisible()
-      if (otherRoleAddress) {
-        await expect(addressRowRadio(page, otherRoleAddress)).toHaveCount(0)
-      }
 
-      await openLastPageOfPicker(page)
+      const rolelessSeen = await acrossPickerPages(
+        page,
+        Math.ceil(wholeCount / ADDRESSES_A_PAGE),
+        async () => {
+          if (otherRoleAddress) {
+            await expect(addressRowRadio(page, otherRoleAddress)).toHaveCount(0)
+          }
+          return addressRowRadio(page, rolelessAddress).count()
+        }
+      )
 
-      await expect(addressRowRadio(page, rolelessAddress)).toBeVisible()
+      expect(rolelessSeen.reduce((total, seen) => total + seen, 0)).toBe(1)
     })
 
     test('narrows the results to the search term', async ({ page }) => {
@@ -1266,9 +1280,12 @@ export const describeAddressPicker = (picker) => {
       await expect(addressRowRadio(page, roleAddress)).toBeVisible()
     })
 
-    test('offers paging only where the role holds more addresses than a page, and the last page holds what is left', async ({
-      page
-    }) => {
+    const pagingTitle =
+      wholeCount > ADDRESSES_A_PAGE
+        ? 'offers paging, whose last page holds what is left of the list'
+        : 'offers no paging, because one page holds every address it offers'
+
+    test(pagingTitle, async ({ page }) => {
       await openPicker(page)
       const paging = page.getByRole('navigation', { name: 'Pagination' })
 
@@ -1277,8 +1294,9 @@ export const describeAddressPicker = (picker) => {
         return
       }
 
+      const lastPage = Math.ceil(wholeCount / ADDRESSES_A_PAGE)
       await expect(paging).toBeVisible()
-      await openLastPageOfPicker(page)
+      await pickerPageLink(page, lastPage).click()
 
       await expect(pickerResultsSummary(page)).toHaveText(
         pickerCopy.resultsCount(
