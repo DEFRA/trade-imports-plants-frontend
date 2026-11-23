@@ -3,14 +3,15 @@ import { Metrics } from '@defra/cdp-metrics'
 
 import { publishMetricsInBackground } from './publish-metrics.js'
 import { config } from '../../../../config/config.js'
-import { createLogger } from '../logging/logger.js'
 import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
+import { recordModuleLoggerWarn } from '../../test-helpers/module-logger-lines.js'
 
 const NAMESPACE_KEY = 'metrics.namespace'
 const TEST_NAMESPACE = 'test-namespace'
 
 describe('publish metrics', () => {
   const originalNamespace = config.get(NAMESPACE_KEY)
+  const warnLines = recordModuleLoggerWarn()
   let logSpy
 
   beforeEach(() => {
@@ -54,9 +55,6 @@ describe('publish metrics', () => {
     vi.spyOn(Metrics.prototype, 'getMetricsLogger').mockReturnValue(
       metricsLogger
     )
-    const warnSpy = vi
-      .spyOn(createLogger(), 'warn')
-      .mockImplementation(() => {})
 
     publishMetricsInBackground({ 'request.kind': 'page' }, [
       { name: 'page.request.backend.calls', value: 1, unit: 'Count' },
@@ -64,17 +62,16 @@ describe('publish metrics', () => {
     ])
 
     await vi.waitFor(() =>
-      expect(warnSpy).toHaveBeenCalledWith(
-        {
-          err: flushError,
-          dimensions: { 'request.kind': 'page' },
-          metrics: [
-            'page.request.backend.calls',
-            'page.request.session.resolutions'
-          ]
-        },
-        'Could not publish metrics'
-      )
+      expect(warnLines.entriesWith('Could not publish metrics')).toHaveLength(1)
     )
+    const [entry] = warnLines.entriesWith('Could not publish metrics')
+    expect(entry.fields).toEqual({
+      err: flushError,
+      dimensions: { 'request.kind': 'page' },
+      metrics: [
+        'page.request.backend.calls',
+        'page.request.session.resolutions'
+      ]
+    })
   })
 })
