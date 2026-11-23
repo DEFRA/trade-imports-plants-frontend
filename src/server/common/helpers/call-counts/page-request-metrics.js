@@ -5,10 +5,6 @@ import { createLogger } from '../logging/logger.js'
 
 const logger = createLogger()
 
-const BACKEND_CALLS_METRIC = 'page.request.backend.calls'
-const SESSION_RESOLUTIONS_METRIC = 'page.request.session.resolutions'
-const COUNT = 'Count'
-
 /**
  * Emits one EMF document for a finished page request: its backend calls and session resolutions.
  *
@@ -23,8 +19,12 @@ export const recordPageRequest = async ({
     'request.kind': 'page'
   })
   metricsLogger.setNamespace(config.get('metrics.namespace'))
-  metricsLogger.putMetric(BACKEND_CALLS_METRIC, backendCalls, COUNT)
-  metricsLogger.putMetric(SESSION_RESOLUTIONS_METRIC, sessionResolutions, COUNT)
+  metricsLogger.putMetric('page.request.backend.calls', backendCalls, 'Count')
+  metricsLogger.putMetric(
+    'page.request.session.resolutions',
+    sessionResolutions,
+    'Count'
+  )
   await metricsLogger.flush()
 }
 
