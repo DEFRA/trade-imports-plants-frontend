@@ -3,12 +3,13 @@ import { vi } from 'vitest'
 import { recordPageRequestInBackground } from './page-request-metrics.js'
 import { config } from '../../../../config/config.js'
 import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
+import { restoreConfigAfterEach } from '../../test-helpers/restore-config-after-each.js'
 
 const NAMESPACE_KEY = 'metrics.namespace'
 const TEST_NAMESPACE = 'test-namespace'
 
 describe('page request metrics', () => {
-  const originalNamespace = config.get(NAMESPACE_KEY)
+  restoreConfigAfterEach([NAMESPACE_KEY])
   let logSpy
 
   beforeEach(() => {
@@ -17,7 +18,6 @@ describe('page request metrics', () => {
   })
 
   afterEach(() => {
-    config.set(NAMESPACE_KEY, originalNamespace)
     vi.restoreAllMocks()
   })
 

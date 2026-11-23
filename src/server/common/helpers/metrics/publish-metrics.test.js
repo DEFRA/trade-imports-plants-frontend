@@ -4,13 +4,14 @@ import { Metrics } from '@defra/cdp-metrics'
 import { publishMetricsInBackground } from './publish-metrics.js'
 import { config } from '../../../../config/config.js'
 import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
+import { restoreConfigAfterEach } from '../../test-helpers/restore-config-after-each.js'
 import { recordModuleLoggerWarn } from '../../test-helpers/module-logger-lines.js'
 
 const NAMESPACE_KEY = 'metrics.namespace'
 const TEST_NAMESPACE = 'test-namespace'
 
 describe('publish metrics', () => {
-  const originalNamespace = config.get(NAMESPACE_KEY)
+  restoreConfigAfterEach([NAMESPACE_KEY])
   const warnLines = recordModuleLoggerWarn()
   let logSpy
 
@@ -20,7 +21,6 @@ describe('publish metrics', () => {
   })
 
   afterEach(() => {
-    config.set(NAMESPACE_KEY, originalNamespace)
     vi.restoreAllMocks()
   })
 
