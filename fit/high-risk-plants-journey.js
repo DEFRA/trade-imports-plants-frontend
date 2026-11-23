@@ -12,6 +12,7 @@ import { TRAIL_START } from '../src/server/app/shared/trail.js'
 import { signIn } from './sign-in.js'
 import { seedFields } from './seed-fields.js'
 import { STUB_BOOK } from '../src/server/app/services/address-book/stub/index.js'
+import { ADDRESSES_A_PAGE } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/address-book-picker/pagination.js'
 import { TECH_IMPORTS_NAME } from '../src/server/app/sets/high-risk-plants/journeys/linear/test-support.js'
 import { copy as statusCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/arrival-status/copy/copy.en.js'
 import { copy as sharedCopy } from '../src/server/app/shared/copy.en.js'
@@ -1034,6 +1035,17 @@ export const addressRowRadio = (page, name) =>
     exact: true
   })
 
+export const addressesOnFirstPage = (wholeCount) =>
+  Math.min(wholeCount, ADDRESSES_A_PAGE)
+
+export const openLastPageOfPicker = async (page) => {
+  const pageLinks = page.locator('.govuk-pagination__item a')
+  const lastPage = (await pageLinks.count()) - 1
+  if (lastPage >= 0) {
+    await pageLinks.nth(lastPage).click()
+  }
+}
+
 const searchAddressBook = async (page, term) => {
   await searchBox(page).fill(term)
   await page.getByRole('button', { name: pickerCopy.search.button }).click()
@@ -1079,7 +1091,6 @@ export const expectPickerResultsLayout = async (page, count, rowCount) => {
     })
   )
   await expect(page.getByRole('radio')).toHaveCount(rowCount)
-  await expect(page.getByRole('link', { name: /^Page \d/ })).toHaveCount(0)
 
   const heading = page.getByRole('heading', { level: 1 })
   const beforeTheForm = 'following-sibling::*[following-sibling::form]'
@@ -1199,21 +1210,24 @@ export const describeAddressPicker = (picker) => {
       await signIn(page)
     })
 
-    test('lists every address for the role, and the role-less address, on one page', async ({
+    test("opens on a page of the role's addresses, counted against every one it holds, and lists the role-less address across its pages", async ({
       page
     }) => {
       await openPicker(page)
 
       await expectPickerResultsLayout(
         page,
-        pickerCopy.resultsCount(wholeCount, wholeCount),
-        wholeCount
+        pickerCopy.resultsCount(addressesOnFirstPage(wholeCount), wholeCount),
+        addressesOnFirstPage(wholeCount)
       )
       await expect(addressRowRadio(page, roleAddress)).toBeVisible()
-      await expect(addressRowRadio(page, rolelessAddress)).toBeVisible()
       if (otherRoleAddress) {
         await expect(addressRowRadio(page, otherRoleAddress)).toHaveCount(0)
       }
+
+      await openLastPageOfPicker(page)
+
+      await expect(addressRowRadio(page, rolelessAddress)).toBeVisible()
     })
 
     test('narrows the results to the search term', async ({ page }) => {
@@ -1235,7 +1249,7 @@ export const describeAddressPicker = (picker) => {
       await expect(pickerResultsSummary(page)).toHaveText(pickerCopy.noMatches)
     })
 
-    test('clearing the search and searching with nothing entered lists every address for the role again, on one page', async ({
+    test("clearing the search and searching with nothing entered opens the role's whole list again, from its first page", async ({
       page
     }) => {
       await openPicker(page)
@@ -1246,10 +1260,32 @@ export const describeAddressPicker = (picker) => {
 
       await expectPickerResultsLayout(
         page,
-        pickerCopy.resultsCount(wholeCount, wholeCount),
-        wholeCount
+        pickerCopy.resultsCount(addressesOnFirstPage(wholeCount), wholeCount),
+        addressesOnFirstPage(wholeCount)
       )
       await expect(addressRowRadio(page, roleAddress)).toBeVisible()
+    })
+
+    test('offers paging only where the role holds more addresses than a page, and the last page holds what is left', async ({
+      page
+    }) => {
+      await openPicker(page)
+      const paging = page.getByRole('navigation', { name: 'Pagination' })
+
+      if (wholeCount <= ADDRESSES_A_PAGE) {
+        await expect(paging).toHaveCount(0)
+        return
+      }
+
+      await expect(paging).toBeVisible()
+      await openLastPageOfPicker(page)
+
+      await expect(pickerResultsSummary(page)).toHaveText(
+        pickerCopy.resultsCount(
+          wholeCount % ADDRESSES_A_PAGE || ADDRESSES_A_PAGE,
+          wholeCount
+        )
+      )
     })
 
     test('keeps a ticked row checked while the search narrows the results', async ({
@@ -1313,7 +1349,7 @@ export const describeAddressPicker = (picker) => {
       await signIn(page)
     })
 
-    test('saves the chosen address, continues to the next page and shows it checked on return, with nothing between the search box and the results heading', async ({
+    test('saves the chosen address, continues to the next page and shows it checked on return, named above the results', async ({
       page
     }) => {
       const reference = await openPicker(page)
@@ -1329,7 +1365,7 @@ export const describeAddressPicker = (picker) => {
         page
           .getByRole('heading', { name: pickerCopy.resultsHeading, level: 2 })
           .locator('xpath=preceding-sibling::*[1]')
-      ).toHaveClass(/govuk-form-group/)
+      ).toHaveText(pickerCopy.selectedAddress(roleAddress))
     })
 
     test('replaces the address already saved rather than keeping both', async ({

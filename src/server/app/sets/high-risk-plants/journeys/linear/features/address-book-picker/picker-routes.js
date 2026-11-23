@@ -9,15 +9,24 @@ import { answerForPickedParty } from '../../parties/picked-party.js'
 import { renderPicker } from './render.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 
+const FIRST_PAGE = 1
 const SEARCH_ACTION = 'search'
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
+
+const pageNumber = (value) => {
+  const requested = Number.parseInt(value ?? '', 10)
+  return Number.isInteger(requested) && requested >= FIRST_PAGE
+    ? requested
+    : FIRST_PAGE
+}
 
 const logOutOfScope = (request, fieldName) =>
   kit.logRefusal(request, { reason: `${fieldName}-out-of-scope` })
 
 const postedPickerState = (payload, extra) => ({
   query: payload.q ?? '',
+  page: pageNumber(payload.page),
   ...extra
 })
 
@@ -103,6 +112,7 @@ const getPicker = async (picker, request, h) => {
   }
   return renderPickerPage(picker, request, h, current, {
     query: request.query.q ?? '',
+    page: pageNumber(request.query.page),
     selectedId:
       request.query.selected ?? current.answers[picker.fieldName]?.pickedFromId
   })
@@ -142,6 +152,7 @@ const postPicker = async (picker, request, h) => {
   if (isSearch(payload)) {
     return renderPickerPage(picker, request, h, current, {
       query: payload.q ?? '',
+      page: FIRST_PAGE,
       selectedId
     })
   }

@@ -60,14 +60,30 @@ export const addressRecord = (id, name, address = {}) => ({
   }
 })
 
+const JOURNEY_ID = 'GBN-PL-26-ABC123'
+const GIVEN_SLUG = 'parties/select'
+const ADDRESSES_A_PAGE = 8
+const OVER_A_PAGE = ADDRESSES_A_PAGE + 1
+const SECOND_PAGE = 2
+
+const pageOfAddresses = (count) =>
+  Array.from({ length: count }, (_, index) =>
+    addressRecord(`record-${index + 1}`, `Record ${index + 1}`)
+  )
+
 const rowCases = ({ fieldName, pickerViewModel }) => {
   const found = [
     addressRecord(TECH_IMPORTS_ID, TECH_IMPORTS_NAME),
     addressRecord(IMPORT_CO, 'Import Co UK')
   ]
 
-  const viewModelFor = (records, selectedId = '') =>
-    pickerViewModel({ query: '', selectedId, found: records }, pickerCopy)
+  const viewModelFor = (records, selectedId = '', page = 1) =>
+    pickerViewModel(
+      JOURNEY_ID,
+      GIVEN_SLUG,
+      { query: '', page, selectedId, found: records },
+      pickerCopy
+    )
 
   return {
     name: '#pickerViewModel',
@@ -93,11 +109,74 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
         }
       },
       {
-        title: 'Should count every row the picker is given, whatever the count',
+        title: 'Should count the rows shown against every address found',
         check: () => {
           const picker = viewModelFor(found)
 
           expect(picker.resultsCount).toBe('Showing 2 out of 2 results')
+        }
+      },
+      {
+        title:
+          'Should hold eight addresses on the first page, counted against every one found, and offer a link to the next',
+        check: () => {
+          const picker = viewModelFor(pageOfAddresses(OVER_A_PAGE))
+
+          expect(picker.rows).toHaveLength(ADDRESSES_A_PAGE)
+          expect(picker.resultsCount).toBe('Showing 8 out of 9 results')
+          expect(picker.pagination.previous).toBeUndefined()
+          expect(picker.pagination.next.href).toContain('page=2')
+          expect(picker.pagination.next.text).toBe(pickerCopy.pagination.next)
+        }
+      },
+      {
+        title:
+          'Should hold what is left on the page after the first, with a link back and none onward',
+        check: () => {
+          const picker = viewModelFor(
+            pageOfAddresses(OVER_A_PAGE),
+            '',
+            SECOND_PAGE
+          )
+
+          expect(picker.rows.map((row) => row.id)).toEqual(['record-9'])
+          expect(picker.resultsCount).toBe('Showing 1 out of 9 results')
+          expect(picker.pagination.previous.text).toBe(
+            pickerCopy.pagination.previous
+          )
+          expect(picker.pagination.next).toBeUndefined()
+        }
+      },
+      {
+        title: 'Should offer no paging while one page holds every address',
+        check: () => {
+          const picker = viewModelFor(pageOfAddresses(ADDRESSES_A_PAGE))
+
+          expect(picker.rows).toHaveLength(ADDRESSES_A_PAGE)
+          expect(picker.pagination).toBeNull()
+        }
+      },
+      {
+        title: 'Should carry the ticked address through every paging link',
+        check: () => {
+          const picker = viewModelFor(pageOfAddresses(OVER_A_PAGE), 'record-3')
+
+          for (const item of picker.pagination.items) {
+            expect(item.href).toContain('selected=record-3')
+          }
+        }
+      },
+      {
+        title:
+          'Should number the rows of the page after the first from where that page starts',
+        check: () => {
+          const picker = viewModelFor(
+            pageOfAddresses(OVER_A_PAGE),
+            '',
+            SECOND_PAGE
+          )
+
+          expect(picker.rows.map((row) => row.idPrefix)).toEqual([fieldName])
         }
       },
       {

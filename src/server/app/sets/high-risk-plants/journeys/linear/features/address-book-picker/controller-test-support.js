@@ -27,6 +27,7 @@ import {
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
+import { ADDRESSES_A_PAGE } from './pagination.js'
 import { pickerTableRows } from './table-rows.js'
 import {
   addressResponseForABookHoldingADeletedRecord,
@@ -107,13 +108,64 @@ const describePageServed = ({
       previousPage: previousPage.slug
     })
 
-    it('Should list every address for the role, and the role-less address, on one page', async () => {
+    it("Should open on a page of the role's addresses, counted against every one the role holds", async () => {
       const result = await driveHandler(get, { seed: seed() })
+      const onFirstPage = Math.min(wholeCount, ADDRESSES_A_PAGE)
 
-      expect(result.view.context.picker.rows).toHaveLength(wholeCount)
+      expect(result.view.context.picker.rows).toHaveLength(onFirstPage)
       expect(result.view.context.picker.resultsCount).toBe(
-        pickerCopy.resultsCount(wholeCount, wholeCount)
+        pickerCopy.resultsCount(onFirstPage, wholeCount)
       )
+    })
+
+    it('Should list every address for the role, and the role-less address, across its pages', async () => {
+      const ids = []
+      for (
+        let page = 1;
+        page <= Math.ceil(wholeCount / ADDRESSES_A_PAGE);
+        page++
+      ) {
+        const result = await driveHandler(get, {
+          seed: seed(),
+          query: { page: String(page) }
+        })
+        ids.push(...result.view.context.picker.rows.map((row) => row.id))
+      }
+
+      expect(ids).toHaveLength(wholeCount)
+      expect(new Set(ids).size).toBe(wholeCount)
+    })
+
+    it('Should offer paging only where the role holds more addresses than a page', async () => {
+      const result = await driveHandler(get, { seed: seed() })
+      const paging = result.view.context.picker.pagination
+
+      if (wholeCount > ADDRESSES_A_PAGE) {
+        expect(paging.next.href).toContain('page=2')
+      } else {
+        expect(paging).toBeNull()
+      }
+    })
+
+    it('Should serve the last page, logged once, when the page asked for is past it', async () => {
+      const lastPage = Math.ceil(wholeCount / ADDRESSES_A_PAGE)
+      const result = await driveHandler(get, {
+        seed: seed(),
+        query: { page: '40' }
+      })
+
+      expect(result.view.context.picker.page).toBe(lastPage)
+      expect(result.logger.entries).toEqual([
+        {
+          level: 'info',
+          message:
+            'Address picker page is past the last page, serving the last page',
+          fields: expect.objectContaining({
+            requestedPage: 40,
+            servedPage: lastPage
+          })
+        }
+      ])
     })
 
     it("Should carry each row's address lines and contact lines from the record it lists", async () => {
