@@ -196,6 +196,29 @@ const pagingCases = ({ fieldName, pickerViewModel }) => {
       },
       {
         title:
+          'Should give the first row of every page the bare field name, so the error link focuses it',
+        check: () => {
+          const picker = viewModelFor(
+            numberedAddresses(OVER_A_PAGE),
+            '',
+            SECOND_PAGE
+          )
+
+          expect(picker.rows.map((row) => row.idPrefix)).toEqual([fieldName])
+        }
+      }
+    ]
+  }
+}
+
+const pagingLinkCases = ({ pickerViewModel }) => {
+  const viewModelFor = viewModelBoundFor(pickerViewModel)
+
+  return {
+    name: '#pickerViewModel — paging links',
+    cases: [
+      {
+        title:
           'Should carry the search term and the ticked address through every paging link, the previous and next links included',
         check: () => {
           const picker = viewModelFor(
@@ -238,19 +261,6 @@ const pagingCases = ({ fieldName, pickerViewModel }) => {
             PAGES_FOR_AN_ELLIPSIS
           ])
         }
-      },
-      {
-        title:
-          'Should give the first row of every page the bare field name, so the error link focuses it',
-        check: () => {
-          const picker = viewModelFor(
-            numberedAddresses(OVER_A_PAGE),
-            '',
-            SECOND_PAGE
-          )
-
-          expect(picker.rows.map((row) => row.idPrefix)).toEqual([fieldName])
-        }
       }
     ]
   }
@@ -266,5 +276,6 @@ const pagingCases = ({ fieldName, pickerViewModel }) => {
  */
 export const pickerViewModelSuites = (picker) => [
   rowCases(picker),
-  pagingCases(picker)
+  pagingCases(picker),
+  pagingLinkCases(picker)
 ]
