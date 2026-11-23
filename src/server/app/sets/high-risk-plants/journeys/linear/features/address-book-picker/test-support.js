@@ -62,14 +62,16 @@ export const addressRecord = (id, name, address = {}) => ({
 
 const JOURNEY_ID = 'GBN-PL-26-ABC123'
 const GIVEN_SLUG = 'parties/select'
-const ADDRESSES_A_PAGE = 8
-const OVER_A_PAGE = ADDRESSES_A_PAGE + 1
-const SECOND_PAGE = 2
 
-const pageOfAddresses = (count) =>
-  Array.from({ length: count }, (_, index) =>
-    addressRecord(`record-${index + 1}`, `Record ${index + 1}`)
-  )
+const viewModelBoundFor =
+  (pickerViewModel) =>
+  (records, selectedId = '', page = 1) =>
+    pickerViewModel(
+      JOURNEY_ID,
+      GIVEN_SLUG,
+      { query: '', page, selectedId, found: records },
+      pickerCopy
+    )
 
 const rowCases = ({ fieldName, pickerViewModel }) => {
   const found = [
@@ -77,13 +79,7 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
     addressRecord(IMPORT_CO, 'Import Co UK')
   ]
 
-  const viewModelFor = (records, selectedId = '', page = 1) =>
-    pickerViewModel(
-      JOURNEY_ID,
-      GIVEN_SLUG,
-      { query: '', page, selectedId, found: records },
-      pickerCopy
-    )
+  const viewModelFor = viewModelBoundFor(pickerViewModel)
 
   return {
     name: '#pickerViewModel',
@@ -118,12 +114,48 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
       },
       {
         title:
+          'Should carry the country as its own column and leave it out of the address lines',
+        check: () => {
+          const picker = viewModelFor(found)
+
+          expect(picker.rows[0].country).toBe(COUNTRY)
+          expect(picker.rows[0].addressLines).toEqual([
+            LINE_1,
+            'Unit 4',
+            `London, Greater London, ${POSTCODE}`
+          ])
+        }
+      }
+    ]
+  }
+}
+
+const ADDRESSES_A_PAGE = 8
+const OVER_A_PAGE = ADDRESSES_A_PAGE + 1
+const SECOND_PAGE = 2
+const LAST_OF_OVER_A_PAGE = `record-${OVER_A_PAGE}`
+
+const pageOfAddresses = (count) =>
+  Array.from({ length: count }, (_, index) =>
+    addressRecord(`record-${index + 1}`, `Record ${index + 1}`)
+  )
+
+const pagingCases = ({ fieldName, pickerViewModel }) => {
+  const viewModelFor = viewModelBoundFor(pickerViewModel)
+
+  return {
+    name: '#pickerViewModel — paging',
+    cases: [
+      {
+        title:
           'Should hold eight addresses on the first page, counted against every one found, and offer a link to the next',
         check: () => {
           const picker = viewModelFor(pageOfAddresses(OVER_A_PAGE))
 
           expect(picker.rows).toHaveLength(ADDRESSES_A_PAGE)
-          expect(picker.resultsCount).toBe('Showing 8 out of 9 results')
+          expect(picker.resultsCount).toBe(
+            pickerCopy.resultsCount(ADDRESSES_A_PAGE, OVER_A_PAGE)
+          )
           expect(picker.pagination.previous).toBeUndefined()
           expect(picker.pagination.next.href).toContain('page=2')
           expect(picker.pagination.next.text).toBe(pickerCopy.pagination.next)
@@ -139,8 +171,12 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
             SECOND_PAGE
           )
 
-          expect(picker.rows.map((row) => row.id)).toEqual(['record-9'])
-          expect(picker.resultsCount).toBe('Showing 1 out of 9 results')
+          expect(picker.rows.map((row) => row.id)).toEqual([
+            LAST_OF_OVER_A_PAGE
+          ])
+          expect(picker.resultsCount).toBe(
+            pickerCopy.resultsCount(1, OVER_A_PAGE)
+          )
           expect(picker.pagination.previous.text).toBe(
             pickerCopy.pagination.previous
           )
@@ -178,20 +214,6 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
 
           expect(picker.rows.map((row) => row.idPrefix)).toEqual([fieldName])
         }
-      },
-      {
-        title:
-          'Should carry the country as its own column and leave it out of the address lines',
-        check: () => {
-          const picker = viewModelFor(found)
-
-          expect(picker.rows[0].country).toBe(COUNTRY)
-          expect(picker.rows[0].addressLines).toEqual([
-            LINE_1,
-            'Unit 4',
-            `London, Greater London, ${POSTCODE}`
-          ])
-        }
       }
     ]
   }
@@ -205,4 +227,7 @@ const rowCases = ({ fieldName, pickerViewModel }) => {
  * @param {Function} picker.pickerViewModel - the page's bound view model
  * @returns {Array<{ name: string, cases: Array<{ title: string, check: Function }> }>}
  */
-export const pickerViewModelSuites = (picker) => [rowCases(picker)]
+export const pickerViewModelSuites = (picker) => [
+  rowCases(picker),
+  pagingCases(picker)
+]
