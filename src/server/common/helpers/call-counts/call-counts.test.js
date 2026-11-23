@@ -2,7 +2,7 @@ import hapi from '@hapi/hapi'
 import { vi } from 'vitest'
 
 import { config } from '../../../../config/config.js'
-import { recordPageRequestInBackground } from './page-request-metrics.js'
+import { recordPageRequestInBackground } from '../metrics/page-request-metrics.js'
 import {
   callCounts,
   countBackendCall,
@@ -13,7 +13,7 @@ import { callCountsRoutes } from './call-counts-routes.js'
 import { clearCallCountTotals } from './call-count-totals.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
-vi.mock('./page-request-metrics.js', () => ({
+vi.mock('../metrics/page-request-metrics.js', () => ({
   recordPageRequestInBackground: vi.fn()
 }))
 

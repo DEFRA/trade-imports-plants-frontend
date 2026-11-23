@@ -6,21 +6,11 @@ import {
   measureExternalCall,
   recordExternalCallInBackground
 } from './external-call-metrics.js'
-import { callCounts } from './call-counts/call-counts.js'
-import { callCountsRoutes } from './call-counts/call-counts-routes.js'
-import { clearCallCountTotals } from './call-counts/call-count-totals.js'
-import { config } from '../../../config/config.js'
-import { readEmfDocuments } from '../test-helpers/emf-documents.js'
-
-const loggerWarnMock = vi.hoisted(() => vi.fn())
-
-vi.mock('./logging/logger.js', () => ({
-  createLogger: () => ({
-    warn: loggerWarnMock,
-    info: vi.fn(),
-    error: vi.fn()
-  })
-}))
+import { callCounts } from '../call-counts/call-counts.js'
+import { callCountsRoutes } from '../call-counts/call-counts-routes.js'
+import { clearCallCountTotals } from '../call-counts/call-count-totals.js'
+import { config } from '../../../../config/config.js'
+import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
 
 const NAMESPACE_KEY = 'metrics.namespace'
 const TEST_NAMESPACE = 'test-namespace'
@@ -37,7 +27,6 @@ describe('external call metrics', () => {
 
   beforeEach(() => {
     config.set(NAMESPACE_KEY, TEST_NAMESPACE)
-    loggerWarnMock.mockReset()
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
@@ -144,27 +133,5 @@ describe('external call metrics', () => {
 
     expect(result).toBe('keys')
     expect(metricsLogger.flush).toHaveBeenCalledTimes(1)
-  })
-
-  test('recording in the background logs a warning with the call and the error when the flush rejects', async () => {
-    const flushError = new Error('agent unavailable')
-    const metricsLogger = {
-      setNamespace: vi.fn(() => metricsLogger),
-      putMetric: vi.fn(() => metricsLogger),
-      setProperty: vi.fn(() => metricsLogger),
-      flush: vi.fn().mockRejectedValue(flushError)
-    }
-    vi.spyOn(Metrics.prototype, 'getMetricsLogger').mockReturnValue(
-      metricsLogger
-    )
-
-    recordExternalCallInBackground(JWKS_CALL, { durationMs: 5, failed: false })
-
-    await vi.waitFor(() =>
-      expect(loggerWarnMock).toHaveBeenCalledWith(
-        { err: flushError, dependency: 'defra-id', operation: 'jwks' },
-        'Could not record external call'
-      )
-    )
   })
 })

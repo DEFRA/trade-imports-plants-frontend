@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 
 import { config } from '../../../../config/config.js'
 import { addPageRequest, isPageRequest } from './call-count-totals.js'
-import { recordPageRequestInBackground } from './page-request-metrics.js'
+import { recordPageRequestInBackground } from '../metrics/page-request-metrics.js'
 
 const PLUGIN_NAME = 'call-counts'
 
