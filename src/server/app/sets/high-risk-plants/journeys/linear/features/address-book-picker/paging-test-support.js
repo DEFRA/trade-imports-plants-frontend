@@ -5,7 +5,8 @@ import { offeredForRole } from '../../../../../../services/address-book/index.js
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
-import { ADDRESSES_A_PAGE, FIRST_PAGE, pageCountOf } from './pagination.js'
+import { ADDRESSES_A_PAGE, pageCountOf } from './pagination.js'
+import { FIRST_PAGE } from '../../../../../../shared/paging.js'
 import { DENMARK } from './test-support.js'
 
 const pickerOn = async (get, seed, page) => {

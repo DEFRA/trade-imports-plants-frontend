@@ -1,10 +1,6 @@
 import { contactLines, pickerAddressLines } from './address-lines.js'
-import {
-  addressesOnPage,
-  pageCountOf,
-  paginationLinks,
-  resultsHref
-} from './pagination.js'
+import { addressesOnPage, pageCountOf, paginationLinks } from './pagination.js'
+import { resultsHref } from './results-href.js'
 import { pickerTableRows } from './table-rows.js'
 
 const idPrefixFor = (fieldName) => (index) =>

@@ -1,7 +1,8 @@
 import { expect } from 'vitest'
 
 import { copy as pickerCopy } from './copy/copy.en.js'
-import { ADDRESSES_A_PAGE, FIRST_PAGE } from './pagination.js'
+import { ADDRESSES_A_PAGE } from './pagination.js'
+import { FIRST_PAGE } from '../../../../../../shared/paging.js'
 import { TECH_IMPORTS_ID, TECH_IMPORTS_NAME } from '../../test-support.js'
 import { TRAIL_PARAMETER, TRAIL_START } from '../../../../../../shared/trail.js'
 
@@ -255,6 +256,23 @@ const pagingLinkCases = ({ pickerViewModel }) => {
               `${TRAIL_PARAMETER}=${TRAIL_START.overview}`
             )
           }
+        }
+      },
+      {
+        title:
+          'Should carry no empty query on a link to the first page, which holds neither a search nor a choice',
+        check: () => {
+          const picker = viewModelFor({
+            found: numberedAddresses(OVER_A_PAGE),
+            page: SECOND_PAGE,
+            trail: [TRAIL_START.overview]
+          })
+
+          expect(picker.pagination.previous.href).toMatch(
+            new RegExp(
+              `/parties/select\\?${TRAIL_PARAMETER}=${TRAIL_START.overview}$`
+            )
+          )
         }
       },
       {

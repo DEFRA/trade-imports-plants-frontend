@@ -7,24 +7,24 @@ import * as kit from '../../../../../../shared/kit.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import { renderPicker } from './render.js'
-import { FIRST_PAGE, pageAskedFor } from './pagination.js'
+import { FIRST_PAGE, pageAskedFor } from '../../../../../../shared/paging.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 
 const SEARCH_ACTION = 'search'
 
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
-const resultsPageAsked = (request, fieldName, value) => {
-  const asked = pageAskedFor(value)
+const resultsPageToOpen = (request, fieldName, requestedPage) => {
+  const asked = pageAskedFor(requestedPage)
   if (asked !== undefined) {
     return asked
   }
-  if (value !== undefined) {
+  if (requestedPage !== undefined) {
     request.logger.info(
       {
         journeyId: request.params.journeyId,
         fieldName,
-        requestedPage: value,
+        requestedPage,
         servedPage: FIRST_PAGE
       },
       'Address picker page is not a page number, serving the first page'
@@ -38,7 +38,7 @@ const logOutOfScope = (request, fieldName) =>
 
 const postedPickerState = (request, fieldName, payload, extra) => ({
   query: payload.q ?? '',
-  resultsPage: resultsPageAsked(request, fieldName, payload.page),
+  resultsPage: resultsPageToOpen(request, fieldName, payload.page),
   ...extra
 })
 
@@ -124,7 +124,7 @@ const getPicker = async (picker, request, h) => {
   }
   return renderPickerPage(picker, request, h, current, {
     query: request.query.q ?? '',
-    resultsPage: resultsPageAsked(
+    resultsPage: resultsPageToOpen(
       request,
       picker.fieldName,
       request.query.page
