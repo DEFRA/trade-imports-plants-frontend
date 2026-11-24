@@ -555,7 +555,7 @@ const describeSaveFailures = (picker) => {
  * @param {object} picker.previousPage - the page Back opens
  * @param {string} picker.previousPage.slug - that page's slug
  * @param {object} picker.previousPage.seed - answers that make that page apply
- * @param {number} picker.wholeCount - how many stub records carry this picker's role, or none
+ * @param {number} picker.wholeCount - how many stub records this picker offers: those carrying its role, together with those carrying none
  * @param {string[]} picker.denmarkMatches - the stub record ids a "Denmark" search lists on this picker
  * @param {string} picker.primaryId - a stub record id carrying this picker's role
  * @param {string} picker.primaryName - that record's name

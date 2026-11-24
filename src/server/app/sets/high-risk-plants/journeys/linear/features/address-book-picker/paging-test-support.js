@@ -43,7 +43,7 @@ const idsOfferedFor = (role) =>
  * @param {Function} picker.get - the page's GET handler
  * @param {Function} picker.seed - gives the journey state the page opens on
  * @param {string} [picker.role] - the address-book role the page asks for
- * @param {number} picker.wholeCount - how many stub records this picker offers
+ * @param {number} picker.wholeCount - how many stub records this picker offers: those carrying its role, together with those carrying none
  * @param {string[]} picker.denmarkMatches - the stub record ids a "Denmark" search lists on this picker
  */
 export const describePaging = ({
