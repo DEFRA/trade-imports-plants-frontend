@@ -2,7 +2,8 @@ import hapi from '@hapi/hapi'
 import { vi } from 'vitest'
 
 import { config } from '../../../../config/config.js'
-import { recordPageRequestInBackground } from '../metrics/page-request-metrics.js'
+import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
+import { restoreConfigAfterEach } from '../../test-helpers/restore-config-after-each.js'
 import {
   callCounts,
   countBackendCall,
@@ -13,12 +14,10 @@ import { callCountsRoutes } from './call-counts-routes.js'
 import { clearCallCountTotals } from './call-count-totals.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
-vi.mock('../metrics/page-request-metrics.js', () => ({
-  recordPageRequestInBackground: vi.fn()
-}))
-
 const ROUTE_PATH = '/some-page'
+const CALL_FREE_ROUTE_PATH = '/page-without-calls'
 const METRICS_ENABLED_KEY = 'callCounts.metrics.enabled'
+const NAMESPACE_KEY = 'metrics.namespace'
 
 const buildServer = async () => {
   const server = hapi.server()
@@ -117,29 +116,44 @@ describe('call counts', () => {
   })
 
   describe('page request metrics', () => {
-    const originalEnabled = config.get(METRICS_ENABLED_KEY)
+    restoreConfigAfterEach([METRICS_ENABLED_KEY, NAMESPACE_KEY])
+    let logSpy
 
     beforeEach(() => {
-      recordPageRequestInBackground.mockClear()
+      config.set(NAMESPACE_KEY, 'test-namespace')
+      logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      server.route({
+        method: 'GET',
+        path: CALL_FREE_ROUTE_PATH,
+        handler: () => 'page'
+      })
     })
 
     afterEach(() => {
-      config.set(METRICS_ENABLED_KEY, originalEnabled)
+      vi.restoreAllMocks()
     })
 
     test('writes a page request metric only when callCounts.metrics.enabled is on', async () => {
       config.set(METRICS_ENABLED_KEY, true)
       await server.inject({ method: 'GET', url: ROUTE_PATH })
-
-      expect(recordPageRequestInBackground).toHaveBeenCalledTimes(1)
-      expect(recordPageRequestInBackground).toHaveBeenCalledWith(
-        expect.objectContaining({ backendCalls: 2, sessionResolutions: 1 })
-      )
+      await vi.waitFor(() => expect(readEmfDocuments(logSpy)).toHaveLength(1))
 
       config.set(METRICS_ENABLED_KEY, false)
       await server.inject({ method: 'GET', url: ROUTE_PATH })
+      config.set(METRICS_ENABLED_KEY, true)
+      await server.inject({ method: 'GET', url: CALL_FREE_ROUTE_PATH })
+      await vi.waitFor(() => expect(readEmfDocuments(logSpy)).toHaveLength(2))
 
-      expect(recordPageRequestInBackground).toHaveBeenCalledTimes(1)
+      expect(
+        readEmfDocuments(logSpy).map((document) => ({
+          kind: document['request.kind'],
+          backendCalls: document['page.request.backend.calls'],
+          sessionResolutions: document['page.request.session.resolutions']
+        }))
+      ).toEqual([
+        { kind: 'page', backendCalls: 2, sessionResolutions: 1 },
+        { kind: 'page', backendCalls: 0, sessionResolutions: 0 }
+      ])
     })
   })
 
