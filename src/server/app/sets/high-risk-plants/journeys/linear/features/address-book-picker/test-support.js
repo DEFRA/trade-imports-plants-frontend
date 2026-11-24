@@ -270,11 +270,21 @@ const pagingLinkCases = ({ pickerViewModel }) => {
 
           expect(picker.pagination.previous.href).toMatch(
             new RegExp(
-              `/parties/select\\?${TRAIL_PARAMETER}=${TRAIL_START.overview}$`
+              String.raw`/parties/select\?${TRAIL_PARAMETER}=${TRAIL_START.overview}$`
             )
           )
         }
-      },
+      }
+    ]
+  }
+}
+
+const ellipsisCases = ({ pickerViewModel }) => {
+  const viewModelFor = viewModelBoundFor(pickerViewModel)
+
+  return {
+    name: '#pickerViewModel — paging link numbers',
+    cases: [
       {
         title:
           'Should stand an ellipsis in for the pages its numbers skip, as the address book list does',
@@ -312,5 +322,6 @@ const pagingLinkCases = ({ pickerViewModel }) => {
 export const pickerViewModelSuites = (picker) => [
   rowCases(picker),
   pagingCases(picker),
-  pagingLinkCases(picker)
+  pagingLinkCases(picker),
+  ellipsisCases(picker)
 ]

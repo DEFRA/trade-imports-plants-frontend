@@ -90,6 +90,29 @@ export const describePaging = ({
       expect(picker.rows.map((row) => row.id)).toEqual(denmarkMatches)
       expect(picker.pagination).toBeNull()
     })
+  })
+}
+
+/**
+ * The cases every address picker's GET route shares for a page it cannot
+ * serve as asked.
+ *
+ * @param {object} picker
+ * @param {string} picker.pickerName - the page's name, for the describe
+ * @param {Function} picker.get - the page's GET handler
+ * @param {Function} picker.seed - gives the journey state the page opens on
+ * @param {number} picker.wholeCount - how many stub records this picker offers: those carrying its role, together with those carrying none
+ */
+export const describePageServedWhenNotAsAsked = ({
+  pickerName,
+  get,
+  seed,
+  wholeCount
+}) => {
+  const lastPage = pageCountOf(wholeCount)
+
+  describe(`GET ${pickerName} — the page it serves when it cannot serve the one asked for`, () => {
+    useStubbedHighRiskPlantsJourney()
 
     it('Should serve the last page, logged once, when the page asked for is past it', async () => {
       const pastTheLastPage = lastPage + 1

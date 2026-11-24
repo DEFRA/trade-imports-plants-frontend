@@ -27,7 +27,10 @@ import {
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
-import { describePaging } from './paging-test-support.js'
+import {
+  describePageServedWhenNotAsAsked,
+  describePaging
+} from './paging-test-support.js'
 import { pickerTableRows } from './table-rows.js'
 import {
   addressResponseForABookHoldingADeletedRecord,
@@ -566,6 +569,7 @@ const describeSaveFailures = (picker) => {
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)
   describePaging(picker)
+  describePageServedWhenNotAsAsked(picker)
   describeSelectionShown(picker)
   describeSearching(picker)
   describeNothingChosen(picker)
