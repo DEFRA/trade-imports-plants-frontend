@@ -114,7 +114,7 @@ describeAddressPicker({
   rolelessAddress: 'Unlisted Traders Ltd',
   otherRoleAddress: 'Northgate Trading AG',
   denmarkMatch: COPENHAGEN,
-  wholeCount: 6
+  wholeCount: 9
 })
 
 test.describe('place-of-destination feature', () => {

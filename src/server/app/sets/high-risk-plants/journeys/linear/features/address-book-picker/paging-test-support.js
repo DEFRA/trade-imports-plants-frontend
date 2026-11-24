@@ -5,12 +5,21 @@ import { offeredForRole } from '../../../../../../services/address-book/index.js
 import { STUB_BOOK } from '../../../../../../services/address-book/stub/index.js'
 import { useStubbedHighRiskPlantsJourney } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
-import { ADDRESSES_A_PAGE, pageCountOf } from './pagination.js'
+import { ADDRESSES_A_PAGE, FIRST_PAGE, pageCountOf } from './pagination.js'
+import { DENMARK } from './test-support.js'
 
 const pickerOn = async (get, seed, page) => {
   const result = await driveHandler(get, {
     seed: seed(),
     query: { page: String(page) }
+  })
+  return result.view.context.picker
+}
+
+const pickerSearchedFor = async (get, seed, query) => {
+  const result = await driveHandler(get, {
+    seed: seed(),
+    query: { q: query }
   })
   return result.view.context.picker
 }
@@ -24,9 +33,9 @@ const idsOfferedFor = (role) =>
   )
 
 /**
- * The paging cases every address picker's GET route shares. A picker whose
- * stub list runs past one page gets the cases a second page needs; one whose
- * list fits on a page gets the no-paging case.
+ * The paging cases every address picker's GET route shares. Every picker's
+ * stub list runs past one page, so each proves a second page; the no-paging
+ * case comes from a search that narrows the addresses found back onto one.
  *
  * @param {object} picker
  * @param {string} picker.pickerName - the page's name, for the describe
@@ -34,21 +43,27 @@ const idsOfferedFor = (role) =>
  * @param {Function} picker.seed - gives the journey state the page opens on
  * @param {string} [picker.role] - the address-book role the page asks for
  * @param {number} picker.wholeCount - how many stub records this picker offers
+ * @param {string[]} picker.denmarkMatches - the stub record ids a "Denmark" search lists on this picker
  */
-export const describePaging = ({ pickerName, get, seed, role, wholeCount }) => {
-  const onFirstPage = Math.min(wholeCount, ADDRESSES_A_PAGE)
+export const describePaging = ({
+  pickerName,
+  get,
+  seed,
+  role,
+  wholeCount,
+  denmarkMatches
+}) => {
   const lastPage = pageCountOf(wholeCount)
-  const runsPastOnePage = wholeCount > ADDRESSES_A_PAGE
 
   describe(`GET ${pickerName} — the page of results it holds`, () => {
     useStubbedHighRiskPlantsJourney()
 
     it('Should open on the first eight of the addresses it offers, counted against every one of them', async () => {
-      const picker = await pickerOn(get, seed, 1)
+      const picker = await pickerOn(get, seed, FIRST_PAGE)
 
-      expect(picker.rows).toHaveLength(onFirstPage)
+      expect(picker.rows).toHaveLength(ADDRESSES_A_PAGE)
       expect(picker.resultsCount).toBe(
-        pickerCopy.resultsCount(onFirstPage, wholeCount)
+        pickerCopy.resultsCount(ADDRESSES_A_PAGE, wholeCount)
       )
     })
 
@@ -61,60 +76,62 @@ export const describePaging = ({ pickerName, get, seed, role, wholeCount }) => {
       expect(ids).toEqual(idsOfferedFor(role))
     })
 
-    if (runsPastOnePage) {
-      it('Should offer paging onward from the first page', async () => {
-        const picker = await pickerOn(get, seed, 1)
+    it('Should offer paging onward from the first page', async () => {
+      const picker = await pickerOn(get, seed, FIRST_PAGE)
 
-        expect(picker.pagination.next.href).toContain('page=2')
-        expect(picker.pagination.items).toHaveLength(lastPage)
-      })
+      expect(picker.pagination.next.href).toContain('page=2')
+      expect(picker.pagination.items).toHaveLength(lastPage)
+    })
 
-      it('Should serve the last page, logged once, when the page asked for is past it', async () => {
-        const pastTheLastPage = lastPage + 1
-        const result = await driveHandler(get, {
-          seed: seed(),
-          query: { page: String(pastTheLastPage) }
-        })
+    it('Should offer no paging once a search narrows the addresses found onto one page', async () => {
+      const picker = await pickerSearchedFor(get, seed, DENMARK)
 
-        expect(result.view.context.picker.page).toBe(lastPage)
-        expect(result.logger.entries).toEqual([
-          {
-            level: 'info',
-            message:
-              'Address picker page is past the last page, serving the last page',
-            fields: expect.objectContaining({
-              requestedPage: pastTheLastPage,
-              servedPage: lastPage
-            })
-          }
-        ])
-      })
-    } else {
-      it('Should offer no paging, because one page holds every address it offers', async () => {
-        const picker = await pickerOn(get, seed, 1)
+      expect(picker.rows.map((row) => row.id)).toEqual(denmarkMatches)
+      expect(picker.pagination).toBeNull()
+    })
 
-        expect(picker.pagination).toBeNull()
-      })
-    }
-
-    it('Should serve the first page, logged once, when the page asked for is not a page number', async () => {
+    it('Should serve the last page, logged once, when the page asked for is past it', async () => {
+      const pastTheLastPage = lastPage + 1
       const result = await driveHandler(get, {
         seed: seed(),
-        query: { page: 'nonsense' }
+        query: { page: String(pastTheLastPage) }
       })
 
-      expect(result.view.context.picker.page).toBe(1)
+      expect(result.view.context.picker.page).toBe(lastPage)
       expect(result.logger.entries).toEqual([
         {
           level: 'info',
           message:
-            'Address picker page is not a page number, serving the first page',
+            'Address picker page is past the last page, serving the last page',
           fields: expect.objectContaining({
-            requestedPage: 'nonsense',
-            servedPage: 1
+            requestedPage: pastTheLastPage,
+            servedPage: lastPage
           })
         }
       ])
     })
+
+    it.each(['nonsense', '3abc', '2.9', '1e3', '0', '-1'])(
+      'Should serve the first page, logged once, when the page asked for is %s',
+      async (asked) => {
+        const result = await driveHandler(get, {
+          seed: seed(),
+          query: { page: asked }
+        })
+
+        expect(result.view.context.picker.page).toBe(FIRST_PAGE)
+        expect(result.logger.entries).toEqual([
+          {
+            level: 'info',
+            message:
+              'Address picker page is not a page number, serving the first page',
+            fields: expect.objectContaining({
+              requestedPage: asked,
+              servedPage: FIRST_PAGE
+            })
+          }
+        ])
+      }
+    )
   })
 }

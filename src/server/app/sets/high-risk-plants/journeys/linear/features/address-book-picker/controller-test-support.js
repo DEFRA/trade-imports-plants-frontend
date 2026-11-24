@@ -32,6 +32,7 @@ import { pickerTableRows } from './table-rows.js'
 import {
   addressResponseForABookHoldingADeletedRecord,
   DELETED_ID,
+  DENMARK,
   NOT_IN_THE_BOOK
 } from './test-support.js'
 
@@ -48,7 +49,6 @@ const saveControlsFor = (picker) => [
   ['Save and continue', { action: 'save' }],
   [saveAndReturnToHubLabelOf(picker), { exit: 'hub' }]
 ]
-const DENMARK = 'Denmark'
 const MATCHES_NOTHING = 'nothing matches this'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const MARKUP_IN_A_NAME = '</span><a href="https://evil.example">x</a><span>'

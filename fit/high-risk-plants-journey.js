@@ -1041,6 +1041,9 @@ export const addressesOnFirstPage = (wholeCount) =>
 export const pickerPageLink = (page, number) =>
   page.getByRole('link', { name: `Page ${number}`, exact: true })
 
+export const pickerPagination = (page) =>
+  page.getByRole('navigation', { name: 'Pagination' })
+
 /** Opens each page of a picker's results in turn, from the one on screen,
  * and gives what `readPage` returned for each. */
 export const acrossPickerPages = async (page, lastPage, readPage) => {
@@ -1280,22 +1283,13 @@ export const describeAddressPicker = (picker) => {
       await expect(addressRowRadio(page, roleAddress)).toBeVisible()
     })
 
-    const pagingTitle =
-      wholeCount > ADDRESSES_A_PAGE
-        ? 'offers paging, whose last page holds what is left of the list'
-        : 'offers no paging, because one page holds every address it offers'
-
-    test(pagingTitle, async ({ page }) => {
+    test('offers paging, whose last page holds what is left of the list', async ({
+      page
+    }) => {
       await openPicker(page)
-      const paging = page.getByRole('navigation', { name: 'Pagination' })
-
-      if (wholeCount <= ADDRESSES_A_PAGE) {
-        await expect(paging).toHaveCount(0)
-        return
-      }
 
       const lastPage = Math.ceil(wholeCount / ADDRESSES_A_PAGE)
-      await expect(paging).toBeVisible()
+      await expect(pickerPagination(page)).toBeVisible()
       await pickerPageLink(page, lastPage).click()
 
       await expect(pickerResultsSummary(page)).toHaveText(
@@ -1304,6 +1298,17 @@ export const describeAddressPicker = (picker) => {
           wholeCount
         )
       )
+    })
+
+    test('offers no paging once a search narrows the results onto one page', async ({
+      page
+    }) => {
+      await openPicker(page)
+      await expect(pickerPagination(page)).toBeVisible()
+
+      await searchAddressBook(page, DENMARK)
+
+      await expect(pickerPagination(page)).toHaveCount(0)
     })
 
     test('keeps a ticked row checked while the search narrows the results', async ({

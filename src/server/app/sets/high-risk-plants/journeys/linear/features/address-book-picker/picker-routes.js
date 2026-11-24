@@ -7,7 +7,7 @@ import * as kit from '../../../../../../shared/kit.js'
 import { hubPath } from '../../../../../../shared/paths.js'
 import { answerForPickedParty } from '../../parties/picked-party.js'
 import { renderPicker } from './render.js'
-import { FIRST_PAGE } from './pagination.js'
+import { FIRST_PAGE, pageAskedFor } from './pagination.js'
 import { resolveSelectionOnSave, SELECTION } from './save-selection.js'
 
 const SEARCH_ACTION = 'search'
@@ -15,9 +15,9 @@ const SEARCH_ACTION = 'search'
 const isSearch = (payload) => payload.action === SEARCH_ACTION
 
 const resultsPageAsked = (request, fieldName, value) => {
-  const requested = Number.parseInt(value ?? '', 10)
-  if (Number.isInteger(requested) && requested >= FIRST_PAGE) {
-    return requested
+  const asked = pageAskedFor(value)
+  if (asked !== undefined) {
+    return asked
   }
   if (value !== undefined) {
     request.logger.info(
