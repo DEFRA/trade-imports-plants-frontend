@@ -6,11 +6,16 @@ export const copy = {
     hint: 'Enw, cyfeiriad neu wlad',
     button: 'Chwilio'
   },
+  selectedAddress: (name) => `Cyfeiriad a ddewiswyd: ${name}`,
   resultsHeading: 'Dewiswch gyfeiriad',
   resultsCount: (shown, total) =>
     `Yn dangos ${shown} allan o ${total} canlyniad`,
   errorPrefix: 'Gwall:',
   noMatches: 'Nid oes unrhyw gyfeiriadau’n cyfateb i’ch chwiliad.',
+  pagination: {
+    previous: 'Blaenorol',
+    next: 'Nesaf'
+  },
   table: {
     selectHidden: 'Dewis',
     name: 'Enw',

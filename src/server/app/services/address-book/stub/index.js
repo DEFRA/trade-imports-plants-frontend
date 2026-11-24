@@ -24,5 +24,9 @@ export const STUB_BOOK = [
   'alpine-supplies-gmbh|Alpine Supplies GmbH|Bahnhofstrasse 17|Innsbruck|6020|Austria|AT|CONSIGNOR',
   'kilkenny-traders-ltd|Kilkenny Traders Ltd|Castle Road 9|Kilkenny|R95 F2X8|Ireland|IE|CONSIGNOR',
   'iberian-commerce-sa|Iberian Commerce SA|Calle Mayor 44|Huesca|22001|Spain|ES|CONSIGNOR',
+  'galway-exports-ltd|Galway Exports Ltd|5 Dock Road|Galway|H91 V2TX|Ireland|IE|CONSIGNOR',
+  'bristol-distribution-ltd|Bristol Distribution Ltd|7 Avon Way|Bristol|BS1 4TR|United Kingdom|GB|PLACE_OF_DESTINATION',
+  'odense-supplies-aps|Odense Supplies ApS|Vestergade 14|Odense|5000|Denmark|DK|PLACE_OF_DESTINATION',
+  'bergen-trading-as|Bergen Trading AS|Bryggen 5|Bergen|5003|Norway|NO|PLACE_OF_DESTINATION',
   'unlisted-traders-ltd|Unlisted Traders Ltd|9 Quayside|Hull|HU1 1TQ|United Kingdom|GB|'
 ].map(fromRow)

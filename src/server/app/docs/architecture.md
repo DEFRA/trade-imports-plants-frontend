@@ -188,9 +188,15 @@ success, or to the page a refusal names. A POST that fails validation
 re-renders the page with status 400 and does not redirect. The address-book
 pickers (place of destination, consignor, consignment contact) render from a
 POST on purpose: Search posts the form with `action=search` and the page
-re-renders with the results, keeping the trader's choice. Each picker lists
-only its own role's addresses — the consignment contact picker asks for no
-role, so it lists every address — every one of them on one page.
+re-renders with the results, keeping the trader's choice. Moving page is the
+other route, and it is a GET, not a submit, so it never saves and never
+refuses: the page link carries the search term, the page, the address held
+as chosen and the trail in its query string. Carrying the trail keeps Back
+pointing at the place the trader came from after they move page, as
+`flow-and-gates.md` describes; where a save goes is `kit.nextTarget()`'s
+business, and paging does not change it. What the picker shows, and how many
+a page, is in the high-risk plants set guide under "The served surface
+today".
 
 ### Page title
 

@@ -27,10 +27,15 @@ import {
   useStubbedHighRiskPlantsJourney
 } from '../../test-support.js'
 import { copy as pickerCopy } from './copy/copy.en.js'
+import {
+  describePageServedWhenNotAsAsked,
+  describePaging
+} from './paging-test-support.js'
 import { pickerTableRows } from './table-rows.js'
 import {
   addressResponseForABookHoldingADeletedRecord,
   DELETED_ID,
+  DENMARK,
   NOT_IN_THE_BOOK
 } from './test-support.js'
 
@@ -47,7 +52,6 @@ const saveControlsFor = (picker) => [
   ['Save and continue', { action: 'save' }],
   [saveAndReturnToHubLabelOf(picker), { exit: 'hub' }]
 ]
-const DENMARK = 'Denmark'
 const MATCHES_NOTHING = 'nothing matches this'
 const EDITED_NAME = 'Tech Imports (UK) Ltd'
 const MARKUP_IN_A_NAME = '</span><a href="https://evil.example">x</a><span>'
@@ -83,7 +87,6 @@ const describePageServed = ({
   get,
   seed,
   previousPage,
-  wholeCount,
   denmarkMatches,
   primaryId
 }) => {
@@ -105,15 +108,6 @@ const describePageServed = ({
     itSendsBackToWhereTheTraderCameFrom(get, {
       seed: previousPage.seed,
       previousPage: previousPage.slug
-    })
-
-    it('Should list every address for the role, and the role-less address, on one page', async () => {
-      const result = await driveHandler(get, { seed: seed() })
-
-      expect(result.view.context.picker.rows).toHaveLength(wholeCount)
-      expect(result.view.context.picker.resultsCount).toBe(
-        pickerCopy.resultsCount(wholeCount, wholeCount)
-      )
     })
 
     it("Should carry each row's address lines and contact lines from the record it lists", async () => {
@@ -175,7 +169,7 @@ const describeSelectionShown = ({
       })
 
       expect(checkedId(result)).toBe(primaryId)
-      expect(result.view.context.picker.tickedRecord.name).toBe(primaryName)
+      expect(result.view.context.picker.selected.name).toBe(primaryName)
     })
 
     it('Should carry a selection the query string names over the stored one', async () => {
@@ -192,7 +186,7 @@ const describeSelectionShown = ({
         seed: seed({ [fieldName]: pickedFrom(primaryId, NOT_IN_THE_BOOK) })
       })
 
-      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(result.view.context.picker.selected).toBeUndefined()
       expect(checkedId(result)).toBeUndefined()
     })
 
@@ -374,7 +368,7 @@ const describeAddressOfAnotherRole = (pickerConfig) => {
         seed: seed({ [fieldName]: copied(wrongRoleId) })
       })
 
-      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(result.view.context.picker.selected).toBeUndefined()
       expect(checkedId(result)).toBeUndefined()
     })
   })
@@ -432,7 +426,7 @@ const describeDeletedRecord = (picker) => {
         seed: seed({ [fieldName]: pickedFrom(primaryId, DELETED_ID) })
       })
 
-      expect(result.view.context.picker.tickedRecord).toBeUndefined()
+      expect(result.view.context.picker.selected).toBeUndefined()
       expect(checkedId(result)).toBeUndefined()
     })
 
@@ -564,7 +558,7 @@ const describeSaveFailures = (picker) => {
  * @param {object} picker.previousPage - the page Back opens
  * @param {string} picker.previousPage.slug - that page's slug
  * @param {object} picker.previousPage.seed - answers that make that page apply
- * @param {number} picker.wholeCount - how many stub records carry this picker's role, or none
+ * @param {number} picker.wholeCount - how many stub records this picker offers: those carrying its role, together with those carrying none
  * @param {string[]} picker.denmarkMatches - the stub record ids a "Denmark" search lists on this picker
  * @param {string} picker.primaryId - a stub record id carrying this picker's role
  * @param {string} picker.primaryName - that record's name
@@ -574,6 +568,8 @@ const describeSaveFailures = (picker) => {
  */
 export const describeAddressBookPickerController = (picker) => {
   describePageServed(picker)
+  describePaging(picker)
+  describePageServedWhenNotAsAsked(picker)
   describeSelectionShown(picker)
   describeSearching(picker)
   describeNothingChosen(picker)

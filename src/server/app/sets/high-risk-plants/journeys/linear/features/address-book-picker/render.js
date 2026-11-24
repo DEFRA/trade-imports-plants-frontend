@@ -8,6 +8,7 @@ import { partyEditHref } from '../party-edit/edit-href.js'
 import { copy as en } from './copy/copy.en.js'
 import { copy as cy } from './copy/copy.cy.js'
 import { addressText } from './address-lines.js'
+import { servedPageOf } from './pagination.js'
 import { chosenFor } from './save-selection.js'
 import { TEMPLATES } from '../../config.js'
 
@@ -48,6 +49,7 @@ const heldCopyOf = async (request, current, fieldName) => {
  * @param {object} current - the journey state the engine has resolved.
  * @param {object} state - what to render.
  * @param {string} state.query - the search term to run.
+ * @param {number} state.resultsPage - the page of results asked for.
  * @param {string} state.selectedId - the address-book id currently ticked.
  * @param {string} [state.error] - the refusal to render with the results.
  * @param {boolean} [state.recoverableError] - whether a save has just failed.
@@ -66,7 +68,7 @@ export const renderPicker = async (
   request,
   h,
   current,
-  { query, selectedId, error, recoverableError = false },
+  { query, resultsPage, selectedId, error, recoverableError = false },
   {
     page,
     copy,
@@ -80,8 +82,20 @@ export const renderPicker = async (
 ) => {
   const orgId = organisationIdOf(request)
   const found = await addressBook.addresses(orgId, { query, role })
-  const tickedRecord = await chosenFor(orgId, selectedId, role)
-  const effectiveSelectedId = tickedRecord ? selectedId : ''
+  const servedPage = servedPageOf(resultsPage, found.length)
+  if (servedPage !== resultsPage) {
+    request.logger.info(
+      {
+        journeyId: current.journey.journeyId,
+        fieldName,
+        requestedPage: resultsPage,
+        servedPage
+      },
+      'Address picker page is past the last page, serving the last page'
+    )
+  }
+  const selected = await chosenFor(orgId, selectedId, role)
+  const effectiveSelectedId = selected ? selectedId : ''
 
   return h.view(view, {
     ...kit.base(copy.title, {
@@ -102,7 +116,17 @@ export const renderPicker = async (
       href: () => (found.length > 0 ? `#${fieldName}` : '#q')
     }),
     picker: pickerViewModel(
-      { query, selectedId: effectiveSelectedId, error, found, tickedRecord },
+      current.journey.journeyId,
+      page.slug,
+      {
+        query,
+        page: servedPage,
+        selectedId: effectiveSelectedId,
+        error,
+        found,
+        selected,
+        trail: kit.requestTrail(request)
+      },
       pickerCopy
     )
   })

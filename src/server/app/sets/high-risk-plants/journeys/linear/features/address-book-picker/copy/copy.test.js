@@ -25,6 +25,20 @@ describe('#copy', () => {
     })
   })
 
+  it('Should name the chosen address above the results, in both languages', () => {
+    expect(copy.selectedAddress('Tech Imports Ltd')).toBe(
+      'Selected address: Tech Imports Ltd'
+    )
+    expect(cy.selectedAddress('Tech Imports Ltd')).toBe(
+      'Cyfeiriad a ddewiswyd: Tech Imports Ltd'
+    )
+  })
+
+  it('Should name the paging links rather than leave them in English', () => {
+    expect(copy.pagination).toEqual({ previous: 'Previous', next: 'Next' })
+    expect(cy.pagination).toEqual({ previous: 'Blaenorol', next: 'Nesaf' })
+  })
+
   it('Should word the results heading and count the rows shown against the rows found', () => {
     expect(copy.resultsHeading).toBe('Select an address')
     expect(cy.resultsHeading).toBe('Dewiswch gyfeiriad')

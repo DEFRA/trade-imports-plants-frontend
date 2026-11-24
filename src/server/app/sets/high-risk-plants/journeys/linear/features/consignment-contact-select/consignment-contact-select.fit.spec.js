@@ -100,7 +100,7 @@ describeAddressPicker({
   secondRoleAddress: IMPORT_CO,
   rolelessAddress: 'Unlisted Traders Ltd',
   denmarkMatch: COPENHAGEN,
-  wholeCount: 14,
+  wholeCount: 18,
   landingAlerts: [
     `${sharedCopy.errorSummary.title} ${checkAnswersCopy.errors.cards.contact}`
   ],

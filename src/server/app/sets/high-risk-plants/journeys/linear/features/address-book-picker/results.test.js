@@ -37,6 +37,36 @@ const rowsWith = (rows, extra = {}) => ({
 })
 
 describe('addressBookPickerResults macro', () => {
+  it('Should offer the paging links under the results, naming each page it holds', () => {
+    const secondPageHref = '/select?page=2'
+    const document = render(
+      rowsWith([row], {
+        pagination: {
+          next: { href: secondPageHref, text: pickerCopy.pagination.next },
+          items: [
+            { number: 1, href: '/select', current: true },
+            { number: 2, href: secondPageHref, current: false }
+          ]
+        }
+      })
+    )
+    const paging =
+      document.querySelector('.govuk-form-group').nextElementSibling
+
+    expect(paging.classList.contains('govuk-pagination')).toBe(true)
+    expect(
+      [...paging.querySelectorAll('.govuk-pagination__link')].map((link) =>
+        link.textContent.trim()
+      )
+    ).toEqual(['1', '2', pickerCopy.pagination.next])
+  })
+
+  it('Should offer no paging links when one page holds every address', () => {
+    const document = render(rowsWith([row]))
+
+    expect(document.querySelector('.govuk-pagination')).toBeNull()
+  })
+
   it('Should put the count in the paragraph straight after the results heading, outside the table', () => {
     const document = render(rowsWith([row]))
 

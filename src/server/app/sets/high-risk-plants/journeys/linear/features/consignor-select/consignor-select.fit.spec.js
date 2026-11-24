@@ -106,7 +106,7 @@ describeAddressPicker({
   rolelessAddress: 'Unlisted Traders Ltd',
   otherRoleAddress: 'Tech Imports Ltd',
   denmarkMatch: AARHUS,
-  wholeCount: 8
+  wholeCount: 9
 })
 
 test.describe('consignor-select feature', () => {

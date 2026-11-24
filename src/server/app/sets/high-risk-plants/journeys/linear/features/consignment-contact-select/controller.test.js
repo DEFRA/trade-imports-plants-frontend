@@ -93,8 +93,12 @@ describeAddressBookPickerController({
   slug: 'consignment/contact/select',
   nextSlug: 'notification-view',
   errorText: copy.errors.contactAddress,
-  wholeCount: 14,
-  denmarkMatches: ['copenhagen-exports-aps', 'aarhus-trading-aps'],
+  wholeCount: 18,
+  denmarkMatches: [
+    'copenhagen-exports-aps',
+    'aarhus-trading-aps',
+    'odense-supplies-aps'
+  ],
   primaryId: TECH_IMPORTS_ID,
   primaryName: TECH_IMPORTS_NAME,
   secondId: 'import-co-uk',
