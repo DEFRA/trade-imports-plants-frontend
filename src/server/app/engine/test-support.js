@@ -180,8 +180,10 @@ export const unavailableBackendError = (operation) =>
     }
   )
 
-/** The records error for a backend that refused `operation` with 409 because
- * the posted concurrency token was stale. */
+/**
+ * The records error for a backend that refused `operation` with 409 because
+ * the posted concurrency token was stale.
+ */
 export const staleConcurrencyRefusal = (operation) =>
   Object.assign(
     new BackendRequestError(

@@ -3,6 +3,7 @@ import createFetchMock from 'vitest-fetch-mock'
 import {
   AMEND,
   DRAFT,
+  STALE_CONCURRENCY_TOKEN,
   SUBMITTED
 } from '../../../../engine/persistence/records.js'
 import { config } from '../../../../../../config/config.js'
@@ -71,6 +72,18 @@ describe('real records adapter — amend', () => {
     await expect(records.amend('REF-1')).rejects.toThrow(
       /plants-backend refused to amend notification: 409/
     )
+  })
+
+  test('Should carry the code of a refused amend whose 409 body names one', async () => {
+    fetchMocker.mockResponse(
+      JSON.stringify({ code: STALE_CONCURRENCY_TOKEN }),
+      { status: 409 }
+    )
+
+    await expect(records.amend('REF-1')).rejects.toMatchObject({
+      status: 409,
+      code: STALE_CONCURRENCY_TOKEN
+    })
   })
 })
 
