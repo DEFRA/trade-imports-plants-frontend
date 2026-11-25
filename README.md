@@ -34,6 +34,7 @@ Deployed end-to-end tests for this service live in the shared tests repository
 - [Requirements](#requirements)
 - [Server-side caching](#server-side-caching)
 - [Redis](#redis)
+- [Call counts](#call-counts)
 - [Proxy](#proxy)
 - [Local development](#local-development)
 - [Auth](#authentication-trade-imports-defra-id-stub)
@@ -46,7 +47,8 @@ Deployed end-to-end tests for this service live in the shared tests repository
 
 ### Node.js
 
-Node 24 or later, and npm 11.6.2 or later — the floor in `engines`.
+Node 26.13.1 or later, and npm 11.6.2 or later — the floor in `engines`.
+`.nvmrc` pins Node 26.13.1.
 
 To use the correct version of Node.js for this application, via nvm:
 
@@ -253,9 +255,9 @@ The Defra ID callback is a cross-site, top-level navigation. A `Strict` state co
 ### Development image
 
 > [!TIP]
-> For Apple Silicon users, you may need to add `--platform linux/amd64` to the
-> `docker run` command to ensure compatibility, for example
-> `docker build --platform=linux/arm64 --no-cache --tag trade-imports-plants-frontend`
+> On Apple Silicon you may need to add `--platform linux/amd64` to the
+> `docker build` command, for example
+> `docker build --platform=linux/amd64 --no-cache --tag trade-imports-plants-frontend .`
 
 Build:
 
