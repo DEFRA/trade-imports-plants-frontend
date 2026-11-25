@@ -13,7 +13,10 @@ import {
 import { fulfilmentToNotification } from '../mapper.js'
 import { isRecoverableBackendError } from '../errors.js'
 import { enterOrganisationIdForTests } from '../../../../../common/helpers/organisation-id.js'
-import { recordEcsLogLines } from '../../../../../common/test-helpers/ecs-log-lines.js'
+import {
+  ECS_PLATFORM_FIELDS,
+  recordEcsLogLines
+} from '../../../../../common/test-helpers/ecs-log-lines.js'
 import { mapStatus, records } from './index.js'
 
 const fetchMocker = createFetchMock(vi)
@@ -57,6 +60,8 @@ const canonical = ({
 })
 
 const jsonOf = (request) => request.clone().json()
+
+const SERVICE_UNAVAILABLE = 'Service Unavailable'
 
 describe('real records adapter — canonical fulfilment boundary', () => {
   const ecsLog = recordEcsLogLines()
@@ -112,7 +117,7 @@ describe('real records adapter — canonical fulfilment boundary', () => {
   it('Should classify the adapter fetch failure shape, but not programming errors, as recoverable', async () => {
     fetchMocker.mockResponse('Unavailable', {
       status: 503,
-      statusText: 'Service Unavailable'
+      statusText: SERVICE_UNAVAILABLE
     })
 
     let surfaced
@@ -125,7 +130,7 @@ describe('real records adapter — canonical fulfilment boundary', () => {
     expect(surfaced).toMatchObject({
       name: 'BackendRequestError',
       status: 503,
-      statusText: 'Service Unavailable'
+      statusText: SERVICE_UNAVAILABLE
     })
     expect(isRecoverableBackendError(surfaced)).toBe(true)
     expect(isRecoverableBackendError(new Error('plain failure'))).toBe(false)
@@ -172,20 +177,72 @@ describe('real records adapter — canonical fulfilment boundary', () => {
     }
   )
 
-  it('Should log the reference and organisation at warn when the fulfilment GET returns 403', async () => {
+  it('Should log the journey as event.reference, and the organisation and status in the message, when the fulfilment GET returns 403', async () => {
     fetchMocker.mockResponse('Forbidden', { status: 403 })
 
     const loaded = await records.load({ journeyId })
 
     expect(loaded).toBeUndefined()
     expect(ecsLog.linesBesideExternalCalls()).toEqual([
-      expect.objectContaining({
+      {
+        ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message: 'Backend refused fulfilment read',
-        journeyId,
-        organisationId: '5900001',
-        status: 403
+        message:
+          'Backend refused fulfilment read for organisation 5900001: 403',
+        event: { reference: journeyId }
+      }
+    ])
+  })
+
+  it('Should log a refused write with its error, and the journey as event.reference, and no other field', async () => {
+    fetchMocker.mockResponse('Unavailable', {
+      status: 503,
+      statusText: SERVICE_UNAVAILABLE
+    })
+
+    await expect(
+      records.replaceFulfilment(journeyId, snapshotOf(), {
+        known: { journeyId, status: DRAFT, concurrencyToken: 0 }
       })
+    ).rejects.toThrow()
+
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([
+      {
+        ...ECS_PLATFORM_FIELDS,
+        'log.level': 'warn',
+        message: 'Backend refused request',
+        event: { reference: journeyId },
+        error: {
+          type: 'BackendRequestError',
+          message:
+            'plants-backend refused to replace notification: 503 Service Unavailable',
+          stack_trace: expect.stringMatching(/^BackendRequestError: /)
+        }
+      }
+    ])
+  })
+
+  it('Should log a refused create with its error and no event.reference', async () => {
+    fetchMocker.mockResponse(JSON.stringify({ code: 'NOT_ALLOWED' }), {
+      status: 409,
+      statusText: 'Conflict'
+    })
+
+    await expect(records.create()).rejects.toThrow()
+
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([
+      {
+        ...ECS_PLATFORM_FIELDS,
+        'log.level': 'warn',
+        message: 'Backend refused request',
+        error: {
+          type: 'BackendRequestError',
+          message:
+            'plants-backend refused to create notification: 409 Conflict',
+          code: 'NOT_ALLOWED',
+          stack_trace: expect.stringMatching(/^BackendRequestError: /)
+        }
+      }
     ])
   })
 
