@@ -1,35 +1,12 @@
-import { Metrics } from '@defra/cdp-metrics'
+import { countExternalCall } from '../call-counts/call-counts.js'
+import {
+  COUNT,
+  MILLISECONDS,
+  publishMetricsInBackground
+} from './publish-metrics.js'
 
-import { config } from '../../../config/config.js'
-import { createLogger } from './logging/logger.js'
-import { countExternalCall } from './call-counts/call-counts.js'
-
-const logger = createLogger()
-
-const DURATION_METRIC = 'ExternalCallDuration'
-const FAILURE_METRIC = 'ExternalCallFailure'
-const MILLISECONDS = 'Milliseconds'
-const COUNT = 'Count'
-const SUCCESS = 'success'
-const FAILURE = 'failure'
-
-const recordExternalCall = async (
-  { dependency, operation, interfaceId },
-  { durationMs, failed }
-) => {
-  const metricsLogger = new Metrics(logger).getMetricsLogger({
-    Dependency: dependency,
-    Operation: operation
-  })
-  metricsLogger.setNamespace(config.get('metrics.namespace'))
-  metricsLogger.putMetric(DURATION_METRIC, durationMs, MILLISECONDS)
-  metricsLogger.putMetric(FAILURE_METRIC, failed ? 1 : 0, COUNT)
-  metricsLogger.setProperty('Outcome', failed ? FAILURE : SUCCESS)
-  if (interfaceId !== undefined) {
-    metricsLogger.setProperty('Interface', interfaceId)
-  }
-  await metricsLogger.flush()
-}
+const interfacePropertyOf = (interfaceId) =>
+  interfaceId === undefined ? {} : { Interface: interfaceId }
 
 /**
  * Emits the document for a finished call without making the caller wait for the flush, and logs a warning when it cannot be written.
@@ -38,17 +15,23 @@ const recordExternalCall = async (
  * @param {{ durationMs: number, failed: boolean }} result - how long it took and whether it failed
  */
 export const recordExternalCallInBackground = (externalCall, result) => {
+  const { dependency, operation, interfaceId } = externalCall
   countExternalCall(externalCall)
-  recordExternalCall(externalCall, result).catch((error) => {
-    logger.warn(
+  publishMetricsInBackground(
+    { Dependency: dependency, Operation: operation },
+    [
       {
-        err: error,
-        dependency: externalCall.dependency,
-        operation: externalCall.operation
+        name: 'ExternalCallDuration',
+        value: result.durationMs,
+        unit: MILLISECONDS
       },
-      'Could not record external call'
-    )
-  })
+      { name: 'ExternalCallFailure', value: result.failed ? 1 : 0, unit: COUNT }
+    ],
+    {
+      Outcome: result.failed ? 'failure' : 'success',
+      ...interfacePropertyOf(interfaceId)
+    }
+  )
 }
 
 const recordSince = (externalCall, startedAt, failed) =>
