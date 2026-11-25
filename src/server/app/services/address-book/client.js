@@ -3,7 +3,11 @@ import { getTraceId } from '@defra/hapi-tracing'
 import { ORGANISATION_ID_HEADER } from '../../../common/helpers/organisation-id.js'
 import { addressBookCountryName } from '../countries/index.js'
 import { HTTP_STATUS_NOT_FOUND } from '../../lib/http-status.js'
-import { BackendRequestError } from '../persistence/records/errors.js'
+import {
+  addressBookFetch,
+  sendToAddressBook,
+  throwOnAddressBookError
+} from '../address-book-request.js'
 
 const addressBookUrl =
   process.env.TRADE_IMPORTS_ADDRESS_BOOK_URL ?? 'http://localhost:8089'
@@ -25,8 +29,6 @@ const headers = (orgId) => ({
   [ORGANISATION_ID_HEADER]: orgId,
   [tracingHeader]: getTraceId() ?? ''
 })
-
-const failed = (what, response) => new BackendRequestError(what, response)
 
 const toRecord = async (operator) => ({
   id: operator.id,
@@ -66,14 +68,10 @@ export const listAddresses = async (
     url.searchParams.append('countryCode', countryCode)
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await sendToAddressBook('list-addresses', url.toString(), {
     method: 'GET',
     headers: headers(orgId)
   })
-
-  if (!response.ok) {
-    throw failed('list addresses', response)
-  }
 
   const body = await response.json()
   return {
@@ -87,17 +85,20 @@ export const listAddresses = async (
 
 /** The address with the given id, a deleted one included and marked deleted, or nothing when the address book has none. */
 export const getAddress = async (orgId, addressId) => {
-  const response = await fetch(addressesUrl(orgId, addressId), {
-    method: 'GET',
-    headers: headers(orgId)
-  })
+  const operation = 'get-address'
+  const response = await addressBookFetch(
+    operation,
+    addressesUrl(orgId, addressId),
+    {
+      method: 'GET',
+      headers: headers(orgId)
+    }
+  )
 
   if (response.status === HTTP_STATUS_NOT_FOUND) {
     return undefined
   }
-  if (!response.ok) {
-    throw failed('get address', response)
-  }
+  throwOnAddressBookError(operation, response)
 
   return toRecord(await response.json())
 }

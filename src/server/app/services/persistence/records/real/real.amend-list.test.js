@@ -69,7 +69,7 @@ describe('real records adapter — amend', () => {
     fetchMocker.mockResponse('Conflict', { status: 409 })
 
     await expect(records.amend('REF-1')).rejects.toThrow(
-      /Failed to amend notification: 409/
+      /plants-backend refused to amend notification: 409/
     )
   })
 })

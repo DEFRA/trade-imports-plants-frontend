@@ -260,7 +260,9 @@ describe('#addresses against the real address book', () => {
     }))
 
     const { addresses } = await addressBook()
-    await expect(addresses(ORG)).rejects.toThrow('Failed to list addresses')
+    await expect(addresses(ORG)).rejects.toThrow(
+      'address-book refused to list addresses: 503 Service Unavailable'
+    )
   })
 })
 
@@ -444,7 +446,7 @@ describe('#party', () => {
 
     const { party } = await addressBook()
     await expect(party(ORG, 'record-7')).rejects.toThrow(
-      'Failed to get address'
+      'address-book refused to get address: 500 Server Error'
     )
   })
 })

@@ -13,7 +13,7 @@ import {
 import { fulfilmentToNotification } from '../mapper.js'
 import { isRecoverableBackendError } from '../errors.js'
 import { enterOrganisationIdForTests } from '../../../../../common/helpers/organisation-id.js'
-import { logger } from './http/get-fulfilment.js'
+import { recordEcsLogLines } from '../../../../../common/test-helpers/ecs-log-lines.js'
 import { mapStatus, records } from './index.js'
 
 const fetchMocker = createFetchMock(vi)
@@ -59,6 +59,8 @@ const canonical = ({
 const jsonOf = (request) => request.clone().json()
 
 describe('real records adapter — canonical fulfilment boundary', () => {
+  const ecsLog = recordEcsLogLines()
+
   beforeEach(() => {
     fetchMocker.resetMocks()
     enterOrganisationIdForTests('5900001')
@@ -170,28 +172,30 @@ describe('real records adapter — canonical fulfilment boundary', () => {
     }
   )
 
-  it('Should log the reference and organisation when the fulfilment GET returns 403', async () => {
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+  it('Should log the reference and organisation at warn when the fulfilment GET returns 403', async () => {
     fetchMocker.mockResponse('Forbidden', { status: 403 })
 
     const loaded = await records.load({ journeyId })
 
     expect(loaded).toBeUndefined()
-    expect(warn).toHaveBeenCalledWith(
-      'Backend refused fulfilment read for notification REFERENCE-0001, organisation 5900001'
-    )
-    warn.mockRestore()
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([
+      expect.objectContaining({
+        'log.level': 'warn',
+        message: 'Backend refused fulfilment read',
+        journeyId,
+        organisationId: '5900001',
+        status: 403
+      })
+    ])
   })
 
-  it('Should not log when the fulfilment GET returns 404', async () => {
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+  it('Should write no line beside the external call when the fulfilment GET returns 404', async () => {
     fetchMocker.mockResponse('Not Found', { status: 404 })
 
     const loaded = await records.load({ journeyId })
 
     expect(loaded).toBeUndefined()
-    expect(warn).not.toHaveBeenCalled()
-    warn.mockRestore()
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([])
   })
 })
 

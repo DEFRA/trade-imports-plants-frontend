@@ -1,12 +1,9 @@
 import hapi from '@hapi/hapi'
-import { vi } from 'vitest'
 
 import { config } from '../../../../config/config.js'
-import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
-import { restoreConfigAfterEach } from '../../test-helpers/restore-config-after-each.js'
+import { BACKEND_DEPENDENCY } from '../backend-client/backend-dependency.js'
 import {
   callCounts,
-  countBackendCall,
   countExternalCall,
   countSessionResolution
 } from './call-counts.js'
@@ -15,9 +12,10 @@ import { clearCallCountTotals } from './call-count-totals.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
 const ROUTE_PATH = '/some-page'
-const CALL_FREE_ROUTE_PATH = '/page-without-calls'
-const METRICS_ENABLED_KEY = 'callCounts.metrics.enabled'
-const NAMESPACE_KEY = 'metrics.namespace'
+const BACKEND_READ = {
+  dependency: BACKEND_DEPENDENCY,
+  operation: 'get-fulfilment'
+}
 
 const buildServer = async () => {
   const server = hapi.server()
@@ -27,8 +25,8 @@ const buildServer = async () => {
       method: 'GET',
       path: ROUTE_PATH,
       handler: (request) => {
-        countBackendCall()
-        countBackendCall()
+        countExternalCall(BACKEND_READ)
+        countExternalCall(BACKEND_READ)
         countExternalCall({ dependency: 'defra-id', operation: 'jwks' })
         countSessionResolution(request)
         return 'page'
@@ -66,6 +64,10 @@ describe('call counts', () => {
 
     const { totals, routes } = await readTotals(server)
 
+    const oneRequestsExternalCalls = {
+      'plants-backend': { 'get-fulfilment': 2 },
+      'defra-id': { jwks: 1 }
+    }
     expect(routes).toEqual([
       {
         method: 'get',
@@ -73,14 +75,14 @@ describe('call counts', () => {
         pageRequests: 1,
         backendCalls: 2,
         sessionResolutions: 1,
-        externalCalls: { 'defra-id': { jwks: 1 } }
+        externalCalls: oneRequestsExternalCalls
       }
     ])
     expect(totals).toEqual({
       pageRequests: 1,
       backendCalls: 2,
       sessionResolutions: 1,
-      externalCalls: { 'defra-id': { jwks: 1 } }
+      externalCalls: oneRequestsExternalCalls
     })
   })
 
@@ -96,7 +98,10 @@ describe('call counts', () => {
         pageRequests: 2,
         backendCalls: 4,
         sessionResolutions: 2,
-        externalCalls: { 'defra-id': { jwks: 2 } }
+        externalCalls: {
+          'plants-backend': { 'get-fulfilment': 4 },
+          'defra-id': { jwks: 2 }
+        }
       })
     )
   })
@@ -113,48 +118,6 @@ describe('call counts', () => {
 
     expect(totals.pageRequests).toBe(0)
     expect(routes).toEqual([])
-  })
-
-  describe('page request metrics', () => {
-    restoreConfigAfterEach([METRICS_ENABLED_KEY, NAMESPACE_KEY])
-    let logSpy
-
-    beforeEach(() => {
-      config.set(NAMESPACE_KEY, 'test-namespace')
-      logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      server.route({
-        method: 'GET',
-        path: CALL_FREE_ROUTE_PATH,
-        handler: () => 'page'
-      })
-    })
-
-    afterEach(() => {
-      vi.restoreAllMocks()
-    })
-
-    test('writes a page request metric only when callCounts.metrics.enabled is on', async () => {
-      config.set(METRICS_ENABLED_KEY, true)
-      await server.inject({ method: 'GET', url: ROUTE_PATH })
-      await vi.waitFor(() => expect(readEmfDocuments(logSpy)).toHaveLength(1))
-
-      config.set(METRICS_ENABLED_KEY, false)
-      await server.inject({ method: 'GET', url: ROUTE_PATH })
-      config.set(METRICS_ENABLED_KEY, true)
-      await server.inject({ method: 'GET', url: CALL_FREE_ROUTE_PATH })
-      await vi.waitFor(() => expect(readEmfDocuments(logSpy)).toHaveLength(2))
-
-      expect(
-        readEmfDocuments(logSpy).map((document) => ({
-          kind: document['request.kind'],
-          backendCalls: document['page.request.backend.calls'],
-          sessionResolutions: document['page.request.session.resolutions']
-        }))
-      ).toEqual([
-        { kind: 'page', backendCalls: 2, sessionResolutions: 1 },
-        { kind: 'page', backendCalls: 0, sessionResolutions: 0 }
-      ])
-    })
   })
 
   test('DELETE clears the totals and restarts the since time', async () => {
@@ -174,9 +137,9 @@ describe('call counts', () => {
     expect(after.since > before.since).toBe(true)
   })
 
-  test('counting outside any request does nothing and does not throw', () => {
+  test('counting a call or a session read outside any request does not throw', () => {
     expect(() => {
-      countBackendCall()
+      countExternalCall(BACKEND_READ)
       countExternalCall({ dependency: 'defra-id', operation: 'jwks' })
       countSessionResolution({})
       countSessionResolution(undefined)

@@ -11,9 +11,14 @@ import {
 } from '../shared/kit.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
-import { configureRecords, records } from './persistence/records.js'
+import {
+  configureRecords,
+  records,
+  STALE_CONCURRENCY_TOKEN
+} from './persistence/records.js'
 import { configureSession } from './persistence/session.js'
 import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { BACKEND_DEPENDENCY } from '../../common/helpers/backend-client/backend-dependency.js'
 import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../services/persistence/session/stub.js'
@@ -167,10 +172,24 @@ export const expectOneSaveFallbackLogged = (logger, fallback) =>
 
 /** The recoverable records error for a backend that answered 503 to `operation`. */
 export const unavailableBackendError = (operation) =>
-  new BackendRequestError(operation, {
-    status: 503,
-    statusText: 'Service Unavailable'
-  })
+  new BackendRequestError(
+    { dependency: BACKEND_DEPENDENCY, operation },
+    {
+      status: 503,
+      statusText: 'Service Unavailable'
+    }
+  )
+
+/** The records error for a backend that refused `operation` with 409 because
+ * the posted concurrency token was stale. */
+export const staleConcurrencyRefusal = (operation) =>
+  Object.assign(
+    new BackendRequestError(
+      { dependency: BACKEND_DEPENDENCY, operation },
+      { status: 409, statusText: 'Conflict' }
+    ),
+    { code: STALE_CONCURRENCY_TOKEN }
+  )
 
 export const journeyRequest = (
   journeyId,

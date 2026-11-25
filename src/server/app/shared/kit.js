@@ -1,6 +1,12 @@
 import { dashboardPath, hubPath, pagePath, pageRoutePath } from './paths.js'
 import { setIdForPath, withSetContext } from './set-context.js'
-import { AMEND, DELETED, DRAFT, SUBMITTED } from '../engine/index.js'
+import {
+  AMEND,
+  DELETED,
+  DRAFT,
+  isStaleConcurrencyRefusal,
+  SUBMITTED
+} from '../engine/index.js'
 import { nextStepLanding } from '../flow/navigation.js'
 import { journeyLayout, journeySectionCaption } from '../flow/journey-flow.js'
 import { copyFor } from './copy.js'
@@ -300,7 +306,7 @@ export const recoverableSave = async (
   try {
     return { value: await saveThunk() }
   } catch (error) {
-    if (error?.code === 'STALE_CONCURRENCY_TOKEN') {
+    if (isStaleConcurrencyRefusal(error)) {
       throw error
     }
     if (isRecoverableBackendError(error)) {
@@ -323,7 +329,7 @@ const redirectOnStaleAction = (post) => async (request, h) => {
   try {
     return await post(request, h)
   } catch (error) {
-    if (error?.code === 'STALE_CONCURRENCY_TOKEN') {
+    if (isStaleConcurrencyRefusal(error)) {
       request.logger.info(
         {
           journeyId: request.params?.journeyId,
