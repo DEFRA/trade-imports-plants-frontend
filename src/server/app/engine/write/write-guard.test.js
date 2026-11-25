@@ -15,7 +15,7 @@ import {
 // Every key-introducing write asserts the whole resulting answers tree
 // against the recognition surface (bridge/obligation-source.js), and
 // submitJourney asserts stored trees the write guards never saw — an
-// unrecognised key is inert to the evaluator yet ships raw at finalise.
+// unrecognised key is inert to the evaluator yet ships raw at submit.
 
 let journeyId
 const buildRequest = () => journeyRequest(journeyId)

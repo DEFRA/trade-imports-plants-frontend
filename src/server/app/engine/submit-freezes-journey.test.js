@@ -20,7 +20,7 @@ import {
 let journeyId
 const buildRequest = () => journeyRequest(journeyId)
 
-describe('submit is finalise', () => {
+describe('submitJourney freezes a ready journey as submitted', () => {
   beforeEach(async () => {
     configureRecords(SET_ID, recordsStub)
     configureSession(SET_ID, sessionStub)

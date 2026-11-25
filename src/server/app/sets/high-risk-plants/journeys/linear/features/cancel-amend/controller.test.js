@@ -34,7 +34,7 @@ const startAmend = async () => {
     journey.journeyId,
     assembleFulfilments({ producerIdentificationNumber: 'SubmittedRef' })
   )
-  const submitted = await records.finalise(journey.journeyId)
+  const submitted = await records.submit(journey.journeyId)
   await records.amend(journey.journeyId)
   await records.replaceFulfilment(
     journey.journeyId,
@@ -91,7 +91,7 @@ describe('cancel amendment routes', () => {
   it('Should redirect non-AMEND journeys without attempting the transition', async () => {
     const draft = await store.create()
     const submitted = await store.create()
-    await records.finalise(submitted.journeyId)
+    await records.submit(submitted.journeyId)
 
     expect(await get(journeyRequest(draft.journeyId), stubH())).toEqual({
       redirect: SET_BASE

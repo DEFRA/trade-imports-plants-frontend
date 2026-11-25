@@ -16,7 +16,7 @@ const postTransition = async (url, action, body) => {
   return response
 }
 
-export const finalise = async (journeyId, actor) => {
+export const submit = async (journeyId, actor) => {
   const response = await postTransition(
     `${notificationsUrl}/${journeyId}/submit`,
     'submit notification',

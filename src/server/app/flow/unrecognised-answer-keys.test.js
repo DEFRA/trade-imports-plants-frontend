@@ -9,7 +9,7 @@ import {
 
 // The recognition surface: manifest obligation names in their declared
 // positions, flow-only keys and system keys. Anything else is inert to the
-// evaluator yet ships raw at finalise — these tests pin that such keys are
+// evaluator yet ships raw at submit — these tests pin that such keys are
 // reported, with their path.
 
 describe('#unrecognisedAnswerKeys', () => {

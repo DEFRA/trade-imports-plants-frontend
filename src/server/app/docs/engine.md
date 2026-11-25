@@ -56,7 +56,7 @@ entry with no leaf value is not stored. Removing or reconciling entries leaves
 the purge of answers that no longer apply to the evaluator.
 
 [`src/server/app/engine/write/submit.js`](../engine/write/submit.js) checks recognised
-answer keys and `scope.readyForCheckYourAnswers` before calling `records.finalise`.
+answer keys and `scope.readyForCheckYourAnswers` before calling `records.submit`.
 Submit changes lifecycle state; it does not perform a separate fulfilment save.
 
 ## Abstract ports

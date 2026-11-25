@@ -14,6 +14,6 @@ export const submitJourney = async (request, h) => {
     }
   }
   const actor = buildActor(request.auth.credentials)
-  const submitted = await records.finalise(current.journey.journeyId, actor)
+  const submitted = await records.submit(current.journey.journeyId, actor)
   return { ok: true, journey: submitted, scope: current.scope }
 }

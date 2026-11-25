@@ -13,15 +13,10 @@ import { configureReadyForCheckYourAnswers } from './read.js'
 import { authenticatedActor, stubH, journeyRequest } from './test-support.js'
 import { SET_ID, VALUE_ONE } from '../../../../test/fixtures/index.js'
 
-// submitJourney reads its scope through `makeScope` and gates on that scope's
-// `readyForCheckYourAnswers`. `records.finalise` is the persistence layer.
-// These tests confirm submit finalises the journey by its journeyId when
-// CYA-ready and blocks when not.
-
 let journeyId
 const buildRequest = () => journeyRequest(journeyId)
 
-describe('submitJourney — gates on scope readiness, finalises via records', () => {
+describe('submitJourney — gates on scope readiness, submits via records', () => {
   beforeEach(async () => {
     configureRecords(SET_ID, recordsStub)
     configureSession(SET_ID, sessionStub)
@@ -29,15 +24,15 @@ describe('submitJourney — gates on scope readiness, finalises via records', ()
     journeyId = (await records.create()).journeyId
   })
 
-  it('Should finalise the CYA-ready journey by its journeyId', async () => {
-    const finalise = vi.fn(recordsStub.finalise)
-    configureRecords(SET_ID, { ...recordsStub, finalise })
+  it('Should submit the CYA-ready journey by its journeyId', async () => {
+    const submit = vi.fn(recordsStub.submit)
+    configureRecords(SET_ID, { ...recordsStub, submit })
     configureReadyForCheckYourAnswers(SET_ID, () => true)
     await commit(buildRequest(), stubH(), { scalarField: VALUE_ONE })
 
     const result = await submitJourney(buildRequest(), stubH())
 
-    expect(finalise).toHaveBeenCalledWith(journeyId, authenticatedActor)
+    expect(submit).toHaveBeenCalledWith(journeyId, authenticatedActor)
     expect(result.ok).toBe(true)
     expect(result.journey.journeyId).toBe(journeyId)
     expect(result.journey.status).toBe(SUBMITTED)

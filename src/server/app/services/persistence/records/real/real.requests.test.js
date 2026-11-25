@@ -318,7 +318,7 @@ describe('real records adapter — lifecycle and list', () => {
       ]
     )
 
-    const submitted = await records.finalise(journeyId, actor)
+    const submitted = await records.submit(journeyId, actor)
     const amended = await records.amend(journeyId, actor)
     const restored = await records.cancelAmend(journeyId, actor)
 
