@@ -1,6 +1,6 @@
 import { statusCodes } from '../constants/status-codes.js'
 import { chromeFor, sharedCopy } from '../../app/shared/kit.js'
-import { isLoggedRefusal } from '../../app/services/persistence/records/errors.js'
+import { errFieldUnlessLogged } from './logging/logged-error.js'
 
 const ERROR_PAGE_COPY_KEY = {
   [statusCodes.notFound]: 'notFound',
@@ -25,7 +25,7 @@ export function catchAll(request, h) {
   if (statusCode >= statusCodes.internalServerError) {
     request.logger.error(
       {
-        ...(isLoggedRefusal(response) ? {} : { err: response }),
+        ...errFieldUnlessLogged(response),
         statusCode,
         journeyId: request.params?.journeyId
       },

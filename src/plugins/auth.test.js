@@ -18,7 +18,6 @@ import {
   defraIdDiscoveryDocument,
   useDefraIdNetwork
 } from '../server/common/test-helpers/defra-id-network.js'
-import { recordEmfDocuments } from '../server/common/test-helpers/emf-documents.js'
 import { restoreConfigAfterEach } from '../server/common/test-helpers/restore-config-after-each.js'
 
 const AUTH_COOKIE_NAME = 'test-auth-cookie'
@@ -71,8 +70,12 @@ const unexpiredToken = tokenExpiringIn(SECONDS_PER_HOUR)
 const expiredToken = tokenExpiringIn(-SECONDS_PER_HOUR)
 
 describe('auth plugin', () => {
-  const { interceptDiscovery, serveDiscovery, interceptToken } =
-    useDefraIdNetwork()
+  const {
+    failEveryDiscoveryAttempt,
+    serveDiscovery,
+    stepThroughDiscoveryRetries,
+    interceptToken
+  } = useDefraIdNetwork()
   restoreConfigAfterEach(Object.keys(configValues))
 
   beforeEach(() => {
@@ -80,8 +83,6 @@ describe('auth plugin', () => {
       config.set(key, value)
     }
   })
-
-  const emf = recordEmfDocuments()
 
   afterEach(() => {
     vi.useRealTimers()
@@ -161,21 +162,14 @@ describe('auth plugin', () => {
     })
 
     test('registers no Bell strategy when OIDC discovery fails', async () => {
-      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-      for (let attempt = 0; attempt < 4; attempt++) {
-        interceptDiscovery().replyWithError(new Error('connection refused'))
-      }
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+      failEveryDiscoveryAttempt(() => new Error('connection refused'))
       const server = await buildServer()
 
       const registration = expect(server.register(authPlugin)).rejects.toThrow(
         'OIDC discovery at'
       )
-      for (const [attempt, delayMs] of [1000, 2000, 4000].entries()) {
-        await vi.waitFor(() =>
-          expect(emf.externalCalls()).toHaveLength(attempt + 1)
-        )
-        await vi.advanceTimersByTimeAsync(delayMs)
-      }
+      await stepThroughDiscoveryRetries()
       await registration
 
       expect(() =>

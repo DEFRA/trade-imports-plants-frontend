@@ -65,6 +65,11 @@ a flow-only key or a system key, as `unrecognisedAnswerKeys` in
 other key is inert to the evaluator: never in scope and never purged, yet it
 would ship raw at submit. So the write paths and submit reject it.
 
+The one system key is `referenceNumber`. Answer validation accepts it so an
+answers tree that carries it is not refused, but canonical assembly leaves it
+out: the notification projections take the reference from the journey
+envelope instead.
+
 ## Abstract ports
 
 The engine owns the interfaces in

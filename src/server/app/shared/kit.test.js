@@ -1,5 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
+import { describe, expect, it } from 'vitest'
 
 import {
   CAPTIONS,
@@ -14,7 +13,7 @@ import {
   journeyRequest,
   staleConcurrencyRefusal,
   stubH,
-  unavailableBackendError
+  loggedBackendRefusal
 } from '../engine/test-support.js'
 import {
   base,
@@ -28,8 +27,12 @@ import {
 } from './kit.js'
 import { BackendRequestError } from '../services/persistence/records/errors.js'
 import { records } from '../services/persistence/records/real/index.js'
+import { BACKEND_REFUSAL_LOG_MESSAGE } from '../services/persistence/records/real/http/send.js'
 import { createLogger } from '../../common/helpers/logging/logger.js'
-import { enterOrganisationIdForTests } from '../../common/helpers/organisation-id.js'
+import {
+  refusedAnswer,
+  useDependencyAnswers
+} from '../../common/test-helpers/dependency-answers.js'
 import { recordEcsLogLines } from '../../common/test-helpers/ecs-log-lines.js'
 
 describe('#base — the section caption the installed journey names', () => {
@@ -170,17 +173,7 @@ describe('#recoverableSave', () => {
   const fallbackResponse = { fallback: true }
   const fallback = () => fallbackResponse
   const ecsLog = recordEcsLogLines()
-  const fetchMocker = createFetchMock(vi)
-
-  beforeEach(() => {
-    fetchMocker.enableMocks()
-    fetchMocker.resetMocks()
-  })
-
-  afterEach(() => {
-    fetchMocker.disableMocks()
-    enterOrganisationIdForTests(undefined)
-  })
+  const answerWith = useDependencyAnswers()
 
   it('Should return the value of a save that succeeds and log nothing', async () => {
     const request = journeyRequest('journey-1')
@@ -197,7 +190,7 @@ describe('#recoverableSave', () => {
 
   it('Should log one warning with the journey id and no error, then answer with the fallback, when the backend refusal was logged where it was raised', async () => {
     const request = journeyRequest('journey-1')
-    const failure = unavailableBackendError('save answers')
+    const failure = loggedBackendRefusal('save answers')
 
     const outcome = await recoverableSave(
       request,
@@ -215,10 +208,10 @@ describe('#recoverableSave', () => {
 
   it('Should log one warning with the journey id and the error, then answer with the fallback, when the recoverable refusal was not logged where it was raised', async () => {
     const request = journeyRequest('journey-1')
-    const failure = new BackendRequestError(
-      { dependency: 'address-book', operation: 'list-addresses' },
-      { status: 503, statusText: 'Service Unavailable' }
-    )
+    const failure = new BackendRequestError('save-answers', {
+      status: 503,
+      statusText: 'Service Unavailable'
+    })
 
     const outcome = await recoverableSave(
       request,
@@ -238,7 +231,7 @@ describe('#recoverableSave', () => {
 
   it('Should log the ids the page passes beside the journey id', async () => {
     const request = journeyRequest('journey-1')
-    const failure = unavailableBackendError('save answers')
+    const failure = loggedBackendRefusal('save answers')
 
     await recoverableSave(
       request,
@@ -257,8 +250,7 @@ describe('#recoverableSave', () => {
   })
 
   it('Should write the backend refusal at warn with its error and the journey as event.reference, and the fallback at warn with no error, when the backend refuses a save', async () => {
-    fetchMocker.mockResponse('Unavailable', { status: 503 })
-    enterOrganisationIdForTests('5900001')
+    answerWith(() => refusedAnswer(503, 'Service Unavailable'))
     const request = {
       params: { journeyId: 'journey-1' },
       route: { path: '/notifications/{journeyId}/origin' },
@@ -286,7 +278,7 @@ describe('#recoverableSave', () => {
     expect(ecsLog.linesBesideExternalCalls()).toEqual([
       expect.objectContaining({
         'log.level': 'warn',
-        message: 'Backend refused request',
+        message: BACKEND_REFUSAL_LOG_MESSAGE,
         event: { reference: 'journey-1' },
         error: expect.objectContaining({
           type: 'BackendRequestError',

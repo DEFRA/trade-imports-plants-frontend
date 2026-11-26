@@ -8,14 +8,9 @@ import {
   STALE_CONCURRENCY_TOKEN
 } from './records.js'
 import { store } from '../store.js'
-import {
-  authenticatedActor,
-  fetchMock,
-  useBackendRecords
-} from '../test-support.js'
+import { fetchMock, useBackendRecords } from '../test-support.js'
 import { records as recordsStub } from '../../services/persistence/records/stub/index.js'
 import { recordEmfDocuments } from '../../../common/test-helpers/emf-documents.js'
-import { enterOrganisationIdForTests } from '../../../common/helpers/organisation-id.js'
 
 const JOURNEY_EVENTS = Object.freeze({
   started: 'journey.started',
@@ -94,10 +89,6 @@ describe('records journey counters', () => {
         JSON.stringify({ code: STALE_CONCURRENCY_TOKEN }),
         { status: 409 }
       )
-
-    beforeEach(() => {
-      enterOrganisationIdForTests(authenticatedActor.organisationId)
-    })
 
     test('a save the backend refuses for a stale concurrency token counts one conflict and rethrows the refusal', async () => {
       backendAnsweringStaleToken()

@@ -257,12 +257,15 @@ of a line that is out of range is the example of a refusal that passes its
 reason.
 
 `kit.recoverableSave()` takes the request and logs every save fallback once at
-warn, with `journeyId` plus any ids the page passes it. A journey backend
-refusal is logged with its `err` and the journey as `event.reference` where it
-is raised, so the fallback line leaves `err` out; any other caught error goes
-on the fallback line as `err`. The 5xx error page's `Request failed` line
-follows the same rule, so one refused call writes its stack once. `recoverableSave` writes that line; a page's fallback callback only
-builds the response.
+warn, with `journeyId` plus any ids the page passes it. `recoverableSave`
+writes the fallback line; a page's fallback callback only builds the response.
+A journey backend refusal is logged with its `err` and the journey as
+`event.reference` where it is raised, and marked as logged, so the fallback
+line leaves `err` out; any other caught error goes on the fallback line as
+`err`. The error page's `catchAll` writes the 5xx `Request failed` line by the
+same rule, so one refused call writes its stack once. Both read the mark through
+`errFieldUnlessLogged` in
+[`common/helpers/logging/logged-error.js`](../../common/helpers/logging/logged-error.js).
 
 A refusal answered by a redirect logs its own named line with the journey id
 and the reason.

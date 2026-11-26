@@ -18,7 +18,7 @@ import {
   journeyRequest,
   requestAsSessionHoldingNoJourney,
   stubH,
-  unavailableBackendError
+  loggedBackendRefusal
 } from '../../../../../../engine/test-support.js'
 import { records as recordsStub } from '../../../../../../services/persistence/records/stub/index.js'
 import * as cancelAmend from './controller.js'
@@ -135,7 +135,7 @@ describe('cancel amendment routes', () => {
   })
 
   it('Should re-render confirmation at 500 with the recoverable-save banner after a backend failure', async () => {
-    const failure = unavailableBackendError('cancel amend')
+    const failure = loggedBackendRefusal('cancel amend')
     configureRecords(SET_ID, {
       ...recordsStub,
       cancelAmend: async () => {

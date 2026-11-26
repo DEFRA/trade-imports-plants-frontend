@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
 import { config } from '../../../config/config.js'
+import { fetchMock } from '../../common/test-helpers/dependency-answers.js'
 import { restoreConfigAfterEach } from '../../common/test-helpers/restore-config-after-each.js'
 import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
@@ -17,11 +17,8 @@ import {
   STALE_CONCURRENCY_TOKEN
 } from './persistence/records.js'
 import { configureSession } from './persistence/session.js'
-import {
-  BackendRequestError,
-  markRefusalLogged
-} from '../services/persistence/records/errors.js'
-import { BACKEND_DEPENDENCY } from '../../common/helpers/backend-client/backend-dependency.js'
+import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { markErrorLogged } from '../../common/helpers/logging/logged-error.js'
 import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../services/persistence/session/stub.js'
@@ -178,16 +175,13 @@ export const expectOneSaveFallbackLogged = (logger, fallback) => {
 }
 
 /** The recoverable records error for a backend that answered 503 to
- * `operation`, its refusal logged where it was raised. */
-export const unavailableBackendError = (operation) =>
-  markRefusalLogged(
-    new BackendRequestError(
-      { dependency: BACKEND_DEPENDENCY, operation },
-      {
-        status: 503,
-        statusText: 'Service Unavailable'
-      }
-    )
+ * `operation`, marked as already logged by the records adapter. */
+export const loggedBackendRefusal = (operation) =>
+  markErrorLogged(
+    new BackendRequestError(operation, {
+      status: 503,
+      statusText: 'Service Unavailable'
+    })
   )
 
 /**
@@ -196,10 +190,10 @@ export const unavailableBackendError = (operation) =>
  */
 export const staleConcurrencyRefusal = (operation) =>
   Object.assign(
-    new BackendRequestError(
-      { dependency: BACKEND_DEPENDENCY, operation },
-      { status: 409, statusText: 'Conflict' }
-    ),
+    new BackendRequestError(operation, {
+      status: 409,
+      statusText: 'Conflict'
+    }),
     { code: STALE_CONCURRENCY_TOKEN }
   )
 
@@ -358,7 +352,7 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
     (route) => route.method === 'POST' && route.path.endsWith(pathSuffix)
   ).handler
 
-export const fetchMock = createFetchMock(vi)
+export { fetchMock }
 
 export const resetMocksAndConfigAfterTests = (...configKeys) => {
   restoreConfigAfterEach(['stubMode', ...configKeys])
@@ -411,10 +405,9 @@ export const addressBookRequestUrls = () =>
     .map((request) => request.url)
     .filter((url) => url.includes('/addresses'))
 
-export const useStubbedJourney = (setId, dispatchPages) => {
+const useEmptyStubStore = (setId) => {
   beforeAll(() => {
     configureSession(setId, sessionStub)
-    buildDispatch(setId, dispatchPages)
   })
   beforeEach(async () => {
     configureRecords(setId, recordsStub)
@@ -422,14 +415,19 @@ export const useStubbedJourney = (setId, dispatchPages) => {
   })
 }
 
+export const useStubbedJourney = (setId, dispatchPages) => {
+  useEmptyStubStore(setId)
+  beforeAll(() => {
+    buildDispatch(setId, dispatchPages)
+  })
+}
+
 /** Before each test, puts `setId` on the stub records and session and creates
  * one draft journey. Returns its current id and a request made for it. */
 export const useFreshDraftJourney = (setId) => {
   let journeyId
+  useEmptyStubStore(setId)
   beforeEach(async () => {
-    configureRecords(setId, recordsStub)
-    configureSession(setId, sessionStub)
-    await records.clear()
     journeyId = (await records.create()).journeyId
   })
   return {

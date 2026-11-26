@@ -1,5 +1,6 @@
 import { getTraceId } from '@defra/hapi-tracing'
 
+import { config } from '../../../../config/config.js'
 import { ORGANISATION_ID_HEADER } from '../../../common/helpers/organisation-id.js'
 import { addressBookCountryName } from '../countries/index.js'
 import { HTTP_STATUS_NOT_FOUND } from '../../lib/http-status.js'
@@ -8,11 +9,6 @@ import {
   requestDependency,
   throwOnRefusal
 } from '../http/request-dependency.js'
-
-const addressBookUrl =
-  process.env.TRADE_IMPORTS_ADDRESS_BOOK_URL ?? 'http://localhost:8089'
-
-const tracingHeader = process.env.TRACING_HEADER ?? 'x-cdp-request-id'
 
 const addressBookCall = (operation) => ({
   dependency: 'address-book',
@@ -25,14 +21,14 @@ const addressesUrl = (orgId, addressId) => {
       'Cannot reach the address book without an organisation: the signed-in session carries none'
     )
   }
-  const base = `${addressBookUrl}/organisation/${encodeURIComponent(orgId)}/addresses`
+  const base = `${config.get('tradeImportsAddressBookApi.baseUrl')}/organisation/${encodeURIComponent(orgId)}/addresses`
   return addressId ? `${base}/${encodeURIComponent(addressId)}` : base
 }
 
 const headers = (orgId) => ({
   'Content-Type': 'application/json',
   [ORGANISATION_ID_HEADER]: orgId,
-  [tracingHeader]: getTraceId() ?? ''
+  [config.get('tracing.header')]: getTraceId() ?? ''
 })
 
 const toRecord = async (operator) => ({

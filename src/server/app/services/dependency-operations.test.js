@@ -1,9 +1,10 @@
 import { withOrganisationId } from '../../common/helpers/organisation-id.js'
 import { recordEmfDocuments } from '../../common/test-helpers/emf-documents.js'
 import {
-  fetchMock,
-  resetMocksAndConfigAfterTests
-} from '../engine/test-support.js'
+  okAnswer,
+  refusedAnswer,
+  useDependencyAnswers
+} from '../../common/test-helpers/dependency-answers.js'
 import { DRAFT } from '../engine/persistence/records.js'
 import { getAddress, listAddresses } from './address-book/client.js'
 import { fetchCountries } from './countries/client.js'
@@ -70,19 +71,11 @@ const operationCatalogue = [
   referenceDataCall('get-ports-of-entry', () => fetchPortsOfEntry(), [])
 ]
 
-const answerEveryRequest = (status, body) => {
-  fetchMock.mockResponse(() => ({ status, body: JSON.stringify(body) }))
-}
-
 const asOrganisation = (call) => withOrganisationId(ORGANISATION_ID, call)
 
 describe('each plants-backend, address-book and reference-data call is recorded under its fixed operation name', () => {
-  resetMocksAndConfigAfterTests()
+  const answerWith = useDependencyAnswers()
   const emf = recordEmfDocuments()
-
-  beforeEach(() => {
-    fetchMock.enableMocks()
-  })
 
   const recordedCallsTo = async (dependency) => {
     await emf.publishMarkerAndAwaitEarlierPublishes()
@@ -94,7 +87,7 @@ describe('each plants-backend, address-book and reference-data call is recorded 
   test.each(operationCatalogue)(
     '$dependency $operation is one successful call when it answers 200',
     async ({ dependency, operation, call, body }) => {
-      answerEveryRequest(200, body)
+      answerWith(() => okAnswer(body))
 
       await asOrganisation(call)
 
@@ -107,7 +100,7 @@ describe('each plants-backend, address-book and reference-data call is recorded 
   test.each(operationCatalogue)(
     '$dependency $operation is one failed call when it answers 503',
     async ({ dependency, operation, call }) => {
-      answerEveryRequest(503, {})
+      answerWith(() => refusedAnswer(503, 'Service Unavailable'))
 
       await expect(asOrganisation(call)).rejects.toThrow()
 

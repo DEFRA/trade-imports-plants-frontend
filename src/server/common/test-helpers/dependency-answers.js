@@ -1,9 +1,11 @@
-import { afterEach } from 'vitest'
-
-import { fetchMock } from '../../app/engine/test-support.js'
+import { afterEach, vi } from 'vitest'
+import createFetchMock from 'vitest-fetch-mock'
 
 const HTTP_OK = 200
 const HTTP_BAD_REQUEST = 400
+
+/** The `vitest-fetch-mock` instance unit tests fake the network with. */
+export const fetchMock = createFetchMock(vi)
 
 /**
  * A dependency's 200 answer serving `body` as JSON.

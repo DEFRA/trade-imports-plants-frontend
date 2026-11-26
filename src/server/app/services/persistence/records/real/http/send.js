@@ -1,9 +1,13 @@
 import { headers } from './headers.js'
-import { refusalErrorFor } from './refusal-error.js'
+import { refusalCodeOf } from './refusal-code.js'
+import { statusCodes } from '../../../../../../common/constants/status-codes.js'
 import { backendFetch } from '../../../../../../common/helpers/backend-client/backend-fetch.js'
-import { markRefusalLogged } from '../../errors.js'
+import { markErrorLogged } from '../../../../../../common/helpers/logging/logged-error.js'
+import { BackendRequestError } from '../../errors.js'
 import { journeyReferenceFields } from '../journey-reference-fields.js'
 import { logger } from '../logger.js'
+
+export const BACKEND_REFUSAL_LOG_MESSAGE = 'Backend refused request'
 
 export const requestBackend = (operation, url, { method, body }) =>
   backendFetch(operation, url, {
@@ -12,21 +16,43 @@ export const requestBackend = (operation, url, { method, body }) =>
     body: body === undefined ? undefined : JSON.stringify(body)
   })
 
+const logUnreadRefusalCode = (err, response, journeyId) =>
+  logger.warn(
+    {
+      err,
+      http: { response: { status_code: response.status } },
+      ...journeyReferenceFields(journeyId)
+    },
+    'Backend refusal code could not be read'
+  )
+
 export const refuseUnlessOk = async (
   operation,
   response,
   { journeyId } = {}
 ) => {
   if (!response.ok) {
-    const error = await refusalErrorFor(operation, response, { journeyId })
+    const error = new BackendRequestError(operation, response)
+    if (response.status === statusCodes.conflict) {
+      try {
+        const code = await refusalCodeOf(response)
+        if (code) {
+          error.code = code
+        }
+      } catch (err) {
+        logUnreadRefusalCode(err, response, journeyId)
+      }
+    }
     logger.warn(
       { err: error, ...journeyReferenceFields(journeyId) },
-      'Backend refused request'
+      BACKEND_REFUSAL_LOG_MESSAGE
     )
-    throw markRefusalLogged(error)
+    throw markErrorLogged(error)
   }
   return response
 }
 
-export const send = async (operation, url, init, ids) =>
-  refuseUnlessOk(operation, await requestBackend(operation, url, init), ids)
+export const send = async (operation, url, init, { journeyId } = {}) =>
+  refuseUnlessOk(operation, await requestBackend(operation, url, init), {
+    journeyId
+  })

@@ -12,10 +12,8 @@ import { journeyLayout, journeySectionCaption } from '../flow/journey-flow.js'
 import { copyFor } from './copy.js'
 import { copy as sharedEn } from './copy.en.js'
 import { copy as sharedCy } from './copy.cy.js'
-import {
-  isLoggedRefusal,
-  isRecoverableBackendError
-} from '../services/persistence/records/errors.js'
+import { isRecoverableBackendError } from '../services/persistence/records/errors.js'
+import { errFieldUnlessLogged } from '../../common/helpers/logging/logged-error.js'
 import { pushTrail } from './trail.js'
 
 export {
@@ -319,7 +317,7 @@ export const recoverableSave = async (
           ...ids,
           journeyId: request.params.journeyId,
           route: request.route?.path,
-          ...(isLoggedRefusal(error) ? {} : { err: error })
+          ...errFieldUnlessLogged(error)
         },
         SAVE_FALLBACK_LOG_MESSAGE
       )

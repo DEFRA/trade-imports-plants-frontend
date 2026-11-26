@@ -17,9 +17,8 @@ const targets = [
   { name: 'ports-of-entry', url: `${referenceDataUrl}/ports-of-entry` }
 ]
 
-// Every target is a built endpoint, so a failure is a failure.
-const reportFetchFailure = (target, message) => {
-  console.log(`${target.name}: ${message}`)
+const reportFetchFailure = (target, ...reason) => {
+  console.error(`${target.name}: ${target.url}`, ...reason)
   process.exitCode = 1
 }
 
@@ -35,7 +34,7 @@ const fetchTarget = async (target) => {
     }
     return response
   } catch (error) {
-    reportFetchFailure(target, `FETCH FAILED ${error.message}`)
+    reportFetchFailure(target, 'FETCH FAILED', error)
     return null
   }
 }

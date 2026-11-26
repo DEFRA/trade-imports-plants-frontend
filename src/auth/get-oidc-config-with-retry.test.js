@@ -17,15 +17,17 @@ describe('getOidcConfigWithRetry', () => {
   const failedDiscoveryCall = { ...defraIdDiscoveryCall, failure: 1 }
   const successfulDiscoveryCall = { ...defraIdDiscoveryCall, failure: 0 }
 
-  const { interceptDiscovery, serveDiscovery } = useDefraIdNetwork()
+  const {
+    failEveryDiscoveryAttempt,
+    interceptDiscovery,
+    serveDiscovery,
+    stepThroughDiscoveryRetries
+  } = useDefraIdNetwork()
   const emf = recordEmfDocuments()
   let logger
 
-  const waitForRetries = (count) =>
-    vi.waitFor(() => expect(logger.warn).toHaveBeenCalledTimes(count))
-
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
     logger = { warn: vi.fn() }
   })
 
@@ -46,24 +48,14 @@ describe('getOidcConfigWithRetry', () => {
     )
   })
 
-  test('retries after a timeout, returns the document once the provider answers, and records a failed then a successful defra-id openid-configuration call', async () => {
+  test('retries 1s after a timeout, returns the document once the provider answers, and records a failed then a successful defra-id openid-configuration call', async () => {
     interceptDiscovery().replyWithError(timedOut())
     serveDiscovery()
 
     const result = getOidcConfigWithRetry(logger)
-    let settled = false
-    const tracked = result.then((value) => {
-      settled = true
-      return value
-    })
+    await stepThroughDiscoveryRetries([1000])
 
-    await waitForRetries(1)
-    await vi.advanceTimersByTimeAsync(999)
-    expect(settled).toBe(false)
-
-    await vi.advanceTimersByTimeAsync(1)
-
-    await expect(tracked).resolves.toEqual(defraIdDiscoveryDocument)
+    await expect(result).resolves.toEqual(defraIdDiscoveryDocument)
     expect(logger.warn).toHaveBeenCalledTimes(1)
     await vi.waitFor(() =>
       expect(emf.externalCalls()).toEqual([
@@ -74,24 +66,11 @@ describe('getOidcConfigWithRetry', () => {
   })
 
   test('gives up only after the full 1s, 2s and 4s backoff, throws an error naming the discovery URL, and records four failed defra-id openid-configuration calls', async () => {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      interceptDiscovery().replyWithError(timedOut())
-    }
+    failEveryDiscoveryAttempt(timedOut)
 
-    const result = getOidcConfigWithRetry(logger)
-    let settled = false
-    const tracked = result.catch((error) => {
-      settled = true
-      return error
-    })
-
-    for (const [attempt, delayMs] of [1000, 2000, 4000].entries()) {
-      await waitForRetries(attempt + 1)
-      await vi.advanceTimersByTimeAsync(delayMs - 1)
-      expect(settled).toBe(false)
-      await vi.advanceTimersByTimeAsync(1)
-    }
-    const error = await tracked
+    const result = getOidcConfigWithRetry(logger).catch((error) => error)
+    await stepThroughDiscoveryRetries([1000, 2000, 4000])
+    const error = await result
 
     expect(error.message).toBe(
       `OIDC discovery at ${defraIdDiscoveryUrl} failed after 4 attempts`

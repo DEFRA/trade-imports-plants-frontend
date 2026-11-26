@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { fetchMock } from '../../../../../common/test-helpers/dependency-answers.js'
 import {
   AMEND,
   DELETED,
@@ -12,15 +12,15 @@ import {
 } from '../fulfilment-codec/index.js'
 import { fulfilmentToNotification } from '../mapper.js'
 import { isRecoverableBackendError } from '../errors.js'
-import { enterOrganisationIdForTests } from '../../../../../common/helpers/organisation-id.js'
+import { isErrorLogged } from '../../../../../common/helpers/logging/logged-error.js'
+import { BACKEND_REFUSAL_LOG_MESSAGE } from './http/send.js'
 import {
   ECS_PLATFORM_FIELDS,
   recordEcsLogLines
 } from '../../../../../common/test-helpers/ecs-log-lines.js'
 import { mapStatus, records } from './index.js'
 
-const fetchMocker = createFetchMock(vi)
-fetchMocker.enableMocks()
+fetchMock.enableMocks()
 
 const SCALAR_FIELD_ID = '40a5f607-1829-4c3d-8abc-06d7e8f9a0b2'
 const ITEM_COUNT_ID = '41f60718-192a-4d4e-8bcd-17e8f9a0b1c3'
@@ -63,16 +63,13 @@ const jsonOf = (request) => request.clone().json()
 
 const SERVICE_UNAVAILABLE = 'Service Unavailable'
 
-const REFUSAL_LOG_MESSAGE = 'Backend refused request'
+const ecsLog = recordEcsLogLines()
+
+beforeEach(() => {
+  fetchMock.resetMocks()
+})
 
 describe('real records adapter — canonical fulfilment boundary', () => {
-  const ecsLog = recordEcsLogLines()
-
-  beforeEach(() => {
-    fetchMocker.resetMocks()
-    enterOrganisationIdForTests('5900001')
-  })
-
   it('Should map every backend lifecycle status and reject contract drift', () => {
     expect(mapStatus('DRAFT')).toBe(DRAFT)
     expect(mapStatus('SUBMITTED')).toBe(SUBMITTED)
@@ -84,11 +81,11 @@ describe('real records adapter — canonical fulfilment boundary', () => {
   })
 
   it('Should create a notification via POST /notifications with an empty fulfilments payload', async () => {
-    fetchMocker.mockResponse(JSON.stringify(canonical()), { status: 200 })
+    fetchMock.mockResponse(JSON.stringify(canonical()), { status: 200 })
 
     const created = await records.create()
 
-    const requests = fetchMocker.requests()
+    const requests = fetchMock.requests()
     expect(requests.map(({ method, url }) => ({ method, url }))).toEqual([
       { method: 'POST', url: notificationsUrl }
     ])
@@ -106,18 +103,18 @@ describe('real records adapter — canonical fulfilment boundary', () => {
   })
 
   it('Should include actor in the create request body when provided', async () => {
-    fetchMocker.mockResponse(JSON.stringify(canonical()), { status: 200 })
+    fetchMock.mockResponse(JSON.stringify(canonical()), { status: 200 })
 
     await records.create(actor)
 
-    expect(await jsonOf(fetchMocker.requests()[0])).toEqual({
+    expect(await jsonOf(fetchMock.requests()[0])).toEqual({
       notification: { fulfilments: [] },
       actor
     })
   })
 
   it('Should classify the adapter fetch failure shape, but not programming errors, as recoverable', async () => {
-    fetchMocker.mockResponse('Unavailable', {
+    fetchMock.mockResponse('Unavailable', {
       status: 503,
       statusText: SERVICE_UNAVAILABLE
     })
@@ -149,17 +146,15 @@ describe('real records adapter — canonical fulfilment boundary', () => {
         records: [{ fulfilmentId: 'entry0', value: 5 }]
       }
     ]
-    fetchMocker.mockResponse(
-      JSON.stringify(canonical({ fulfilments: encoded }))
-    )
+    fetchMock.mockResponse(JSON.stringify(canonical({ fulfilments: encoded })))
 
     const loaded = await records.load({ journeyId })
 
-    const [request] = fetchMocker.requests()
+    const [request] = fetchMock.requests()
     expect(request.url).toBe(`${notificationsUrl}/${journeyId}/fulfilments`)
     expect(request.method).toBe('GET')
     expect(loaded.fulfilment).toEqual(decodePersistedFulfilment(encoded))
-    expect(fetchMocker.requests()).toHaveLength(1)
+    expect(fetchMock.requests()).toHaveLength(1)
   })
 
   it.each([
@@ -168,11 +163,11 @@ describe('real records adapter — canonical fulfilment boundary', () => {
   ])(
     'Should return undefined when the fulfilment GET returns %s',
     async (status) => {
-      fetchMocker.mockResponse('Refused', { status })
+      fetchMock.mockResponse('Refused', { status })
 
       const loaded = await records.load({ journeyId })
 
-      const [request] = fetchMocker.requests()
+      const [request] = fetchMock.requests()
       expect(request.url).toBe(`${notificationsUrl}/${journeyId}/fulfilments`)
       expect(request.method).toBe('GET')
       expect(loaded).toBeUndefined()
@@ -180,7 +175,7 @@ describe('real records adapter — canonical fulfilment boundary', () => {
   )
 
   it('Should log the journey as event.reference, and the organisation and status in the message, when the fulfilment GET returns 403', async () => {
-    fetchMocker.mockResponse('Forbidden', { status: 403 })
+    fetchMock.mockResponse('Forbidden', { status: 403 })
 
     const loaded = await records.load({ journeyId })
 
@@ -197,7 +192,7 @@ describe('real records adapter — canonical fulfilment boundary', () => {
   })
 
   it('Should write no line beside the external call when the fulfilment GET returns 404', async () => {
-    fetchMocker.mockResponse('Not Found', { status: 404 })
+    fetchMock.mockResponse('Not Found', { status: 404 })
 
     const loaded = await records.load({ journeyId })
 
@@ -207,15 +202,8 @@ describe('real records adapter — canonical fulfilment boundary', () => {
 })
 
 describe('real records adapter — backend refusals', () => {
-  const ecsLog = recordEcsLogLines()
-
-  beforeEach(() => {
-    fetchMocker.resetMocks()
-    enterOrganisationIdForTests('5900001')
-  })
-
   it('Should log a refused write with its error, and the journey as event.reference, and no other field', async () => {
-    fetchMocker.mockResponse('Unavailable', {
+    fetchMock.mockResponse('Unavailable', {
       status: 503,
       statusText: SERVICE_UNAVAILABLE
     })
@@ -230,7 +218,7 @@ describe('real records adapter — backend refusals', () => {
       {
         ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message: REFUSAL_LOG_MESSAGE,
+        message: BACKEND_REFUSAL_LOG_MESSAGE,
         event: { reference: journeyId },
         error: {
           type: 'BackendRequestError',
@@ -242,19 +230,20 @@ describe('real records adapter — backend refusals', () => {
     ])
   })
 
-  it('Should log a refused create with its error and no event.reference', async () => {
-    fetchMocker.mockResponse(JSON.stringify({ code: 'NOT_ALLOWED' }), {
+  it('Should reject a refused create marked as logged, and log it with its error and no event.reference', async () => {
+    fetchMock.mockResponse(JSON.stringify({ code: 'NOT_ALLOWED' }), {
       status: 409,
       statusText: 'Conflict'
     })
 
-    await expect(records.create()).rejects.toThrow()
+    const surfaced = await records.create().catch((error) => error)
 
+    expect(isErrorLogged(surfaced)).toBe(true)
     expect(ecsLog.linesBesideExternalCalls()).toEqual([
       {
         ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message: REFUSAL_LOG_MESSAGE,
+        message: BACKEND_REFUSAL_LOG_MESSAGE,
         error: {
           type: 'BackendRequestError',
           message:
@@ -266,8 +255,8 @@ describe('real records adapter — backend refusals', () => {
     ])
   })
 
-  it('Should reject a 409 submit whose body is not JSON without a code or cause, and log the unread refusal code then the refusal, each with its error and the journey as event.reference', async () => {
-    fetchMocker.mockResponse('Conflict', {
+  it('Should reject a 409 submit whose body is not JSON marked as logged and without a code or cause, and log the unread refusal code with its status then the refusal, each with its error and the journey as event.reference', async () => {
+    fetchMock.mockResponse('Conflict', {
       status: 409,
       statusText: 'Conflict'
     })
@@ -279,12 +268,13 @@ describe('real records adapter — backend refusals', () => {
     expect(surfaced).toMatchObject({ name: 'BackendRequestError', status: 409 })
     expect(surfaced.code).toBeUndefined()
     expect(surfaced.cause).toBeUndefined()
+    expect(isErrorLogged(surfaced)).toBe(true)
     expect(ecsLog.linesBesideExternalCalls()).toEqual([
       {
         ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message:
-          'Backend refusal code could not be read: plants-backend refused to submit notification: 409 Conflict',
+        message: 'Backend refusal code could not be read',
+        http: { response: { status_code: 409 } },
         event: { reference: journeyId },
         error: {
           type: 'SyntaxError',
@@ -295,7 +285,7 @@ describe('real records adapter — backend refusals', () => {
       {
         ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message: REFUSAL_LOG_MESSAGE,
+        message: BACKEND_REFUSAL_LOG_MESSAGE,
         event: { reference: journeyId },
         error: {
           type: 'BackendRequestError',
@@ -309,15 +299,10 @@ describe('real records adapter — backend refusals', () => {
 })
 
 describe('real records adapter — fulfilment writes', () => {
-  beforeEach(() => {
-    fetchMocker.resetMocks()
-    enterOrganisationIdForTests('5900001')
-  })
-
   it('Should PUT the notification in a single call carrying both notification-shape fields and the fulfilments payload', async () => {
     const snapshot = snapshotOf()
     const encoded = encodeEvaluatorFulfilments(snapshot)
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify(canonical({ fulfilments: encoded })),
       { status: 200 }
     )
@@ -326,7 +311,7 @@ describe('real records adapter — fulfilment writes', () => {
       known: { journeyId, status: DRAFT, concurrencyToken: 3 }
     })
 
-    const requests = fetchMocker.requests()
+    const requests = fetchMock.requests()
     expect(requests.map(({ method, url }) => ({ method, url }))).toEqual([
       { method: 'PUT', url: `${notificationsUrl}/${journeyId}` }
     ])
@@ -342,7 +327,7 @@ describe('real records adapter — fulfilment writes', () => {
   })
 
   it('Should throw when the notification PUT returns a non-ok status', async () => {
-    fetchMocker.mockResponse('Server Error', {
+    fetchMock.mockResponse('Server Error', {
       status: 500,
       statusText: 'Internal Server Error'
     })
@@ -360,7 +345,7 @@ describe('real records adapter — fulfilment writes', () => {
   it('Should include actor on the notification PUT when provided', async () => {
     const snapshot = snapshotOf()
     const encoded = encodeEvaluatorFulfilments(snapshot)
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify(canonical({ fulfilments: encoded })),
       { status: 200 }
     )
@@ -370,7 +355,7 @@ describe('real records adapter — fulfilment writes', () => {
       actor
     })
 
-    expect(await jsonOf(fetchMocker.requests()[0])).toEqual({
+    expect(await jsonOf(fetchMock.requests()[0])).toEqual({
       notification: {
         referenceNumber: journeyId,
         ...fulfilmentToNotification(snapshot, journeyId),
@@ -393,18 +378,13 @@ describe('real records adapter — fulfilment writes', () => {
         }
       )
     ).rejects.toThrow(`is ${label} — writes blocked`)
-    expect(fetchMocker.requests()).toEqual([])
+    expect(fetchMock.requests()).toEqual([])
   })
 })
 
 describe('real records adapter — lifecycle and list', () => {
-  beforeEach(() => {
-    fetchMocker.resetMocks()
-    enterOrganisationIdForTests('5900001')
-  })
-
   it('Should POST every lifecycle transition to the notifications endpoint', async () => {
-    fetchMocker.mockResponses(
+    fetchMock.mockResponses(
       [
         JSON.stringify(
           canonical({
@@ -435,7 +415,7 @@ describe('real records adapter — lifecycle and list', () => {
     const amended = await records.amend(journeyId, actor)
     const restored = await records.cancelAmend(journeyId, actor)
 
-    const requests = fetchMocker.requests()
+    const requests = fetchMock.requests()
     expect(requests.map(({ method, url }) => ({ method, url }))).toEqual([
       { method: 'POST', url: `${notificationsUrl}/${journeyId}/submit` },
       { method: 'POST', url: `${notificationsUrl}/${journeyId}/amend` },
@@ -454,7 +434,7 @@ describe('real records adapter — lifecycle and list', () => {
 
   it('Should copy with the source concurrencyToken as a query parameter (WYSIWYG guarantee)', async () => {
     const copiedJourneyId = 'REFERENCE-0002'
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify(
         canonical({ referenceNumber: copiedJourneyId, status: 'DRAFT' })
       ),
@@ -463,7 +443,7 @@ describe('real records adapter — lifecycle and list', () => {
 
     const copied = await records.copy(journeyId, 7, actor)
 
-    const [request] = fetchMocker.requests()
+    const [request] = fetchMock.requests()
     expect(request.url).toBe(
       `${notificationsUrl}/${journeyId}/copy?concurrencyToken=7`
     )
@@ -477,13 +457,13 @@ describe('real records adapter — lifecycle and list', () => {
   })
 
   it('Should POST soft-delete with the actor as the body', async () => {
-    fetchMocker.mockResponse(JSON.stringify(canonical({ status: 'DELETED' })), {
+    fetchMock.mockResponse(JSON.stringify(canonical({ status: 'DELETED' })), {
       status: 200
     })
 
     const deleted = await records.softDelete(journeyId, actor)
 
-    const requests = fetchMocker.requests()
+    const requests = fetchMock.requests()
     expect(requests.map(({ method, url }) => ({ method, url }))).toEqual([
       { method: 'POST', url: `${notificationsUrl}/${journeyId}/soft-delete` }
     ])
@@ -493,7 +473,7 @@ describe('real records adapter — lifecycle and list', () => {
   })
 
   it('Should throw when the notifications list request returns a non-ok status', async () => {
-    fetchMocker.mockResponse('Server Error', {
+    fetchMock.mockResponse('Server Error', {
       status: 500,
       statusText: 'Internal Server Error'
     })
@@ -507,7 +487,7 @@ describe('real records adapter — lifecycle and list', () => {
   })
 
   it('Should pass an exact reference filter on the notifications list request', async () => {
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify({
         page: 1,
         size: 20,
@@ -523,7 +503,7 @@ describe('real records adapter — lifecycle and list', () => {
       referenceNumber: journeyId
     })
 
-    const [request] = fetchMocker.requests()
+    const [request] = fetchMock.requests()
     expect(request.url).toBe(
       `${notificationsUrl}?page=1&sort=createdAt%2Casc&referenceNumber=${journeyId}`
     )
@@ -531,7 +511,7 @@ describe('real records adapter — lifecycle and list', () => {
   })
 
   it('Should carry the submission timestamp of a submitted list row', async () => {
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify({
         page: 1,
         size: 20,

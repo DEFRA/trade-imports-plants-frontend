@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { resetModulesStubModeAndStubbedGlobals } from '../../../common/test-helpers/reset-modules-stub-mode-and-globals.js'
 import {
@@ -7,8 +7,14 @@ import {
   useDependencyAnswers
 } from '../../../common/test-helpers/dependency-answers.js'
 
+const getTraceIdMock = vi.hoisted(() => vi.fn())
+vi.mock('@defra/hapi-tracing', () => ({
+  getTraceId: getTraceIdMock
+}))
+
 const ORG = '5900001'
 const PHONE = '01632 960000'
+const TRACE_ID = 'trace-123'
 
 const COUNTRIES = [
   { code: 'BE', name: 'Belgium' },
@@ -90,13 +96,14 @@ describe('#addresses against the real address book', () => {
 
   test('Should carry the request trace on to the address book', async () => {
     realMode()
+    getTraceIdMock.mockReturnValue(TRACE_ID)
     const fetched = answerWith(servePagedAddressBook(10))
 
     const { addresses } = await addressBook()
     await addresses(ORG)
 
     const [request] = addressRequests(fetched)
-    expect(request.headers.has('x-cdp-request-id')).toBe(true)
+    expect(request.headers.get('x-cdp-request-id')).toBe(TRACE_ID)
   })
 
   test('Should return every matching record the book holds across more than one API page, not the first page only', async () => {

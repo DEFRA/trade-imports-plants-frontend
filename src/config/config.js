@@ -392,6 +392,14 @@ export const config = convict({
       env: 'TRADE_IMPORTS_PLANTS_BACKEND_URL'
     }
   },
+  tradeImportsAddressBookApi: {
+    baseUrl: {
+      doc: 'Trade Imports Address Book API base URL',
+      format: String,
+      default: 'http://localhost:8089',
+      env: 'TRADE_IMPORTS_ADDRESS_BOOK_URL'
+    }
+  },
   tradeImportsReferenceDataApi: {
     baseUrl: {
       doc: 'Trade Imports Reference Data API base URL',

@@ -5,7 +5,7 @@ import {
   expectNoRefusalLogged,
   postHandlerOf,
   trailQuery,
-  unavailableBackendError
+  loggedBackendRefusal
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
 import { TRAIL_START, withTrail } from '../../../../../../shared/kit.js'
@@ -598,7 +598,7 @@ describe('POST arrival-details — save failures', () => {
   useStubbedHighRiskPlantsJourney()
 
   it('Should re-render a backend request failure at 500 with the banner and the values', async () => {
-    const failure = unavailableBackendError('save answers')
+    const failure = loggedBackendRefusal('save answers')
 
     const result = await driveHandler(post, {
       saveFailure: failure,
