@@ -52,7 +52,7 @@ export const MAX_API_PAGE_SIZE = 100
 /** One page of the organisation's live addresses with its paging numbers. */
 export const listAddresses = async (
   orgId,
-  { page = 1, pageSize, query } = {}
+  { page = 1, pageSize, query, countryCodes = [] } = {}
 ) => {
   const url = new URL(addressesUrl(orgId))
   url.searchParams.set('page', String(page))
@@ -61,6 +61,9 @@ export const listAddresses = async (
   }
   if (query) {
     url.searchParams.set('q', query)
+  }
+  for (const countryCode of countryCodes) {
+    url.searchParams.append('countryCode', countryCode)
   }
 
   const response = await fetch(url.toString(), {

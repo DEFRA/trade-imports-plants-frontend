@@ -1,19 +1,16 @@
 import { isStubMode } from '../../../common/services/mode.js'
+import { addressBookCountryCodesMatching } from '../countries/index.js'
 import * as client from './client.js'
 import { STUB_BOOK } from './stub/index.js'
 
-/** This service reads and never writes. The notification journey selects from
- * the organisation's book; adding, changing and removing the records in it
- * belongs to the INS frontend, which is the only writer. */
-
-const haystack = (record) =>
+const searchableTextOf = (record) =>
   [record.name, ...Object.values(record.address ?? {})]
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
 
 const matchesSearch = (record, query) =>
-  haystack(record).includes(query.trim().toLowerCase())
+  searchableTextOf(record).includes(query.trim().toLowerCase())
 
 export const offeredForRole = (record, role) =>
   !role || record.roles.length === 0 || record.roles.includes(role)
@@ -23,11 +20,13 @@ const pageNumbersFrom = (first, last) =>
 
 const recordsFromEveryLivePage = async (orgId, query) => {
   const PAGES_READ_AT_ONCE = 4
+  const countryCodes = await addressBookCountryCodesMatching(query)
   const readPage = (page) =>
     client.listAddresses(orgId, {
       page,
       pageSize: client.MAX_API_PAGE_SIZE,
-      query
+      query,
+      countryCodes
     })
   const first = await readPage(1)
   const records = [...first.records]
@@ -48,9 +47,10 @@ const recordsFromEveryLivePage = async (orgId, query) => {
   return records
 }
 
-/** The organisation's live addresses matching an optional search term,
- * narrowed to an optional role: a record holding that role, or holding no
- * role at all, matches; with no role given, every matching record does. */
+/** The organisation's live addresses matching an optional search term (part of
+ * a name, part of an address or part of a country's name), narrowed to an
+ * optional role: a record holding that role, or holding no role at all,
+ * matches; with no role given, every matching record does. */
 export const addresses = async (orgId, { query = '', role } = {}) => {
   const matching = isStubMode()
     ? STUB_BOOK.filter((record) => matchesSearch(record, query))
@@ -59,9 +59,7 @@ export const addresses = async (orgId, { query = '', role } = {}) => {
 }
 
 /** One address by id. Resolves to undefined when the record does not exist for
- * this organisation; a soft-deleted record comes back with `deleted: true` so
- * callers can treat a deletion as "never entered" without mistaking an outage
- * for one. */
+ * this organisation; a soft-deleted record comes back with `deleted: true`. */
 export const party = async (orgId, id) => {
   if (isStubMode()) {
     return STUB_BOOK.find((record) => record.id === id)
