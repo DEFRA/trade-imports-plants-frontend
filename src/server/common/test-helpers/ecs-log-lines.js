@@ -25,14 +25,13 @@ export const ECS_PLATFORM_FIELDS = {
  * @returns {{
  *   lines: () => object[],
  *   linesWithMessage: (message: string) => object[],
- *   linesAtLevel: (level: string) => object[],
  *   levelledMessages: () => Array<{ level: string, message: string }>,
  *   linesBesideExternalCalls: () => object[],
  *   externalCallLines: () => object[],
  *   externalCallLine: (action: string) => object | undefined,
  *   onlyExternalCallLine: () => object
  * }} readers of the parsed lines, each in the order written: every line; those
- *   with the given message; those at the given `log.level`; every line as its
+ *   with the given message; every line as its
  *   `{ level, message }`; every line but the external-call ones; only the
  *   external-call ones; the first external-call line with the given
  *   `event.action`, such as `defra-id/jwks`; and `onlyExternalCallLine`, which
@@ -64,9 +63,6 @@ export const recordEcsLogLines = () => {
   const linesWithMessage = (message) =>
     lines.filter((line) => line.message === message)
 
-  const linesAtLevel = (level) =>
-    lines.filter((line) => line['log.level'] === level)
-
   const levelledMessages = () =>
     lines.map((line) => ({ level: line['log.level'], message: line.message }))
 
@@ -87,7 +83,6 @@ export const recordEcsLogLines = () => {
   return {
     lines: () => [...lines],
     linesWithMessage,
-    linesAtLevel,
     levelledMessages,
     linesBesideExternalCalls,
     externalCallLines,

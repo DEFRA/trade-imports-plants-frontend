@@ -21,16 +21,18 @@ vi.mock('../../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
 }))
 
-// Wrap createServer so server.start() calls initialize() instead of binding
-// to a port — inject() works after initialize(), no available port needed.
+async function createServerThatInitialisesOnStart(createRealServer) {
+  const server = await createRealServer()
+  server.start = () => server.initialize()
+  return server
+}
+
 vi.mock('../../server.js', async (importOriginal) => {
   const actual = await importOriginal()
   return {
-    createServer: vi.fn(async () => {
-      const server = await actual.createServer()
-      server.start = () => server.initialize()
-      return server
-    })
+    createServer: vi.fn(() =>
+      createServerThatInitialisesOnStart(actual.createServer)
+    )
   }
 })
 
@@ -49,7 +51,7 @@ describe('#startServer', () => {
       await server?.stop({ timeout: 0 })
     })
 
-    test('Should start up server as expected', async () => {
+    test('answers the health check with 200 and success once started', async () => {
       const { result, statusCode } = await server.inject({
         method: 'GET',
         url: '/health'

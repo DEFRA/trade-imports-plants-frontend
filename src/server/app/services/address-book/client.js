@@ -4,15 +4,20 @@ import { ORGANISATION_ID_HEADER } from '../../../common/helpers/organisation-id.
 import { addressBookCountryName } from '../countries/index.js'
 import { HTTP_STATUS_NOT_FOUND } from '../../lib/http-status.js'
 import {
-  addressBookFetch,
-  sendToAddressBook,
-  throwOnAddressBookError
-} from '../address-book-request.js'
+  fetchFromDependency,
+  requestDependency,
+  throwOnRefusal
+} from '../http/request-dependency.js'
 
 const addressBookUrl =
   process.env.TRADE_IMPORTS_ADDRESS_BOOK_URL ?? 'http://localhost:8089'
 
 const tracingHeader = process.env.TRACING_HEADER ?? 'x-cdp-request-id'
+
+const addressBookCall = (operation) => ({
+  dependency: 'address-book',
+  operation
+})
 
 const addressesUrl = (orgId, addressId) => {
   if (!orgId) {
@@ -68,10 +73,11 @@ export const listAddresses = async (
     url.searchParams.append('countryCode', countryCode)
   }
 
-  const response = await sendToAddressBook('list-addresses', url.toString(), {
-    method: 'GET',
-    headers: headers(orgId)
-  })
+  const response = await requestDependency(
+    addressBookCall('list-addresses'),
+    url.toString(),
+    { method: 'GET', headers: headers(orgId) }
+  )
 
   const body = await response.json()
   return {
@@ -85,20 +91,17 @@ export const listAddresses = async (
 
 /** The address with the given id, a deleted one included and marked deleted, or nothing when the address book has none. */
 export const getAddress = async (orgId, addressId) => {
-  const operation = 'get-address'
-  const response = await addressBookFetch(
-    operation,
+  const call = addressBookCall('get-address')
+  const response = await fetchFromDependency(
+    call,
     addressesUrl(orgId, addressId),
-    {
-      method: 'GET',
-      headers: headers(orgId)
-    }
+    { method: 'GET', headers: headers(orgId) }
   )
 
   if (response.status === HTTP_STATUS_NOT_FOUND) {
     return undefined
   }
-  throwOnAddressBookError(operation, response)
+  throwOnRefusal(call, response)
 
   return toRecord(await response.json())
 }

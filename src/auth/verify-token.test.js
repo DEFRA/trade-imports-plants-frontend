@@ -6,6 +6,7 @@ import { config } from '../config/config.js'
 import {
   defraIdDiscoveryCall,
   defraIdDiscoveryDocument,
+  defraIdJwksCall,
   useDefraIdNetwork
 } from '../server/common/test-helpers/defra-id-network.js'
 import { recordEcsLogLines } from '../server/common/test-helpers/ecs-log-lines.js'
@@ -35,7 +36,6 @@ const signedWith = (privateKey) =>
 describe('verifyToken', () => {
   const traceId = 'test-trace-id'
   const discoveryCall = { ...defraIdDiscoveryCall, failure: 0 }
-  const jwksCall = { dependency: 'defra-id', operation: 'jwks' }
   const defraIdKeys = rsaKeyPair()
   const publishedKeys = {
     keys: [defraIdKeys.publicKey.export({ format: 'jwk' })]
@@ -67,7 +67,7 @@ describe('verifyToken', () => {
     await vi.waitFor(() =>
       expect(emf.externalCalls()).toEqual([
         discoveryCall,
-        { ...jwksCall, failure: 0 }
+        { ...defraIdJwksCall, failure: 0 }
       ])
     )
     expect(jwksLine()['log.level']).toBe('info')
@@ -115,7 +115,7 @@ describe('verifyToken', () => {
     await vi.waitFor(() =>
       expect(emf.externalCalls()).toEqual([
         discoveryCall,
-        { ...jwksCall, failure: 1 }
+        { ...defraIdJwksCall, failure: 1 }
       ])
     )
     expect(jwksLine()['log.level']).toBe('warn')

@@ -17,12 +17,14 @@ export const list = async ({
   sort = 'arrivalDate,desc',
   referenceNumber
 } = {}) => {
-  const referenceQuery = referenceNumber
-    ? `&referenceNumber=${encodeURIComponent(referenceNumber)}`
-    : ''
+  const query = new URLSearchParams({
+    page,
+    sort,
+    ...(referenceNumber ? { referenceNumber } : {})
+  })
   const response = await send(
     'list-notifications',
-    `${notificationsUrl}?page=${page}&sort=${sort}${referenceQuery}`,
+    `${notificationsUrl}?${query}`,
     { method: 'GET' },
     { journeyId: referenceNumber }
   )

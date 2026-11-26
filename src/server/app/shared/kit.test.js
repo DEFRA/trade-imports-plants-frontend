@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import createFetchMock from 'vitest-fetch-mock'
 
 import {
   CAPTIONS,
@@ -11,6 +12,7 @@ import {
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   journeyRequest,
+  staleConcurrencyRefusal,
   stubH,
   unavailableBackendError
 } from '../engine/test-support.js'
@@ -21,8 +23,14 @@ import {
   logRefusal,
   pageRoutes,
   REFUSAL_LOG_MESSAGE,
-  recoverableSave
+  recoverableSave,
+  SAVE_FALLBACK_LOG_MESSAGE
 } from './kit.js'
+import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { records } from '../services/persistence/records/real/index.js'
+import { createLogger } from '../../common/helpers/logging/logger.js'
+import { enterOrganisationIdForTests } from '../../common/helpers/organisation-id.js'
+import { recordEcsLogLines } from '../../common/test-helpers/ecs-log-lines.js'
 
 describe('#base — the section caption the installed journey names', () => {
   it('Should carry the caption of a page the journey captions', () => {
@@ -125,9 +133,7 @@ describe('#base — journey strip', () => {
 
 describe('#pageRoutes — a save refused as stale', () => {
   const staleSave = () => {
-    const error = new Error('stale')
-    error.code = 'STALE_CONCURRENCY_TOKEN'
-    throw error
+    throw staleConcurrencyRefusal('replace-notification')
   }
   const postRoute = pageRoutes(
     { slug: 'origin' },
@@ -163,6 +169,18 @@ describe('#pageRoutes — a save refused as stale', () => {
 describe('#recoverableSave', () => {
   const fallbackResponse = { fallback: true }
   const fallback = () => fallbackResponse
+  const ecsLog = recordEcsLogLines()
+  const fetchMocker = createFetchMock(vi)
+
+  beforeEach(() => {
+    fetchMocker.enableMocks()
+    fetchMocker.resetMocks()
+  })
+
+  afterEach(() => {
+    fetchMocker.disableMocks()
+    enterOrganisationIdForTests(undefined)
+  })
 
   it('Should return the value of a save that succeeds and log nothing', async () => {
     const request = journeyRequest('journey-1')
@@ -177,7 +195,7 @@ describe('#recoverableSave', () => {
     expect(request.logger.entries).toEqual([])
   })
 
-  it('Should log one warning with the journey id and the error, then answer with the fallback, when the backend is unavailable', async () => {
+  it('Should log one warning with the journey id and no error, then answer with the fallback, when the backend refusal was logged where it was raised', async () => {
     const request = journeyRequest('journey-1')
     const failure = unavailableBackendError('save answers')
 
@@ -191,8 +209,30 @@ describe('#recoverableSave', () => {
 
     expect(outcome).toEqual({ failure: fallbackResponse })
     expectOneSaveFallbackLogged(request.logger, {
-      journeyId: 'journey-1',
-      err: failure
+      journeyId: 'journey-1'
+    })
+  })
+
+  it('Should log one warning with the journey id and the error, then answer with the fallback, when the recoverable refusal was not logged where it was raised', async () => {
+    const request = journeyRequest('journey-1')
+    const failure = new BackendRequestError(
+      { dependency: 'address-book', operation: 'list-addresses' },
+      { status: 503, statusText: 'Service Unavailable' }
+    )
+
+    const outcome = await recoverableSave(
+      request,
+      async () => {
+        throw failure
+      },
+      fallback
+    )
+
+    expect(outcome).toEqual({ failure: fallbackResponse })
+    expectOneLogged(request.logger, {
+      level: 'warn',
+      message: SAVE_FALLBACK_LOG_MESSAGE,
+      fields: { journeyId: 'journey-1', err: failure }
     })
   })
 
@@ -212,16 +252,61 @@ describe('#recoverableSave', () => {
     expectOneSaveFallbackLogged(request.logger, {
       journeyId: 'journey-1',
       action: 'remove-line',
-      index: 2,
-      err: failure
+      index: 2
     })
+  })
+
+  it('Should write the backend refusal at warn with its error and the journey as event.reference, and the fallback at warn with no error, when the backend refuses a save', async () => {
+    fetchMocker.mockResponse('Unavailable', { status: 503 })
+    enterOrganisationIdForTests('5900001')
+    const request = {
+      params: { journeyId: 'journey-1' },
+      route: { path: '/notifications/{journeyId}/origin' },
+      logger: createLogger()
+    }
+
+    const outcome = await recoverableSave(
+      request,
+      () =>
+        records.replaceFulfilment(
+          'journey-1',
+          {},
+          {
+            known: {
+              journeyId: 'journey-1',
+              status: DRAFT,
+              concurrencyToken: 0
+            }
+          }
+        ),
+      fallback
+    )
+
+    expect(outcome).toEqual({ failure: fallbackResponse })
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([
+      expect.objectContaining({
+        'log.level': 'warn',
+        message: 'Backend refused request',
+        event: { reference: 'journey-1' },
+        error: expect.objectContaining({
+          type: 'BackendRequestError',
+          stack_trace: expect.stringMatching(/^BackendRequestError: /)
+        })
+      }),
+      expect.objectContaining({
+        'log.level': 'warn',
+        message: SAVE_FALLBACK_LOG_MESSAGE,
+        journeyId: 'journey-1'
+      })
+    ])
+    expect(
+      ecsLog.linesWithMessage(SAVE_FALLBACK_LOG_MESSAGE)[0]
+    ).not.toHaveProperty('error')
   })
 
   it('Should rethrow a stale concurrency token without logging it', async () => {
     const request = journeyRequest('journey-1')
-    const stale = Object.assign(new Error('stale'), {
-      code: 'STALE_CONCURRENCY_TOKEN'
-    })
+    const stale = staleConcurrencyRefusal('replace-notification')
 
     await expect(
       recoverableSave(

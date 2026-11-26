@@ -20,10 +20,7 @@ const RECORD_ARRIVAL_DATE = '2026-07-20'
 const CONSIGNOR_NAME = 'Consignor Ltd'
 const CONSIGNEE_NAME = 'Consignee Ltd'
 
-// The backend stamps submittedAt on first submission and leaves it in place
-// through an amendment, so an AMEND row arrives carrying one. Only the list
-// marshal's status gate keeps it off an amending card.
-const submittedAtFor = (status) =>
+const submissionTimeUnlessDraft = (status) =>
   status === 'DRAFT' ? null : RECORD_SUBMITTED_AT
 
 const notification = (referenceNumber, status) => ({
@@ -31,7 +28,7 @@ const notification = (referenceNumber, status) => ({
   status,
   concurrencyToken: 0,
   created: RECORD_CREATED_AT,
-  submittedAt: submittedAtFor(status),
+  submittedAt: submissionTimeUnlessDraft(status),
   updated: RECORD_CREATED_AT,
   commodity: { name: 'item-one' },
   origin: { countryCode: 'FR' },
@@ -44,7 +41,7 @@ const mockNotification = (referenceNumber, status) => ({
   referenceNumber,
   status,
   created: RECORD_CREATED_AT,
-  submittedAt: submittedAtFor(status),
+  submittedAt: submissionTimeUnlessDraft(status),
   fulfilments: []
 })
 
@@ -114,7 +111,7 @@ describe('real records adapter — paged list', () => {
     })
 
     const [request] = fetchMocker.requests()
-    expect(request.url).toBe(`${notificationsUrl}?page=2&sort=createdAt,asc`)
+    expect(request.url).toBe(`${notificationsUrl}?page=2&sort=createdAt%2Casc`)
     expect(request.method).toBe('GET')
     expect(listed).toEqual({
       page: 1,
@@ -181,9 +178,7 @@ describe('real records adapter — paged list', () => {
   })
 })
 
-// The unit suite runs in stub mode; the address book only answers in real mode,
-// so this turns the switch off to prove the list never asks it.
-describe('real records adapter — party names', () => {
+describe('real records adapter — party names with stub mode off', () => {
   const originalMode = config.get('stubMode')
 
   beforeEach(() => {

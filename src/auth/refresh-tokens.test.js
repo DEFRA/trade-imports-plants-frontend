@@ -1,8 +1,9 @@
 import { vi } from 'vitest'
-import { refreshTokens } from './refresh-tokens.js'
+import { refreshTokens, TOKEN_ENDPOINT_TIMEOUT_MS } from './refresh-tokens.js'
 import { config } from '../config/config.js'
 import {
   defraIdDiscoveryCall,
+  defraIdTokenRefreshCall,
   useDefraIdNetwork
 } from '../server/common/test-helpers/defra-id-network.js'
 import { recordEcsLogLines } from '../server/common/test-helpers/ecs-log-lines.js'
@@ -36,15 +37,14 @@ describe('refreshTokens', () => {
     redirect_uri: DEFRA_ID_CONFIG['defraId.redirectUrl']
   }
   const discoveryCall = { ...defraIdDiscoveryCall, failure: 0 }
-  const tokenRefresh = { dependency: 'defra-id', operation: 'token-refresh' }
 
-  const { defraId, serveDiscovery } = useDefraIdNetwork()
+  const { interceptToken, serveDiscovery } = useDefraIdNetwork()
   restoreConfigAfterEach(Object.keys(DEFRA_ID_CONFIG))
   const emf = recordEmfDocuments()
   const ecsLog = recordEcsLogLines()
   let tracingHeader
 
-  const interceptRefresh = () => defraId().post('/idp/token', refreshForm)
+  const interceptRefresh = () => interceptToken(refreshForm)
 
   const refreshLine = () => ecsLog.externalCallLine('defra-id/token-refresh')
 
@@ -70,7 +70,7 @@ describe('refreshTokens', () => {
     await vi.waitFor(() =>
       expect(emf.externalCalls()).toEqual([
         discoveryCall,
-        { ...tokenRefresh, failure: 0 }
+        { ...defraIdTokenRefreshCall, failure: 0 }
       ])
     )
     expect(refreshLine()['log.level']).toBe('info')
@@ -88,8 +88,10 @@ describe('refreshTokens', () => {
     await expect(refreshTokens(refreshToken)).resolves.toEqual(refreshedTokens)
   })
 
-  test('gives up on a refresh Defra ID has not answered within three seconds', async () => {
-    interceptRefresh().delay(3100).reply(200, refreshedTokens)
+  test('gives up on a refresh Defra ID has not answered within the token endpoint timeout', async () => {
+    interceptRefresh()
+      .delay(TOKEN_ENDPOINT_TIMEOUT_MS + 100)
+      .reply(200, refreshedTokens)
 
     await expect(refreshTokens(refreshToken)).rejects.toThrow(
       'Client request timeout'
@@ -104,7 +106,7 @@ describe('refreshTokens', () => {
     await vi.waitFor(() =>
       expect(emf.externalCalls()).toEqual([
         discoveryCall,
-        { ...tokenRefresh, failure: 0 }
+        { ...defraIdTokenRefreshCall, failure: 0 }
       ])
     )
     expect(refreshLine()['log.level']).toBe('info')
@@ -121,7 +123,7 @@ describe('refreshTokens', () => {
     await vi.waitFor(() =>
       expect(emf.externalCalls()).toEqual([
         discoveryCall,
-        { ...tokenRefresh, failure: 1 }
+        { ...defraIdTokenRefreshCall, failure: 1 }
       ])
     )
     expect(refreshLine()['log.level']).toBe('warn')

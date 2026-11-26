@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { unrecognisedAnswerKeys } from '../bridge/obligation-source.js'
+import { unrecognisedAnswerKeys } from './obligation-source.js'
 import {
   BOUNDED_TYPE_ONE,
   FLOW_ONLY_KEY,
   SELECTOR_BRAVO,
   VALUE_ONE
 } from '../../../../test/fixtures/index.js'
-
-// The recognition surface: manifest obligation names in their declared
-// positions, flow-only keys and system keys. Anything else is inert to the
-// evaluator yet ships raw at submit — these tests pin that such keys are
-// reported, with their path.
 
 describe('#unrecognisedAnswerKeys', () => {
   it('Should report a typo of an obligation name at top level', () => {
@@ -62,8 +57,6 @@ describe('#unrecognisedAnswerKeys', () => {
   })
 
   it('Should treat values below a leaf key as opaque', () => {
-    // compositeBlockTwo is a leaf obligation whose value is a composite; its
-    // sub-shape belongs to the feature, not the recognition surface.
     expect(
       unrecognisedAnswerKeys({ compositeBlockTwo: { anything: { at: 'all' } } })
     ).toEqual([])

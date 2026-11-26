@@ -59,6 +59,12 @@ the purge of answers that no longer apply to the evaluator.
 answer keys and `scope.readyForCheckYourAnswers` before calling `records.submit`.
 Submit changes lifecycle state; it does not perform a separate fulfilment save.
 
+A recognised answer key is a manifest obligation name in its declared position,
+a flow-only key or a system key, as `unrecognisedAnswerKeys` in
+[`bridge/obligation-source.js`](../bridge/obligation-source.js) reports. Any
+other key is inert to the evaluator: never in scope and never purged, yet it
+would ship raw at submit. So the write paths and submit reject it.
+
 ## Abstract ports
 
 The engine owns the interfaces in

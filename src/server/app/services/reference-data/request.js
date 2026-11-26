@@ -1,8 +1,5 @@
-import { measureExternalResponse } from '../../../common/helpers/metrics/external-call-metrics.js'
-import { RefusedCallError } from '../http/dependency-error.js'
-
-const baseUrl =
-  process.env.TRADE_IMPORTS_REFERENCE_DATA_URL ?? 'http://localhost:8086'
+import { config } from '../../../../config/config.js'
+import { requestDependency } from '../http/request-dependency.js'
 
 /**
  * The absolute URL of a reference-data resource.
@@ -10,7 +7,8 @@ const baseUrl =
  * @param {string} path the resource's path, such as `/countries`
  * @returns {URL} the resource's URL
  */
-export const referenceDataUrl = (path) => new URL(`${baseUrl}${path}`)
+export const referenceDataUrl = (path) =>
+  new URL(`${config.get('tradeImportsReferenceDataApi.baseUrl')}${path}`)
 
 /**
  * Makes one call to reference data, recorded as one external call under the
@@ -20,22 +18,16 @@ export const referenceDataUrl = (path) => new URL(`${baseUrl}${path}`)
  * @param {URL} url the request URL
  * @param {RequestInit} [init] the fetch options; a JSON content type is added
  * @returns {Promise<unknown>} the response body
- * @throws {RefusedCallError} carrying the URL, when the response is not ok
+ * @throws {import('../http/dependency-error.js').RefusedCallError} when the response is not ok
  */
 export const requestReferenceData = async (operation, url, init) => {
-  const referenceDataCall = { dependency: 'reference-data', operation }
-  const response = await measureExternalResponse(referenceDataCall, () =>
-    fetch(url.toString(), {
+  const response = await requestDependency(
+    { dependency: 'reference-data', operation },
+    url.toString(),
+    {
       ...init,
       headers: { 'Content-Type': 'application/json', ...init?.headers }
-    })
+    }
   )
-
-  if (!response.ok) {
-    throw Object.assign(new RefusedCallError(referenceDataCall, response), {
-      url: url.toString()
-    })
-  }
-
   return response.json()
 }

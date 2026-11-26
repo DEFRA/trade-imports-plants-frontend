@@ -1,4 +1,3 @@
-import { config } from '../../../config/config.js'
 import { withOrganisationId } from '../../common/helpers/organisation-id.js'
 import { recordEmfDocuments } from '../../common/test-helpers/emf-documents.js'
 import {
@@ -82,7 +81,6 @@ describe('each plants-backend, address-book and reference-data call is recorded 
   const emf = recordEmfDocuments()
 
   beforeEach(() => {
-    config.set('stubMode', true)
     fetchMock.enableMocks()
   })
 

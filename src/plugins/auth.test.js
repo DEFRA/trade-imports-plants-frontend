@@ -14,15 +14,12 @@ import {
 import { callCountsRoutes } from '../server/common/helpers/call-counts/call-counts-routes.js'
 import { clearCallCountTotals } from '../server/common/helpers/call-counts/call-count-totals.js'
 import { createLogger } from '../server/common/helpers/logging/logger.js'
+import {
+  defraIdDiscoveryDocument,
+  useDefraIdNetwork
+} from '../server/common/test-helpers/defra-id-network.js'
 import { recordEmfDocuments } from '../server/common/test-helpers/emf-documents.js'
 import { restoreConfigAfterEach } from '../server/common/test-helpers/restore-config-after-each.js'
-
-const wreckGetMock = vi.hoisted(() => vi.fn())
-const wreckPostMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@hapi/wreck', () => ({
-  default: { get: wreckGetMock, post: wreckPostMock }
-}))
 
 const AUTH_COOKIE_NAME = 'test-auth-cookie'
 const SIGN_IN_REDIRECT_URL = 'http://localhost:3000/auth/sign-in-oidc'
@@ -38,9 +35,7 @@ const configValues = {
   'defraId.redirectUrl': SIGN_IN_REDIRECT_URL,
   'defraId.serviceId': 'service-123',
   'defraId.policy': 'policy-abc',
-  'defraId.refreshTokens': true,
-  'defraId.oidcDiscoveryUrl':
-    'https://idp.example.com/.well-known/openid-configuration'
+  'defraId.refreshTokens': true
 }
 
 const sessionIdInCache = 'session-1'
@@ -76,23 +71,17 @@ const unexpiredToken = tokenExpiringIn(SECONDS_PER_HOUR)
 const expiredToken = tokenExpiringIn(-SECONDS_PER_HOUR)
 
 describe('auth plugin', () => {
-  const oidcConfig = {
-    authorization_endpoint: 'https://idp.example.com/auth',
-    token_endpoint: 'https://idp.example.com/token'
-  }
-
+  const { interceptDiscovery, serveDiscovery, interceptToken } =
+    useDefraIdNetwork()
   restoreConfigAfterEach(Object.keys(configValues))
 
   beforeEach(() => {
-    vi.resetAllMocks()
-
     for (const [key, value] of Object.entries(configValues)) {
       config.set(key, value)
     }
-    wreckGetMock.mockResolvedValue({ payload: oidcConfig })
   })
 
-  recordEmfDocuments()
+  const emf = recordEmfDocuments()
 
   afterEach(() => {
     vi.useRealTimers()
@@ -107,6 +96,7 @@ describe('auth plugin', () => {
     }
 
     test('registers Bell with the discovered authorization endpoint and the configured client', async () => {
+      serveDiscovery()
       const server = await buildServer()
       await server.register(authPlugin)
       server.route({
@@ -121,7 +111,7 @@ describe('auth plugin', () => {
       const location = new URL(response.headers.location)
       expect(response.statusCode).toBe(302)
       expect(`${location.origin}${location.pathname}`).toBe(
-        oidcConfig.authorization_endpoint
+        defraIdDiscoveryDocument.authorization_endpoint
       )
       expect(Object.fromEntries(location.searchParams)).toMatchObject({
         client_id: 'test-client-id',
@@ -133,6 +123,7 @@ describe('auth plugin', () => {
     })
 
     test('sets default auth to the session cookie strategy', async () => {
+      serveDiscovery()
       const server = await buildServer()
       await server.register(authPlugin)
       server.route({ method: 'GET', path: '/private', handler: () => 'ok' })
@@ -147,13 +138,14 @@ describe('auth plugin', () => {
 
     test('skips Bell and the OIDC fetch in stub mode, still enforcing session auth', async () => {
       config.set('stubMode', true)
+      const discovery = serveDiscovery()
       const server = await buildServer()
       await server.register(authPlugin)
       server.route({ method: 'GET', path: '/private', handler: () => 'ok' })
 
       const response = await server.inject('/private')
 
-      expect(wreckGetMock).not.toHaveBeenCalled()
+      expect(discovery.isDone()).toBe(false)
       expect(response.statusCode).toBe(302)
       expect(response.headers.location).toBe(
         '/auth/sign-in?redirect=%2Fprivate'
@@ -169,14 +161,21 @@ describe('auth plugin', () => {
     })
 
     test('registers no Bell strategy when OIDC discovery fails', async () => {
-      vi.useFakeTimers()
-      wreckGetMock.mockRejectedValue(new Error('connection refused'))
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      for (let attempt = 0; attempt < 4; attempt++) {
+        interceptDiscovery().replyWithError(new Error('connection refused'))
+      }
       const server = await buildServer()
 
       const registration = expect(server.register(authPlugin)).rejects.toThrow(
         'OIDC discovery at'
       )
-      await vi.advanceTimersByTimeAsync(7000)
+      for (const [attempt, delayMs] of [1000, 2000, 4000].entries()) {
+        await vi.waitFor(() =>
+          expect(emf.externalCalls()).toHaveLength(attempt + 1)
+        )
+        await vi.advanceTimersByTimeAsync(delayMs)
+      }
       await registration
 
       expect(() =>
@@ -194,9 +193,11 @@ describe('auth plugin', () => {
     test('provider.token returns the token endpoint and marks when the exchange started', () => {
       const request = { app: {} }
 
-      const token = getBellOptions(oidcConfig).provider.token(request)
+      const token = getBellOptions(defraIdDiscoveryDocument).provider.token(
+        request
+      )
 
-      expect(token).toBe(oidcConfig.token_endpoint)
+      expect(token).toBe(defraIdDiscoveryDocument.token_endpoint)
       expect(request.app[TOKEN_EXCHANGE_STARTED_AT_KEY]).toEqual(
         expect.any(Number)
       )
@@ -205,7 +206,7 @@ describe('auth plugin', () => {
     test('sets the configured SameSite on the Bell state cookie', () => {
       config.set('defraId.stateCookieSameSite', 'Strict')
 
-      expect(getBellOptions(oidcConfig).isSameSite).toBe('Strict')
+      expect(getBellOptions(defraIdDiscoveryDocument).isSameSite).toBe('Strict')
     })
 
     test('location stores the safe redirect and returns redirectUrl', () => {
@@ -215,7 +216,9 @@ describe('auth plugin', () => {
         yar: { set: (key, value) => (stored[key] = value) }
       }
 
-      const location = getBellOptions(oidcConfig).location(request)
+      const location = getBellOptions(defraIdDiscoveryDocument).location(
+        request
+      )
 
       expect(stored).toEqual({ redirect: '/some/path?x=1' })
       expect(location).toBe(SIGN_IN_REDIRECT_URL)
@@ -228,7 +231,7 @@ describe('auth plugin', () => {
         yar: { set: (key, value) => (stored[key] = value) }
       }
 
-      getBellOptions(oidcConfig).location(request)
+      getBellOptions(defraIdDiscoveryDocument).location(request)
 
       expect(stored).toEqual({ redirect: '/' })
     })
@@ -240,14 +243,16 @@ describe('auth plugin', () => {
         yar: { set: (key, value) => (stored[key] = value) }
       }
 
-      const location = getBellOptions(oidcConfig).location(request)
+      const location = getBellOptions(defraIdDiscoveryDocument).location(
+        request
+      )
 
       expect(stored).toEqual({})
       expect(location).toBe(SIGN_IN_REDIRECT_URL)
     })
 
     test('providerParams adds forceReselection for /auth/organisation', () => {
-      const options = getBellOptions(oidcConfig)
+      const options = getBellOptions(defraIdDiscoveryDocument)
 
       const base = options.providerParams({
         path: '/some/other-path',
@@ -295,7 +300,7 @@ describe('auth plugin', () => {
       }
       const credentials = { token: tokenExpiringIn(SECONDS_PER_HOUR, payload) }
 
-      getBellOptions(oidcConfig).provider.profile(credentials)
+      getBellOptions(defraIdDiscoveryDocument).provider.profile(credentials)
 
       expect(credentials.profile).toMatchObject({
         ...payload,
@@ -418,13 +423,14 @@ describe('auth plugin', () => {
         refreshToken: 'refresh-token'
       }
       const { request, sessions } = buildRequestWithCachedSession(userSession)
+      const refresh = interceptToken().reply(200, {})
 
       const res = await getCookieOptions().validate(request, {
         sessionId: sessionIdInCache
       })
 
       expect(res).toEqual({ isValid: true, credentials: userSession })
-      expect(wreckPostMock).not.toHaveBeenCalled()
+      expect(refresh.isDone()).toBe(false)
       expect(sessions.get(sessionIdInCache)).toEqual({
         token: unexpiredToken,
         refreshToken: 'refresh-token'
@@ -436,11 +442,12 @@ describe('auth plugin', () => {
         token: expiredToken,
         refreshToken: 'old-refresh'
       })
-      wreckPostMock.mockResolvedValue({
-        payload: {
-          access_token: 'new-access-token',
-          refresh_token: 'new-refresh-token'
-        }
+      serveDiscovery()
+      const refresh = interceptToken(
+        (form) => form.refresh_token === 'old-refresh'
+      ).reply(200, {
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token'
       })
       const refreshed = {
         token: 'new-access-token',
@@ -451,12 +458,7 @@ describe('auth plugin', () => {
         sessionId: sessionIdInCache
       })
 
-      expect(wreckPostMock).toHaveBeenCalledWith(
-        oidcConfig.token_endpoint,
-        expect.objectContaining({
-          payload: expect.stringContaining('refresh_token=old-refresh')
-        })
-      )
+      expect(refresh.isDone()).toBe(true)
       expect(sessions.get(sessionIdInCache)).toEqual(refreshed)
       expect(res).toEqual({ isValid: true, credentials: refreshed })
     })
@@ -467,13 +469,15 @@ describe('auth plugin', () => {
         token: expiredToken,
         refreshToken: 'old-refresh'
       })
+      serveDiscovery()
+      const refresh = interceptToken().reply(200, {})
 
       const res = await getCookieOptions().validate(request, {
         sessionId: sessionIdInCache
       })
 
       expect(res).toEqual({ isValid: false })
-      expect(wreckPostMock).not.toHaveBeenCalled()
+      expect(refresh.isDone()).toBe(false)
       expect(sessions.get(sessionIdInCache)).toEqual({
         token: expiredToken,
         refreshToken: 'old-refresh'
@@ -485,7 +489,8 @@ describe('auth plugin', () => {
         token: expiredToken,
         refreshToken: 'old-refresh'
       })
-      wreckPostMock.mockRejectedValue(new Error('refresh failed'))
+      serveDiscovery()
+      interceptToken().replyWithError(new Error('refresh failed'))
 
       const res = await getCookieOptions().validate(request, {
         sessionId: sessionIdInCache

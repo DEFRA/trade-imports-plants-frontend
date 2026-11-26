@@ -1,25 +1,24 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
-  okResponse,
-  stubFetch
-} from '../../../common/test-helpers/reference-data-fetch.js'
+  okAnswer,
+  refusedAnswer,
+  useDependencyAnswers
+} from '../../../common/test-helpers/dependency-answers.js'
 import { fetchPortsOfEntry } from './client.js'
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
+const answerWith = useDependencyAnswers()
 
 describe('ports client', () => {
   it('Should parse a fetched [{code,name}] payload', async () => {
-    stubFetch(async () => okResponse([{ code: 'GB ZZZ', name: 'Zed Port' }]))
+    answerWith(() => okAnswer([{ code: 'GB ZZZ', name: 'Zed Port' }]))
     await expect(fetchPortsOfEntry()).resolves.toEqual([
       { code: 'GB ZZZ', name: 'Zed Port' }
     ])
   })
 
   it('Should throw on a non-ok response', async () => {
-    stubFetch(async () => ({ ok: false, status: 500, statusText: 'Boom' }))
+    answerWith(() => refusedAnswer(500, 'Boom'))
     await expect(fetchPortsOfEntry()).rejects.toThrow(
       'reference-data refused to get ports of entry: 500 Boom'
     )

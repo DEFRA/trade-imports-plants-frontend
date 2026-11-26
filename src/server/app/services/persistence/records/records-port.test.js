@@ -16,16 +16,16 @@ const scalarFulfilment = (value) => ({ [scalarField.id]: value })
 
 const UNKNOWN_JOURNEY_ID = 'unknown-journey-id'
 
-// The stub mirrors the agreed plants backend reference format.
-const REFERENCE_BODY = '[0-9A-HJKMNP-TV-Z]{6}'
-
 describe('records durable port', () => {
   beforeEach(() => records.clear())
 
   it('Should mint a plants-prefixed two-digit-year Crockford reference as the journeyId', async () => {
     const { journeyId } = await records.create()
+    const crockfordReferenceBody = '[0-9A-HJKMNP-TV-Z]{6}'
     const year = String(new Date().getFullYear() % 100).padStart(2, '0')
-    expect(journeyId).toMatch(new RegExp(`^GBN-HRP-${year}-${REFERENCE_BODY}$`))
+    expect(journeyId).toMatch(
+      new RegExp(`^GBN-HRP-${year}-${crockfordReferenceBody}$`)
+    )
   })
 
   it('Should mint a distinct reference per journey', async () => {

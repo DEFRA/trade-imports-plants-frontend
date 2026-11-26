@@ -1,49 +1,36 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { commit, appendEntryAt, submitJourney } from './index.js'
-import { records, configureRecords, DRAFT } from '../persistence/records.js'
-import { configureSession } from '../persistence/session.js'
-import { records as recordsStub } from '../../services/persistence/records/stub/index.js'
-import { session as sessionStub } from '../../services/persistence/session/stub.js'
+import { records, SUBMITTED } from '../persistence/records.js'
 import { configureReadyForCheckYourAnswers } from '../read.js'
-import { stubH, journeyRequest } from '../test-support.js'
+import { stubH, useFreshDraftJourney } from '../test-support.js'
 import {
   SELECTOR_BRAVO,
   SET_ID,
   VALUE_ONE
 } from '../../../../../test/fixtures/index.js'
 
-// Every key-introducing write asserts the whole resulting answers tree
-// against the recognition surface (bridge/obligation-source.js), and
-// submitJourney asserts stored trees the write guards never saw — an
-// unrecognised key is inert to the evaluator yet ships raw at submit.
+describe('Engine writes refuse unrecognised answer keys and submit accepts unknown stored fulfilment keys', () => {
+  const journey = useFreshDraftJourney(SET_ID)
 
-let journeyId
-const buildRequest = () => journeyRequest(journeyId)
-
-describe('#write.js — answer-key guard', () => {
-  beforeEach(async () => {
-    configureRecords(SET_ID, recordsStub)
-    configureSession(SET_ID, sessionStub)
+  beforeEach(() => {
     configureReadyForCheckYourAnswers(SET_ID, () => true)
-    await records.clear()
-    journeyId = (await records.create()).journeyId
   })
 
   it('Should reject a commit whose patch carries a typo of an obligation name', async () => {
     await expect(
-      commit(buildRequest(), stubH(), {
+      commit(journey.request(), stubH(), {
         scalarFeild: VALUE_ONE
       })
     ).rejects.toThrow(/"scalarFeild" at \(top level\).*commit/s)
   })
 
   it('Should reject an appended entry carrying an unrecognised key', async () => {
-    await commit(buildRequest(), stubH(), {
+    await commit(journey.request(), stubH(), {
       itemCollection: [{ itemSelector: SELECTOR_BRAVO, itemCount: '1' }]
     })
     await expect(
       appendEntryAt(
-        buildRequest(),
+        journey.request(),
         stubH(),
         ['itemCollection', 0, 'nestedCollection'],
         { nestedGatedFeildB: VALUE_ONE }
@@ -54,20 +41,22 @@ describe('#write.js — answer-key guard', () => {
   })
 
   it('Should accept legitimate writes untouched', async () => {
-    const { answers } = await commit(buildRequest(), stubH(), {
+    const { answers } = await commit(journey.request(), stubH(), {
       scalarField: VALUE_ONE
     })
     expect(answers.scalarField).toBe(VALUE_ONE)
   })
 
-  it('Should not project an unknown historic UUID into page answers at submit', async () => {
-    await records.replaceFulfilment(journeyId, {
+  it('Should submit a journey whose stored fulfilment holds an unknown UUID key', async () => {
+    await records.replaceFulfilment(journey.journeyId(), {
       'historic-obligation-uuid': VALUE_ONE
     })
 
-    const result = await submitJourney(buildRequest(), stubH())
+    const result = await submitJourney(journey.request(), stubH())
 
     expect(result.ok).toBe(true)
-    expect((await records.load({ journeyId })).status).not.toBe(DRAFT)
+    expect(
+      (await records.load({ journeyId: journey.journeyId() })).status
+    ).toBe(SUBMITTED)
   })
 })

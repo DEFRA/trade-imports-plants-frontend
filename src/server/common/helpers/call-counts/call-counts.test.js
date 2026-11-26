@@ -106,7 +106,7 @@ describe('call counts', () => {
     )
   })
 
-  test('never counts the health check or the call counts endpoint', async () => {
+  test('never counts the health check, static assets or the call counts endpoint', async () => {
     await server.inject({ method: 'GET', url: '/health' })
     await server.inject({
       method: 'GET',

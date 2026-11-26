@@ -63,6 +63,8 @@ const jsonOf = (request) => request.clone().json()
 
 const SERVICE_UNAVAILABLE = 'Service Unavailable'
 
+const REFUSAL_LOG_MESSAGE = 'Backend refused request'
+
 describe('real records adapter — canonical fulfilment boundary', () => {
   const ecsLog = recordEcsLogLines()
 
@@ -194,6 +196,24 @@ describe('real records adapter — canonical fulfilment boundary', () => {
     ])
   })
 
+  it('Should write no line beside the external call when the fulfilment GET returns 404', async () => {
+    fetchMocker.mockResponse('Not Found', { status: 404 })
+
+    const loaded = await records.load({ journeyId })
+
+    expect(loaded).toBeUndefined()
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([])
+  })
+})
+
+describe('real records adapter — backend refusals', () => {
+  const ecsLog = recordEcsLogLines()
+
+  beforeEach(() => {
+    fetchMocker.resetMocks()
+    enterOrganisationIdForTests('5900001')
+  })
+
   it('Should log a refused write with its error, and the journey as event.reference, and no other field', async () => {
     fetchMocker.mockResponse('Unavailable', {
       status: 503,
@@ -210,7 +230,7 @@ describe('real records adapter — canonical fulfilment boundary', () => {
       {
         ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message: 'Backend refused request',
+        message: REFUSAL_LOG_MESSAGE,
         event: { reference: journeyId },
         error: {
           type: 'BackendRequestError',
@@ -234,7 +254,7 @@ describe('real records adapter — canonical fulfilment boundary', () => {
       {
         ...ECS_PLATFORM_FIELDS,
         'log.level': 'warn',
-        message: 'Backend refused request',
+        message: REFUSAL_LOG_MESSAGE,
         error: {
           type: 'BackendRequestError',
           message:
@@ -246,13 +266,45 @@ describe('real records adapter — canonical fulfilment boundary', () => {
     ])
   })
 
-  it('Should write no line beside the external call when the fulfilment GET returns 404', async () => {
-    fetchMocker.mockResponse('Not Found', { status: 404 })
+  it('Should reject a 409 submit whose body is not JSON without a code or cause, and log the unread refusal code then the refusal, each with its error and the journey as event.reference', async () => {
+    fetchMocker.mockResponse('Conflict', {
+      status: 409,
+      statusText: 'Conflict'
+    })
 
-    const loaded = await records.load({ journeyId })
+    const surfaced = await records
+      .submit(journeyId, actor)
+      .catch((error) => error)
 
-    expect(loaded).toBeUndefined()
-    expect(ecsLog.linesBesideExternalCalls()).toEqual([])
+    expect(surfaced).toMatchObject({ name: 'BackendRequestError', status: 409 })
+    expect(surfaced.code).toBeUndefined()
+    expect(surfaced.cause).toBeUndefined()
+    expect(ecsLog.linesBesideExternalCalls()).toEqual([
+      {
+        ...ECS_PLATFORM_FIELDS,
+        'log.level': 'warn',
+        message:
+          'Backend refusal code could not be read: plants-backend refused to submit notification: 409 Conflict',
+        event: { reference: journeyId },
+        error: {
+          type: 'SyntaxError',
+          message: `Unexpected token 'C', "Conflict" is not valid JSON`,
+          stack_trace: expect.stringMatching(/^SyntaxError: /)
+        }
+      },
+      {
+        ...ECS_PLATFORM_FIELDS,
+        'log.level': 'warn',
+        message: REFUSAL_LOG_MESSAGE,
+        event: { reference: journeyId },
+        error: {
+          type: 'BackendRequestError',
+          message:
+            'plants-backend refused to submit notification: 409 Conflict',
+          stack_trace: expect.stringMatching(/^BackendRequestError: /)
+        }
+      }
+    ])
   })
 })
 
@@ -473,7 +525,7 @@ describe('real records adapter — lifecycle and list', () => {
 
     const [request] = fetchMocker.requests()
     expect(request.url).toBe(
-      `${notificationsUrl}?page=1&sort=createdAt,asc&referenceNumber=${journeyId}`
+      `${notificationsUrl}?page=1&sort=createdAt%2Casc&referenceNumber=${journeyId}`
     )
     expect(request.method).toBe('GET')
   })

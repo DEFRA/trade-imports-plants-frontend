@@ -250,7 +250,6 @@ describe('POST commodities — save failures', () => {
     expect(result.view.context.recoverableError).toBe(true)
     expectOneSaveFallbackLogged(result.logger, {
       journeyId: result.journeyId,
-      err: failure,
       action: 'remove-line',
       index: 0
     })

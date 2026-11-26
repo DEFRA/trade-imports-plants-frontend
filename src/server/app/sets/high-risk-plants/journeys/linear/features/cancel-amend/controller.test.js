@@ -154,6 +154,6 @@ describe('cancel amendment routes', () => {
     expect(response.view).toBe(
       'high-risk-plants/journeys/linear/features/cancel-amend/template'
     )
-    expectOneSaveFallbackLogged(request.logger, { journeyId, err: failure })
+    expectOneSaveFallbackLogged(request.logger, { journeyId })
   })
 })

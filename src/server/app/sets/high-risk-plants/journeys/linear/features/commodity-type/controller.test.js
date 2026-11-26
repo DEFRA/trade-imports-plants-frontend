@@ -403,8 +403,7 @@ describe('POST commodity-type — save failures', () => {
     expect(result.view.context.recoverableError).toBe(true)
     expect(result.view.context.values).toEqual({ commodityType: POTATOES })
     expectOneSaveFallbackLogged(result.logger, {
-      journeyId: result.journeyId,
-      err: failure
+      journeyId: result.journeyId
     })
   })
 

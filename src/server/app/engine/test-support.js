@@ -17,7 +17,10 @@ import {
   STALE_CONCURRENCY_TOKEN
 } from './persistence/records.js'
 import { configureSession } from './persistence/session.js'
-import { BackendRequestError } from '../services/persistence/records/errors.js'
+import {
+  BackendRequestError,
+  markRefusalLogged
+} from '../services/persistence/records/errors.js'
 import { BACKEND_DEPENDENCY } from '../../common/helpers/backend-client/backend-dependency.js'
 import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
@@ -159,25 +162,32 @@ export const expectNoRefusalLogged = (logger) =>
 export const expectOneRefusalLogged = (logger, refusal) =>
   expectOneLogged(logger, refusalEntry(refusal))
 
-/** The log entry for a save fallback: the journey id, the caught error and
- * any ids the page passed. */
-export const saveFallbackEntry = ({ journeyId, err, ...ids }) => ({
+/** The log entry for a save fallback: the journey id and any ids the page
+ * passed, at warn. */
+export const saveFallbackEntry = ({ journeyId, ...ids }) => ({
   level: 'warn',
   message: SAVE_FALLBACK_LOG_MESSAGE,
-  fields: expect.objectContaining({ journeyId, ...ids, err })
+  fields: expect.objectContaining({ journeyId, ...ids })
 })
 
-export const expectOneSaveFallbackLogged = (logger, fallback) =>
+/** Asserts the logger holds one line, the save fallback's, with no error in
+ * its fields. */
+export const expectOneSaveFallbackLogged = (logger, fallback) => {
   expectOneLogged(logger, saveFallbackEntry(fallback))
+  expect(logger.entries[0].fields).not.toHaveProperty('err')
+}
 
-/** The recoverable records error for a backend that answered 503 to `operation`. */
+/** The recoverable records error for a backend that answered 503 to
+ * `operation`, its refusal logged where it was raised. */
 export const unavailableBackendError = (operation) =>
-  new BackendRequestError(
-    { dependency: BACKEND_DEPENDENCY, operation },
-    {
-      status: 503,
-      statusText: 'Service Unavailable'
-    }
+  markRefusalLogged(
+    new BackendRequestError(
+      { dependency: BACKEND_DEPENDENCY, operation },
+      {
+        status: 503,
+        statusText: 'Service Unavailable'
+      }
+    )
   )
 
 /**
@@ -410,6 +420,22 @@ export const useStubbedJourney = (setId, dispatchPages) => {
     configureRecords(setId, recordsStub)
     await store.clear()
   })
+}
+
+/** Before each test, puts `setId` on the stub records and session and creates
+ * one draft journey. Returns its current id and a request made for it. */
+export const useFreshDraftJourney = (setId) => {
+  let journeyId
+  beforeEach(async () => {
+    configureRecords(setId, recordsStub)
+    configureSession(setId, sessionStub)
+    await records.clear()
+    journeyId = (await records.create()).journeyId
+  })
+  return {
+    journeyId: () => journeyId,
+    request: () => journeyRequest(journeyId)
+  }
 }
 
 export const useBackendRecords = (setId) => {

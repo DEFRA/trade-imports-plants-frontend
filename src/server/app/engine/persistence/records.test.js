@@ -3,13 +3,19 @@ import { vi } from 'vitest'
 
 import {
   configureRecords,
+  DRAFT,
   records,
   STALE_CONCURRENCY_TOKEN
 } from './records.js'
 import { store } from '../store.js'
-import { staleConcurrencyRefusal } from '../test-support.js'
+import {
+  authenticatedActor,
+  fetchMock,
+  useBackendRecords
+} from '../test-support.js'
 import { records as recordsStub } from '../../services/persistence/records/stub/index.js'
 import { recordEmfDocuments } from '../../../common/test-helpers/emf-documents.js'
+import { enterOrganisationIdForTests } from '../../../common/helpers/organisation-id.js'
 
 const JOURNEY_EVENTS = Object.freeze({
   started: 'journey.started',
@@ -23,10 +29,6 @@ const JOURNEY_EVENTS = Object.freeze({
 const counted = (...names) =>
   names.map((name) => ({ name, value: 1, unit: 'Count', dimensions: {} }))
 
-const refusingAsStale = (operation) => async () => {
-  throw staleConcurrencyRefusal(operation)
-}
-
 describe('records journey counters', () => {
   const emf = recordEmfDocuments()
 
@@ -35,94 +37,105 @@ describe('records journey counters', () => {
       emf.publishesOf(name).map((publish) => ({ name, ...publish }))
     )
 
-  beforeEach(async () => {
-    configureRecords(SET_ID, recordsStub)
-    await store.clear()
-  })
+  describe('with the stub store', () => {
+    beforeEach(async () => {
+      configureRecords(SET_ID, recordsStub)
+      await store.clear()
+    })
 
-  test('starting, submitting, amending, copying and deleting a journey each count one event with no dimensions', async () => {
-    const started = await records.create()
-    const submitted = await records.submit(started.journeyId)
-    await records.amend(started.journeyId)
-    await records.copy(started.journeyId, submitted.concurrencyToken)
-    await records.softDelete(started.journeyId)
+    test('starting, submitting, amending, copying and deleting a journey each count one event with no dimensions', async () => {
+      const started = await records.create()
+      const submitted = await records.submit(started.journeyId)
+      await records.amend(started.journeyId)
+      await records.copy(started.journeyId, submitted.concurrencyToken)
+      await records.softDelete(started.journeyId)
 
-    await vi.waitFor(() =>
-      expect(journeyCounts()).toEqual(
-        counted(
-          JOURNEY_EVENTS.started,
-          JOURNEY_EVENTS.submitted,
-          JOURNEY_EVENTS.amended,
-          JOURNEY_EVENTS.copied,
-          JOURNEY_EVENTS.deleted
+      await vi.waitFor(() =>
+        expect(journeyCounts()).toEqual(
+          counted(
+            JOURNEY_EVENTS.started,
+            JOURNEY_EVENTS.submitted,
+            JOURNEY_EVENTS.amended,
+            JOURNEY_EVENTS.copied,
+            JOURNEY_EVENTS.deleted
+          )
         )
       )
-    )
-  })
-
-  test('a start, submission, amendment, copy or deletion that resolves to no journey counts no event', async () => {
-    const resolvesToNoJourney = async () => undefined
-    const journeyId = 'unknown-journey'
-    configureRecords(SET_ID, {
-      ...recordsStub,
-      create: resolvesToNoJourney,
-      submit: resolvesToNoJourney,
-      amend: resolvesToNoJourney,
-      copy: resolvesToNoJourney,
-      softDelete: resolvesToNoJourney
     })
 
-    await records.create()
-    await records.submit(journeyId)
-    await records.amend(journeyId)
-    await records.copy(journeyId, 0)
-    await records.softDelete(journeyId)
-    await emf.publishMarkerAndAwaitEarlierPublishes()
+    test('a start, submission, amendment, copy or deletion that resolves to no journey counts no event', async () => {
+      const resolvesToNoJourney = async () => undefined
+      const journeyId = 'unknown-journey'
+      configureRecords(SET_ID, {
+        ...recordsStub,
+        create: resolvesToNoJourney,
+        submit: resolvesToNoJourney,
+        amend: resolvesToNoJourney,
+        copy: resolvesToNoJourney,
+        softDelete: resolvesToNoJourney
+      })
 
-    expect(journeyCounts()).toEqual([])
+      await records.create()
+      await records.submit(journeyId)
+      await records.amend(journeyId)
+      await records.copy(journeyId, 0)
+      await records.softDelete(journeyId)
+      await emf.publishMarkerAndAwaitEarlierPublishes()
+
+      expect(journeyCounts()).toEqual([])
+    })
   })
 
-  test('a save the store refuses for a stale concurrency token counts one conflict and rethrows the refusal', async () => {
-    configureRecords(SET_ID, {
-      ...recordsStub,
-      replaceFulfilment: refusingAsStale('replace-notification')
+  describe('for a write the backend refuses', () => {
+    useBackendRecords(SET_ID)
+
+    const backendAnsweringStaleToken = () =>
+      fetchMock.mockResponse(
+        JSON.stringify({ code: STALE_CONCURRENCY_TOKEN }),
+        { status: 409 }
+      )
+
+    beforeEach(() => {
+      enterOrganisationIdForTests(authenticatedActor.organisationId)
     })
 
-    await expect(
-      records.replaceFulfilment('j-1', {}, { known: {} })
-    ).rejects.toMatchObject({ code: STALE_CONCURRENCY_TOKEN })
+    test('a save the backend refuses for a stale concurrency token counts one conflict and rethrows the refusal', async () => {
+      backendAnsweringStaleToken()
 
-    await vi.waitFor(() =>
+      await expect(
+        records.replaceFulfilment(
+          'j-1',
+          {},
+          { known: { journeyId: 'j-1', status: DRAFT, concurrencyToken: 2 } }
+        )
+      ).rejects.toMatchObject({ status: 409, code: STALE_CONCURRENCY_TOKEN })
+
+      await vi.waitFor(() =>
+        expect(journeyCounts()).toEqual(counted(JOURNEY_EVENTS.conflict))
+      )
+    })
+
+    test('a submit the backend refuses for a stale concurrency token counts one conflict and no submission, and rethrows the refusal', async () => {
+      backendAnsweringStaleToken()
+
+      await expect(records.submit('j-1')).rejects.toMatchObject({
+        status: 409,
+        code: STALE_CONCURRENCY_TOKEN
+      })
+
+      await emf.publishMarkerAndAwaitEarlierPublishes()
       expect(journeyCounts()).toEqual(counted(JOURNEY_EVENTS.conflict))
-    )
-  })
-
-  test('a submit the store refuses for a stale concurrency token counts one conflict and no submission, and rethrows the refusal', async () => {
-    configureRecords(SET_ID, {
-      ...recordsStub,
-      submit: refusingAsStale('submit-notification')
     })
 
-    await expect(records.submit('j-1')).rejects.toMatchObject({
-      code: STALE_CONCURRENCY_TOKEN
+    test('a write the backend refuses for another reason counts no conflict and rethrows the refusal', async () => {
+      fetchMock.mockResponse('Service Unavailable', { status: 503 })
+
+      await expect(records.submit('j-1')).rejects.toMatchObject({
+        status: 503
+      })
+
+      await emf.publishMarkerAndAwaitEarlierPublishes()
+      expect(journeyCounts()).toEqual([])
     })
-
-    await emf.publishMarkerAndAwaitEarlierPublishes()
-    expect(journeyCounts()).toEqual(counted(JOURNEY_EVENTS.conflict))
-  })
-
-  test('a write the store refuses for another reason counts no conflict and rethrows the refusal', async () => {
-    const refused = new Error('backend down')
-    configureRecords(SET_ID, {
-      ...recordsStub,
-      submit: async () => {
-        throw refused
-      }
-    })
-
-    await expect(records.submit('j-1')).rejects.toBe(refused)
-
-    await emf.publishMarkerAndAwaitEarlierPublishes()
-    expect(journeyCounts()).toEqual([])
   })
 })

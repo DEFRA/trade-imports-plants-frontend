@@ -17,17 +17,17 @@ describe('createLogger', () => {
   })
 
   test('writes an err as the ECS error with its type, message, own code and stack trace', () => {
-    const err = Object.assign(new Error('token stale'), {
-      code: 'STALE_CONCURRENCY_TOKEN'
+    const err = Object.assign(new Error('connection refused'), {
+      code: 'ECONNREFUSED'
     })
 
-    createLogger().warn({ err }, 'Save refused')
+    createLogger().warn({ err }, 'Backend unreachable')
 
     expect(ecsLog.lines()[0].error).toEqual({
       type: 'Error',
-      message: 'token stale',
-      code: 'STALE_CONCURRENCY_TOKEN',
-      stack_trace: expect.stringMatching(/^Error: token stale\n/)
+      message: 'connection refused',
+      code: 'ECONNREFUSED',
+      stack_trace: expect.stringMatching(/^Error: connection refused\n/)
     })
   })
 

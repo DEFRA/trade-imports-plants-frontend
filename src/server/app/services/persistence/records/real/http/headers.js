@@ -4,10 +4,8 @@ import {
   currentOrganisationId,
   ORGANISATION_ID_HEADER
 } from '../../../../../../common/helpers/organisation-id.js'
-import { createLogger } from '../../../../../../common/helpers/logging/logger.js'
 import { tracingHeader } from '../config.js'
-
-const logger = createLogger()
+import { logger } from '../logger.js'
 
 export { ORGANISATION_ID_HEADER }
 

@@ -5,12 +5,12 @@ import {
   timeTokenExchange,
   TOKEN_EXCHANGE_STARTED_AT_KEY
 } from './token-exchange-timer.js'
+import { defraIdTokenExchangeCall } from '../server/common/test-helpers/defra-id-network.js'
 import { recordEcsLogLines } from '../server/common/test-helpers/ecs-log-lines.js'
 import { recordEmfDocuments } from '../server/common/test-helpers/emf-documents.js'
 
 describe('token exchange timer', () => {
   const tokenEndpoint = 'https://idp.example.com/token'
-  const tokenExchange = { dependency: 'defra-id', operation: 'token-exchange' }
 
   const emf = recordEmfDocuments()
   const ecsLog = recordEcsLogLines()
@@ -40,7 +40,7 @@ describe('token exchange timer', () => {
     recordExchangeTaking(250, { isAuthenticated: true })
 
     expect(await emf.onlyExternalCall()).toEqual({
-      ...tokenExchange,
+      ...defraIdTokenExchangeCall,
       failure: 0
     })
     expect(emf.valuesOf('external.call.duration')).toEqual([250])
@@ -56,7 +56,7 @@ describe('token exchange timer', () => {
     recordExchangeTaking(250, { isAuthenticated: false })
 
     expect(await emf.onlyExternalCall()).toEqual({
-      ...tokenExchange,
+      ...defraIdTokenExchangeCall,
       failure: 1
     })
     const line = ecsLog.onlyExternalCallLine()

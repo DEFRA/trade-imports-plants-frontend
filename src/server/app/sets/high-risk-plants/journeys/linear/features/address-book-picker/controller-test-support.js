@@ -526,8 +526,7 @@ const describeSaveFailures = (picker) => {
       expect(result.view.context.recoverableError).toBe(true)
       expect(checkedId(result)).toBe(primaryId)
       expectOneSaveFallbackLogged(result.logger, {
-        journeyId: result.journeyId,
-        err: failure
+        journeyId: result.journeyId
       })
     })
 

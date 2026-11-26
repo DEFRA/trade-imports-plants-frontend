@@ -392,7 +392,7 @@ describe('#listKnownJourneys against the backend', () => {
 
     const [backendRequest] = fetchMocker.requests()
     expect(backendRequest.url).toBe(
-      `${notificationsUrl}?page=2&sort=arrivalDate,desc`
+      `${notificationsUrl}?page=2&sort=arrivalDate%2Cdesc`
     )
     expect(backendRequest.headers.get('Trade-Imports-Organisation-Id')).toBe(
       '5900042'

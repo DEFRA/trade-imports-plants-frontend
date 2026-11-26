@@ -2,8 +2,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
-const referenceDataUrl =
-  process.env.TRADE_IMPORTS_REFERENCE_DATA_URL ?? 'http://localhost:8086'
+import { config } from '../../../../config/config.js'
+
+const referenceDataUrl = config.get('tradeImportsReferenceDataApi.baseUrl')
 const outDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
 const JSON_INDENT_SPACES = 2
 

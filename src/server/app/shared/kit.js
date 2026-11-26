@@ -12,7 +12,10 @@ import { journeyLayout, journeySectionCaption } from '../flow/journey-flow.js'
 import { copyFor } from './copy.js'
 import { copy as sharedEn } from './copy.en.js'
 import { copy as sharedCy } from './copy.cy.js'
-import { isRecoverableBackendError } from '../services/persistence/records/errors.js'
+import {
+  isLoggedRefusal,
+  isRecoverableBackendError
+} from '../services/persistence/records/errors.js'
 import { pushTrail } from './trail.js'
 
 export {
@@ -30,8 +33,8 @@ export {
 export const routeOptions = { auth: 'session' }
 
 /**
- * The options for a route that renders a page. The page rides on the route as
- * `app.page`, where the phase banner reads its maturity level.
+ * The route options for a page: session auth, with the page descriptor as
+ * `app.page`.
  *
  * @param {{ maturity?: string }} page - the page descriptor from its feature's `page.js`.
  * @returns {{ auth: string, app: { page: object } }} the route options.
@@ -287,7 +290,8 @@ export const base = (
 
 /**
  * Runs a save and answers a recoverable backend failure with the page's
- * fallback, logging the failure once at warn.
+ * fallback, logging the fallback taken once at warn, with the failure as `err`
+ * unless its refusal was logged when it was raised.
  *
  * @param {object} request - the request being answered.
  * @param {() => Promise<*>} saveThunk - makes the save.
@@ -315,7 +319,7 @@ export const recoverableSave = async (
           ...ids,
           journeyId: request.params.journeyId,
           route: request.route?.path,
-          err: error
+          ...(isLoggedRefusal(error) ? {} : { err: error })
         },
         SAVE_FALLBACK_LOG_MESSAGE
       )

@@ -1,6 +1,7 @@
-import { failed } from './failed.js'
 import { headers } from './headers.js'
+import { refusalErrorFor } from './refusal-error.js'
 import { backendFetch } from '../../../../../../common/helpers/backend-client/backend-fetch.js'
+import { markRefusalLogged } from '../../errors.js'
 import { journeyReferenceFields } from '../journey-reference-fields.js'
 import { logger } from '../logger.js'
 
@@ -11,27 +12,18 @@ export const requestBackend = (operation, url, { method, body }) =>
     body: body === undefined ? undefined : JSON.stringify(body)
   })
 
-const refusalMessage = (otherIds) => {
-  const named = Object.entries(otherIds)
-    .filter(([, id]) => id != null)
-    .map(([name, id]) => `${name} ${id}`)
-  return named.length === 0
-    ? 'Backend refused request'
-    : `Backend refused request for ${named.join(', ')}`
-}
-
 export const refuseUnlessOk = async (
   operation,
   response,
-  { journeyId, ...otherIds } = {}
+  { journeyId } = {}
 ) => {
   if (!response.ok) {
-    const error = await failed(operation, response)
+    const error = await refusalErrorFor(operation, response, { journeyId })
     logger.warn(
       { err: error, ...journeyReferenceFields(journeyId) },
-      refusalMessage(otherIds)
+      'Backend refused request'
     )
-    throw error
+    throw markRefusalLogged(error)
   }
   return response
 }

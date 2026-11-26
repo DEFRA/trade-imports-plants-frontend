@@ -26,7 +26,6 @@ export const obligationByPath = (templatePath) =>
     (obligation) => templatePathOf(obligation) === templatePath
   )
 
-// Resolve system ownership from the configured manifest, never a set-specific list.
 class SystemPopulated extends Set {
   has(name) {
     return super.has(name) || obligationByName(name)?.system === true
@@ -42,23 +41,8 @@ export const ENFORCED_AT_CONTINUE = new Set([
   'countryOfOrigin'
 ])
 
-// Collection admission-control cap: a collection's entry count is
-// capped at the value of a sibling count field in the frame that holds it.
-// Enforcement lives on the write path (engine/evaluate/cardinality.js
-// `collectionCapAt`, appendEntryAt rejects at the cap); only
-// the declaration lives here. Keyed by collection name → sibling count field.
-// Empty until the journey's first capped collection is agreed.
 export const MAX_ENTRIES_FROM = {}
 
-// ---------------------------------------------------------------------------
-// Answer-key recognition — the single source of truth for which keys may
-// appear in a stored answers tree. A key outside this surface is inert to
-// the evaluator (never in scope, never wiped) yet ships raw at submit, so
-// the engine's write paths and submitJourney reject it loudly instead.
-// ---------------------------------------------------------------------------
-
-// Flow-owned obligations the notification model does not carry, such as the
-// submit-time declaration step.
 export const flowOnlyObligations = () => flowOnlyKeys()
 
 export const flowOnlyAnswersFrom = (answers) =>
@@ -70,9 +54,6 @@ export const flowOnlyAnswersFrom = (answers) =>
       .map((key) => [key, answers[key]])
   )
 
-// Compatibility key accepted by answer validation but excluded from canonical
-// assembly. Runtime notification projections take the reference from the
-// journey envelope instead.
 const SYSTEM_ANSWER_KEYS = new Set(['referenceNumber'])
 
 const topLevelKeys = () =>
@@ -149,8 +130,7 @@ export const unrecognisedAnswerKeys = (answers) => {
 }
 
 /**
- * Throw when the answers tree carries any unrecognised key — an inert key
- * would otherwise persist silently and ship at submit.
+ * Throws when the answers tree carries any key unrecognisedAnswerKeys reports.
  *
  * @param {object} answers - the nested answer POJO to check.
  * @param {string} context - the call-site label folded into the thrown error message.
@@ -165,7 +145,7 @@ export const assertRecognisedAnswerKeys = (answers, context) => {
     .join(', ')
   throw new Error(
     `Unrecognised answer key(s) ${detail} (${context}). Every stored key ` +
-      'must be a manifest obligation name, a flow-only key, a system key ' +
-      'or a declared auxiliary entry key — see bridge/obligation-source.js.'
+      'must be a manifest obligation name in its declared position, a ' +
+      'flow-only key or a system key — see bridge/obligation-source.js.'
   )
 }

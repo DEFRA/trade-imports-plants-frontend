@@ -128,6 +128,9 @@ A request finds its set from its path: the longest mount prefix wins, whatever
 the registration order. `setContextExtension` enters that set on `onRequest`,
 before routing, so the shared error page on an unrouted path and the view
 marshal step, which runs after the handler returns, both resolve the right set.
+`createServer()` in `src/server/server.js` registers it server-wide, not as a
+set's own `onPreAuth`: a request that matches no route runs no route's
+extensions, so a 404 under a set's mount would otherwise have no set.
 `routeWithSetContext()` runs every method a set's route declares — `handler`,
 `options.handler`, `options.pre` and `ext` entries — inside that set.
 
@@ -254,8 +257,11 @@ of a line that is out of range is the example of a refusal that passes its
 reason.
 
 `kit.recoverableSave()` takes the request and logs every save fallback once at
-warn, with `journeyId` and the caught error as `err`, plus any ids the page
-passes it. `recoverableSave` writes that line; a page's fallback callback only
+warn, with `journeyId` plus any ids the page passes it. A journey backend
+refusal is logged with its `err` and the journey as `event.reference` where it
+is raised, so the fallback line leaves `err` out; any other caught error goes
+on the fallback line as `err`. The 5xx error page's `Request failed` line
+follows the same rule, so one refused call writes its stack once. `recoverableSave` writes that line; a page's fallback callback only
 builds the response.
 
 A refusal answered by a redirect logs its own named line with the journey id

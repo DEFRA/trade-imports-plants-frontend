@@ -4,6 +4,7 @@ import { config } from '../../config/config.js'
 import { statusCodes } from '../common/constants/status-codes.js'
 import { mockOidcConfig } from '../common/test-helpers/mock-oidc-config.js'
 import { sessionAuth } from '../common/test-helpers/session-auth.js'
+import { defraIdTokenExchangeCall } from '../common/test-helpers/defra-id-network.js'
 import { recordEmfDocuments } from '../common/test-helpers/emf-documents.js'
 import { verifyToken } from '../../auth/verify-token.js'
 import { getPermissions } from '../../auth/get-permissions.js'
@@ -211,10 +212,6 @@ describe('#authController', () => {
 
   describe('Defra ID token exchange metrics', () => {
     const emf = recordEmfDocuments()
-    const tokenExchange = {
-      dependency: 'defra-id',
-      operation: 'token-exchange'
-    }
 
     test('GET /auth/sign-in-oidc records the Defra ID token exchange it completed', async () => {
       verifyToken.mockResolvedValue(undefined)
@@ -230,7 +227,7 @@ describe('#authController', () => {
       expect(statusCode).toBe(HTTP_STATUS_FOUND)
       expect(headers.location).toBe('/')
       expect(await emf.onlyExternalCall()).toEqual({
-        ...tokenExchange,
+        ...defraIdTokenExchangeCall,
         failure: 0
       })
     })
@@ -245,7 +242,7 @@ describe('#authController', () => {
       expect(statusCode).toBe(statusCodes.ok)
       expect(payload).toContain(sharedEn.unauthorised.heading)
       expect(await emf.onlyExternalCall()).toEqual({
-        ...tokenExchange,
+        ...defraIdTokenExchangeCall,
         failure: 1
       })
     })

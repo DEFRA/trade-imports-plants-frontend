@@ -6,6 +6,10 @@ import { createServer } from '../../server.js'
 import { statusCodes } from '../constants/status-codes.js'
 import { mockOidcConfig } from '../test-helpers/mock-oidc-config.js'
 import { referenceDataUnavailable } from '../../app/services/reference-data-unavailable.js'
+import {
+  BackendRequestError,
+  markRefusalLogged
+} from '../../app/services/persistence/records/errors.js'
 
 vi.mock('../../../auth/get-oidc-config.js', () => ({
   getOidcConfig: vi.fn(() => Promise.resolve(mockOidcConfig))
@@ -91,6 +95,7 @@ describe('#catchAll', () => {
   const mockErrorLogger = vi.fn()
   const mockStack = 'Mock error stack'
   const errorPage = 'shared/error'
+  const REQUEST_FAILED_MESSAGE = 'Request failed'
   const mockRequest = (statusCode) => ({
     response: {
       isBoom: true,
@@ -196,7 +201,7 @@ describe('#catchAll', () => {
         statusCode: statusCodes.internalServerError,
         journeyId: 'journey-1'
       },
-      'Request failed'
+      REQUEST_FAILED_MESSAGE
     )
     expect(mockToolkitView).toHaveBeenCalledWith(
       errorPage,
@@ -204,6 +209,34 @@ describe('#catchAll', () => {
     )
     expect(mockToolkitCode).toHaveBeenCalledWith(
       statusCodes.internalServerError
+    )
+  })
+
+  test('Should log a backend refusal logged where it was raised with its status and journey id and no error', () => {
+    const response = Boom.boomify(
+      markRefusalLogged(
+        new BackendRequestError(
+          { dependency: 'plants-backend', operation: 'submit-notification' },
+          { status: 503, statusText: 'Service Unavailable' }
+        )
+      )
+    )
+
+    catchAll(
+      {
+        response,
+        params: { journeyId: 'journey-1' },
+        logger: { error: mockErrorLogger }
+      },
+      mockToolkit
+    )
+
+    expect(mockErrorLogger).toHaveBeenCalledWith(
+      {
+        statusCode: statusCodes.internalServerError,
+        journeyId: 'journey-1'
+      },
+      REQUEST_FAILED_MESSAGE
     )
   })
 
@@ -215,7 +248,7 @@ describe('#catchAll', () => {
 
     expect(mockErrorLogger).toHaveBeenCalledTimes(1)
     const [[logged, message]] = mockErrorLogger.mock.calls
-    expect(message).toBe('Request failed')
+    expect(message).toBe(REQUEST_FAILED_MESSAGE)
     expect(logged.statusCode).toBe(statusCodes.serviceUnavailable)
     expect(logged.err.cause).toEqual(cause)
     expect(logged.err.data).toEqual({ dataset: 'countries' })
