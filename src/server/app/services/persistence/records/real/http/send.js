@@ -26,23 +26,32 @@ const logUnreadRefusalCode = (err, response, journeyId) =>
     'Backend refusal code could not be read'
   )
 
+const withRefusalCode = async (error, response, journeyId) => {
+  if (response.status !== statusCodes.conflict) {
+    return error
+  }
+  try {
+    const code = await refusalCodeOf(response)
+    if (code) {
+      error.code = code
+    }
+  } catch (err) {
+    logUnreadRefusalCode(err, response, journeyId)
+  }
+  return error
+}
+
 export const refuseUnlessOk = async (
   operation,
   response,
   { journeyId } = {}
 ) => {
   if (!response.ok) {
-    const error = new BackendRequestError(operation, response)
-    if (response.status === statusCodes.conflict) {
-      try {
-        const code = await refusalCodeOf(response)
-        if (code) {
-          error.code = code
-        }
-      } catch (err) {
-        logUnreadRefusalCode(err, response, journeyId)
-      }
-    }
+    const error = await withRefusalCode(
+      new BackendRequestError(operation, response),
+      response,
+      journeyId
+    )
     logger.warn(
       { err: error, ...journeyReferenceFields(journeyId) },
       BACKEND_REFUSAL_LOG_MESSAGE
