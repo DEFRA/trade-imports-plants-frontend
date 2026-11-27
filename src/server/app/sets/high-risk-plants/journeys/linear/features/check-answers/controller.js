@@ -150,8 +150,7 @@ const render = async (
       href: summaryHrefFor(current, { changeLinkTrail, reviewPageTrail }),
       disableAutoFocus: !continueRefused
     }),
-    buttonsAfterPrimary: buttonsAfterPrimaryFor(current.journey),
-    amendmentCancelled: readOnly && request.query.cancelled === '1'
+    buttonsAfterPrimary: buttonsAfterPrimaryFor(current.journey)
   })
 }
 

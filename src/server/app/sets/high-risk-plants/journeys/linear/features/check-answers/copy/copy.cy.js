@@ -17,11 +17,6 @@ export const copy = {
   change: 'Newid',
   editDetails: 'Golygu manylion',
   errorPrefix: 'Gwall:',
-  cancelAmend: {
-    successTitle: 'Llwyddiant',
-    successBody:
-      'Mae’r diwygiad wedi’i ganslo a’r fersiwn a gyflwynwyd wedi’i hadfer.'
-  },
   notProvided: 'Heb ei ddarparu',
   continue: 'Parhau',
   errors: {

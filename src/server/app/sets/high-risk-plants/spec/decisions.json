@@ -1102,9 +1102,9 @@
       "dissent": "Policy judge would park all post-submission actions and ship SUBMITTED: View only — lost for the reasons given on c-030 (silence is not prohibition; soft delete keeps the record; every piece is existing capability; the lateness interaction is resolved by freezing the flag). Engineering judge would include Copy as new — lost because the brief lists reuse-a-previous-consignment OUT and the spec maps NNS-UN-041 onto Copy as new.",
       "escalate": false,
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "d-098",
       "decidedAt": "2026-09-06",
-      "status": "current"
+      "status": "superseded"
     },
     {
       "id": "d-066",
@@ -1648,6 +1648,23 @@
       "supersedes": null,
       "supersededBy": null,
       "decidedAt": "2026-11-09",
+      "status": "current"
+    },
+    {
+      "id": "d-098",
+      "subject": {
+        "kind": "behaviour",
+        "id": "notification-actions-after-submission"
+      },
+      "ruling": "adopt",
+      "resolution": "The cancel-amendment confirmation page's whole content is its question, 'Are you sure you want to cancel this amendment?', the button 'Yes, cancel amendment' and a link-styled 'Go back': it shows no caption, no status tag, no reference and no back link above the heading. 'Go back' returns to the notification's view, leaving the amendment and its changed answers in place. Confirming restores the submitted version and lands on the notification's view, read only and showing it submitted, with no banner above the heading though the address still carries ?cancelled=1. Opening the cancel-amendment address, or posting to it, for a notification nobody is amending changes nothing and returns the trader, with no message, to the notification list.",
+      "rationale": "Owner ruling of 2026-10-09 (afternoon) on manage-notifications action pages: confirmations stay pages carrying the dialog's wording as page content, and the content these pages carry is settled alongside the guard on a request for a notification nobody is amending.",
+      "decidedBy": "sam",
+      "dissent": null,
+      "escalate": false,
+      "supersedes": "d-065",
+      "supersededBy": null,
+      "decidedAt": "2026-11-26",
       "status": "current"
     }
   ]

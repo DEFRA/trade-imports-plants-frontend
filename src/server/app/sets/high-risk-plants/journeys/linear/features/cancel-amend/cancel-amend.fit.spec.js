@@ -7,6 +7,7 @@ import {
 } from '../../../../../../../../../fit/set-base.js'
 import {
   errorSummary,
+  notificationReferenceHeading,
   viewHeaderTag,
   journeyStrip,
   journeyStripStatus,
@@ -32,6 +33,8 @@ const cancelAmendLink = (page) =>
     name: sharedCopy.journeyStrip.cancelAmend,
     exact: true
   })
+const goBackLink = (page) =>
+  page.getByRole('link', { name: cancelCopy.goBackLink, exact: true })
 const CANCEL_AMEND_URL = /\/cancel-amend$/
 const cyaHref = setPath('/notifications/[^/]+/notification-view$')
 
@@ -70,34 +73,40 @@ test.beforeEach(async ({ page }) => {
   await expect(page).toHaveURL(CANCEL_AMEND_URL)
 })
 
-test('renders accessible confirmation copy, actions and a bare heading', async ({
+test('the whole content is the question, the confirm button and Go back, with nothing above the heading', async ({
   page
 }) => {
+  const contentColumn = page.locator('.govuk-grid-column-two-thirds')
+  const heading = page.getByRole('heading', {
+    name: cancelCopy.title,
+    level: 1
+  })
+  const goBack = goBackLink(page)
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
+  await expect(contentColumn.locator('> *')).toHaveCount(2)
+  await expect(contentColumn.locator('> form')).toHaveCount(1)
   await expect(
-    page.getByRole('heading', { name: cancelCopy.title, level: 1 })
-  ).toBeVisible()
-  await expect(page.getByText(cancelCopy.body)).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: cancelCopy.confirmButton })
-  ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: cancelCopy.noLink })
-  ).toHaveAttribute('href', cyaHref)
+    contentColumn.locator('> form .govuk-button-group > *')
+  ).toHaveCount(2)
+  await expect(contentColumn).toHaveText(
+    `${cancelCopy.title} ${cancelCopy.confirmButton} ${cancelCopy.goBackLink}`
+  )
+  await expect(goBack).toHaveAttribute('href', cyaHref)
   await expect(
     page.getByRole('link', { name: sharedCopy.layout.back, exact: true })
-  ).toHaveAttribute('href', cyaHref)
-  const beforeTitle = page
-    .getByRole('heading', { name: cancelCopy.title, level: 1 })
-    .locator('xpath=preceding-sibling::*')
-  await expect(beforeTitle).toHaveCount(1)
-  await expect(beforeTitle).toContainText(sharedCopy.journeyStrip.amend)
+  ).toHaveCount(0)
+
+  const beforeTitle = heading.locator('xpath=preceding-sibling::*')
+  await expect(beforeTitle).toHaveCount(0)
+
   await expectNoSeriousOrCriticalViolations(page, 'Cancel amendment page')
 })
 
-test('No preserves the amendment and its changes after reload', async ({
+test('Go back preserves the amendment and its changes after reload', async ({
   page
 }) => {
-  await page.getByRole('button', { name: cancelCopy.noLink }).click()
+  await goBackLink(page).click()
   await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await page.reload()
   await expect(
@@ -106,7 +115,7 @@ test('No preserves the amendment and its changes after reload', async ({
   await expect(page.getByText('DiscardMe99', { exact: true })).toBeVisible()
 })
 
-test('Cancel amend in the strip of a question page opens the confirmation page and No keeps the amendment', async ({
+test('Cancel amend in the strip of a question page opens the confirmation page and Go back keeps the amendment', async ({
   page
 }) => {
   const reference = journeyIdFromPage(page)
@@ -124,7 +133,7 @@ test('Cancel amend in the strip of a question page opens the confirmation page a
   ).toBeVisible()
   await expect(cancelAmendLink(page)).toHaveCount(0)
 
-  await page.getByRole('button', { name: cancelCopy.noLink }).click()
+  await goBackLink(page).click()
   await expect(page).toHaveURL(REVIEW_URL_WITHOUT_TRAIL)
   await expect(
     journeyStripStatus(page, sharedCopy.journeyStrip.amend)
@@ -296,11 +305,16 @@ test('Back from the restored submitted view opens the notification list', async 
   ).toBeVisible()
 })
 
-test('confirmation restores the submitted snapshot and an accessible success view', async ({
+test('confirmation opens the notification view showing it Submitted with its submitted answer restored, no banner above the reference, and no accessibility violations', async ({
   page
 }) => {
   await page.getByRole('button', { name: cancelCopy.confirmButton }).click()
   await expect(page).toHaveURL(/\/notification-view\?cancelled=1$/)
+  const referenceHeading = notificationReferenceHeading(page)
+  await expect(referenceHeading).toBeVisible()
+  await expect(
+    referenceHeading.locator('xpath=preceding-sibling::*')
+  ).toHaveCount(0)
   await expect(
     viewHeaderTag(page, sharedCopy.journeyStrip.submitted)
   ).toBeVisible()
@@ -313,4 +327,19 @@ test('confirmation restores the submitted snapshot and an accessible success vie
   )
   await page.reload()
   await expect(page.getByText('P123', { exact: true })).toBeVisible()
+})
+
+test('opening the cancel-amendment address again once the amendment has been cancelled opens the notification list', async ({
+  page
+}) => {
+  await page.getByRole('button', { name: cancelCopy.confirmButton }).click()
+  await expect(page).toHaveURL(/\/notification-view\?cancelled=1$/)
+  const reference = journeyIdFromPage(page)
+
+  await page.goto(`${BASE}/notifications/${reference}/cancel-amend`)
+
+  await expect(page).toHaveURL(BASE)
+  await expect(
+    page.getByRole('heading', { name: dashboardCopy.notificationsHeading })
+  ).toBeVisible()
 })

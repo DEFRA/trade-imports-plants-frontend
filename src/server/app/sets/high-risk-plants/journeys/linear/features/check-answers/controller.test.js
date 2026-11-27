@@ -518,27 +518,6 @@ describe('Check your answers lateness', () => {
     ).toBeUndefined()
   })
 
-  it('Should show the amendment-cancelled banner only after cancelling', async () => {
-    const journeyId = await submittedJourneyId()
-    const opened = stubH()
-    const cancelled = stubH()
-    await get(journeyRequest(journeyId), opened)
-    await get(
-      journeyRequest(journeyId, { query: { cancelled: '1' } }),
-      cancelled
-    )
-    await recordsStub.amend(journeyId)
-    const amending = stubH()
-    await get(
-      journeyRequest(journeyId, { query: { cancelled: '1' } }),
-      amending
-    )
-
-    expect(opened.captured.view.context.amendmentCancelled).toBe(false)
-    expect(cancelled.captured.view.context.amendmentCancelled).toBe(true)
-    expect(amending.captured.view.context.amendmentCancelled).toBe(false)
-  })
-
   it('Should follow Continue on a draft with no buttons, its Delete sitting in the header', async () => {
     const result = await driveHandler(get, { seed: COMPLETE_NOTIFICATION })
 

@@ -14,6 +14,7 @@ import {
 import { knownJourneysCookie } from '../../../../../../engine/persistence/session.js'
 import { store } from '../../../../../../engine/store.js'
 import {
+  expectOneLogged,
   expectOneSaveFallbackLogged,
   journeyRequest,
   requestAsSessionHoldingNoJourney,
@@ -24,7 +25,9 @@ import { records as recordsStub } from '../../../../../../services/persistence/r
 import * as cancelAmend from './controller.js'
 
 const NOTIFICATION_VIEW_SLUG = 'notification-view'
+const CANCEL_AMEND_REFUSED_MESSAGE = 'Cancel amend refused'
 
+const { CANCEL_AMEND_REFUSAL } = cancelAmend
 const get = cancelAmend.routes.find((route) => route.method === 'GET').handler
 const post = cancelAmend.routes.find((route) => route.method === 'POST').handler
 
@@ -46,16 +49,16 @@ const startAmend = async () => {
 describe('cancel amendment routes', () => {
   useStubbedHighRiskPlantsJourney()
 
-  it('Should show the Amend tag but offer no Cancel amend on the confirmation page itself', async () => {
+  it('Should carry no status strip and no back link on the confirmation page', async () => {
     const { journeyId } = await startAmend()
 
     const response = await get(journeyRequest(journeyId), stubH())
 
-    expect(response.context.journeyStrip.status.text).toBe('Amend')
-    expect(response.context.journeyStrip.cancelAmend).toBeUndefined()
+    expect(response.context.journeyStrip).toBeNull()
+    expect(response.context.backLink).toBeUndefined()
   })
 
-  it('Should render the confirmation for an amending journey with journey-scoped actions', async () => {
+  it('Should render the question as heading and title, with the link back targeting the notification view', async () => {
     const { journeyId } = await startAmend()
     const h = stubH()
 
@@ -65,14 +68,14 @@ describe('cancel amendment routes', () => {
       'high-risk-plants/journeys/linear/features/cancel-amend/template'
     )
     expect(response.context).toMatchObject({
-      heading: 'Cancel this amendment?',
+      pageTitle: 'Are you sure you want to cancel this amendment?',
+      heading: 'Are you sure you want to cancel this amendment?',
       cancelAction: pagePath(journeyId, 'cancel-amend'),
-      noHref: pagePath(journeyId, NOTIFICATION_VIEW_SLUG)
+      goBackHref: pagePath(journeyId, NOTIFICATION_VIEW_SLUG)
     })
-    expect(response.context.copy.body).toContain('submitted version restored')
   })
 
-  it('Should cancel AMEND, restore submitted content and redirect to the read-only CYA with success', async () => {
+  it('Should cancel AMEND, restore the submitted content and redirect to the notification view at the address that marks the cancellation', async () => {
     const { journeyId, submittedAt } = await startAmend()
 
     const response = await post(journeyRequest(journeyId), stubH())
@@ -88,7 +91,7 @@ describe('cancel amendment routes', () => {
     ).toBe('SubmittedRef')
   })
 
-  it('Should redirect non-AMEND journeys without attempting the transition', async () => {
+  it('Should send every non-amend state to the notification list without attempting the transition', async () => {
     const draft = await store.create()
     const submitted = await store.create()
     await records.submit(submitted.journeyId)
@@ -97,7 +100,7 @@ describe('cancel amendment routes', () => {
       redirect: SET_BASE
     })
     expect(await post(journeyRequest(submitted.journeyId), stubH())).toEqual({
-      redirect: pagePath(submitted.journeyId, NOTIFICATION_VIEW_SLUG)
+      redirect: SET_BASE
     })
     expect((await records.load({ journeyId: draft.journeyId })).status).toBe(
       'draft'
@@ -105,6 +108,24 @@ describe('cancel amendment routes', () => {
     expect(
       (await records.load({ journeyId: submitted.journeyId })).status
     ).toBe(SUBMITTED)
+  })
+
+  it('Should log the refusal once with the journey id, its status and the reason', async () => {
+    const submitted = await store.create()
+    await records.submit(submitted.journeyId)
+    const request = journeyRequest(submitted.journeyId)
+
+    await get(request, stubH())
+
+    expectOneLogged(request.logger, {
+      level: 'info',
+      fields: {
+        journeyId: submitted.journeyId,
+        status: SUBMITTED,
+        refusal: CANCEL_AMEND_REFUSAL.notInAmend
+      },
+      message: CANCEL_AMEND_REFUSED_MESSAGE
+    })
   })
 
   it('Should refuse to disclose or cancel an amendment the session does not hold', async () => {
@@ -116,6 +137,16 @@ describe('cancel amendment routes', () => {
     expect(postResponse).toEqual({ redirect: SET_BASE })
     expect(getRequest.state[knownJourneysCookie()]).toEqual([])
     expect(postRequest.state[knownJourneysCookie()]).toEqual([])
+    expectOneLogged(getRequest.logger, {
+      level: 'info',
+      fields: { journeyId, refusal: CANCEL_AMEND_REFUSAL.notInSession },
+      message: CANCEL_AMEND_REFUSED_MESSAGE
+    })
+    expectOneLogged(postRequest.logger, {
+      level: 'info',
+      fields: { journeyId, refusal: CANCEL_AMEND_REFUSAL.notInSession },
+      message: CANCEL_AMEND_REFUSED_MESSAGE
+    })
     const after = await records.load({ journeyId })
     expect(after.status).toBe(AMEND)
     expect(projectAnswers(after.fulfilment).producerIdentificationNumber).toBe(

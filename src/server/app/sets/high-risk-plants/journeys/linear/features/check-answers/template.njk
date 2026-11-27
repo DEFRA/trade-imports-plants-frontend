@@ -21,14 +21,6 @@
 {% endmacro %}
 
 {% block journeyContent %}
-  {% if amendmentCancelled %}
-    {{ govukNotificationBanner({
-      type: "success",
-      titleText: copy.cancelAmend.successTitle,
-      text: copy.cancelAmend.successBody,
-      role: "alert"
-    }) }}
-  {% endif %}
   {% include "shared/error-summary.njk" %}
   {{ sectionCaption(caption) }}
   {% if viewHeader %}
