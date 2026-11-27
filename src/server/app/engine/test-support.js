@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
 import { config } from '../../../config/config.js'
+import { fetchMock } from '../../common/test-helpers/dependency-answers.js'
 import { restoreConfigAfterEach } from '../../common/test-helpers/restore-config-after-each.js'
 import { buildDispatch } from '../flow/dispatch.js'
 import { isCopyLeaf, leaves } from '../shared/copy-leaves.js'
@@ -11,9 +11,14 @@ import {
 } from '../shared/kit.js'
 import { store } from './store.js'
 import { knownJourneysCookie } from './journey.js'
-import { configureRecords, records } from './persistence/records.js'
+import {
+  configureRecords,
+  records,
+  STALE_CONCURRENCY_TOKEN
+} from './persistence/records.js'
 import { configureSession } from './persistence/session.js'
 import { BackendRequestError } from '../services/persistence/records/errors.js'
+import { markErrorLogged } from '../../common/helpers/logging/logged-error.js'
 import { records as recordsReal } from '../services/persistence/records/real/index.js'
 import { records as recordsStub } from '../services/persistence/records/stub/index.js'
 import { session as sessionStub } from '../services/persistence/session/stub.js'
@@ -154,23 +159,43 @@ export const expectNoRefusalLogged = (logger) =>
 export const expectOneRefusalLogged = (logger, refusal) =>
   expectOneLogged(logger, refusalEntry(refusal))
 
-/** The log entry for a save fallback: the journey id, the caught error and
- * any ids the page passed. */
-export const saveFallbackEntry = ({ journeyId, err, ...ids }) => ({
+/** The log entry for a save fallback: the journey id and any ids the page
+ * passed, at warn. */
+export const saveFallbackEntry = ({ journeyId, ...ids }) => ({
   level: 'warn',
   message: SAVE_FALLBACK_LOG_MESSAGE,
-  fields: expect.objectContaining({ journeyId, ...ids, err })
+  fields: expect.objectContaining({ journeyId, ...ids })
 })
 
-export const expectOneSaveFallbackLogged = (logger, fallback) =>
+/** Asserts the logger holds one line, the save fallback's, with no error in
+ * its fields. */
+export const expectOneSaveFallbackLogged = (logger, fallback) => {
   expectOneLogged(logger, saveFallbackEntry(fallback))
+  expect(logger.entries[0].fields).not.toHaveProperty('err')
+}
 
-/** The recoverable records error for a backend that answered 503 to `operation`. */
-export const unavailableBackendError = (operation) =>
-  new BackendRequestError(operation, {
-    status: 503,
-    statusText: 'Service Unavailable'
-  })
+/** The recoverable records error for a backend that answered 503 to
+ * `operation`, marked as already logged by the records adapter. */
+export const loggedBackendRefusal = (operation) =>
+  markErrorLogged(
+    new BackendRequestError(operation, {
+      status: 503,
+      statusText: 'Service Unavailable'
+    })
+  )
+
+/**
+ * The records error for a backend that refused `operation` with 409 because
+ * the posted concurrency token was stale.
+ */
+export const staleConcurrencyRefusal = (operation) =>
+  Object.assign(
+    new BackendRequestError(operation, {
+      status: 409,
+      statusText: 'Conflict'
+    }),
+    { code: STALE_CONCURRENCY_TOKEN }
+  )
 
 export const journeyRequest = (
   journeyId,
@@ -327,7 +352,7 @@ export const postHandlerEndingWith = (featureModule, pathSuffix) =>
     (route) => route.method === 'POST' && route.path.endsWith(pathSuffix)
   ).handler
 
-export const fetchMock = createFetchMock(vi)
+export { fetchMock }
 
 export const resetMocksAndConfigAfterTests = (...configKeys) => {
   restoreConfigAfterEach(['stubMode', ...configKeys])
@@ -380,15 +405,35 @@ export const addressBookRequestUrls = () =>
     .map((request) => request.url)
     .filter((url) => url.includes('/addresses'))
 
-export const useStubbedJourney = (setId, dispatchPages) => {
+const useEmptyStubStore = (setId) => {
   beforeAll(() => {
     configureSession(setId, sessionStub)
-    buildDispatch(setId, dispatchPages)
   })
   beforeEach(async () => {
     configureRecords(setId, recordsStub)
     await store.clear()
   })
+}
+
+export const useStubbedJourney = (setId, dispatchPages) => {
+  useEmptyStubStore(setId)
+  beforeAll(() => {
+    buildDispatch(setId, dispatchPages)
+  })
+}
+
+/** Before each test, puts `setId` on the stub records and session and creates
+ * one draft journey. Returns its current id and a request made for it. */
+export const useFreshDraftJourney = (setId) => {
+  let journeyId
+  useEmptyStubStore(setId)
+  beforeEach(async () => {
+    journeyId = (await records.create()).journeyId
+  })
+  return {
+    journeyId: () => journeyId,
+    request: () => journeyRequest(journeyId)
+  }
 }
 
 export const useBackendRecords = (setId) => {

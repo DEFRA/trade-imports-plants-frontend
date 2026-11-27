@@ -16,16 +16,16 @@ const scalarFulfilment = (value) => ({ [scalarField.id]: value })
 
 const UNKNOWN_JOURNEY_ID = 'unknown-journey-id'
 
-// The stub mirrors the agreed plants backend reference format.
-const REFERENCE_BODY = '[0-9A-HJKMNP-TV-Z]{6}'
-
 describe('records durable port', () => {
   beforeEach(() => records.clear())
 
   it('Should mint a plants-prefixed two-digit-year Crockford reference as the journeyId', async () => {
     const { journeyId } = await records.create()
+    const crockfordReferenceBody = '[0-9A-HJKMNP-TV-Z]{6}'
     const year = String(new Date().getFullYear() % 100).padStart(2, '0')
-    expect(journeyId).toMatch(new RegExp(`^GBN-HRP-${year}-${REFERENCE_BODY}$`))
+    expect(journeyId).toMatch(
+      new RegExp(`^GBN-HRP-${year}-${crockfordReferenceBody}$`)
+    )
   })
 
   it('Should mint a distinct reference per journey', async () => {
@@ -46,7 +46,7 @@ describe('records durable port', () => {
     expect(journey).not.toHaveProperty('answers')
   })
 
-  it('Should whole-replace canonical fulfilment durably, with no finalise', async () => {
+  it('Should whole-replace canonical fulfilment durably, with no submit', async () => {
     const { journeyId } = await records.create()
     await records.replaceFulfilment(journeyId, scalarFulfilment(VALUE_ONE))
     expect((await records.load({ journeyId })).fulfilment).toEqual(
@@ -69,10 +69,10 @@ describe('records durable port', () => {
     )
   })
 
-  it('Should freeze after finalise so a later replacement throws', async () => {
+  it('Should freeze after submit so a later replacement throws', async () => {
     const { journeyId } = await records.create()
     await records.replaceFulfilment(journeyId, scalarFulfilment(VALUE_ONE))
-    await records.finalise(journeyId)
+    await records.submit(journeyId)
     await expect(
       records.replaceFulfilment(journeyId, { late: true })
     ).rejects.toThrow(/is submitted — writes blocked/)
@@ -81,13 +81,13 @@ describe('records durable port', () => {
   it('Should stamp createdAt on create and keep it through the lifecycle', async () => {
     const created = await records.create()
     expect(created.createdAt).toEqual(expect.any(String))
-    const submitted = await records.finalise(created.journeyId)
+    const submitted = await records.submit(created.journeyId)
     expect(submitted.createdAt).toBe(created.createdAt)
   })
 
   it('Should unfreeze on amend — status set to amend, submittedAt cleared, writes permitted', async () => {
     const { journeyId } = await records.create()
-    await records.finalise(journeyId)
+    await records.submit(journeyId)
 
     const amended = await records.amend(journeyId)
 
@@ -99,12 +99,12 @@ describe('records durable port', () => {
     )
   })
 
-  it('Should re-finalise after an amend — the amend-and-resubmit cycle round-trips', async () => {
+  it('Should resubmit after an amend — the amend-and-resubmit cycle round-trips', async () => {
     const { journeyId } = await records.create()
-    await records.finalise(journeyId)
+    await records.submit(journeyId)
     await records.amend(journeyId)
 
-    const resubmitted = await records.finalise(journeyId)
+    const resubmitted = await records.submit(journeyId)
 
     expect(resubmitted.status).toBe(SUBMITTED)
     expect(resubmitted.submittedAt).toEqual(expect.any(String))
@@ -113,7 +113,7 @@ describe('records durable port', () => {
   it('Should cancel an amendment by restoring the submitted snapshot and freezing it again', async () => {
     const { journeyId } = await records.create()
     await records.replaceFulfilment(journeyId, scalarFulfilment(VALUE_ONE))
-    const submitted = await records.finalise(journeyId)
+    const submitted = await records.submit(journeyId)
     await records.amend(journeyId)
     await records.replaceFulfilment(journeyId, scalarFulfilment(VALUE_TWO))
 

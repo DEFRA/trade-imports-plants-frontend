@@ -1,77 +1,82 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import { Metrics } from '@defra/cdp-metrics'
 
-import { publishMetricsInBackground } from './publish-metrics.js'
-import { config } from '../../../../config/config.js'
-import { readEmfDocuments } from '../../test-helpers/emf-documents.js'
-import { restoreConfigAfterEach } from '../../test-helpers/restore-config-after-each.js'
-import { recordModuleLoggerWarn } from '../../test-helpers/module-logger-lines.js'
-
-const NAMESPACE_KEY = 'metrics.namespace'
-const TEST_NAMESPACE = 'test-namespace'
+import {
+  countEventInBackground,
+  publishMetricsInBackground
+} from './publish-metrics.js'
+import {
+  EMF_TEST_NAMESPACE,
+  recordEmfDocuments
+} from '../../test-helpers/emf-documents.js'
+import { recordEcsLogLines } from '../../test-helpers/ecs-log-lines.js'
 
 describe('publish metrics', () => {
-  restoreConfigAfterEach([NAMESPACE_KEY])
-  const warnLines = recordModuleLoggerWarn()
-  let logSpy
+  const ecsLog = recordEcsLogLines()
+  const emf = recordEmfDocuments()
 
-  beforeEach(() => {
-    config.set(NAMESPACE_KEY, TEST_NAMESPACE)
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  test('counting an event publishes a count of 1 with exactly the dimensions given', async () => {
+    countEventInBackground('journey.validation.failure', { page: 'origin' })
+
+    const document = await emf.onlyDocument()
+    const directive = document._aws.CloudWatchMetrics[0]
+    expect(directive).toEqual({
+      Namespace: EMF_TEST_NAMESPACE,
+      Dimensions: [['page']],
+      Metrics: [{ Name: 'journey.validation.failure', Unit: 'Count' }]
+    })
+    expect(document.page).toBe('origin')
+    expect(document['journey.validation.failure']).toBe(1)
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  test('publishes one document with the dimensions, the metrics and the properties given', async () => {
-    publishMetricsInBackground(
-      { Dependency: 'defra-id', Operation: 'jwks' },
-      [{ name: 'ExternalCallFailure', value: 0, unit: 'Count' }],
-      { Outcome: 'success' }
+  test('counting an event with frozen dimensions publishes it', async () => {
+    countEventInBackground(
+      'external.dependency.error',
+      Object.freeze({ dependency: 'redis' })
     )
 
-    await vi.waitFor(() => expect(readEmfDocuments(logSpy)).toHaveLength(1))
-    const [document] = readEmfDocuments(logSpy)
-    expect(document._aws.CloudWatchMetrics[0]).toEqual({
-      Namespace: TEST_NAMESPACE,
-      Dimensions: [['Dependency', 'Operation']],
-      Metrics: [{ Name: 'ExternalCallFailure', Unit: 'Count' }]
-    })
-    expect(document.Dependency).toBe('defra-id')
-    expect(document.Operation).toBe('jwks')
-    expect(document.ExternalCallFailure).toBe(0)
-    expect(document.Outcome).toBe('success')
+    expect((await emf.onlyDocument()).dependency).toBe('redis')
+  })
+
+  test('counting an event with no dimensions publishes it under the empty dimension set', async () => {
+    countEventInBackground('journey.started')
+
+    const document = await emf.onlyDocument()
+    expect(document._aws.CloudWatchMetrics[0].Dimensions).toEqual([[]])
+    expect(document['journey.started']).toBe(1)
   })
 
   test('a document that cannot be written is logged at warn with the error, its dimensions and the metric names', async () => {
-    const flushError = new Error('agent unavailable')
     const metricsLogger = {
       setNamespace: vi.fn(() => metricsLogger),
       putMetric: vi.fn(() => metricsLogger),
-      setProperty: vi.fn(() => metricsLogger),
-      flush: vi.fn().mockRejectedValue(flushError)
+      flush: vi.fn().mockRejectedValue(new Error('agent unavailable'))
     }
-    vi.spyOn(Metrics.prototype, 'getMetricsLogger').mockReturnValue(
-      metricsLogger
-    )
+    const getMetricsLogger = vi
+      .spyOn(Metrics.prototype, 'getMetricsLogger')
+      .mockReturnValue(metricsLogger)
+    onTestFinished(() => getMetricsLogger.mockRestore())
 
-    publishMetricsInBackground({ 'request.kind': 'page' }, [
-      { name: 'page.request.backend.calls', value: 1, unit: 'Count' },
-      { name: 'page.request.session.resolutions', value: 1, unit: 'Count' }
-    ])
-
-    await vi.waitFor(() =>
-      expect(warnLines.entriesWith('Could not publish metrics')).toHaveLength(1)
-    )
-    const [entry] = warnLines.entriesWith('Could not publish metrics')
-    expect(entry.fields).toEqual({
-      err: flushError,
-      dimensions: { 'request.kind': 'page' },
-      metrics: [
-        'page.request.backend.calls',
-        'page.request.session.resolutions'
+    publishMetricsInBackground(
+      { dependency: 'address-book', operation: 'list-addresses' },
+      [
+        { name: 'external.call.duration', value: 2, unit: 'Milliseconds' },
+        { name: 'external.call.failure', value: 0, unit: 'Count' }
       ]
+    )
+
+    await vi.waitFor(() => expect(ecsLog.lines()).toHaveLength(1))
+    const [line] = ecsLog.lines()
+    expect(line['log.level']).toBe('warn')
+    expect(line.message).toBe('Could not publish metrics')
+    expect(line.dimensions).toEqual({
+      dependency: 'address-book',
+      operation: 'list-addresses'
     })
+    expect(line.metrics).toEqual([
+      'external.call.duration',
+      'external.call.failure'
+    ])
+    expect(line.error.message).toBe('agent unavailable')
   })
 })

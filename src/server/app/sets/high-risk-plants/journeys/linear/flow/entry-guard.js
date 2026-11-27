@@ -14,6 +14,7 @@ import {
 } from '../../../../../bridge/obligation-source.js'
 import { commodityTypePage } from '../features/commodity-type/page.js'
 import { buildInsFrontendUrl } from '../../../../../../common/helpers/ins-frontend-url.js'
+import { countEventInBackground } from '../../../../../../common/helpers/metrics/publish-metrics.js'
 
 const journeyPrefix = () => `${setBase()}/notifications/`
 const ACTION_SLUGS = new Set(Object.values(notificationActionSlugs))
@@ -64,5 +65,6 @@ export const entryGuardTarget = async (request, h) => {
     { journeyId: journey.journeyId, path: request.path },
     'No answer entered, sent to the first page'
   )
+  countEventInBackground('journey.entry.redirect')
   return pagePath(request.params.journeyId, commodityTypePage.slug)
 }

@@ -8,7 +8,7 @@ import {
   expectOneRefusalLogged,
   expectOneSaveFallbackLogged,
   resetMocksAndConfigAfterTests,
-  unavailableBackendError
+  loggedBackendRefusal
 } from '../../../../../../engine/test-support.js'
 import { hubPath, pagePath } from '../../../../../../shared/paths.js'
 import {
@@ -515,7 +515,7 @@ const describeSaveFailures = (picker) => {
     useStubbedHighRiskPlantsJourney()
 
     it('Should re-render a backend request failure at 500 with the banner and the selection, logging the fallback', async () => {
-      const failure = unavailableBackendError('save answers')
+      const failure = loggedBackendRefusal('save answers')
 
       const result = await savedWith(
         { action: 'save', [fieldName]: primaryId },
@@ -526,8 +526,7 @@ const describeSaveFailures = (picker) => {
       expect(result.view.context.recoverableError).toBe(true)
       expect(checkedId(result)).toBe(primaryId)
       expectOneSaveFallbackLogged(result.logger, {
-        journeyId: result.journeyId,
-        err: failure
+        journeyId: result.journeyId
       })
     })
 

@@ -154,7 +154,7 @@ describe.skipIf(!runsIt('real'))(
       const { journeyId } = await records.create()
       await replaceAnswers(journeyId, { scalarField: VALUE_ONE })
 
-      expect((await records.finalise(journeyId)).status).toBe(SUBMITTED)
+      expect((await records.submit(journeyId)).status).toBe(SUBMITTED)
       expect((await records.load({ journeyId })).status).toBe(SUBMITTED)
       await expect(
         replaceAnswers(journeyId, { scalarField: VALUE_TWO })

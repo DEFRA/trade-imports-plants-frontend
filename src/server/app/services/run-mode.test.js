@@ -1,61 +1,20 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { resetModulesStubModeAndStubbedGlobals } from '../../common/test-helpers/reset-modules-stub-mode-and-globals.js'
+import {
+  okAnswer,
+  okOnlyFor,
+  refusedAnswer,
+  useDependencyAnswers
+} from '../../common/test-helpers/dependency-answers.js'
 
-const okResponse = (body) => ({ ok: true, json: async () => body })
+const SPS_ORIGIN_BLOCK = 'GBNAG_SPS_EX'
 
-const stubFetch = (impl) => vi.stubGlobal('fetch', vi.fn(impl))
-
-const okOnlyForBlock = (block, body) => async (url) => {
-  if (new URL(url).searchParams.get('blocks') !== block) {
-    return { ok: false, status: 400, statusText: 'Unexpected countries query' }
-  }
-  return okResponse(body)
-}
+const originCountriesServing = (countries) =>
+  okOnlyFor({ pathname: '/countries', blocks: [SPS_ORIGIN_BLOCK] }, countries)
 
 resetModulesStubModeAndStubbedGlobals()
-
-describe('countries client', () => {
-  it('Should parse a fetched [{code,name}] payload', async () => {
-    stubFetch(async () => okResponse([{ code: 'ZZ', name: 'Zedland' }]))
-    const { fetchCountries } = await import('./countries/client.js')
-    await expect(fetchCountries()).resolves.toEqual([
-      { code: 'ZZ', name: 'Zedland' }
-    ])
-  })
-
-  it('Should request countries filtered to the given blocks', async () => {
-    stubFetch(okOnlyForBlock('BLOCK_ONE', [{ code: 'ZZ', name: 'Zedland' }]))
-    const { fetchCountries } = await import('./countries/client.js')
-    await expect(fetchCountries(['BLOCK_ONE'])).resolves.toEqual([
-      { code: 'ZZ', name: 'Zedland' }
-    ])
-  })
-
-  it('Should throw on a non-ok response', async () => {
-    stubFetch(async () => ({ ok: false, status: 503, statusText: 'Down' }))
-    const { fetchCountries } = await import('./countries/client.js')
-    await expect(fetchCountries()).rejects.toThrow('Failed to get countries')
-  })
-})
-
-describe('ports client', () => {
-  it('Should parse a fetched [{code,name}] payload', async () => {
-    stubFetch(async () => okResponse([{ code: 'GB ZZZ', name: 'Zed Port' }]))
-    const { fetchPortsOfEntry } = await import('./ports/client.js')
-    await expect(fetchPortsOfEntry()).resolves.toEqual([
-      { code: 'GB ZZZ', name: 'Zed Port' }
-    ])
-  })
-
-  it('Should throw on a non-ok response', async () => {
-    stubFetch(async () => ({ ok: false, status: 500, statusText: 'Boom' }))
-    const { fetchPortsOfEntry } = await import('./ports/client.js')
-    await expect(fetchPortsOfEntry()).rejects.toThrow(
-      'Failed to get ports of entry'
-    )
-  })
-})
+const answerWith = useDependencyAnswers()
 
 describe('countries service — stub mode', () => {
   it('Should serve stub data through the accessors without loading', async () => {
@@ -78,24 +37,21 @@ describe('countries service — stub mode', () => {
 
   it('Should short-circuit ensureLoaded and never fetch in stub mode', async () => {
     process.env.STUB_MODE = 'true'
-    const fetchMock = vi.fn(async () =>
-      okResponse([{ code: 'ZZ', name: 'Zedland' }])
+    const fetched = answerWith(() =>
+      okAnswer([{ code: 'ZZ', name: 'Zedland' }])
     )
-    vi.stubGlobal('fetch', fetchMock)
     const countries = await import('./countries/index.js')
     await countries.ensureLoaded()
     expect(await countries.originLabel('AT')).toBe('Austria')
     expect(await countries.originLabel('ZZ')).toBeUndefined()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetched.requests()).toEqual([])
   })
 })
 
 describe('countries service — real mode', () => {
   it('Should self-load on the first reader call and serve fetched data', async () => {
     process.env.STUB_MODE = 'false'
-    // The block code is the one `countries/index.js` asks the reference-data
-    // service for, so it is pinned to that source rather than freely chosen.
-    stubFetch(okOnlyForBlock('GBNAG_SPS_EX', [{ code: 'ZZ', name: 'Zedland' }]))
+    answerWith(originCountriesServing([{ code: 'ZZ', name: 'Zedland' }]))
     const countries = await import('./countries/index.js')
 
     expect(await countries.originLabel('ZZ')).toBe('Zedland')
@@ -111,8 +67,8 @@ describe('countries service — real mode', () => {
 
   it('Should offer each fetched territory on the origin list, held to its country', async () => {
     process.env.STUB_MODE = 'false'
-    stubFetch(
-      okOnlyForBlock('GBNAG_SPS_EX', [
+    answerWith(
+      originCountriesServing([
         {
           code: 'FR',
           name: 'France',
@@ -138,26 +94,22 @@ describe('countries service — real mode', () => {
       { code: 'GB', name: 'United Kingdom' },
       { code: 'US', name: 'United States' }
     ]
-    const fetchMock = vi.fn(async (url) =>
-      new URL(url).searchParams.has('blocks')
-        ? okResponse([{ code: 'ZZ', name: 'Zedland' }])
-        : okResponse(unfiltered)
+    const fetched = answerWith(
+      okOnlyFor({ pathname: '/countries' }, unfiltered)
     )
-    vi.stubGlobal('fetch', fetchMock)
     const countries = await import('./countries/index.js')
 
     expect(await countries.addressBookCountries()).toEqual(unfiltered)
     expect(await countries.addressBookCountryName('US')).toBe('United States')
     expect(await countries.addressBookCountryName('XX')).toBe('XX')
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetched.requests()).toHaveLength(1)
   })
 
   it('Should fetch once across many reader calls once loaded', async () => {
     process.env.STUB_MODE = 'false'
-    const fetchMock = vi.fn(
-      okOnlyForBlock('GBNAG_SPS_EX', [{ code: 'ZZ', name: 'Zedland' }])
+    const fetched = answerWith(
+      originCountriesServing([{ code: 'ZZ', name: 'Zedland' }])
     )
-    vi.stubGlobal('fetch', fetchMock)
     const countries = await import('./countries/index.js')
 
     await countries.originLabel('ZZ')
@@ -165,28 +117,24 @@ describe('countries service — real mode', () => {
     await countries.addressCountries()
     await countries.countryCodeOf('Zedland')
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetched.requests()).toHaveLength(1)
   })
 
   it('Should re-attempt on a reader call after a prior load failure', async () => {
     process.env.STUB_MODE = 'false'
-    const fetchMock = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('MDM down'))
-      .mockImplementation(
-        okOnlyForBlock('GBNAG_SPS_EX', [{ code: 'ZZ', name: 'Zedland' }])
-      )
-    vi.stubGlobal('fetch', fetchMock)
+    const fetched = answerWith(
+      originCountriesServing([{ code: 'ZZ', name: 'Zedland' }])
+    ).mockRejectOnce(new Error('MDM down'))
     const countries = await import('./countries/index.js')
 
     await expect(countries.originLabel('ZZ')).rejects.toThrow()
     expect(await countries.originLabel('ZZ')).toBe('Zedland')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetched.requests()).toHaveLength(2)
   })
 
   it('Should reject with a serverUnavailable Boom error on load failure', async () => {
     process.env.STUB_MODE = 'false'
-    stubFetch(async () => ({ ok: false, status: 503, statusText: 'Down' }))
+    answerWith(() => refusedAnswer(503, 'Down'))
     const countries = await import('./countries/index.js')
 
     await expect(countries.originLabel('ZZ')).rejects.toMatchObject({
@@ -213,9 +161,11 @@ describe('ports service — stub mode', () => {
 })
 
 describe('ports service — real mode', () => {
+  const portsServing = () => okAnswer([{ code: 'GB ZZZ', name: 'Zed Port' }])
+
   it('Should self-load on the first reader call and serve fetched ports', async () => {
     process.env.STUB_MODE = 'false'
-    stubFetch(async () => okResponse([{ code: 'GB ZZZ', name: 'Zed Port' }]))
+    answerWith(portsServing)
     const ports = await import('./ports/index.js')
 
     expect(await ports.list()).toEqual([{ code: 'GB ZZZ', name: 'Zed Port' }])
@@ -223,38 +173,31 @@ describe('ports service — real mode', () => {
 
   it('Should fetch once across many reader calls once loaded', async () => {
     process.env.STUB_MODE = 'false'
-    const fetchMock = vi.fn(async () =>
-      okResponse([{ code: 'GB ZZZ', name: 'Zed Port' }])
-    )
-    vi.stubGlobal('fetch', fetchMock)
+    const fetched = answerWith(portsServing)
     const ports = await import('./ports/index.js')
 
     await ports.list()
     await ports.label('GB ZZZ')
     await ports.portOptions()
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetched.requests()).toHaveLength(1)
   })
 
   it('Should re-attempt on a reader call after a prior load failure', async () => {
     process.env.STUB_MODE = 'false'
-    const fetchMock = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('MDM down'))
-      .mockImplementation(async () =>
-        okResponse([{ code: 'GB ZZZ', name: 'Zed Port' }])
-      )
-    vi.stubGlobal('fetch', fetchMock)
+    const fetched = answerWith(portsServing).mockRejectOnce(
+      new Error('MDM down')
+    )
     const ports = await import('./ports/index.js')
 
     await expect(ports.list()).rejects.toThrow()
     expect(await ports.list()).toEqual([{ code: 'GB ZZZ', name: 'Zed Port' }])
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetched.requests()).toHaveLength(2)
   })
 
   it('Should reject with a serverUnavailable Boom error on load failure', async () => {
     process.env.STUB_MODE = 'false'
-    stubFetch(async () => ({ ok: false, status: 500, statusText: 'Boom' }))
+    answerWith(() => refusedAnswer(500, 'Boom'))
     const ports = await import('./ports/index.js')
 
     await expect(ports.list()).rejects.toMatchObject({
@@ -264,9 +207,6 @@ describe('ports service — real mode', () => {
   })
 })
 
-// isStubMode's own unit test mocks config; these two run the real convict
-// schema, so they are what proves the STUB_MODE environment variable actually
-// reaches the services above.
 describe('mode resolution', () => {
   it('Should default to real when the flag is unset', async () => {
     delete process.env.STUB_MODE

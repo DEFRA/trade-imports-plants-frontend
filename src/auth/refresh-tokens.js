@@ -33,9 +33,7 @@ async function refreshTokens(refreshToken) {
       })
   )
 
-  // Payload will include both a new access token and a new refresh token
-  // Refresh tokens can only be used once, so the new refresh token should be stored in place of the old one
   return responsePayload
 }
 
-export { refreshTokens }
+export { refreshTokens, TOKEN_ENDPOINT_TIMEOUT_MS }

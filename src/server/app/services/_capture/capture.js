@@ -2,8 +2,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
-const referenceDataUrl =
-  process.env.TRADE_IMPORTS_REFERENCE_DATA_URL ?? 'http://localhost:8086'
+import { config } from '../../../../config/config.js'
+
+const referenceDataUrl = config.get('tradeImportsReferenceDataApi.baseUrl')
 const outDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
 const JSON_INDENT_SPACES = 2
 
@@ -16,9 +17,8 @@ const targets = [
   { name: 'ports-of-entry', url: `${referenceDataUrl}/ports-of-entry` }
 ]
 
-// Every target is a built endpoint, so a failure is a failure.
-const reportFetchFailure = (target, message) => {
-  console.log(`${target.name}: ${message}`)
+const reportFetchFailure = (target, ...reason) => {
+  console.error(`${target.name}: ${target.url}`, ...reason)
   process.exitCode = 1
 }
 
@@ -34,7 +34,7 @@ const fetchTarget = async (target) => {
     }
     return response
   } catch (error) {
-    reportFetchFailure(target, `FETCH FAILED ${error.message}`)
+    reportFetchFailure(target, 'FETCH FAILED', error)
     return null
   }
 }

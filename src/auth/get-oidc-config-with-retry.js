@@ -29,4 +29,4 @@ async function getOidcConfigWithRetry(logger) {
   }
 }
 
-export { getOidcConfigWithRetry }
+export { getOidcConfigWithRetry, RETRY_DELAYS_MS }

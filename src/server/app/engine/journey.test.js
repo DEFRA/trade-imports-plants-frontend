@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { fetchMock } from '../../common/test-helpers/dependency-answers.js'
 import {
   cancelAmendJourney,
   copyJourney,
@@ -46,8 +46,7 @@ import {
 
 const { scalarField } = obligationSet()
 
-const fetchMocker = createFetchMock(vi)
-fetchMocker.enableMocks()
+fetchMock.enableMocks()
 
 const jsonOf = (request) => request.clone().json()
 
@@ -235,18 +234,18 @@ describe('#amendJourney against the backend', () => {
   beforeEach(() => {
     configureRecords(SET_ID, recordsReal)
     configureSession(SET_ID, sessionStub)
-    fetchMocker.resetMocks()
+    fetchMock.resetMocks()
   })
 
   it('Should refuse an id the backend does not hold, log it and send no amend request', async () => {
-    fetchMocker.mockResponse('Not Found', { status: 404 })
+    fetchMock.mockResponse('Not Found', { status: 404 })
     const request = journeyRequest(backendJourneyId, { knownJourneyIds: [] })
 
     const editable = await amendJourney(request, recordingH(), backendJourneyId)
 
     expect(editable).toBeUndefined()
     expect(
-      fetchMocker.requests().map(({ method, url }) => ({ method, url }))
+      fetchMock.requests().map(({ method, url }) => ({ method, url }))
     ).toEqual([
       {
         method: 'GET',
@@ -360,11 +359,11 @@ describe('#listKnownJourneys', () => {
 describe('#listKnownJourneys against the backend', () => {
   beforeEach(() => {
     configureRecords(SET_ID, recordsReal)
-    fetchMocker.resetMocks()
+    fetchMock.resetMocks()
   })
 
   it('Should request the page asked for with the organisation header', async () => {
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify({
         page: 2,
         size: 20,
@@ -390,9 +389,9 @@ describe('#listKnownJourneys against the backend', () => {
       await listKnownJourneys(request, { page: 2 })
     })
 
-    const [backendRequest] = fetchMocker.requests()
+    const [backendRequest] = fetchMock.requests()
     expect(backendRequest.url).toBe(
-      `${notificationsUrl}?page=2&sort=arrivalDate,desc`
+      `${notificationsUrl}?page=2&sort=arrivalDate%2Cdesc`
     )
     expect(backendRequest.headers.get('Trade-Imports-Organisation-Id')).toBe(
       '5900042'
@@ -404,8 +403,8 @@ describe('backend requests carry the authenticated actor', () => {
   beforeEach(() => {
     configureRecords(SET_ID, recordsReal)
     configureSession(SET_ID, sessionStub)
-    fetchMocker.resetMocks()
-    fetchMocker.mockResponse(backendNotification({ status: 'SUBMITTED' }))
+    fetchMock.resetMocks()
+    fetchMock.mockResponse(backendNotification({ status: 'SUBMITTED' }))
   })
 
   it('Should send the authenticated actor as the body of the create request', async () => {
@@ -414,7 +413,7 @@ describe('backend requests carry the authenticated actor', () => {
       recordingH()
     )
 
-    expect(await jsonOf(fetchMocker.requests()[0])).toEqual({
+    expect(await jsonOf(fetchMock.requests()[0])).toEqual({
       notification: { fulfilments: [] },
       actor: authenticatedActor
     })
@@ -451,7 +450,7 @@ describe('backend requests carry the authenticated actor', () => {
         recordingH()
       )
 
-      const lastRequest = fetchMocker.requests().at(-1)
+      const lastRequest = fetchMock.requests().at(-1)
       expect(lastRequest.url).toBe(expectedUrl)
       expect(await jsonOf(lastRequest)).toEqual(authenticatedActor)
     }
@@ -462,13 +461,13 @@ describe('#replaceJourneyFulfilment', () => {
   beforeEach(() => {
     configureRecords(SET_ID, recordsReal)
     configureSession(SET_ID, sessionStub)
-    fetchMocker.resetMocks()
+    fetchMock.resetMocks()
   })
 
   it('Should send the concurrencyToken the first save returned on a second save in the same request', async () => {
     const first = assembleFulfilments({ scalarField: VALUE_ONE })
     const second = assembleFulfilments({ scalarField: VALUE_TWO })
-    fetchMocker.mockResponses(
+    fetchMock.mockResponses(
       [backendNotification(), { status: 200 }],
       [
         backendNotification({
@@ -493,7 +492,7 @@ describe('#replaceJourneyFulfilment', () => {
     await replaceJourneyFulfilment(request, backendJourneyId, first)
     await replaceJourneyFulfilment(request, backendJourneyId, second)
 
-    const puts = fetchMocker.requests().filter(({ method }) => method === 'PUT')
+    const puts = fetchMock.requests().filter(({ method }) => method === 'PUT')
     const tokensSent = await Promise.all(
       puts.map(async (put) => (await jsonOf(put)).notification.concurrencyToken)
     )

@@ -103,7 +103,7 @@ describe('declaration', () => {
     [CLOCK, 'on-time'],
     ['2026-03-26T00:00:00Z', 'late']
   ])(
-    'Should commit %s as %s before finalising and ignore forged system input',
+    'Should commit %s as %s before submitting and ignore forged system input',
     async (clock, expected) => {
       const { request, h, id } = await setup()
       request.app.clock = () => new Date(clock)
@@ -111,13 +111,13 @@ describe('declaration', () => {
         declaration: 'confirmed',
         lateNotificationIndicator: 'forged'
       }
-      const finalise = async (...args) => {
+      const submit = async (...args) => {
         expect((await store.get(id)).answers.lateNotificationIndicator).toBe(
           expected
         )
-        return recordsStub.finalise(...args)
+        return recordsStub.submit(...args)
       }
-      configureRecords(SET_ID, { ...recordsStub, finalise })
+      configureRecords(SET_ID, { ...recordsStub, submit })
       expect(await post(request, h)).toEqual({
         redirect: `${SET_BASE}/notifications/${id}/confirmation`
       })
@@ -183,7 +183,7 @@ describe('declaration', () => {
     )
   })
 
-  it('Should preserve first-submission lateness when finalising an amendment', async () => {
+  it('Should preserve first-submission lateness when submitting an amendment', async () => {
     const { request, h, id } = await setup({
       ...COMPLETE_NOTIFICATION,
       lateNotificationIndicator: 'on-time'
@@ -199,12 +199,12 @@ describe('declaration', () => {
     )
   })
 
-  it('Should retain values and show the recoverable failure banner when finalise fails', async () => {
+  it('Should retain values and show the recoverable failure banner when submit fails', async () => {
     const { request, h } = await setup()
     request.payload = { declaration: 'confirmed' }
     fetchMock.enableMocks()
     fetchMock.mockResponse(async () => ({ status: 503, body: '' }))
-    configureRecords(SET_ID, { ...recordsStub, finalise: realRecords.finalise })
+    configureRecords(SET_ID, { ...recordsStub, submit: realRecords.submit })
     expect((await post(request, h)).statusCode).toBe(500)
     expect(h.captured.view.context).toMatchObject({
       recoverableError: true,
@@ -217,7 +217,7 @@ describe('declaration', () => {
     request.payload = { declaration: 'confirmed' }
     configureRecords(SET_ID, {
       ...recordsStub,
-      finalise: async () => {
+      submit: async () => {
         throw new TypeError('unexpected')
       }
     })

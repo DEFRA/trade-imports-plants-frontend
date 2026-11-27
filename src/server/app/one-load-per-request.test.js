@@ -1,6 +1,6 @@
 import { SET_ID } from './sets/high-risk-plants/set.js'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
+import { beforeEach, describe, expect, test } from 'vitest'
+import { fetchMock } from '../common/test-helpers/dependency-answers.js'
 import { get, commit } from './engine/index.js'
 import { configureRecords } from './engine/persistence/records.js'
 import { configureReadyForCheckYourAnswers } from './engine/read.js'
@@ -21,8 +21,7 @@ import { scalarField, VALUE_ONE } from '../../../test/fixtures/index.js'
 // request the real adapter issues at most one canonical GET, followed by a
 // single PUT to /notifications/{ref}.
 
-const fetchMocker = createFetchMock(vi)
-fetchMocker.enableMocks()
+fetchMock.enableMocks()
 
 const backendBaseUrl = 'http://localhost:8091'
 const ref = 'REFERENCE-0001'
@@ -45,12 +44,12 @@ const buildRequest = () => ({
 })
 
 const getsFor = (url) =>
-  fetchMocker
+  fetchMock
     .requests()
     .filter((request) => request.method === 'GET' && request.url === url)
 
 const requestsTo = (method, url) =>
-  fetchMocker
+  fetchMock
     .requests()
     .filter((request) => request.method === method && request.url === url)
 
@@ -58,8 +57,8 @@ describe('one load per request — real records adapter GET count', () => {
   const notificationRefUrl = `${notificationsUrl}/${ref}`
 
   beforeEach(() => {
-    fetchMocker.resetMocks()
-    fetchMocker.mockResponse((req) => {
+    fetchMock.resetMocks()
+    fetchMock.mockResponse((req) => {
       if (req.method === 'GET' && req.url === fulfilmentUrl) {
         return fulfilmentBody
       }

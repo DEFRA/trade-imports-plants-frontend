@@ -408,10 +408,16 @@ set-up in the test file:
   - `useReferenceDataServing` registers `resetMocksAndConfigAfterTests()` for the
     describe that calls it, and returns the function that serves given rows as
     the reference-data response
-  - `fetchMock` is the shared `vitest-fetch-mock` instance that
-    `useBackendRecords`, `addressBookAnswering` and `useReferenceDataServing`
-    drive; a test enables it and sets its response, with
-    `resetMocksAndConfigAfterTests()` registered
+  - `fetchMock`, from
+    [`common/test-helpers/dependency-answers.js`](../../../../common/test-helpers/dependency-answers.js),
+    is the shared `vitest-fetch-mock` instance that `useBackendRecords`,
+    `addressBookAnswering` and `useReferenceDataServing` drive; a test enables
+    it and sets its response, with `resetMocksAndConfigAfterTests()` registered
+  - `useDependencyAnswers()`, from the same file, fakes dependencies' HTTP
+    answers for the tests in its scope and returns `answerWith(answer)`;
+    `okAnswer(body)`, `refusedAnswer(status, statusText)` and
+    `okOnlyFor({ pathname, blocks }, body)` build the answers. A test fakes a
+    dependency through these, never through a fetch-mock instance of its own
   - `addressBookAnswering`, `addressBookRefusingAddresses` and
     `addressBookRequestUrls` put the address book on the network boundary and
     report the requests made to it
@@ -429,7 +435,8 @@ set-up in the test file:
   - `expectOneRefusalLogged` asserts the logger holds exactly one refusal line,
     and `expectNoRefusalLogged` asserts it holds none
   - `expectOneSaveFallbackLogged` asserts it holds exactly one save fallback line
-  - `unavailableBackendError` builds the error a save failure is given
+  - `loggedBackendRefusal(operation)` builds a 503 backend refusal the records
+    adapter has already logged, the error a save failure is given
   - `itHoldsCopyAtEveryLeaf` registers the copy-leaf test for a locale pair
 - address-book picker tests:
   [`address-book-picker/controller-test-support.js`](../journeys/linear/features/address-book-picker/controller-test-support.js)

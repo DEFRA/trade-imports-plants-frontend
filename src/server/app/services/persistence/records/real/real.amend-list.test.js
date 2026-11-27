@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import createFetchMock from 'vitest-fetch-mock'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import { fetchMock } from '../../../../../common/test-helpers/dependency-answers.js'
 import {
   AMEND,
   DRAFT,
+  STALE_CONCURRENCY_TOKEN,
   SUBMITTED
 } from '../../../../engine/persistence/records.js'
 import { config } from '../../../../../../config/config.js'
 import { records } from './index.js'
 
-const fetchMocker = createFetchMock(vi)
-fetchMocker.enableMocks()
+fetchMock.enableMocks()
 
 const notificationsUrl = 'http://localhost:8091/notifications'
 
@@ -19,10 +19,7 @@ const RECORD_ARRIVAL_DATE = '2026-07-20'
 const CONSIGNOR_NAME = 'Consignor Ltd'
 const CONSIGNEE_NAME = 'Consignee Ltd'
 
-// The backend stamps submittedAt on first submission and leaves it in place
-// through an amendment, so an AMEND row arrives carrying one. Only the list
-// marshal's status gate keeps it off an amending card.
-const submittedAtFor = (status) =>
+const submissionTimeUnlessDraft = (status) =>
   status === 'DRAFT' ? null : RECORD_SUBMITTED_AT
 
 const notification = (referenceNumber, status) => ({
@@ -30,7 +27,7 @@ const notification = (referenceNumber, status) => ({
   status,
   concurrencyToken: 0,
   created: RECORD_CREATED_AT,
-  submittedAt: submittedAtFor(status),
+  submittedAt: submissionTimeUnlessDraft(status),
   updated: RECORD_CREATED_AT,
   commodity: { name: 'item-one' },
   origin: { countryCode: 'FR' },
@@ -43,21 +40,21 @@ const mockNotification = (referenceNumber, status) => ({
   referenceNumber,
   status,
   created: RECORD_CREATED_AT,
-  submittedAt: submittedAtFor(status),
+  submittedAt: submissionTimeUnlessDraft(status),
   fulfilments: []
 })
 
 describe('real records adapter — amend', () => {
   beforeEach(() => {
-    fetchMocker.resetMocks()
+    fetchMock.resetMocks()
   })
 
   test('Should POST the amend endpoint and marshal a writable amend record', async () => {
-    fetchMocker.mockResponse(JSON.stringify(mockNotification('REF-1', 'AMEND')))
+    fetchMock.mockResponse(JSON.stringify(mockNotification('REF-1', 'AMEND')))
 
     const amended = await records.amend('REF-1')
 
-    const [request] = fetchMocker.requests()
+    const [request] = fetchMock.requests()
     expect(request.url).toBe(`${notificationsUrl}/REF-1/amend`)
     expect(request.method).toBe('POST')
     expect(amended.status).toBe(AMEND)
@@ -66,21 +63,32 @@ describe('real records adapter — amend', () => {
   })
 
   test('Should surface a failed amend as an error carrying the response status', async () => {
-    fetchMocker.mockResponse('Conflict', { status: 409 })
+    fetchMock.mockResponse('Conflict', { status: 409 })
 
     await expect(records.amend('REF-1')).rejects.toThrow(
-      /Failed to amend notification: 409/
+      /plants-backend refused to amend notification: 409/
     )
+  })
+
+  test('Should carry the code of a refused amend whose 409 body names one', async () => {
+    fetchMock.mockResponse(JSON.stringify({ code: STALE_CONCURRENCY_TOKEN }), {
+      status: 409
+    })
+
+    await expect(records.amend('REF-1')).rejects.toMatchObject({
+      status: 409,
+      code: STALE_CONCURRENCY_TOKEN
+    })
   })
 })
 
 describe('real records adapter — paged list', () => {
   beforeEach(() => {
-    fetchMocker.resetMocks()
+    fetchMock.resetMocks()
   })
 
   test('Should GET /notifications and map main-shape entries to dashboard rows', async () => {
-    fetchMocker.mockResponse(
+    fetchMock.mockResponse(
       JSON.stringify({
         page: 1,
         size: 20,
@@ -100,8 +108,8 @@ describe('real records adapter — paged list', () => {
       sort: 'createdAt,asc'
     })
 
-    const [request] = fetchMocker.requests()
-    expect(request.url).toBe(`${notificationsUrl}?page=2&sort=createdAt,asc`)
+    const [request] = fetchMock.requests()
+    expect(request.url).toBe(`${notificationsUrl}?page=2&sort=createdAt%2Casc`)
     expect(request.method).toBe('GET')
     expect(listed).toEqual({
       page: 1,
@@ -153,14 +161,14 @@ describe('real records adapter — paged list', () => {
   })
 
   test('Should implement has with an exact-id canonical GET', async () => {
-    fetchMocker.mockResponses(
+    fetchMock.mockResponses(
       [JSON.stringify(mockNotification('REF-1', 'DRAFT')), { status: 200 }],
       ['Not Found', { status: 404 }]
     )
 
     expect(await records.has('REF-1')).toBe(true)
     expect(await records.has('REF-GONE')).toBe(false)
-    const requests = fetchMocker.requests()
+    const requests = fetchMock.requests()
     expect(requests.map(({ method, url }) => ({ method, url }))).toEqual([
       { method: 'GET', url: `${notificationsUrl}/REF-1/fulfilments` },
       { method: 'GET', url: `${notificationsUrl}/REF-GONE/fulfilments` }
@@ -168,13 +176,11 @@ describe('real records adapter — paged list', () => {
   })
 })
 
-// The unit suite runs in stub mode; the address book only answers in real mode,
-// so this turns the switch off to prove the list never asks it.
-describe('real records adapter — party names', () => {
+describe('real records adapter — party names with stub mode off', () => {
   const originalMode = config.get('stubMode')
 
   beforeEach(() => {
-    fetchMocker.resetMocks()
+    fetchMock.resetMocks()
     config.set('stubMode', false)
   })
 
@@ -185,7 +191,7 @@ describe('real records adapter — party names', () => {
   test.each(['DRAFT', 'SUBMITTED', 'AMEND'])(
     'Should read the copied party name off a %s notification without reading the address book',
     async (status) => {
-      fetchMocker.mockResponse(
+      fetchMock.mockResponse(
         JSON.stringify({
           page: 1,
           size: 20,
@@ -199,7 +205,7 @@ describe('real records adapter — party names', () => {
 
       expect(listed.rows[0].consignorName).toBe(CONSIGNOR_NAME)
       expect(
-        fetchMocker
+        fetchMock
           .requests()
           .map(({ url }) => url)
           .filter((url) => !url.startsWith(notificationsUrl))
