@@ -40,11 +40,14 @@ const MAX_EVENT_LOOP_TURNS = 1000
 const nextEventLoopTurn = () => new Promise((resolve) => setImmediate(resolve))
 
 const onEventLoopUntil = async (done, failure) => {
-  for (let turns = 0; !done(); turns++) {
-    if (turns === MAX_EVENT_LOOP_TURNS) {
-      throw new Error(failure)
+  for (let turns = 0; turns < MAX_EVENT_LOOP_TURNS; turns++) {
+    if (done()) {
+      return
     }
     await nextEventLoopTurn()
+  }
+  if (!done()) {
+    throw new Error(failure)
   }
 }
 
