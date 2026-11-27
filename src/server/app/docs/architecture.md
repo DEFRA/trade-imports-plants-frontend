@@ -128,6 +128,9 @@ A request finds its set from its path: the longest mount prefix wins, whatever
 the registration order. `setContextExtension` enters that set on `onRequest`,
 before routing, so the shared error page on an unrouted path and the view
 marshal step, which runs after the handler returns, both resolve the right set.
+`createServer()` in `src/server/server.js` registers it server-wide, not as a
+set's own `onPreAuth`: a request that matches no route runs no route's
+extensions, so a 404 under a set's mount would otherwise have no set.
 `routeWithSetContext()` runs every method a set's route declares — `handler`,
 `options.handler`, `options.pre` and `ext` entries — inside that set.
 
@@ -210,11 +213,21 @@ banner's feedback address, is set in `shared/layout.njk`, not in copy.
 
 ### Backend HTTP clients
 
-Each backend or reference-data call lives in its own module under `services/`,
-for example [`services/ports/client.js`](../services/ports/client.js) and
-[`services/persistence/records/real/http/`](../services/persistence/records/real/http/put.js).
+Each call to an HTTP dependency (journey backend, address book, reference data)
+lives in its own module under `services/`, for example
+[`services/ports/client.js`](../services/ports/client.js) and
+[`services/persistence/records/real/http/`](../services/persistence/records/real/http/send.js).
 A controller calls the service, never `fetch`. Call counting and metrics
 helpers wrap a client; they do not hold one.
+
+A client never calls `fetch` directly either. It goes through
+[`backendFetch`](../../common/helpers/backend-client/backend-fetch.js) or
+[`measureExternalResponse` and `measureExternalCall`](../../common/helpers/metrics/external-call-metrics.js),
+under a fixed operation name, so every call records its metric, log line and
+availability. Each operation is listed in
+[`services/dependency-operations.test.js`](../services/dependency-operations.test.js),
+which proves every listed call records one success or one failure under its
+dependency and operation. A new client call adds its row there.
 
 ## Logging
 
@@ -244,9 +257,15 @@ of a line that is out of range is the example of a refusal that passes its
 reason.
 
 `kit.recoverableSave()` takes the request and logs every save fallback once at
-warn, with `journeyId` and the caught error as `err`, plus any ids the page
-passes it. `recoverableSave` writes that line; a page's fallback callback only
-builds the response.
+warn, with `journeyId` plus any ids the page passes it. `recoverableSave`
+writes the fallback line; a page's fallback callback only builds the response.
+A journey backend refusal is logged with its `err` and the journey as
+`event.reference` where it is raised, and marked as logged, so the fallback
+line leaves `err` out; any other caught error goes on the fallback line as
+`err`. The error page's `catchAll` writes the 5xx `Request failed` line by the
+same rule, so one refused call writes its stack once. Both read the mark through
+`errFieldUnlessLogged` in
+[`common/helpers/logging/logged-error.js`](../../common/helpers/logging/logged-error.js).
 
 A refusal answered by a redirect logs its own named line with the journey id
 and the reason.

@@ -81,13 +81,22 @@ keeps the session store's AUTH and SELECT handshake unchanged.
 
 For every page request it handles, the service counts the calls that request
 made to its journey backend, the times it read the signed-in session record
-from the session store, and the calls it made to systems outside the INS
-boundary. A page request is every request except `GET /health`,
-`GET /favicon.ico`, the static asset route and `/call-counts` itself: form
-posts, redirects, rendered pages and the 404 page all count. A backend call is one `fetch` to the journey backend, made
-through `backendFetch`. A session resolution is one read of the session record
-by the auth plugin or by the view context; the session state yar loads is not
-counted.
+from the session store, and every call it made to an HTTP dependency, by
+dependency and operation (the journey backend included). Commands sent to the
+session store are not counted there. A page request is every request except
+`GET /health`, `GET /favicon.ico`, the static asset route and `/call-counts`
+itself: form posts, redirects, rendered pages and the 404 page all count. A
+backend call is one call to the journey backend through `backendFetch`,
+counted once even when a refused or slow connection is retried. A session
+resolution is one read of the session record by the auth plugin or by the view
+context; the session state yar loads is not counted.
+
+A request's counts live in an `AsyncLocalStorage` store. hapi gives no public
+hook that runs the whole request inside one async context, so the call-counts
+plugin wraps each request's private `_lifecycle` and `_postCycle` methods to run
+inside the store, the same way `@defra/hapi-tracing` keeps its trace id. A
+view renders outside that async context, so a session resolution is counted
+against the request it is read for rather than through the store.
 
 Running totals are kept per route and served at `GET /call-counts`. `DELETE
 /call-counts` clears them.
@@ -100,7 +109,10 @@ Running totals are kept per route and served at `GET /call-counts`. `DELETE
     "pageRequests": 2,
     "backendCalls": 3,
     "sessionResolutions": 4,
-    "externalCalls": {}
+    "externalCalls": {
+      "plants-backend": { "get-fulfilment": 2, "replace-notification": 1 },
+      "address-book": { "list-addresses": 1 }
+    }
   },
   "routes": [
     {
@@ -109,7 +121,10 @@ Running totals are kept per route and served at `GET /call-counts`. `DELETE
       "pageRequests": 2,
       "backendCalls": 3,
       "sessionResolutions": 4,
-      "externalCalls": {}
+      "externalCalls": {
+        "plants-backend": { "get-fulfilment": 2, "replace-notification": 1 },
+        "address-book": { "list-addresses": 1 }
+      }
     }
   ]
 }

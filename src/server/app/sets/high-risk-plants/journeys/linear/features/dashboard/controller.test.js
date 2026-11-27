@@ -60,7 +60,7 @@ const startDraft = async () => records.create()
 
 const startSubmitted = async () => {
   const journey = await records.create()
-  await records.finalise(journey.journeyId)
+  await records.submit(journey.journeyId)
   return records.load({ journeyId: journey.journeyId })
 }
 

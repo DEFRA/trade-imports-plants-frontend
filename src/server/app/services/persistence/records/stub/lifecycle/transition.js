@@ -8,7 +8,7 @@ import { journeys } from '../store/state.js'
 import { loadWritable } from '../store/writable.js'
 import { marshal } from '../marshal/document.js'
 
-export const finalise = async (journeyId, _actor) => {
+export const submit = async (journeyId, _actor) => {
   const journey = loadWritable(journeyId)
   journey.status = SUBMITTED
   journey.submittedAt = new Date().toISOString()

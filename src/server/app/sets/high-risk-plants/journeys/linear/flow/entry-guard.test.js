@@ -24,8 +24,10 @@ import {
   guardedJourneyPath,
   hasCommittedNotificationAnswers
 } from './entry-guard.js'
+import { recordEmfDocuments } from '../../../../../../common/test-helpers/emf-documents.js'
 
 const ENTRY_SLUG = commodityTypePage.slug
+const ENTRY_REDIRECT = 'journey.entry.redirect'
 const NOTIFICATION_VIEW_SLUG = 'notification-view'
 
 const guardOn = (journeyId, { path } = {}) =>
@@ -188,6 +190,28 @@ describe('#entryGuardTarget', () => {
     const journeyId = await freshJourney({ commodityType: 'potatoes' })
 
     expect(await guardOn(journeyId)).toBeNull()
+  })
+
+  describe(ENTRY_REDIRECT, () => {
+    const emf = recordEmfDocuments()
+
+    it('Should count exactly one redirect for a notification with no entered answer', async () => {
+      const journeyId = await freshJourney()
+
+      await guardOn(journeyId)
+
+      await emf.publishMarkerAndAwaitEarlierPublishes()
+      expect(emf.valuesOf(ENTRY_REDIRECT)).toEqual([1])
+    })
+
+    it('Should count no redirect for a notification with an entered answer', async () => {
+      const journeyId = await freshJourney({ commodityType: 'potatoes' })
+
+      await guardOn(journeyId)
+
+      await emf.publishMarkerAndAwaitEarlierPublishes()
+      expect(emf.valuesOf(ENTRY_REDIRECT)).toEqual([])
+    })
   })
 
   it('Should treat a journey whose only answer is a flow-only key as fresh', async () => {

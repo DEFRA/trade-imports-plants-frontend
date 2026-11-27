@@ -56,8 +56,19 @@ entry with no leaf value is not stored. Removing or reconciling entries leaves
 the purge of answers that no longer apply to the evaluator.
 
 [`src/server/app/engine/write/submit.js`](../engine/write/submit.js) checks recognised
-answer keys and `scope.readyForCheckYourAnswers` before calling `records.finalise`.
+answer keys and `scope.readyForCheckYourAnswers` before calling `records.submit`.
 Submit changes lifecycle state; it does not perform a separate fulfilment save.
+
+A recognised answer key is a manifest obligation name in its declared position,
+a flow-only key or a system key, as `unrecognisedAnswerKeys` in
+[`bridge/obligation-source.js`](../bridge/obligation-source.js) reports. Any
+other key is inert to the evaluator: never in scope and never purged, yet it
+would ship raw at submit. So the write paths and submit reject it.
+
+The one system key is `referenceNumber`. Answer validation accepts it so an
+answers tree that carries it is not refused, but canonical assembly leaves it
+out: the notification projections take the reference from the journey
+envelope instead.
 
 ## Abstract ports
 

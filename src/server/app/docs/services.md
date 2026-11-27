@@ -78,13 +78,9 @@ The high-risk-plants commodities service is documented in the
 | Convict key                            | Env var                            | Default                 |
 | -------------------------------------- | ---------------------------------- | ----------------------- |
 | `tradeImportsPlantsBackendApi.baseUrl` | `TRADE_IMPORTS_PLANTS_BACKEND_URL` | `http://localhost:8091` |
+| `tradeImportsAddressBookApi.baseUrl`   | `TRADE_IMPORTS_ADDRESS_BOOK_URL`   | `http://localhost:8089` |
 | `tradeImportsReferenceDataApi.baseUrl` | `TRADE_IMPORTS_REFERENCE_DATA_URL` | `http://localhost:8086` |
 | `tradeImportsInsFrontend.baseUrl`      | `TRADE_IMPORTS_INS_FRONTEND_URL`   | `http://localhost:3002` |
-
-There is deliberately no `tradeImportsAddressBookApi` row: this service reads
-`TRADE_IMPORTS_ADDRESS_BOOK_URL` directly from `process.env` rather than
-through convict (see
-[`services/address-book/client.js`](../services/address-book/client.js)).
 
 The last row is browser-visible (the service navigation's Address book link),
 so under the workspace stack it stays `localhost` while the backend API URLs

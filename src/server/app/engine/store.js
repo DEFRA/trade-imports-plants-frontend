@@ -22,6 +22,6 @@ export const store = Object.freeze({
     ),
   replaceFulfilment: (journeyId, fulfilment) =>
     withAnswersProjection(records.replaceFulfilment(journeyId, fulfilment)),
-  submit: (journeyId) => withAnswersProjection(records.finalise(journeyId)),
+  submit: (journeyId) => withAnswersProjection(records.submit(journeyId)),
   clear: records.clear
 })

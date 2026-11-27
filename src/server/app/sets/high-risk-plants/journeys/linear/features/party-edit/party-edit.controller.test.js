@@ -8,7 +8,7 @@ import {
   expectOneSaveFallbackLogged,
   resetMocksAndConfigAfterTests,
   reviewChangeLinkQuery,
-  unavailableBackendError
+  loggedBackendRefusal
 } from '../../../../../../engine/test-support.js'
 import {
   HTTP_STATUS_BAD_REQUEST,
@@ -268,7 +268,7 @@ describe('Edit address details — where the trader returns to', () => {
   })
 
   it('Should re-render the form and log the save fallback once when saving fails', async () => {
-    const failure = unavailableBackendError('save answers')
+    const failure = loggedBackendRefusal('save answers')
 
     const result = await driveHandler(post, {
       seed,
@@ -280,8 +280,7 @@ describe('Edit address details — where the trader returns to', () => {
     expect(result.view.context.recoverableError).toBe(true)
     expect(result.after.consignor).toEqual(STORED)
     expectOneSaveFallbackLogged(result.logger, {
-      journeyId: result.journeyId,
-      err: failure
+      journeyId: result.journeyId
     })
   })
 })

@@ -23,7 +23,7 @@ import { sessionCache } from './common/helpers/session-cache/session-cache.js'
 import { getCacheEngine } from './common/helpers/session-cache/cache-engine.js'
 import { secureContext } from '@defra/hapi-secure-context'
 import { contentSecurityPolicy } from './common/helpers/content-security-policy.js'
-import { metrics } from '@defra/cdp-metrics'
+import { requestMetrics } from './common/helpers/metrics/request-metrics.js'
 
 export async function createServer() {
   setupProxy()
@@ -68,7 +68,7 @@ export async function createServer() {
     requestLogger,
     requestTracing,
     callCounts,
-    metrics,
+    requestMetrics,
     secureContext,
     pulse,
     sessionCache,
@@ -81,7 +81,7 @@ export async function createServer() {
     ...(authEnabled
       ? [authPlugin, isStubMode() ? stubSignInRoutes : authRoutes]
       : []),
-    router // Register all the controllers/routes defined in src/server/router.js
+    router
   ])
 
   server.app.cache = server.cache({
@@ -90,10 +90,6 @@ export async function createServer() {
     expiresIn: config.get('session.cache.ttl')
   })
 
-  // Server-wide, and before routing: every request under a set's mount runs in
-  // that set's context from here on, whether or not it reaches a set route.
-  // Without it a 404 under a set's mount has no set at all, because no route
-  // matched and so no set's own `onPreAuth` ran.
   server.ext(setContextExtension)
 
   server.ext('onPreResponse', catchAll)

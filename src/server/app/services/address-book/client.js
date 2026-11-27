@@ -1,14 +1,19 @@
 import { getTraceId } from '@defra/hapi-tracing'
 
+import { config } from '../../../../config/config.js'
 import { ORGANISATION_ID_HEADER } from '../../../common/helpers/organisation-id.js'
 import { addressBookCountryName } from '../countries/index.js'
 import { HTTP_STATUS_NOT_FOUND } from '../../lib/http-status.js'
-import { BackendRequestError } from '../persistence/records/errors.js'
+import {
+  fetchFromDependency,
+  requestDependency,
+  throwOnRefusal
+} from '../http/request-dependency.js'
 
-const addressBookUrl =
-  process.env.TRADE_IMPORTS_ADDRESS_BOOK_URL ?? 'http://localhost:8089'
-
-const tracingHeader = process.env.TRACING_HEADER ?? 'x-cdp-request-id'
+const addressBookCall = (operation) => ({
+  dependency: 'address-book',
+  operation
+})
 
 const addressesUrl = (orgId, addressId) => {
   if (!orgId) {
@@ -16,17 +21,15 @@ const addressesUrl = (orgId, addressId) => {
       'Cannot reach the address book without an organisation: the signed-in session carries none'
     )
   }
-  const base = `${addressBookUrl}/organisation/${encodeURIComponent(orgId)}/addresses`
+  const base = `${config.get('tradeImportsAddressBookApi.baseUrl')}/organisation/${encodeURIComponent(orgId)}/addresses`
   return addressId ? `${base}/${encodeURIComponent(addressId)}` : base
 }
 
 const headers = (orgId) => ({
   'Content-Type': 'application/json',
   [ORGANISATION_ID_HEADER]: orgId,
-  [tracingHeader]: getTraceId() ?? ''
+  [config.get('tracing.header')]: getTraceId() ?? ''
 })
-
-const failed = (what, response) => new BackendRequestError(what, response)
 
 const toRecord = async (operator) => ({
   id: operator.id,
@@ -66,14 +69,11 @@ export const listAddresses = async (
     url.searchParams.append('countryCode', countryCode)
   }
 
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: headers(orgId)
-  })
-
-  if (!response.ok) {
-    throw failed('list addresses', response)
-  }
+  const response = await requestDependency(
+    addressBookCall('list-addresses'),
+    url.toString(),
+    { method: 'GET', headers: headers(orgId) }
+  )
 
   const body = await response.json()
   return {
@@ -87,17 +87,17 @@ export const listAddresses = async (
 
 /** The address with the given id, a deleted one included and marked deleted, or nothing when the address book has none. */
 export const getAddress = async (orgId, addressId) => {
-  const response = await fetch(addressesUrl(orgId, addressId), {
-    method: 'GET',
-    headers: headers(orgId)
-  })
+  const call = addressBookCall('get-address')
+  const response = await fetchFromDependency(
+    call,
+    addressesUrl(orgId, addressId),
+    { method: 'GET', headers: headers(orgId) }
+  )
 
   if (response.status === HTTP_STATUS_NOT_FOUND) {
     return undefined
   }
-  if (!response.ok) {
-    throw failed('get address', response)
-  }
+  throwOnRefusal(call, response)
 
   return toRecord(await response.json())
 }
