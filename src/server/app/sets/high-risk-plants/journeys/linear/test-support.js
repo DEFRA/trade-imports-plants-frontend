@@ -57,6 +57,15 @@ export const deleteNotificationButton = (journeyId) => ({
   classes: 'govuk-button--warning'
 })
 
+export const copyNotificationButton = (
+  journeyId,
+  { besideAmend = false } = {}
+) => ({
+  text: 'Copy as new',
+  postAction: `${SET_BASE}/notifications/${journeyId}/copy`,
+  classes: besideAmend ? 'govuk-button--secondary' : ''
+})
+
 const POTATOES = 'potatoes'
 const PLANTS_FOR_PLANTING = 'plants-for-planting'
 

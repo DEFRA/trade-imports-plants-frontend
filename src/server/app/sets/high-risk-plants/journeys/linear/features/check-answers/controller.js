@@ -107,7 +107,7 @@ const render = async (
   request,
   h,
   current,
-  { continueRefused = false } = {}
+  { continueRefused = false, recoverableError = false } = {}
 ) => {
   const readOnly = current.journey.status === state.SUBMITTED
   const changeLinkTrail = kit.trailPlus(request, kit.CYA_SLUG)
@@ -122,7 +122,8 @@ const render = async (
       page,
       backLink: backLinkFor(request, current.journey),
       offerCancelAmend: false,
-      showJourneyStrip: !header
+      showJourneyStrip: !header,
+      recoverableError
     }),
     contentColumnClass: kit.surfaceClass('display'),
     copy,
@@ -156,6 +157,12 @@ const render = async (
 
 const get = async (request, h) =>
   render(request, h, await state.get(request, h))
+
+export const renderNotificationView = async (
+  request,
+  h,
+  { recoverableError = false } = {}
+) => render(request, h, await state.get(request, h), { recoverableError })
 
 const post = async (request, h) => {
   const current = await state.get(request, h)

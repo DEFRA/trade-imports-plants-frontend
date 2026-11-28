@@ -32,6 +32,10 @@
         <input type="hidden" name="crumb" value="{{ crumb }}" />
       </form>
     {% endif %}
+    <form id="view-header-copy" method="post" action="{{ viewHeader.actions.copy.postAction }}" novalidate>
+      <input type="hidden" name="crumb" value="{{ crumb }}" />
+      <input type="hidden" name="concurrencyToken" value="{{ concurrencyToken }}" />
+    </form>
 
     <div class="govuk-button-group">
       {% if viewHeader.actions.amend %}
@@ -40,6 +44,11 @@
           attributes: { form: "view-header-amend" }
         }) }}
       {% endif %}
+      {{ govukButton({
+        text: viewHeader.actions.copy.text,
+        classes: viewHeader.actions.copy.classes,
+        attributes: { form: "view-header-copy" }
+      }) }}
       {{ govukButton(viewHeader.actions.delete) }}
     </div>
 

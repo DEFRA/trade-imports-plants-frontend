@@ -25,6 +25,7 @@ import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { formatMomentAsLongDay } from '../../../../../../lib/validate/index.js'
 import { copy } from './copy/copy.en.js'
 import { copy as deleteCopy } from '../delete-notification/copy/copy.en.js'
+import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
 import { TECH_IMPORTS_ADDRESS_LINES } from '../../test-support.js'
 
@@ -261,10 +262,11 @@ test.describe('a draft notification', () => {
     )
   })
 
-  test('offers only Delete notification in its header, with no Copy as new and no Amend this notification', async ({
+  test('offers Copy as new then Delete notification in its header, with no Amend this notification', async ({
     page
   }) => {
     await expect(viewHeaderButtons(page).getByRole('button')).toHaveText([
+      sharedCopy.notificationActions.copy.text,
       copy.delete
     ])
   })
@@ -335,11 +337,12 @@ test.describe('a submitted notification', () => {
     )
   })
 
-  test('offers Amend this notification and Delete notification in its header, and Delete notification nowhere else', async ({
+  test('offers Amend this notification, Copy as new and Delete notification in its header, and Delete notification nowhere else', async ({
     page
   }) => {
     await expect(main(page).getByRole('button')).toHaveText([
       copy.viewHeader.amend,
+      sharedCopy.notificationActions.copy.text,
       copy.delete
     ])
     await expect(deleteButton(page)).toHaveCount(1)
@@ -386,6 +389,21 @@ test.describe('a submitted notification', () => {
 
       await expect(
         noJs.getByRole('heading', { level: 1, name: deleteCopy.title })
+      ).toBeVisible()
+    })
+  })
+
+  test('Copy as new opens a new draft overview when JavaScript is off', async ({
+    page,
+    browser
+  }) => {
+    await withoutJavaScript(page, browser, async (noJs) => {
+      await noJs
+        .getByRole('button', { name: sharedCopy.notificationActions.copy.text })
+        .click()
+
+      await expect(
+        noJs.getByRole('heading', { level: 1, name: hubCopy.title })
       ).toBeVisible()
     })
   })

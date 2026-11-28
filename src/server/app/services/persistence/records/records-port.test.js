@@ -209,7 +209,7 @@ describe('records durable port', () => {
     })
   })
 
-  it('Should copy source content into one new draft per idempotency key', async () => {
+  it('Should copy source content into one new draft per concurrency token', async () => {
     const source = await records.create()
     await records.replaceFulfilment(
       source.journeyId,
@@ -229,7 +229,7 @@ describe('records durable port', () => {
     expect(deliberateSecond.journeyId).not.toBe(first.journeyId)
   })
 
-  it('Should scope copy idempotency to the source reference', async () => {
+  it('Should scope the copy concurrency-token deduplication to the source reference', async () => {
     const sourceA = await records.create()
     const sourceB = await records.create()
 

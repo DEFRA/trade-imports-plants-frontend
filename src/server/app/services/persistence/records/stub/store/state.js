@@ -23,5 +23,5 @@ const storeFor = () => {
 /** The active set's journeys, by journey id. */
 export const journeys = () => storeFor().journeys
 
-/** The active set's copy results, by source-and-idempotency-key. */
+/** The active set's copy results, by source journey and concurrency token. */
 export const copiesBySourceAndKey = () => storeFor().copiesBySourceAndKey

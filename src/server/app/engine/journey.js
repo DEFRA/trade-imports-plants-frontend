@@ -185,6 +185,11 @@ export const cancelAmendJourney = async (request, _h, journeyId) => {
 
 export const copyJourney = async (request, h, journeyId, concurrencyToken) => {
   if (!(await isKnownJourney(request, journeyId))) {
+    logJourneyActionRefused(request, {
+      action: 'Copy',
+      journeyId,
+      reason: JOURNEY_REFUSAL.NOT_FOUND
+    })
     return undefined
   }
   const actor = buildActor(request.auth.credentials)
