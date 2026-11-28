@@ -3,7 +3,6 @@ import { pagePathFrom } from '../../test-support.js'
 import { describe, expect, it } from 'vitest'
 
 import {
-  AMEND,
   DELETED,
   records
 } from '../../../../../../engine/persistence/records.js'
@@ -48,7 +47,6 @@ const handlerOf = (method, pathSuffix) =>
   ).handler
 
 const listGet = handlerOf('GET', '/')
-const amendPost = handlerOf('POST', '/amend')
 const createPost = routes.find(
   (route) => route.method === 'POST' && route.path === createRoutePath()
 ).handler
@@ -82,18 +80,6 @@ const renderListView = async (overrides = {}) => {
 
 const renderList = async (overrides = {}) =>
   (await renderListView(overrides)).context
-
-const expectAmendOpenedAtReview = async (journeyId, response) => {
-  expect(response.redirect).toBe(pagePathFrom('dashboard', journeyId, CYA_SLUG))
-  expect((await records.load({ journeyId })).status).toBe(AMEND)
-}
-
-const postAmend = async (journeyId, overrides = {}) => {
-  const request = journeyRequest(journeyId, overrides)
-  const h = stubH(request)
-  const response = await amendPost(request, h)
-  return { response, h, request }
-}
 
 const referencesOf = (context) =>
   context.notificationRows.map((row) => row.reference)
@@ -306,7 +292,7 @@ describe('dashboard row actions', () => {
     expect(row.actions[1].href).toBe(pagePath(draft.journeyId, 'delete'))
   })
 
-  it('Should give a submitted notification View, an Amend POST and Delete', async () => {
+  it('Should give a submitted notification View, an Amend link and Delete', async () => {
     const submitted = await startSubmitted()
 
     const context = await renderList({ knownJourneyIds: [submitted.journeyId] })
@@ -321,16 +307,14 @@ describe('dashboard row actions', () => {
     expect(row.actions[0].href).toBe(
       pagePathFrom('dashboard', submitted.journeyId, CYA_SLUG)
     )
-    expect(row.actions[1].postAction).toBe(
-      pagePath(submitted.journeyId, 'amend')
-    )
-    expect(row.actions[1].href).toBeUndefined()
+    expect(row.actions[1].href).toBe(pagePath(submitted.journeyId, 'amend'))
+    expect(row.actions[1].postAction).toBeUndefined()
     expect(row.actions[2].href).toBe(pagePath(submitted.journeyId, 'delete'))
   })
 
   it('Should give an amending notification Resume, Cancel amendment and Delete', async () => {
     const submitted = await startSubmitted()
-    await postAmend(submitted.journeyId)
+    await records.amend(submitted.journeyId)
 
     const context = await renderList({ knownJourneyIds: [submitted.journeyId] })
 
@@ -362,20 +346,19 @@ describe('dashboard row actions', () => {
     }
   })
 
-  it('Should leave the card title to name the link actions and suffix only the button', async () => {
+  it('Should give every action on a card a link the card title names, with no suffix of its own', async () => {
     const submitted = await startSubmitted()
 
     const context = await renderList({ knownJourneyIds: [submitted.journeyId] })
 
     const [row] = context.notificationRows
+    expect(row.actions.every((action) => action.href !== undefined)).toBe(true)
+    expect(row.actions.every((action) => action.postAction === undefined)).toBe(
+      true
+    )
     expect(
-      row.actions
-        .filter((action) => action.href)
-        .every((action) => action.visuallyHiddenText === undefined)
+      row.actions.every((action) => action.visuallyHiddenText === undefined)
     ).toBe(true)
-    expect(
-      row.actions.find((action) => action.postAction).visuallyHiddenText
-    ).toBe(copy.actionHidden(row.reference))
   })
 })
 
@@ -444,63 +427,6 @@ describe('dashboard banners', () => {
 
     expect(ordinary.deletionSucceeded).toBe(false)
     expect(deleted.deletionSucceeded).toBe(true)
-  })
-
-  it('Should raise the amend-refused banner only after a refused-amend redirect', async () => {
-    const ordinary = await renderList()
-    const refused = await renderList({ query: { amendRefused: '1' } })
-
-    expect(ordinary.amendRefused).toBe(false)
-    expect(refused.amendRefused).toBe(true)
-  })
-})
-
-describe('dashboard amend POST', () => {
-  useStubbedHighRiskPlantsJourney()
-
-  it('Should unfreeze a known submitted notification and land on its review page', async () => {
-    const submitted = await startSubmitted()
-
-    const { response } = await postAmend(submitted.journeyId)
-
-    await expectAmendOpenedAtReview(submitted.journeyId, response)
-  })
-
-  it('Should open an amend for a submitted notification the session does not know at its review page and leave it amending', async () => {
-    const submitted = await startSubmitted()
-
-    const { response } = await postAmend(submitted.journeyId, {
-      knownJourneyIds: []
-    })
-
-    await expectAmendOpenedAtReview(submitted.journeyId, response)
-  })
-
-  it('Should log the started amendment once with the journey and its organisation', async () => {
-    const submitted = await startSubmitted()
-
-    const { request } = await postAmend(submitted.journeyId)
-
-    expectOneLogged(request.logger, {
-      level: 'info',
-      fields: {
-        journeyId: submitted.journeyId,
-        organisationId: authenticatedActor.organisationId
-      },
-      message: 'Amendment started, sent to the review page'
-    })
-  })
-
-  it('Should send an amend for a deleted notification back to the dashboard carrying the amend-refused flag', async () => {
-    const deleted = await records.create()
-    await records.softDelete(deleted.journeyId)
-
-    const { response } = await postAmend(deleted.journeyId)
-
-    expect(response.redirect).toBe(`${SET_BASE}?amendRefused=1`)
-    expect((await records.load({ journeyId: deleted.journeyId })).status).toBe(
-      DELETED
-    )
   })
 })
 

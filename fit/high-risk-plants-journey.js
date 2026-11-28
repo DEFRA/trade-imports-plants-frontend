@@ -26,6 +26,7 @@ import { copy as pickerCopy } from '../src/server/app/sets/high-risk-plants/jour
 import { copy as hubCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/hub/copy/copy.en.js'
 import { copy as originCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/origin/copy/copy.en.js'
 import { copy as declarationCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/declaration/copy/copy.en.js'
+import { copy as amendCopy } from '../src/server/app/sets/high-risk-plants/journeys/linear/features/amend/copy/copy.en.js'
 
 export { TECH_IMPORTS_NAME }
 
@@ -659,6 +660,47 @@ export const notificationReferenceHeading = (page) =>
     name: journeyIdFromPage(page),
     exact: true
   })
+
+/**
+ * Confirms the amendment from the amend confirmation page: waits for its
+ * heading, then presses Yes, continue.
+ *
+ * @param {import('@playwright/test').Page} page - on the amend confirmation page
+ */
+export const confirmAmendment = async (page) => {
+  await expect(
+    page.getByRole('heading', { name: amendCopy.title, level: 1 })
+  ).toBeVisible()
+  await page.getByRole('button', { name: amendCopy.confirmButton }).click()
+}
+
+/**
+ * Opens the amend confirmation page for a submitted notification from its
+ * card on the dashboard.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} reference - the submitted notification's reference
+ */
+export const openAmendConfirmationFromCard = async (page, reference) => {
+  await page.goto(BASE)
+  await page
+    .getByRole('link', {
+      name: `${dashboardCopy.actions.amend} (${reference})`
+    })
+    .click()
+}
+
+/**
+ * Amends a submitted notification from its card on the dashboard, through
+ * the confirmation page.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} reference - the submitted notification's reference
+ */
+export const amendFromCard = async (page, reference) => {
+  await openAmendConfirmationFromCard(page, reference)
+  await confirmAmendment(page)
+}
 
 export const viewHeaderTag = (page, statusText) =>
   page.getByRole('main').getByText(statusText, { exact: true })

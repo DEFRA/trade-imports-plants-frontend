@@ -19,8 +19,8 @@ export const create = async () => {
   return structuredClone(marshal(document))
 }
 
-export const copy = async (journeyId, idempotencyKey) => {
-  const dedupeKey = `${journeyId}\u0000${idempotencyKey}`
+export const copy = async (journeyId, concurrencyToken) => {
+  const dedupeKey = `${journeyId}\u0000${concurrencyToken}`
   const existingCopyId = copiesBySourceAndKey().get(dedupeKey)
   if (existingCopyId) {
     return structuredClone(marshal(journeys().get(existingCopyId)))

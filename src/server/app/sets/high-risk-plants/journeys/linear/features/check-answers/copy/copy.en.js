@@ -16,11 +16,6 @@ export const copy = {
   change: 'Change',
   editDetails: 'Edit details',
   errorPrefix: 'Error:',
-  cancelAmend: {
-    successTitle: 'Success',
-    successBody:
-      'The amendment has been cancelled and the submitted version restored.'
-  },
   notProvided: 'Not provided',
   continue: 'Continue',
   errors: {

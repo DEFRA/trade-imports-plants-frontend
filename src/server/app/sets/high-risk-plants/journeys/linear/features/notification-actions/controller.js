@@ -1,0 +1,60 @@
+import {
+  dashboardPath,
+  hubPath,
+  pagePath,
+  pageRoutePath
+} from '../../../../../../shared/paths.js'
+import { isStaleConcurrencyRefusal } from '../../../../../../engine/index.js'
+import { copyJourney } from '../../../../../../engine/journey.js'
+import { HTTP_STATUS_INTERNAL_SERVER_ERROR } from '../../../../../../lib/http-status.js'
+import * as kit from '../../../../../../shared/kit.js'
+import { renderNotificationView } from '../check-answers/controller.js'
+import { notificationActionSlugs } from '../../flow/notification-action-slugs.js'
+import { notificationActionsPage } from './page.js'
+
+const sourceViewPath = (request) =>
+  pagePath(request.params.journeyId, kit.CYA_SLUG)
+
+const copyPost = async (request, h) => {
+  const concurrencyToken =
+    request.payload?.concurrencyToken != null
+      ? Number(request.payload.concurrencyToken)
+      : undefined
+  try {
+    const { failure, value: copied } = await kit.recoverableSave(
+      request,
+      () => copyJourney(request, h, request.params.journeyId, concurrencyToken),
+      async () =>
+        (
+          await renderNotificationView(request, h, { recoverableError: true })
+        ).code(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+    )
+    if (failure) {
+      return failure
+    }
+    return copied
+      ? h.redirect(hubPath(copied.journeyId))
+      : h.redirect(dashboardPath())
+  } catch (error) {
+    if (isStaleConcurrencyRefusal(error)) {
+      request.logger.info(
+        {
+          journeyId: request.params.journeyId,
+          reason: 'stale-concurrency-token'
+        },
+        'Copy refused as stale'
+      )
+      return h.redirect(`${sourceViewPath(request)}?staleAction=1`)
+    }
+    throw error
+  }
+}
+
+export const routes = [
+  {
+    method: 'POST',
+    path: pageRoutePath(notificationActionSlugs.copy),
+    options: kit.pageRouteOptions(notificationActionsPage),
+    handler: copyPost
+  }
+]

@@ -50,6 +50,7 @@ const DASHBOARD_MOUNTED_PATH = SET_BASE
 const HUB_PATH = '/notifications/{journeyId}'
 const START_PATH = '/start'
 const CANCEL_AMEND_PATH = '/notifications/{journeyId}/cancel-amend'
+const AMEND_PATH = '/notifications/{journeyId}/amend'
 const CONFIRMATION_PATH = '/notifications/{journeyId}/confirmation'
 const ORIGIN_PATH = '/notifications/{journeyId}/origin'
 const ARRIVAL_STATUS_PATH = '/notifications/{journeyId}/arrival-status'
@@ -61,6 +62,7 @@ const ROUTES = [
   { method: 'GET', path: HUB_PATH },
   { method: 'GET', path: CONFIRMATION_PATH },
   { method: 'GET', path: CANCEL_AMEND_PATH },
+  { method: 'GET', path: AMEND_PATH },
   { method: 'GET', path: ORIGIN_PATH },
   { method: 'GET', path: ARRIVAL_STATUS_PATH },
   { method: 'GET', path: CONSIGNOR_PATH },
@@ -82,6 +84,7 @@ const LATE_REASON_PATH = '/notifications/{journeyId}/late-reason'
 const SKIPPED_PATHS = [
   UPLOADS_STATUS_PATH,
   CANCEL_AMEND_PATH,
+  AMEND_PATH,
   CONFIRMATION_PATH,
   START_PATH
 ]
@@ -222,6 +225,13 @@ describe('#auditPaths', () => {
     expect(
       auditPaths(journeyIds).some((path) => path.endsWith('/confirmation'))
     ).toBe(false)
+  })
+
+  it('Should leave out the amend confirmation page, which only renders on a submitted notification', () => {
+    expect(SKIPPED.get(AMEND_PATH)).toMatch(/submitted/)
+    expect(auditPaths(journeyIds).some((path) => path.endsWith('/amend'))).toBe(
+      false
+    )
   })
 })
 

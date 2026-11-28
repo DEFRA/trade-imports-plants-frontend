@@ -3,7 +3,14 @@ import {
   journeyIdFromPage,
   notificationPageWithTrail
 } from '../../../../../../../../../fit/set-base.js'
-import { expectNoSeriousOrCriticalViolations } from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import {
+  amendFromCard,
+  completePotatoNotification,
+  expectNoSeriousOrCriticalViolations,
+  journeyStripStatus,
+  submitDeclarationFromCheckAnswers
+} from '../../../../../../../../../fit/high-risk-plants-journey.js'
+import { copy as checkAnswersCopy } from '../check-answers/copy/copy.en.js'
 import { expect, test } from '@playwright/test'
 
 import { signIn } from '../../../../../../../../../fit/sign-in.js'
@@ -35,11 +42,6 @@ const startNotification = async (page) => {
 
 const linkActionFor = (page, action, reference) =>
   page.getByRole('link', { name: `${action} (${reference})` })
-
-const buttonActionFor = (page, action, reference) =>
-  page.getByRole('button', {
-    name: `${action} ${copy.actionHidden(reference)}`
-  })
 
 const cardRowValue = (page, key) =>
   page
@@ -151,13 +153,20 @@ test.describe('dashboard feature — notification cards', () => {
       0
     )
     await expect(
-      buttonActionFor(page, copy.actions.amend, reference)
+      linkActionFor(page, copy.actions.amend, reference)
     ).toHaveCount(0)
     await expect(
       page.getByRole('link', {
-        name: `${copy.actions.resume} ${copy.actionHidden(reference)} (${reference})`
+        name: `${copy.actions.resume} (${reference})`,
+        exact: true
       })
-    ).toHaveCount(0)
+    ).toBeVisible()
+    await expect(
+      page.getByRole('link', {
+        name: `${sharedCopy.notificationActions.delete.text} (${reference})`,
+        exact: true
+      })
+    ).toBeVisible()
   })
 
   test('renders a dated Date created row and an empty Date submitted row on a draft', async ({
@@ -183,6 +192,43 @@ test.describe('dashboard feature — notification cards', () => {
     await expect(
       page.getByText(sharedCopy.notificationActions.copy.text)
     ).toHaveCount(0)
+  })
+
+  test('renders a submitted card with View, Amend and Delete notification, Amend a link', async ({
+    page
+  }) => {
+    const reference = await completePotatoNotification(page)
+    await submitDeclarationFromCheckAnswers(page, reference)
+    await page.goto(BASE)
+
+    await expect(
+      page.getByText(sharedCopy.journeyStrip.submitted, { exact: true })
+    ).toBeVisible()
+    await expect(
+      linkActionFor(page, copy.actions.view, reference)
+    ).toBeVisible()
+    await expect(
+      linkActionFor(page, copy.actions.amend, reference)
+    ).toBeVisible()
+    await expect(
+      linkActionFor(page, sharedCopy.notificationActions.delete.text, reference)
+    ).toBeVisible()
+  })
+
+  test('amending notification from its card reaches the review through the confirmation page', async ({
+    page
+  }) => {
+    const reference = await completePotatoNotification(page)
+    await submitDeclarationFromCheckAnswers(page, reference)
+
+    await amendFromCard(page, reference)
+
+    await expect(
+      page.getByRole('heading', { name: checkAnswersCopy.title, level: 1 })
+    ).toBeVisible()
+    await expect(
+      journeyStripStatus(page, sharedCopy.journeyStrip.amend)
+    ).toBeVisible()
   })
 
   test('renders the deleted banner after a delete redirect', async ({
@@ -306,29 +352,5 @@ test.describe('dashboard feature — accessibility', () => {
     await page.goto(BASE)
 
     await expectNoSeriousOrCriticalViolations(page, 'Dashboard initial render')
-  })
-
-  test('the amend refused banner has no serious or critical axe violations', async ({
-    page
-  }) => {
-    await page.goto(`${BASE}?amendRefused=1`)
-
-    await expectNoSeriousOrCriticalViolations(page, 'Amend refused banner')
-  })
-})
-
-test.describe('dashboard feature — amend refused banner', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page)
-    await page.goto(`${BASE}?amendRefused=1`)
-  })
-
-  test('renders the could-not-amend banner with its title and body', async ({
-    page
-  }) => {
-    const banner = page.getByRole('region', { name: copy.amendRefused.title })
-
-    await expect(banner).toBeVisible()
-    await expect(banner).toContainText(copy.amendRefused.body)
   })
 })

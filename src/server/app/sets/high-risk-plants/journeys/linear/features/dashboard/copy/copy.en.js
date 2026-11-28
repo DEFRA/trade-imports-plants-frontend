@@ -24,8 +24,7 @@ export const copy = {
     arrival: 'Arrival',
     consignor: 'Consignor',
     created: 'Date created',
-    submitted: 'Date submitted',
-    actions: 'Actions'
+    submitted: 'Date submitted'
   },
   sort: {
     label: 'Sort by',
@@ -55,11 +54,6 @@ export const copy = {
     resume: 'Resume',
     cancelAmend: 'Cancel amendment'
   },
-  amendRefused: {
-    title: 'Important',
-    body: 'This notification could not be amended.'
-  },
   statusLate: 'Late',
-  actionHidden: (reference) => `notification ${reference}`,
   emptyText: 'You have not started any notifications in this session.'
 }

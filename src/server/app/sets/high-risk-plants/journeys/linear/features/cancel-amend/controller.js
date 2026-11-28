@@ -21,13 +21,13 @@ const { CANCEL_AMEND_SLUG } = kit
 const view = `${TEMPLATES}/features/cancel-amend/template`
 const copy = copyFor({ en, cy })
 
+export const CANCEL_AMEND_REFUSAL = Object.freeze({
+  notInAmend: 'not-in-amend',
+  notInSession: 'not-in-session'
+})
+
 const cyaPath = (journeyId) => pagePath(journeyId, kit.CYA_SLUG)
 const cancelPath = (journeyId) => pagePath(journeyId, CANCEL_AMEND_SLUG)
-
-const nonAmendTarget = (journey) =>
-  journey.status === state.SUBMITTED
-    ? cyaPath(journey.journeyId)
-    : dashboardPath()
 
 const journeyBelongsToSession = (request) =>
   isKnownJourney(request, request.params.journeyId)
@@ -35,34 +35,52 @@ const journeyBelongsToSession = (request) =>
 const render = (h, journey, { recoverableError = false } = {}) =>
   h.view(view, {
     ...kit.base(copy.title, {
-      backLink: cyaPath(journey.journeyId),
       journey,
       recoverableError,
-      offerCancelAmend: false
+      showJourneyStrip: false
     }),
     heading: copy.title,
     copy,
     cancelAction: cancelPath(journey.journeyId),
-    noHref: cyaPath(journey.journeyId)
+    goBackHref: cyaPath(journey.journeyId)
   })
+
+const refuseCancelAmend = (request, h, fields) => {
+  request.logger.info(fields, 'Cancel amend refused')
+  return h.redirect(dashboardPath())
+}
 
 const get = async (request, h) => {
   if (!(await journeyBelongsToSession(request))) {
-    return h.redirect(dashboardPath())
+    return refuseCancelAmend(request, h, {
+      journeyId: request.params.journeyId,
+      refusal: CANCEL_AMEND_REFUSAL.notInSession
+    })
   }
   const { journey } = await state.get(request, h)
   return journey.status === state.AMEND
     ? render(h, journey)
-    : h.redirect(nonAmendTarget(journey))
+    : refuseCancelAmend(request, h, {
+        journeyId: journey.journeyId,
+        status: journey.status,
+        refusal: CANCEL_AMEND_REFUSAL.notInAmend
+      })
 }
 
 const post = async (request, h) => {
   if (!(await journeyBelongsToSession(request))) {
-    return h.redirect(dashboardPath())
+    return refuseCancelAmend(request, h, {
+      journeyId: request.params.journeyId,
+      refusal: CANCEL_AMEND_REFUSAL.notInSession
+    })
   }
   const { journey } = await state.get(request, h)
   if (journey.status !== state.AMEND) {
-    return h.redirect(nonAmendTarget(journey))
+    return refuseCancelAmend(request, h, {
+      journeyId: journey.journeyId,
+      status: journey.status,
+      refusal: CANCEL_AMEND_REFUSAL.notInAmend
+    })
   }
 
   const { failure, value: restored } = await kit.recoverableSave(

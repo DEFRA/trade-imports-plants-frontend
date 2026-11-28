@@ -7,6 +7,7 @@ import {
   POTATO_VARIETY,
   REVIEW_URL_WITHOUT_TRAIL,
   completePotatoNotification,
+  confirmAmendment,
   expectDraftReviewFoot,
   expectNoSeriousOrCriticalViolations,
   formSubmittedBy,
@@ -25,6 +26,7 @@ import { copy as sharedCopy } from '../../../../../../shared/copy.en.js'
 import { formatMomentAsLongDay } from '../../../../../../lib/validate/index.js'
 import { copy } from './copy/copy.en.js'
 import { copy as deleteCopy } from '../delete-notification/copy/copy.en.js'
+import { copy as hubCopy } from '../hub/copy/copy.en.js'
 import { copy as destinationCopy } from '../place-of-destination/copy/copy.en.js'
 import { TECH_IMPORTS_ADDRESS_LINES } from '../../test-support.js'
 
@@ -261,10 +263,11 @@ test.describe('a draft notification', () => {
     )
   })
 
-  test('offers only Delete notification in its header, with no Copy as new and no Amend this notification', async ({
+  test('offers Copy as new then Delete notification in its header, with no Amend this notification', async ({
     page
   }) => {
     await expect(viewHeaderButtons(page).getByRole('button')).toHaveText([
+      sharedCopy.notificationActions.copy.text,
       copy.delete
     ])
   })
@@ -335,41 +338,51 @@ test.describe('a submitted notification', () => {
     )
   })
 
-  test('offers Amend this notification and Delete notification in its header, and Delete notification nowhere else', async ({
+  test('offers Amend this notification, Copy as new and Delete notification in its header, and Delete notification nowhere else', async ({
     page
   }) => {
     await expect(main(page).getByRole('button')).toHaveText([
       copy.viewHeader.amend,
+      sharedCopy.notificationActions.copy.text,
       copy.delete
     ])
     await expect(deleteButton(page)).toHaveCount(1)
   })
 
-  test('posts Amend this notification from a form holding only the crumb, with Delete notification a link outside it', async ({
+  test('offers Amend this notification as a control to the amend address, Copy as new from a form holding only the crumb and the concurrency token, with Delete notification a link outside both', async ({
     page
   }) => {
-    const { form: amendForm, submitButtons } = await formSubmittedBy(
+    const { form: copyAsNewForm, submitButtons } = await formSubmittedBy(
       viewHeaderButtons(page).getByRole('button', {
-        name: copy.viewHeader.amend
+        name: sharedCopy.notificationActions.copy.text
       })
     )
 
-    await expect(amendForm).toHaveAttribute('action', /\/amend$/)
+    await expect(
+      viewHeaderButtons(page).getByRole('button', {
+        name: copy.viewHeader.amend
+      })
+    ).toHaveAttribute('href', /\/amend$/)
+    await expect(copyAsNewForm).toHaveAttribute('action', /\/copy$/)
     expect(
-      await amendForm
+      await copyAsNewForm
         .locator('input')
         .evaluateAll((inputs) => inputs.map(({ name }) => name))
-    ).toEqual(['crumb'])
-    await expect(submitButtons).toHaveText([copy.viewHeader.amend])
+    ).toEqual(['crumb', 'concurrencyToken'])
+    await expect(submitButtons).toHaveText([
+      sharedCopy.notificationActions.copy.text
+    ])
     await expect(deleteButton(page)).toHaveAttribute('href', /\/delete$/)
   })
 
-  test('Amend this notification opens the amendment when JavaScript is off', async ({
+  test('Amend this notification opens the amend confirmation page, and confirming there opens the amendment, when JavaScript is off', async ({
     page,
     browser
   }) => {
     await withoutJavaScript(page, browser, async (noJs) => {
       await noJs.getByRole('button', { name: copy.viewHeader.amend }).click()
+
+      await confirmAmendment(noJs)
 
       await expect(
         journeyStripStatus(noJs, sharedCopy.journeyStrip.amend)
@@ -390,10 +403,27 @@ test.describe('a submitted notification', () => {
     })
   })
 
-  test('Amend this notification opens the amendment review', async ({
+  test('Copy as new opens a new draft overview when JavaScript is off', async ({
+    page,
+    browser
+  }) => {
+    await withoutJavaScript(page, browser, async (noJs) => {
+      await noJs
+        .getByRole('button', { name: sharedCopy.notificationActions.copy.text })
+        .click()
+
+      await expect(
+        noJs.getByRole('heading', { level: 1, name: hubCopy.title })
+      ).toBeVisible()
+    })
+  })
+
+  test('Amend this notification opens the amend confirmation page, and confirming there opens the amendment review', async ({
     page
   }) => {
     await page.getByRole('button', { name: copy.viewHeader.amend }).click()
+
+    await confirmAmendment(page)
 
     await expect(page).toHaveURL(
       new RegExp(`/notifications/${reference}/notification-view`)

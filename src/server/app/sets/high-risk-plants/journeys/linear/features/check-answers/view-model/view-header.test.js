@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { SET_BASE } from '../../../../../set.js'
-import { deleteNotificationButton } from '../../../test-support.js'
+import {
+  copyNotificationButton,
+  deleteNotificationButton
+} from '../../../test-support.js'
 import { AMEND, DRAFT, SUBMITTED } from '../../../../../../../engine/index.js'
 import { viewHeader } from './view-header.js'
 
@@ -45,12 +48,13 @@ describe('#viewHeader', () => {
     ).toBeNull()
   })
 
-  it('Should point Amend at the amend action and Delete notification at the delete page', () => {
+  it('Should point Amend at the amend action, Copy as new at the copy action beside it, and Delete notification at the delete page', () => {
     expect(viewHeader(submittedJourney()).actions).toEqual({
       amend: {
         text: 'Amend this notification',
-        postAction: `${SET_BASE}/notifications/${REFERENCE}/amend`
+        href: `${SET_BASE}/notifications/${REFERENCE}/amend`
       },
+      copy: copyNotificationButton(REFERENCE, { besideAmend: true }),
       delete: deleteNotificationButton(REFERENCE)
     })
   })
@@ -101,9 +105,10 @@ describe('#viewHeader for a draft', () => {
     expect(viewHeader(draftJourney({ createdAt: null })).dateLine).toBeNull()
   })
 
-  it('Should offer Delete notification and no Amend', () => {
+  it('Should offer Copy as new primary with no Amend beside it, and Delete notification', () => {
     expect(viewHeader(draftJourney()).actions).toEqual({
       amend: null,
+      copy: copyNotificationButton(REFERENCE, { besideAmend: false }),
       delete: deleteNotificationButton(REFERENCE)
     })
   })

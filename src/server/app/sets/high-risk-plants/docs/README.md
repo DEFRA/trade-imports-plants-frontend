@@ -146,7 +146,10 @@ Build bindings with `feature`, `scalar` and `grouped` from
 `commodity-type`. Its `guardedJourneyPath` filter skips anything outside
 `/notifications/<id>/`, the create path, the
 `amend`/`cancel-amend`/`copy`/`delete` action slugs, and the entry page
-and its sub-paths. Every other journey path — the hub included — is
+and its sub-paths. The amend slug is now a page of its own, which the guard
+still skips, and which answers a reference it cannot find by opening the
+notification list rather than relying on the guard. Every other journey
+path — the hub included — is
 admitted only when `hasCommittedNotificationAnswers` finds an answer the user
 entered. Anything else is redirected to `commodity-type`, so a journey URL
 alone does not reach a mid-journey page, and a draft with nothing saved

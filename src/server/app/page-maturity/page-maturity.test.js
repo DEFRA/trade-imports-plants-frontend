@@ -112,8 +112,7 @@ describe('#pageMaturityContext', () => {
 describe('page maturity of the registered routes', () => {
   const REDIRECT_ONLY_ROUTES = [
     `get ${SET_BASE}/start`,
-    `post ${SET_BASE}/notifications`,
-    `post ${SET_BASE}/notifications/{journeyId}/amend`
+    `post ${SET_BASE}/notifications`
   ]
   let routes
   let server

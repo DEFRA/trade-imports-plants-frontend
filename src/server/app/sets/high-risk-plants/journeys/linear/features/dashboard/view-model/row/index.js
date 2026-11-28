@@ -30,6 +30,6 @@ export const toRow = async (journey) => {
     consignor: journey.consignorName ?? '',
     created: formatDisplayMoment(journey.createdAt),
     submitted: formatDisplayMoment(journey.submittedAt),
-    actions: rowActions(journey, reference)
+    actions: rowActions(journey)
   }
 }

@@ -5,7 +5,7 @@ import {
   sessionConfiguredFor
 } from './persistence/session.js'
 import { currentSetBase, currentSetId } from '../shared/set-context.js'
-import { AMEND, DRAFT, records, SUBMITTED } from './persistence/records.js'
+import { records, SUBMITTED } from './persistence/records.js'
 import { buildActor } from '../../common/helpers/actor-helpers.js'
 
 export {
@@ -138,17 +138,7 @@ export const listKnownJourneys = async (
 export const isKnownJourney = async (request, journeyId) =>
   (await session.knownJourneyIds(request)).includes(journeyId)
 
-const editableFromStatus = async (journey, journeyId, actor) => {
-  if (journey.status === SUBMITTED) {
-    return records.amend(journeyId, actor)
-  }
-  if (journey.status === DRAFT || journey.status === AMEND) {
-    return journey
-  }
-  return undefined
-}
-
-export const amendJourney = async (request, h, journeyId) => {
+export const amendableJourney = async (request, h, journeyId) => {
   const journey = await loadAndRememberJourney(request, h, journeyId)
   if (!journey) {
     logJourneyActionRefused(request, {
@@ -158,9 +148,7 @@ export const amendJourney = async (request, h, journeyId) => {
     })
     return undefined
   }
-  const actor = buildActor(request.auth.credentials)
-  const editable = await editableFromStatus(journey, journeyId, actor)
-  if (!editable) {
+  if (journey.status !== SUBMITTED) {
     logJourneyActionRefused(request, {
       action: 'Amend',
       journeyId,
@@ -169,6 +157,16 @@ export const amendJourney = async (request, h, journeyId) => {
     })
     return undefined
   }
+  return journey
+}
+
+export const amendJourney = async (request, h, journeyId) => {
+  const journey = await amendableJourney(request, h, journeyId)
+  if (!journey) {
+    return undefined
+  }
+  const actor = buildActor(request.auth.credentials)
+  const editable = await records.amend(journeyId, actor)
   memoWrite(request, editable)
   return editable
 }
@@ -185,6 +183,11 @@ export const cancelAmendJourney = async (request, _h, journeyId) => {
 
 export const copyJourney = async (request, h, journeyId, concurrencyToken) => {
   if (!(await isKnownJourney(request, journeyId))) {
+    logJourneyActionRefused(request, {
+      action: 'Copy',
+      journeyId,
+      reason: JOURNEY_REFUSAL.NOT_FOUND
+    })
     return undefined
   }
   const actor = buildActor(request.auth.credentials)
