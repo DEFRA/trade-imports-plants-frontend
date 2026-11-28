@@ -32,10 +32,6 @@ describe('#copy', () => {
     )
   })
 
-  it('Should interpolate the hidden action label', () => {
-    expect(copy.actionHidden('26-ABC123')).toBe('notification 26-ABC123')
-  })
-
   it("Should pin the spec's intro body verbatim", () => {
     expect(copy.body).toBe(
       'Use this service to tell the plant health authorities about high-risk plants for planting, potatoes, or wood and cut trees you are importing from EU member states, as required by the Plant Health National Notification Scheme. You will answer a short set of questions about the consignment, then submit your notification.'

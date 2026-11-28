@@ -1,3 +1,4 @@
+import * as amend from './amend/controller.js'
 import * as cancelAmend from './cancel-amend/controller.js'
 import * as confirmation from './confirmation/controller.js'
 import * as declaration from './declaration/controller.js'
@@ -36,6 +37,7 @@ export const dispatchPages = [
 ]
 
 export const allRoutes = [
+  ...amend.routes,
   ...cancelAmend.routes,
   ...confirmation.routes,
   ...declaration.routes,

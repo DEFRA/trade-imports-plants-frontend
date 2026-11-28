@@ -203,7 +203,10 @@ the call — and redirects on any target it returns. The guard:
 - answers a request for a notification that cannot be found with the service's
   standard page not found (404), on every page, the review included, before any
   page runs, and sends nothing to the entry page or the notification list; an
-  exempt path's own page answers not found the same way
+  exempt path's own page usually answers not found the same way —
+  cancel-amend and delete answer a reference they cannot find with the same
+  standard page not found, and the amend page and the copy post open the
+  dashboard's notification list instead
 
 `hasCommittedNotificationAnswers` counts only answers that resolve to a manifest
 obligation and are not `SYSTEM_POPULATED`, so a journey holding nothing but a
@@ -250,7 +253,8 @@ commodities, commodity-details and origin pages; Arrival over the
 arrival-status question and the arrival details; Destination over the
 place-of-destination page; and addresses over the consignor-select
 and identification-numbers pages. The overview hub, the contact page, check
-your answers, declaration and confirmation carry no caption.
+your answers, declaration, confirmation and the amend confirmation page carry
+no caption.
 
 `kit.base()` resolves the name for the page identity a controller passes it and
 puts it in the view as `caption`. The page template imports the macro with

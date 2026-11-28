@@ -25,8 +25,7 @@ export const copy = {
     arrival: 'Cyrraedd',
     consignor: 'Traddodwr',
     created: 'Dyddiad creu',
-    submitted: 'Dyddiad cyflwyno',
-    actions: 'Camau gweithredu'
+    submitted: 'Dyddiad cyflwyno'
   },
   sort: {
     label: 'Trefnu yn ôl',
@@ -56,11 +55,6 @@ export const copy = {
     resume: 'Ailddechrau',
     cancelAmend: 'Canslo diwygiad'
   },
-  amendRefused: {
-    title: 'Pwysig',
-    body: 'Nid oedd modd diwygio’r hysbysiad hwn.'
-  },
   statusLate: 'Hwyr',
-  actionHidden: (reference) => `hysbysiad ${reference}`,
   emptyText: 'Nid ydych wedi dechrau unrhyw hysbysiadau yn y sesiwn hon.'
 }

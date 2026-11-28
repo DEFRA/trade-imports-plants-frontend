@@ -34,6 +34,10 @@ export const SKIPPED = new Map([
   [
     '/notifications/{journeyId}/confirmation',
     'renders only on a submitted notification, and no seed shape completes the journey far enough to submit one yet'
+  ],
+  [
+    '/notifications/{journeyId}/amend',
+    'renders only on a submitted notification, and no seed shape completes the journey far enough to submit one yet; covered by the amend feature axe tests'
   ]
 ])
 

@@ -18,13 +18,6 @@
     }) }}
   {% endif %}
 
-  {% if amendRefused %}
-    {{ govukNotificationBanner({
-      titleText: copy.amendRefused.title,
-      text: copy.amendRefused.body
-    }) }}
-  {% endif %}
-
   {{ sectionCaption(caption, "govuk-caption-xl") }}
   <h1 class="govuk-heading-xl">{{ copy.title }}</h1>
   <p class="govuk-body">{{ copy.body }}</p>
@@ -86,20 +79,6 @@
             {% endif %}
           {% endset %}
 
-          {% set postActions = row.actions | selectattr("postAction") %}
-          {% set postActionsHtml %}
-            {% for action in postActions %}
-              {% set actionHtml %}{{ action.text }}<span class="govuk-visually-hidden"> {{ action.visuallyHiddenText }}</span>{% endset %}
-              <form method="post" action="{{ action.postAction }}" novalidate>
-                <input type="hidden" name="crumb" value="{{ crumb }}" />
-                {{ govukButton({
-                  html: actionHtml,
-                  classes: "govuk-button--secondary govuk-!-margin-bottom-0"
-                }) }}
-              </form>
-            {% endfor %}
-          {% endset %}
-
           {% set detailRows = [
             { key: { text: copy.table.commodity }, value: { text: row.commodity } },
             { key: { text: copy.table.origin }, value: { text: row.origin } },
@@ -109,16 +88,13 @@
             { key: { text: copy.table.created }, value: { text: row.created } },
             { key: { text: copy.table.submitted }, value: { text: row.submitted } }
           ] %}
-          {% set actionRows = [
-            { key: { text: copy.table.actions }, value: { html: postActionsHtml } }
-          ] if postActions.length else [] %}
 
           {{ govukSummaryList({
             card: {
               title: { text: row.reference, headingLevel: 3 },
-              actions: { items: row.actions | selectattr("href") }
+              actions: { items: row.actions }
             },
-            rows: detailRows.concat(actionRows)
+            rows: detailRows
           }) }}
         {% endfor %}
       {% elif not referenceNumber %}

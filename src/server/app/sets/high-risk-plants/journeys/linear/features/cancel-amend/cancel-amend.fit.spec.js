@@ -6,6 +6,7 @@ import {
   setUrl
 } from '../../../../../../../../../fit/set-base.js'
 import {
+  amendFromCard,
   errorSummary,
   notificationReferenceHeading,
   viewHeaderTag,
@@ -49,13 +50,7 @@ test.beforeEach(async ({ page }) => {
     .getByRole('button', { name: declarationCopy.continueButton, exact: true })
     .click()
   await expect(page).toHaveURL(/\/confirmation$/)
-  await page.goto(BASE)
-  await page
-    .getByRole('button', {
-      name: `Amend notification ${reference}`,
-      exact: true
-    })
-    .click()
+  await amendFromCard(page, reference)
   await page.goto(`${BASE}/notifications/${reference}/identification-numbers`)
   await page
     .getByLabel(idsCopy.fields.producerIdentificationNumber.label, {

@@ -1714,6 +1714,23 @@
       "dissent": null,
       "escalate": false,
       "supersedes": "d-098",
+      "supersededBy": "d-102",
+      "decidedAt": "2026-11-25",
+      "status": "superseded"
+    },
+    {
+      "id": "d-102",
+      "subject": {
+        "kind": "behaviour",
+        "id": "notification-actions-after-submission"
+      },
+      "ruling": "adopt",
+      "resolution": "One amend confirmation page now stands in front of both ways into an amendment — the dashboard card and the notification view header alike — asking 'Are you sure you want to change this notification?' before anything changes. Confirming starts the amendment and lands on the review; a refused amend (an unknown reference, a deleted notification, a draft, or one already being amended) changes nothing and returns the trader to the notification list with no message. The view header's Amend this notification is a link to that page, not a posting button, because the first click now changes nothing.",
+      "rationale": "The 9 October afternoon ruling (ruling:sam-2026-10-09-pm) carries the pop-up's wording onto a page in front of every way into an amendment, and the 25 November ruling (ruling:ian-2026-11-25b, c-438) makes the view header's Amend a link to it rather than a posting button.",
+      "decidedBy": "ian",
+      "dissent": null,
+      "escalate": false,
+      "supersedes": "d-101",
       "supersededBy": null,
       "decidedAt": "2026-11-25",
       "status": "current"

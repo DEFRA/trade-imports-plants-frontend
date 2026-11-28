@@ -22,16 +22,14 @@ const sharedCopy = copyFor({ en: sharedEn, cy: sharedCy })
 /**
  * The actions one notification card offers, in the order they are rendered.
  *
- * An action carries either an `href`, which the summary card renders as a link
- * in its action list, or a `postAction`, which the card content renders as a
- * button in its own form. There is no Copy as new action: it is parked with
- * reuse-previous-consignment.
+ * Every action carries an `href`, which the summary card renders as a link in
+ * its action list, named by the card title. There is no Copy as new action:
+ * it is parked with reuse-previous-consignment.
  *
  * @param {object} journey - the marshalled list row.
- * @param {string} reference - the notification reference the card is titled by.
  * @returns {object[]} the actions for this row's status.
  */
-export const rowActions = (journey, reference) => {
+export const rowActions = (journey) => {
   const deleteAction = {
     text: sharedCopy.notificationActions.delete.text,
     href: pagePath(journey.journeyId, notificationActionSlugs.delete)
@@ -51,8 +49,7 @@ export const rowActions = (journey, reference) => {
       },
       {
         text: copy.actions.amend,
-        postAction: pagePath(journey.journeyId, notificationActionSlugs.amend),
-        visuallyHiddenText: copy.actionHidden(reference)
+        href: pagePath(journey.journeyId, notificationActionSlugs.amend)
       },
       deleteAction
     ]
